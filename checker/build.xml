@@ -1244,7 +1244,7 @@ So, use our own archived version.
 
     <target name="-demos.clone" depends="demos.check" unless="demos.exists">
       <exec executable="git" dir="${basedir}/../.." failonerror="true">
-        <arg line="clone https://github.com/typetools/checker-framework.demos.git checker-framework-demos"/>
+        <arg line="clone https://github.com/smillst/checker-framework.demos.git checker-framework-demos"/>
       </exec>
     </target>
 
