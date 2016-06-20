@@ -55,6 +55,7 @@ import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 import org.checkerframework.javacutil.trees.DetachedVarSymbol;
 
 import java.io.File;
@@ -1063,7 +1064,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             type = fromTypeTree(decl);
         } else {
             ErrorReporter.errorAbort("AnnotatedTypeFactory.fromElement: cannot be here! decl: " + decl.getKind() +
-                    " elt: " + elt, null);
+                    " elt: " + elt);
             type = null; // dead code
         }
 
@@ -1317,18 +1318,19 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * In some type systems, the upper bounds depend on the instantiation
      * of the class. For example, in the Generic Universe Type system,
      * consider a class declaration
-     * <pre>   class C&lt;X extends @Peer Object&gt; </pre>
+     * <pre>{@code   class C<X extends @Peer Object> }</pre>
      * then the instantiation
-     * <pre>   @Rep C&lt;@Rep Object&gt; </pre>
+     * <pre>{@code   @Rep C<@Rep Object> }</pre>
      * is legal. The upper bounds of class C have to be adapted
      * by the main modifier.
      * <p>
      * An example of an adaptation follows.  Suppose, I have a declaration:
-     * class MyClass&lt;E extends List&lt;E&gt;&gt;
+     * <pre>{@code  class MyClass<E extends List<E>>}</pre>
      * And an instantiation:
-     * new MyClass&lt;@NonNull String&gt;()
+     * <pre>{@code  new MyClass<@NonNull String>()}</pre>
      * <p>
-     * The upper bound of E adapted to the argument String, would be List&lt;@NonNull String&gt;
+     * The upper bound of E adapted to the argument String, would be
+     * {@code List<@NonNull String>}
      * and the lower bound would be an AnnotatedNullType.
      * <p>
      * TODO: ensure that this method is consistently used instead
@@ -2046,6 +2048,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             // org.checkerframework.dataflow.cfg.node.MethodAccessNode.MethodAccessNode(ExpressionTree, Node)
             // Uses an ExecutableElement, which did not substitute type variables.
             break;
+        case WILDCARD:
+            // TODO: look at bounds of wildcard and see whether we can improve.
+            break;
         default:
             if (ctxtype.getKind().isPrimitive()) {
                 // See Issue 438. Ignore primitive types for diamond inference - a primitive type
@@ -2093,6 +2098,43 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             AnnotatedTypeMirror.createType(primitiveType, this, false);
         pt.addAnnotations(type.getAnnotations());
         return pt;
+    }
+
+    /**
+     * Returns AnnotatedDeclaredType with underlying type String and annotations copied from type.
+     * Subclasses may change the annotations.
+     * @param type type to convert to String
+     * @return AnnotatedTypeMirror that results from converting type to a String type
+     */
+    // TODO: Test that this is called in all the correct locations
+    // See Issue #715
+    // https://github.com/typetools/checker-framework/issues/715
+    public AnnotatedDeclaredType getStringType(AnnotatedTypeMirror type) {
+        TypeMirror stringTypeMirror = TypesUtils.typeFromClass(types, elements, String.class);
+        AnnotatedDeclaredType stringATM = (AnnotatedDeclaredType)
+                AnnotatedTypeMirror.createType(stringTypeMirror, this, type.isDeclaration());
+        stringATM.addAnnotations(type.getEffectiveAnnotations());
+        return stringATM;
+    }
+
+    /**
+     * Returns AnnotatedPrimitiveType with underlying type {@code narrowedTypeMirror} and
+     * annotations copied from {@code type}.
+     *
+     * Currently this method is called only for primitives that are narrowed at assignments from
+     * literal ints, for example, {@code byte b = 1;}.  All other narrowing conversions happen at
+     * typecasts.
+     *
+     * @param type type to narrow.
+     * @param narrowedTypeMirror underlying type for the returned type mirror
+     * @return result of converting {@code type} to {@code narrowedTypeMirror}
+     */
+    public AnnotatedPrimitiveType getNarrowedPrimitive(AnnotatedPrimitiveType type,
+                                                       TypeMirror narrowedTypeMirror) {
+        AnnotatedPrimitiveType narrowed = (AnnotatedPrimitiveType)
+                AnnotatedTypeMirror.createType(narrowedTypeMirror, this, type.isDeclaration());
+        narrowed.addAnnotations(type.getAnnotations());
+        return narrowed;
     }
 
     /**
@@ -2689,7 +2731,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @return the annotation mirror for anno
      */
     @Override
-    public AnnotationMirror getDeclAnnotation(Element elt,
+    public final AnnotationMirror getDeclAnnotation(Element elt,
             Class<? extends Annotation> anno) {
         String annoName = anno.getCanonicalName().intern();
         return getDeclAnnotation(elt, annoName, true);
@@ -2715,7 +2757,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @param anno annotation class
      * @return the annotation mirror for anno
      */
-    public AnnotationMirror getDeclAnnotationNoAliases(Element elt,
+    public final AnnotationMirror getDeclAnnotationNoAliases(Element elt,
             Class<? extends Annotation> anno) {
         String annoName = anno.getCanonicalName().intern();
         return getDeclAnnotation(elt, annoName, false);
@@ -3060,7 +3102,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         final TypeMirror wildcardUpperBoundTypeMirror = wildcard.getExtendsBound().getUnderlyingType();
         if (!types.isSubtype(wildcardUpperBoundTypeMirror, toModifyTypeMirror)
                 && types.isSubtype(toModifyTypeMirror, wildcardUpperBoundTypeMirror)) {
-            return AnnotatedTypes.asSuper(types, this, annotatedTypeMirror, wildcard);
+            return AnnotatedTypes.asSuper(this, annotatedTypeMirror, wildcard);
         }
 
         return annotatedTypeMirror;
