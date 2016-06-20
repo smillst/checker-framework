@@ -7,6 +7,7 @@ export SHELLOPTS
 
 ./.travis-build-without-test.sh
 ulimit -a
+ulimit -s 1082768  # Require a bit of more memory.
 
 
 # It's cheaper to run the demos test here than to trigger the
