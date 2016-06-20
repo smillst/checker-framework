@@ -6,6 +6,7 @@ set -e
 export SHELLOPTS
 
 ./.travis-build-without-test.sh
+diff --version
 
 ## Code style
 ant check-style
