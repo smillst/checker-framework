@@ -59,7 +59,7 @@ if [[ "${GROUP}" == "downstream" || "${GROUP}" == "all" ]]; then
   ##  * daikon-typecheck: (takes 2 hours)
 
   # checker-framework-inference: 18 minutes
-  (cd .. && git clone --depth 1 https://github.com/typetools/checker-framework-inference.git)
+  (cd .. && git clone --depth 1 https://github.com/smillst/checker-framework-inference.git)
   export AFU=`pwd`/../annotation-tools/annotation-file-utilities
   export PATH=$AFU/scripts:$PATH
   (cd ../checker-framework-inference && gradle dist && ant -f tests.xml run-tests)
