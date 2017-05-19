@@ -74,7 +74,7 @@ if [[ "${GROUP}" == "downstream" || "${GROUP}" == "all" ]]; then
   (cd .. && git clone --depth 1 https://github.com/typetools/checker-framework-inference.git)
   export AFU=`pwd`/../annotation-tools/annotation-file-utilities
   export PATH=$AFU/scripts:$PATH
-  (cd ../checker-framework-inference && gradle dist && ant -f tests.xml run-tests)
+  #(cd ../checker-framework-inference && gradle dist && ant -f tests.xml run-tests)
 
   # plume-lib-typecheck: 30 minutes
   (cd .. && git clone https://github.com/mernst/plume-lib.git)
