@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
@@ -106,83 +107,91 @@ public class InferenceUtils {
      *
      * @return type that path leaf is assigned to
      */
-    public static AnnotatedTypeMirror assignedTo(AnnotatedTypeFactory atypeFactory, TreePath path) {
+    public static TypeMirror assignedTo(AnnotatedTypeFactory atypeFactory, TreePath path) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(path);
-        AnnotatedTypeMirror res;
+        TypeMirror res;
         if (assignmentContext == null) {
             return null;
         }
 
         if (assignmentContext instanceof AssignmentTree) {
             ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
-            res = atypeFactory.getAnnotatedType(variable);
+            return InternalUtils.typeOf(variable);
         } else if (assignmentContext instanceof CompoundAssignmentTree) {
             ExpressionTree variable = ((CompoundAssignmentTree) assignmentContext).getVariable();
-            res = atypeFactory.getAnnotatedType(variable);
-        } else if (assignmentContext instanceof MethodInvocationTree) {
-            MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
-            // TODO move to getAssignmentContext
-            if (methodInvocation.getMethodSelect() instanceof MemberSelectTree
-                    && ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression()
-                            == path.getLeaf()) {
-                return null;
-            }
-            ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
-            AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(methodInvocation);
-            res =
-                    assignedToExecutable(
-                            atypeFactory,
-                            path,
-                            methodElt,
-                            receiver,
-                            methodInvocation.getArguments());
-        } else if (assignmentContext instanceof NewArrayTree) {
-            //TODO: I left the previous implementation below, it definitely caused infinite loops if you
-            //TODO: called it from places like the TreeAnnotator
-            res = null;
-
-            // FIXME: This may cause infinite loop
-            //            AnnotatedTypeMirror type =
-            //                    atypeFactory.getAnnotatedType((NewArrayTree)assignmentContext);
-            //            type = AnnotatedTypes.innerMostType(type);
-            //            return type;
-
-        } else if (assignmentContext instanceof NewClassTree) {
-            // This need to be basically like MethodTree
-            NewClassTree newClassTree = (NewClassTree) assignmentContext;
-            ExecutableElement constructorElt = InternalUtils.constructor(newClassTree);
-            AnnotatedTypeMirror receiver = atypeFactory.fromNewClass(newClassTree);
-            res =
-                    assignedToExecutable(
-                            atypeFactory,
-                            path,
-                            constructorElt,
-                            receiver,
-                            newClassTree.getArguments());
-        } else if (assignmentContext instanceof ReturnTree) {
-            HashSet<Kind> kinds = new HashSet<>(Arrays.asList(Kind.LAMBDA_EXPRESSION, Kind.METHOD));
-            Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
-
-            if (enclosing.getKind() == Kind.METHOD) {
-                res = (atypeFactory.getAnnotatedType((MethodTree) enclosing)).getReturnType();
-            } else {
-                Pair<AnnotatedDeclaredType, AnnotatedExecutableType> fninf =
-                        atypeFactory.getFnInterfaceFromTree((LambdaExpressionTree) enclosing);
-                res = fninf.second.getReturnType();
-            }
-
-        } else if (assignmentContext instanceof VariableTree) {
-            res = assignedToVariable(atypeFactory, assignmentContext);
-        } else {
-            ErrorReporter.errorAbort("AnnotatedTypes.assignedTo: shouldn't be here!");
-            res = null;
+            return InternalUtils.typeOf(variable);
         }
 
-        if (res != null && TypesUtils.isPrimitive(res.getUnderlyingType())) {
-            return atypeFactory.getBoxedType((AnnotatedPrimitiveType) res);
-        } else {
-            return res;
-        }
+//        switch (assignmentContext.getKind()) {
+//            case ASSIGNMENT:
+//                ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
+//                return InternalUtils.typeOf(variable);
+//            case METHOD_INVOCATION:
+//                MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
+//                // This was copied from old code.  Probably can be removed.
+//                assert methodInvocation.getMethodSelect().getKind() != Kind.MEMBER_SELECT
+//                    || ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression() != path.getLeaf();
+//                ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
+//                AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(methodInvocation);
+//                return
+//                    assignedToExecutable(
+//                        atypeFactory,
+//                        path,
+//                        methodElt,
+//                        receiver,
+//                        methodInvocation.getArguments());
+//        }
+//
+//        if (assignmentContext instanceof MethodInvocationTree) {
+//
+//        } else if (assignmentContext instanceof NewArrayTree) {
+//            //TODO: I left the previous implementation below, it definitely caused infinite loops if you
+//            //TODO: called it from places like the TreeAnnotator
+//            res = null;
+//
+//            // FIXME: This may cause infinite loop
+//            //            AnnotatedTypeMirror type =
+//            //                    atypeFactory.getAnnotatedType((NewArrayTree)assignmentContext);
+//            //            type = AnnotatedTypes.innerMostType(type);
+//            //            return type;
+//
+//        } else if (assignmentContext instanceof NewClassTree) {
+//            // This need to be basically like MethodTree
+//            NewClassTree newClassTree = (NewClassTree) assignmentContext;
+//            ExecutableElement constructorElt = InternalUtils.constructor(newClassTree);
+//            AnnotatedTypeMirror receiver = atypeFactory.fromNewClass(newClassTree);
+//            res =
+//                    assignedToExecutable(
+//                            atypeFactory,
+//                            path,
+//                            constructorElt,
+//                            receiver,
+//                            newClassTree.getArguments());
+//        } else if (assignmentContext instanceof ReturnTree) {
+//            HashSet<Kind> kinds = new HashSet<>(Arrays.asList(Kind.LAMBDA_EXPRESSION, Kind.METHOD));
+//            Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
+//
+//            if (enclosing.getKind() == Kind.METHOD) {
+//                res = (atypeFactory.getAnnotatedType((MethodTree) enclosing)).getReturnType();
+//            } else {
+//                Pair<AnnotatedDeclaredType, AnnotatedExecutableType> fninf =
+//                        atypeFactory.getFnInterfaceFromTree((LambdaExpressionTree) enclosing);
+//                res = fninf.second.getReturnType();
+//            }
+//
+//        } else if (assignmentContext instanceof VariableTree) {
+//            res = assignedToVariable(atypeFactory, assignmentContext);
+//        } else {
+//            ErrorReporter.errorAbort("AnnotatedTypes.assignedTo: shouldn't be here!");
+//            res = null;
+//        }
+//
+//        if (res != null && TypesUtils.isPrimitive(res.getUnderlyingType())) {
+//            return atypeFactory.getBoxedType((AnnotatedPrimitiveType) res);
+//        } else {
+//            return res;
+//        }
+        return null;
     }
 
     private static AnnotatedTypeMirror assignedToExecutable(
