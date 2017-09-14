@@ -1,6 +1,5 @@
 package org.checkerframework.framework.util.typeinference8.bound;
 
-import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
@@ -179,8 +179,8 @@ public class BoundSet implements ReductionResult {
     }
 
     /** Resolve all inference variables mentioned in any bound. */
-    public List<Instantiation> resolve(Types types, Theta map) {
-        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, types, map);
+    public List<Instantiation> resolve(ProcessingEnvironment env, Theta map) {
+        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, env, map);
         return b.getInstantiations(getAllInferenceVariables());
     }
 

@@ -1,14 +1,20 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
+import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class ProperType extends AbstractType {
     Types types;
@@ -23,8 +29,80 @@ public class ProperType extends AbstractType {
     }
 
     @Override
+    public AbstractType asSuper(TypeMirror first) {
+        return new ProperType(types.asSuper((Type) properType, ((Type) first).asElement()));
+    }
+
+    @Override
+    public boolean isObject() {
+        return TypesUtils.isObject(properType);
+    }
+
+    @Override
     public Kind getKind() {
         return Kind.PROPER;
+    }
+
+    @Override
+    public boolean isParameterizedType() {
+        return properType.getKind() == TypeKind.DECLARED
+                && !((DeclaredType) properType).getTypeArguments().isEmpty();
+    }
+
+    @Override
+    public AbstractType getMostSpecificArrayType() {
+        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, types);
+        return new ProperType(mostSpecific);
+    }
+
+    @Override
+    public boolean isPrimitiveArray() {
+        return properType.getKind() == TypeKind.ARRAY
+                && ((ArrayType) properType).getComponentType().getKind().isPrimitive();
+    }
+
+    @Override
+    public List<AbstractType> getIntersectionBounds() {
+        List<AbstractType> bounds = new ArrayList<>();
+        for (TypeMirror bound : ((IntersectionType) properType).getBounds()) {
+            bounds.add(new ProperType(bound));
+        }
+        return bounds;
+    }
+
+    @Override
+    public AbstractType getTypeVarLowerBound() {
+        return new ProperType(((TypeVariable) properType).getLowerBound());
+    }
+
+    @Override
+    public boolean hasLowerBound() {
+        return ((TypeVariable) properType).getLowerBound().getKind() != TypeKind.NULL;
+    }
+
+    @Override
+    public Collection<? extends Variable> getInferenceVariables() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public AbstractType getNonWildcardParameterization() {
+        return null;
+    }
+
+    @Override
+    public boolean isWildcardParameterizedType() {
+        return false;
+    }
+
+    @Override
+    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+        return null;
+    }
+
+    @Override
+    public List<AbstractType> getFunctionTypeParameters() {
+        return null;
     }
 
     @Override
@@ -34,7 +112,7 @@ public class ProperType extends AbstractType {
 
     public ProperType boxType() {
         if (properType.getKind().isPrimitive()) {
-            return new ProperType(types.boxedClass((PrimitiveType) properType).asType());
+            return new ProperType(types.boxedClass((Type) properType).asType());
         }
         return this;
     }
@@ -79,5 +157,20 @@ public class ProperType extends AbstractType {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public boolean isUnboundWildcard() {
+        return TypesUtils.isUnboundWildcard(properType);
+    }
+
+    @Override
+    public boolean isUpperBoundedWildcard() {
+        return TypesUtils.isExtendsBoundWildcard(properType);
+    }
+
+    @Override
+    public boolean isLowerBoundedWildcard() {
+        return TypesUtils.isSuperBoundWildcard(properType);
     }
 }

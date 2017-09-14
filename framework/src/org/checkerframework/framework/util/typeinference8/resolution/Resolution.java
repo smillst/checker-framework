@@ -1,9 +1,9 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
-import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Types;
 import java.util.List;
 import java.util.SortedSet;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.bound.Throws;
@@ -11,13 +11,15 @@ import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
 public class Resolution {
-    public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Types types, Theta map) {
+    public static BoundSet resolve(
+            List<Variable> as, BoundSet boundSet, ProcessingEnvironment env, Theta map) {
         if (as.isEmpty()) {
             return BoundSet.TRUE;
         }
-        Resolution resolution = new Resolution(types);
+        Resolution resolution = new Resolution(env);
         Dependencies dependencies = boundSet.getDependencies();
         BoundSet resolved = new BoundSet();
         for (Variable alpha : as) {
@@ -27,10 +29,10 @@ public class Resolution {
         return resolved;
     }
 
-    private final Types types;
+    private final ProcessingEnvironment env;
 
-    public Resolution(Types types) {
-        this.types = types;
+    public Resolution(ProcessingEnvironment env) {
+        this.env = env;
     }
 
     private BoundSet resolve(SortedSet<Variable> as, BoundSet boundSet, Theta map) {
@@ -54,10 +56,10 @@ public class Resolution {
             SortedSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             if (!lowerBounds.isEmpty()) {
                 ProperType tiProperType = lowerBounds.first();
-                Type ti = (Type) tiProperType.getProperType();
+                TypeMirror ti = tiProperType.getProperType();
                 for (ProperType liProperType : lowerBounds.tailSet(tiProperType)) {
-                    Type li = (Type) liProperType.getProperType();
-                    ti = types.lub(ti, li);
+                    TypeMirror li = liProperType.getProperType();
+                    ti = InternalUtils.lub(env, ti, li);
                 }
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
                 continue;
@@ -67,10 +69,10 @@ public class Resolution {
             SortedSet<ProperType> upperBounds = boundSet.findProperUpperBounds(ai);
             if (!upperBounds.isEmpty()) {
                 ProperType tiProperType = upperBounds.first();
-                Type ti = (Type) tiProperType.getProperType();
+                TypeMirror ti = tiProperType.getProperType();
                 for (ProperType liProperType : upperBounds.tailSet(tiProperType)) {
-                    Type li = (Type) liProperType.getProperType();
-                    ti = types.glb(ti, li);
+                    TypeMirror li = liProperType.getProperType();
+                    ti = InternalUtils.glb(env, ti, li);
                 }
                 if (!throwsBounds.isEmpty()) {
                     // TODO: if ti is Exception or Throwable ti = RuntimeException

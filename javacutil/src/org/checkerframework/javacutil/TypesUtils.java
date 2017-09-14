@@ -450,4 +450,20 @@ public final class TypesUtils {
     public static boolean isErasedSubtype(Types types, TypeMirror subtype, TypeMirror supertype) {
         return types.isSubtype(types.erasure(subtype), types.erasure(supertype));
     }
+
+    public static boolean isUnboundWildcard(TypeMirror type) {
+        return type.getKind() == TypeKind.WILDCARD && ((Type.WildcardType) type).isUnbound();
+    }
+
+    public static boolean isExtendsBoundWildcard(TypeMirror type) {
+        return type.getKind() == TypeKind.WILDCARD
+                && !isUnboundWildcard(type)
+                && ((Type.WildcardType) type).isExtendsBound();
+    }
+
+    public static boolean isSuperBoundWildcard(TypeMirror type) {
+        return type.getKind() == TypeKind.WILDCARD
+                && !isUnboundWildcard(type)
+                && ((Type.WildcardType) type).isSuperBound();
+    }
 }

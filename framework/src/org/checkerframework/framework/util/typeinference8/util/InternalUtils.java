@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class InternalUtils {
@@ -172,5 +174,39 @@ public class InternalUtils {
             }
         }
         return null;
+    }
+
+    public static TypeMirror lub(
+            ProcessingEnvironment processingEnv, TypeMirror tm1, TypeMirror tm2) {
+        Type t1 = TypeAnnotationUtils.unannotatedType(tm1);
+        Type t2 = TypeAnnotationUtils.unannotatedType(tm2);
+        JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) processingEnv;
+        Types types = Types.instance(javacEnv.getContext());
+
+        return types.lub(t1, t2);
+    }
+
+    public static TypeMirror glb(
+            ProcessingEnvironment processingEnv, TypeMirror tm1, TypeMirror tm2) {
+        Type t1 = TypeAnnotationUtils.unannotatedType(tm1);
+        Type t2 = TypeAnnotationUtils.unannotatedType(tm2);
+        JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) processingEnv;
+        Types types = Types.instance(javacEnv.getContext());
+
+        return types.glb(t1, t2);
+    }
+
+    public static TypeMirror getMostSpecificArrayType(TypeMirror type, Types types) {
+        if (type.getKind() == TypeKind.ARRAY) {
+            return type;
+        } else {
+            for (TypeMirror superType : types.directSupertypes((Type) type)) {
+                TypeMirror arrayType = getMostSpecificArrayType(superType, types);
+                if (arrayType != null) {
+                    return arrayType;
+                }
+            }
+            return null;
+        }
     }
 }

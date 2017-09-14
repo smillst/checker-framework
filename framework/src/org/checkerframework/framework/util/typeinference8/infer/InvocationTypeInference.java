@@ -5,10 +5,10 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
-import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.ExecutableType;
@@ -32,16 +32,21 @@ import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class InvocationTypeInference {
     public static InvocationTypeInference INSTANCE;
-    private final Types types;
+    private final ProcessingEnvironment env;
     private final TypeMirror object;
     private final AnnotatedTypeFactory factory;
 
-    public InvocationTypeInference(Types s, TypeMirror object, AnnotatedTypeFactory factory) {
-        types = s;
-        this.object = object;
+    public InvocationTypeInference(AnnotatedTypeFactory factory) {
+        this.env = factory.getProcessingEnv();
+        this.object =
+                TypesUtils.typeFromClass(
+                        factory.getContext().getTypeUtils(),
+                        factory.getElementUtils(),
+                        Object.class);
         this.factory = factory;
     }
 
@@ -57,7 +62,7 @@ public class InvocationTypeInference {
         ConstraintSet c = createC(element, methodInvocation, map);
 
         BoundSet b4 = getB4(map, b3, c);
-        List<Instantiation> thetaPrime = b4.resolve(types, map);
+        List<Instantiation> thetaPrime = b4.resolve(env, map);
         // TODO: implement
         boolean uncheckedConversion = false;
         if (uncheckedConversion) {}
@@ -107,7 +112,7 @@ public class InvocationTypeInference {
             ConstraintSet subset = c.getMagicalSubSet(current.getDependencies());
             c.remove(subset);
             List<Variable> alphas = c.getAllInferenceVariables();
-            current = Resolution.resolve(alphas, current, types, map);
+            current = Resolution.resolve(alphas, current, env, map);
             c.applyInstantiations(current.getInstantiations(alphas));
             BoundSet newBounds = c.reduce(map);
             current.incorporateToFixedPoint(newBounds, map);
@@ -140,7 +145,7 @@ public class InvocationTypeInference {
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
-            BoundSet resolve = Resolution.resolve(Collections.singletonList(alpha), b2, types, map);
+            BoundSet resolve = Resolution.resolve(Collections.singletonList(alpha), b2, env, map);
             ProperType u = resolve.getInstantiation(alpha);
             ConstraintSet constraintSet =
                     new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));

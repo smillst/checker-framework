@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference;
 
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ import org.checkerframework.framework.util.typeinference.solver.InferredValue;
 import org.checkerframework.framework.util.typeinference.solver.InferredValue.InferredType;
 import org.checkerframework.framework.util.typeinference.solver.SubtypesSolver;
 import org.checkerframework.framework.util.typeinference.solver.SupertypesSolver;
+import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -114,7 +116,6 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
             ExpressionTree expressionTree,
             ExecutableElement methodElem,
             AnnotatedExecutableType methodType) {
-
         //TODO: REMOVE THIS HACK WHEN YOU CAN CALL getTopAnnotations on GeneralAnnotatedTypeFactory
         //TODO: currently this will only affect inferring METHOD type arguments on constructor
         //TODO: invocations for the Nullness type system
@@ -122,9 +123,16 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
             return new HashMap<>();
         }
 
+        final TreePath pathToExpression = typeFactory.getPath(expressionTree);
+
+        if (expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
+            InvocationTypeInference java8inference = new InvocationTypeInference(typeFactory);
+            Tree t = TreeUtils.getAssignmentContext(pathToExpression);
+            //            java8inference.infer()
+        }
+
         final List<AnnotatedTypeMirror> argTypes =
                 TypeArgInferenceUtil.getArgumentTypes(expressionTree, typeFactory);
-        final TreePath pathToExpression = typeFactory.getPath(expressionTree);
         final AnnotatedTypeMirror assignedTo =
                 TypeArgInferenceUtil.assignedTo(typeFactory, pathToExpression);
 

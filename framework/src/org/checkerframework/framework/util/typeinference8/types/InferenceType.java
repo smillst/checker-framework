@@ -1,7 +1,9 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
+import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.WildcardType;
+import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -11,7 +13,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
@@ -28,6 +29,17 @@ public class InferenceType extends AbstractType {
 
     public TypeMirror getType() {
         return type;
+    }
+
+    @Override
+    public AbstractType asSuper(TypeMirror first) {
+        return InferenceTypeUtil.create(
+                types.asSuper((Type) type, ((Type) first).asElement()), map);
+    }
+
+    @Override
+    public boolean isObject() {
+        return false;
     }
 
     @Override
@@ -121,21 +133,7 @@ public class InferenceType extends AbstractType {
     }
 
     public AbstractType getMostSpecificArrayType() {
-        return InferenceTypeUtil.create(getMostSpecificArrayType(type, types), map);
-    }
-
-    private TypeMirror getMostSpecificArrayType(TypeMirror type, Types types) {
-        if (type.getKind() == TypeKind.ARRAY) {
-            return type;
-        } else {
-            for (TypeMirror superType : types.directSupertypes(type)) {
-                TypeMirror arrayType = getMostSpecificArrayType(superType, types);
-                if (arrayType != null) {
-                    return arrayType;
-                }
-            }
-            return null;
-        }
+        return InferenceTypeUtil.create(InternalUtils.getMostSpecificArrayType(type, types), map);
     }
 
     public boolean isPrimitiveArray() {
@@ -168,5 +166,25 @@ public class InferenceType extends AbstractType {
     public Collection<? extends Variable> getInferenceVariables() {
         // TODO: implement
         throw new RuntimeException("not implemented");
+    }
+
+    @Override
+    public AbstractType getNonWildcardParameterization() {
+        return null;
+    }
+
+    @Override
+    public boolean isWildcardParameterizedType() {
+        return false;
+    }
+
+    @Override
+    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+        return null;
+    }
+
+    @Override
+    public List<AbstractType> getFunctionTypeParameters() {
+        return null;
     }
 }
