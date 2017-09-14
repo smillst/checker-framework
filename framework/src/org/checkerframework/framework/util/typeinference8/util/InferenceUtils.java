@@ -8,9 +8,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
-import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
@@ -19,19 +17,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
-import org.checkerframework.framework.util.AnnotatedTypes;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 public class InferenceUtils {
 
@@ -107,105 +101,65 @@ public class InferenceUtils {
      *
      * @return type that path leaf is assigned to
      */
-    public static TypeMirror assignedTo(AnnotatedTypeFactory atypeFactory, TreePath path) {
+    public static TypeMirror assignedTo(TreePath path) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(path);
-        TypeMirror res;
         if (assignmentContext == null) {
             return null;
         }
 
-        if (assignmentContext instanceof AssignmentTree) {
-            ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
-            return InternalUtils.typeOf(variable);
-        } else if (assignmentContext instanceof CompoundAssignmentTree) {
-            ExpressionTree variable = ((CompoundAssignmentTree) assignmentContext).getVariable();
-            return InternalUtils.typeOf(variable);
+        switch (assignmentContext.getKind()) {
+            case ASSIGNMENT:
+                ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
+                return InternalUtils.typeOf(variable);
+            case VARIABLE:
+                VariableTree variableTree = (VariableTree) assignmentContext;
+                return InternalUtils.typeOf(variableTree.getType());
+            case METHOD_INVOCATION:
+                MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
+                // This was copied from old code.  Probably can be removed.
+                assert methodInvocation.getMethodSelect().getKind() != Kind.MEMBER_SELECT
+                        || ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression()
+                                != path.getLeaf();
+                ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
+                return assignedToExecutable(path, methodElt, methodInvocation.getArguments());
+            case NEW_CLASS:
+                NewClassTree newClassTree = (NewClassTree) assignmentContext;
+                ExecutableElement constructorElt = InternalUtils.constructor(newClassTree);
+                return assignedToExecutable(path, constructorElt, newClassTree.getArguments());
+            case NEW_ARRAY:
+                throw new RuntimeException("Not implement");
+            case RETURN:
+                HashSet<Kind> kinds =
+                        new HashSet<>(Arrays.asList(Kind.LAMBDA_EXPRESSION, Kind.METHOD));
+                Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
+                if (enclosing.getKind() == Kind.METHOD) {
+                    MethodTree methodTree = (MethodTree) enclosing;
+                    return InternalUtils.typeOf(methodTree.getReturnType());
+                } else {
+                    // TODO: I don't think this should happen. during inference
+                    LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclosing;
+                    return InternalUtils.typeOf(lambdaTree);
+                }
+            default:
+                if (assignmentContext
+                        .getKind()
+                        .asInterface()
+                        .equals(CompoundAssignmentTree.class)) {
+                    // 11 Tree kinds are compound assignments, so don't use it in the switch
+                    ExpressionTree var = ((CompoundAssignmentTree) assignmentContext).getVariable();
+                    return InternalUtils.typeOf(var);
+                } else {
+                    ErrorReporter.errorAbort(
+                            "Unexpected assignment context.\nKind: %s\nTree: %s",
+                            assignmentContext.getKind(), assignmentContext);
+                    return null;
+                }
         }
-
-//        switch (assignmentContext.getKind()) {
-//            case ASSIGNMENT:
-//                ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
-//                return InternalUtils.typeOf(variable);
-//            case METHOD_INVOCATION:
-//                MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
-//                // This was copied from old code.  Probably can be removed.
-//                assert methodInvocation.getMethodSelect().getKind() != Kind.MEMBER_SELECT
-//                    || ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression() != path.getLeaf();
-//                ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
-//                AnnotatedTypeMirror receiver = atypeFactory.getReceiverType(methodInvocation);
-//                return
-//                    assignedToExecutable(
-//                        atypeFactory,
-//                        path,
-//                        methodElt,
-//                        receiver,
-//                        methodInvocation.getArguments());
-//        }
-//
-//        if (assignmentContext instanceof MethodInvocationTree) {
-//
-//        } else if (assignmentContext instanceof NewArrayTree) {
-//            //TODO: I left the previous implementation below, it definitely caused infinite loops if you
-//            //TODO: called it from places like the TreeAnnotator
-//            res = null;
-//
-//            // FIXME: This may cause infinite loop
-//            //            AnnotatedTypeMirror type =
-//            //                    atypeFactory.getAnnotatedType((NewArrayTree)assignmentContext);
-//            //            type = AnnotatedTypes.innerMostType(type);
-//            //            return type;
-//
-//        } else if (assignmentContext instanceof NewClassTree) {
-//            // This need to be basically like MethodTree
-//            NewClassTree newClassTree = (NewClassTree) assignmentContext;
-//            ExecutableElement constructorElt = InternalUtils.constructor(newClassTree);
-//            AnnotatedTypeMirror receiver = atypeFactory.fromNewClass(newClassTree);
-//            res =
-//                    assignedToExecutable(
-//                            atypeFactory,
-//                            path,
-//                            constructorElt,
-//                            receiver,
-//                            newClassTree.getArguments());
-//        } else if (assignmentContext instanceof ReturnTree) {
-//            HashSet<Kind> kinds = new HashSet<>(Arrays.asList(Kind.LAMBDA_EXPRESSION, Kind.METHOD));
-//            Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
-//
-//            if (enclosing.getKind() == Kind.METHOD) {
-//                res = (atypeFactory.getAnnotatedType((MethodTree) enclosing)).getReturnType();
-//            } else {
-//                Pair<AnnotatedDeclaredType, AnnotatedExecutableType> fninf =
-//                        atypeFactory.getFnInterfaceFromTree((LambdaExpressionTree) enclosing);
-//                res = fninf.second.getReturnType();
-//            }
-//
-//        } else if (assignmentContext instanceof VariableTree) {
-//            res = assignedToVariable(atypeFactory, assignmentContext);
-//        } else {
-//            ErrorReporter.errorAbort("AnnotatedTypes.assignedTo: shouldn't be here!");
-//            res = null;
-//        }
-//
-//        if (res != null && TypesUtils.isPrimitive(res.getUnderlyingType())) {
-//            return atypeFactory.getBoxedType((AnnotatedPrimitiveType) res);
-//        } else {
-//            return res;
-//        }
-        return null;
     }
 
-    private static AnnotatedTypeMirror assignedToExecutable(
-            AnnotatedTypeFactory atypeFactory,
-            TreePath path,
-            ExecutableElement methodElt,
-            AnnotatedTypeMirror receiver,
-            List<? extends ExpressionTree> arguments) {
-        AnnotatedExecutableType method =
-                AnnotatedTypes.asMemberOf(
-                        atypeFactory.getContext().getTypeUtils(),
-                        atypeFactory,
-                        receiver,
-                        methodElt);
+    private static TypeMirror assignedToExecutable(
+            TreePath path, ExecutableElement methodElt, List<? extends ExpressionTree> arguments) {
+
         int treeIndex = -1;
         for (int i = 0; i < arguments.size(); ++i) {
             ExpressionTree argumentTree = arguments.get(i);
@@ -214,25 +168,16 @@ public class InferenceUtils {
                 break;
             }
         }
+
         assert treeIndex != -1
                 : "Could not find path in MethodInvocationTree.\n" + "treePath=" + path.toString();
-        final AnnotatedTypeMirror paramType;
-        if (treeIndex >= method.getParameterTypes().size() && methodElt.isVarArgs()) {
-            paramType = method.getParameterTypes().get(method.getParameterTypes().size() - 1);
-        } else {
-            paramType = method.getParameterTypes().get(treeIndex);
+
+        if (treeIndex >= methodElt.getParameters().size() && methodElt.isVarArgs()) {
+            treeIndex = methodElt.getParameters().size() - 1;
         }
 
-        // Examples like this:
-        // <T> T outMethod()
-        // <U> void inMethod(U u);
-        // inMethod(outMethod())
-        // would require solving the constraints for both type argument inferences simultaneously
-        if (paramType == null || containsUninferredTypeParameter(paramType, method)) {
-            return null;
-        }
-
-        return paramType;
+        VariableElement paramElement = methodElt.getParameters().get(treeIndex);
+        return ElementUtils.getType(paramElement);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUti
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -39,8 +41,9 @@ public class InvocationTypeInference {
     private final ProcessingEnvironment env;
     private final TypeMirror object;
     private final AnnotatedTypeFactory factory;
+    private final TreePath pathToExpression;
 
-    public InvocationTypeInference(AnnotatedTypeFactory factory) {
+    public InvocationTypeInference(AnnotatedTypeFactory factory, TreePath pathToExpression) {
         this.env = factory.getProcessingEnv();
         this.object =
                 TypesUtils.typeFromClass(
@@ -48,6 +51,12 @@ public class InvocationTypeInference {
                         factory.getElementUtils(),
                         Object.class);
         this.factory = factory;
+        this.pathToExpression = pathToExpression;
+    }
+
+    public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
+        ProperType r = new ProperType(InferenceUtils.assignedTo(pathToExpression));
+        return infer(methodInvocation, r);
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
