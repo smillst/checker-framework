@@ -2,9 +2,8 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
@@ -26,7 +25,7 @@ public class BoundsForVar {
     private final VarBounds lowerBounds = new VarBounds();
     private final VarBounds equalBounds = new VarBounds();
 
-    private final SortedSet<Constraint> toIncorporate = new TreeSet<>();
+    private final LinkedHashSet<Constraint> toIncorporate = new LinkedHashSet<>();
 
     public BoundsForVar(Variable var) {
         this.var = var;
@@ -104,12 +103,12 @@ public class BoundsForVar {
         return true;
     }
 
-    private SortedSet<Constraint> getConstraintsFromParameterized(
+    private LinkedHashSet<Constraint> getConstraintsFromParameterized(
             Pair<TypeMirror, TypeMirror> pair, AbstractType s, AbstractType t) {
         if (pair == null) {
-            return new TreeSet<>();
+            return new LinkedHashSet<>();
         }
-        SortedSet<Constraint> constraints = new TreeSet<>();
+        LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
 
         List<AbstractType> ss = s.asSuper(pair.first).getTypeArguments();
         List<AbstractType> ts = t.asSuper(pair.second).getTypeArguments();
@@ -162,11 +161,11 @@ public class BoundsForVar {
         return !upperBounds.properTypes.isEmpty();
     }
 
-    public SortedSet<ProperType> getProperLowerBounds() {
+    public LinkedHashSet<ProperType> getProperLowerBounds() {
         return lowerBounds.properTypes;
     }
 
-    public SortedSet<ProperType> getProperUpperBounds() {
+    public LinkedHashSet<ProperType> getProperUpperBounds() {
         return upperBounds.properTypes;
     }
 
@@ -191,7 +190,7 @@ public class BoundsForVar {
         if (equalBounds.properTypes.size() != 1) {
             ErrorReporter.errorAbort("Should be only one instantiation.");
         }
-        return equalBounds.properTypes.first();
+        return equalBounds.properTypes.iterator().next();
     }
 
     public boolean hasInstantiation() {
@@ -306,14 +305,14 @@ public class BoundsForVar {
     }
 
     private static class VarBounds {
-        final SortedSet<ProperType> properTypes;
-        final SortedSet<Variable> variables;
-        final SortedSet<InferenceType> inferenceTypes;
+        final LinkedHashSet<ProperType> properTypes;
+        final LinkedHashSet<Variable> variables;
+        final LinkedHashSet<InferenceType> inferenceTypes;
 
         VarBounds() {
-            this.properTypes = new TreeSet<>();
-            this.variables = new TreeSet<>();
-            this.inferenceTypes = new TreeSet<>();
+            this.properTypes = new LinkedHashSet<>();
+            this.variables = new LinkedHashSet<>();
+            this.inferenceTypes = new LinkedHashSet<>();
         }
 
         boolean add(AbstractType t) {

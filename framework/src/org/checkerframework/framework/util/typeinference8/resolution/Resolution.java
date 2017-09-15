@@ -1,7 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.SortedSet;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
@@ -35,7 +35,7 @@ public class Resolution {
         this.env = env;
     }
 
-    private BoundSet resolve(SortedSet<Variable> as, BoundSet boundSet, Theta map) {
+    private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet, Theta map) {
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
             resolvedBounds = resolve2(as, boundSet);
@@ -50,32 +50,39 @@ public class Resolution {
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-A */
-    private BoundSet resolve1(SortedSet<Variable> as, BoundSet boundSet, Theta map) {
+    private BoundSet resolve1(LinkedHashSet<Variable> as, BoundSet boundSet, Theta map) {
         BoundSet resolvedBoundSet = new BoundSet();
         for (Variable ai : as) {
-            SortedSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
+            LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             if (!lowerBounds.isEmpty()) {
-                ProperType tiProperType = lowerBounds.first();
-                TypeMirror ti = tiProperType.getProperType();
-                for (ProperType liProperType : lowerBounds.tailSet(tiProperType)) {
+                TypeMirror ti = null;
+                for (ProperType liProperType : lowerBounds) {
                     TypeMirror li = liProperType.getProperType();
-                    ti = InternalUtils.lub(env, ti, li);
+                    if (ti == null) {
+                        ti = li;
+                    } else {
+                        ti = InternalUtils.lub(env, ti, li);
+                    }
                 }
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
                 continue;
             }
 
             List<Throws> throwsBounds = boundSet.findThrowsBounds(ai);
-            SortedSet<ProperType> upperBounds = boundSet.findProperUpperBounds(ai);
+            LinkedHashSet<ProperType> upperBounds = boundSet.findProperUpperBounds(ai);
             if (!upperBounds.isEmpty()) {
-                ProperType tiProperType = upperBounds.first();
-                TypeMirror ti = tiProperType.getProperType();
-                for (ProperType liProperType : upperBounds.tailSet(tiProperType)) {
+                TypeMirror ti = null;
+                for (ProperType liProperType : upperBounds) {
                     TypeMirror li = liProperType.getProperType();
-                    ti = InternalUtils.glb(env, ti, li);
+                    if (ti == null) {
+                        ti = li;
+                    } else {
+                        ti = InternalUtils.glb(env, ti, li);
+                    }
                 }
                 if (!throwsBounds.isEmpty()) {
                     // TODO: if ti is Exception or Throwable ti = RuntimeException
+                    throw new RuntimeException("Not implemented.");
                 }
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
                 continue;
@@ -89,7 +96,7 @@ public class Resolution {
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-B */
-    private static BoundSet resolve2(SortedSet<Variable> as, BoundSet boundSet) {
+    private static BoundSet resolve2(LinkedHashSet<Variable> as, BoundSet boundSet) {
         throw new RuntimeException("Not Implemented");
     }
 }

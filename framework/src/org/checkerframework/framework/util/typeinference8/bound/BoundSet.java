@@ -3,10 +3,9 @@ package org.checkerframework.framework.util.typeinference8.bound;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
@@ -38,8 +37,8 @@ public class BoundSet implements ReductionResult {
     public static final BoundSet FALSE = new BoundSet(Bound.FALSE);
 
     private final Map<Variable, BoundsForVar> boundsOnVariables;
-    private final SortedSet<Capture> captures;
-    private final SortedSet<Throws> throwsList;
+    private final LinkedHashSet<Capture> captures;
+    private final LinkedHashSet<Throws> throwsList;
 
     private boolean isFalse = false;
 
@@ -50,8 +49,8 @@ public class BoundSet implements ReductionResult {
 
     public BoundSet() {
         boundsOnVariables = new HashMap<>();
-        captures = new TreeSet<>();
-        throwsList = new TreeSet<>();
+        captures = new LinkedHashSet<>();
+        throwsList = new LinkedHashSet<>();
     }
 
     public boolean add(BoundSet newSet) {
@@ -126,9 +125,10 @@ public class BoundSet implements ReductionResult {
         } else if (bound instanceof ProperLowerBound || bound instanceof NonProperLowerBound) {
             Variable var = (Variable) bound.getSupertype();
             getBoundsForVar(var).addLowerBound(bound.getSubtype());
+        } else {
+            ErrorReporter.errorAbort("Unexpected type");
+            throw new RuntimeException("");
         }
-        ErrorReporter.errorAbort("Unexpected type");
-        throw new RuntimeException("");
     }
 
     private BoundsForVar getBoundsForVar(Variable var) {
@@ -156,11 +156,11 @@ public class BoundSet implements ReductionResult {
         return getBoundsForVar(a).hasProperUpperBound();
     }
 
-    public SortedSet<ProperType> findProperLowerBounds(Variable a) {
+    public LinkedHashSet<ProperType> findProperLowerBounds(Variable a) {
         return getBoundsForVar(a).getProperLowerBounds();
     }
 
-    public SortedSet<ProperType> findProperUpperBounds(Variable a) {
+    public LinkedHashSet<ProperType> findProperUpperBounds(Variable a) {
         return getBoundsForVar(a).getProperUpperBounds();
     }
 
@@ -188,10 +188,10 @@ public class BoundSet implements ReductionResult {
     public Dependencies getDependencies() {
         Dependencies dependencies = new Dependencies();
 
-        SortedSet<Variable> lhsCapture = new TreeSet<>();
+        LinkedHashSet<Variable> lhsCapture = new LinkedHashSet<>();
         for (Capture capture : captures) {
-            SortedSet<Variable> lhsVars = capture.getAllIVOnLHS();
-            SortedSet<Variable> rhsVars = capture.getAllIVOnRHS();
+            LinkedHashSet<Variable> lhsVars = capture.getAllIVOnLHS();
+            LinkedHashSet<Variable> rhsVars = capture.getAllIVOnRHS();
             for (Variable var : lhsVars) {
                 // An inference variable alpha appearing on the left-hand side of a bound of the
                 // form G<..., alpha, ...> = capture(G<...>) depends on the resolution of every
@@ -204,7 +204,7 @@ public class BoundSet implements ReductionResult {
         }
 
         for (Variable alpha : getAllInferenceVariables()) {
-            SortedSet<Variable> alphaDependencies = new TreeSet<>();
+            LinkedHashSet<Variable> alphaDependencies = new LinkedHashSet<>();
             // An inference variable alpha depends on the resolution of itself.
             alphaDependencies.add(alpha);
 

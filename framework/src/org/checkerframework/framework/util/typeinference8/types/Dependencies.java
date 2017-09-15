@@ -1,28 +1,27 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 public class Dependencies {
-    private final Map<Variable, SortedSet<Variable>> map = new LinkedHashMap<>();
+    private final Map<Variable, LinkedHashSet<Variable>> map = new LinkedHashMap<>();
 
     public boolean putOrAdd(Variable key, Variable value) {
-        SortedSet<Variable> set = map.get(key);
+        LinkedHashSet<Variable> set = map.get(key);
         if (set == null) {
-            set = new TreeSet<>();
+            set = new LinkedHashSet<>();
             map.put(key, set);
         }
         return set.add(value);
     }
 
-    public boolean putOrAddAll(Variable key, SortedSet<Variable> value) {
-        SortedSet<Variable> set = map.get(key);
+    public boolean putOrAddAll(Variable key, LinkedHashSet<Variable> value) {
+        LinkedHashSet<Variable> set = map.get(key);
         if (set == null) {
-            set = new TreeSet<>();
+            set = new LinkedHashSet<>();
             map.put(key, set);
         }
         return set.addAll(value);
@@ -35,10 +34,10 @@ public class Dependencies {
         boolean changed = true;
         while (changed) {
             changed = false;
-            for (Entry<Variable, SortedSet<Variable>> entry : map.entrySet()) {
+            for (Entry<Variable, LinkedHashSet<Variable>> entry : map.entrySet()) {
                 Variable alpha = entry.getKey();
-                SortedSet<Variable> gammas = entry.getValue();
-                SortedSet<Variable> betas = new TreeSet<>();
+                LinkedHashSet<Variable> gammas = entry.getValue();
+                LinkedHashSet<Variable> betas = new LinkedHashSet<>();
                 for (Variable gamma : gammas) {
                     if (gamma.equals(alpha)) {
                         continue;
@@ -50,12 +49,12 @@ public class Dependencies {
         }
     }
 
-    public SortedSet<Variable> get(Variable alpha) {
+    public LinkedHashSet<Variable> get(Variable alpha) {
         return map.get(alpha);
     }
 
-    public SortedSet<Variable> get(List<Variable> variables) {
-        SortedSet<Variable> set = new TreeSet<>();
+    public LinkedHashSet<Variable> get(List<Variable> variables) {
+        LinkedHashSet<Variable> set = new LinkedHashSet<>();
         for (Variable v : variables) {
             set.addAll(get(v));
         }

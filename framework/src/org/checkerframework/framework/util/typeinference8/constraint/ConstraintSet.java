@@ -3,9 +3,9 @@ package org.checkerframework.framework.util.typeinference8.constraint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
@@ -61,8 +61,8 @@ public class ConstraintSet implements ReductionResult {
      */
     public ConstraintSet getMagicalSubSet(Dependencies dependencies) {
         ConstraintSet subset = new ConstraintSet();
-        Set<Variable> inputDependencies = new TreeSet<>();
-        Set<Variable> outDependencies = new TreeSet<>();
+        Set<Variable> inputDependencies = new LinkedHashSet<>();
+        Set<Variable> outDependencies = new LinkedHashSet<>();
         for (Constraint c : list) {
             if (c.getKind() == Kind.EXPRESSION
                     || c.getKind() == Kind.LAMBDA_EXCEPTION

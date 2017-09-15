@@ -2,9 +2,8 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
@@ -78,12 +77,12 @@ public class Capture extends Bound {
         return Kind.CAPTURE;
     }
 
-    public SortedSet<Variable> getAllIVOnLHS() {
-        return new TreeSet<>(map.values());
+    public LinkedHashSet<Variable> getAllIVOnLHS() {
+        return new LinkedHashSet<>(map.values());
     }
 
-    public SortedSet<Variable> getAllIVOnRHS() {
-        SortedSet<Variable> set = new TreeSet<>();
+    public LinkedHashSet<Variable> getAllIVOnRHS() {
+        LinkedHashSet<Variable> set = new LinkedHashSet<>();
         for (CaptureTuple tuple : tuples) {
             if (tuple.typeArg.getKind() == AbstractType.Kind.VARIABLE) {
                 set.add((Variable) tuple.typeArg);
