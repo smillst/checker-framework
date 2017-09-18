@@ -21,7 +21,7 @@ public abstract class Equal extends Bound {
         final Variable a;
         final ProperType t;
 
-        private Instantiation(Variable a, ProperType t) {
+        public Instantiation(Variable a, ProperType t) {
             this.a = a;
             this.t = t;
         }

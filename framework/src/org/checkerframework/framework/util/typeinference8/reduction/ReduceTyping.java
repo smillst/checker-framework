@@ -1,20 +1,24 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
+import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
 
-    public static ReductionResult reduceSubtyping(Typing c) {
+    public static ReductionResult reduceSubtyping(Typing c, Context context) {
         AbstractType s = c.getS();
         AbstractType t = c.getT();
 
@@ -33,9 +37,9 @@ public class ReduceTyping {
 
         switch (c.getT().getTypeKind()) {
             case DECLARED:
-                return reduceSubtypeClass(c);
+                return reduceSubtypeClass(c, context);
             case ARRAY:
-                return reduceSubtypeArray(c);
+                return reduceSubtypeArray(c, context);
             case TYPEVAR:
             case WILDCARD: // ?
                 return reduceSubtypeTypeVariable(c);
@@ -45,22 +49,38 @@ public class ReduceTyping {
         return BoundSet.FALSE;
     }
 
-    private static ReductionResult reduceSubtypeClass(Typing c) {
+    private static ReductionResult reduceSubtypeClass(Typing c, Context context) {
         if (c.getT().isParameterizedType()) {
-            throw new RuntimeException("Not Implemented");
             // let A1, ..., An be the type arguments of T. Among the supertypes of S, a
             // corresponding class or interface type is identified, with type arguments B1, ...,
             // Bn. If no such type exists, the constraint reduces to false. Otherwise, the
             // constraint reduces to the following new constraints:
             // for all i (1 <= i <= n), ‹Bi <= Ai›.
+
+            AbstractType t = c.getT();
+            AbstractType s = c.getS();
+
+            TypeMirror tTypeMirror =
+                    t.isProper() ? ((ProperType) t).getProperType() : ((InferenceType) t).getType();
+            AbstractType sAsSuper = s.asSuper(tTypeMirror, context);
+
+            List<AbstractType> Bs = sAsSuper.getTypeArguments();
+            Iterator<AbstractType> As = t.getTypeArguments().iterator();
+            ConstraintSet set = new ConstraintSet();
+            for (AbstractType b : Bs) {
+                AbstractType a = As.next();
+                set.add(new Typing(b, a, Kind.CONTAINED));
+            }
+
+            return set;
         } else {
             //the constraint reduces to true if T is among the supertypes of S, and false otherwise.
             return BoundSet.TRUE;
         }
     }
 
-    private static ReductionResult reduceSubtypeArray(Typing c) {
-        AbstractType s = c.getS().getMostSpecificArrayType();
+    private static ReductionResult reduceSubtypeArray(Typing c, Context context) {
+        AbstractType s = c.getS().getMostSpecificArrayType(context);
         if (s.isPrimitiveArray() && c.getT().isPrimitiveArray()) {
             return BoundSet.TRUE;
         } else {
@@ -120,7 +140,7 @@ public class ReduceTyping {
         }
     }
 
-    public static ReductionResult reduceCompatible(Typing c) {
+    public static ReductionResult reduceCompatible(Typing c, Context context) {
         ProperType t = null;
         ProperType s = null;
         if (c.getT().isProper()) {
@@ -136,9 +156,9 @@ public class ReduceTyping {
             // with T (§5.3), and false otherwise.
             return BoundSet.TRUE;
         } else if (s != null && s.getTypeKind().isPrimitive()) {
-            return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
+            return new Typing(s.boxType(context), c.getT(), Kind.TYPE_COMPATIBILITY);
         } else if (t != null && t.getTypeKind().isPrimitive()) {
-            return new Typing(c.getS(), t.boxType(), Kind.TYPE_EQUALITY);
+            return new Typing(c.getS(), t.boxType(context), Kind.TYPE_EQUALITY);
 
         } else {
             // TODO: handle unchecked conversions

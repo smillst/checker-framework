@@ -3,26 +3,24 @@ package org.checkerframework.framework.util.typeinference8.types;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.WildcardType;
-import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
 public class InferenceType extends AbstractType {
-    Types types;
-    ProcessingEnvironment env;
     final TypeMirror type;
     final Theta map;
 
-    public InferenceType(TypeMirror type, Theta map) {
+    InferenceType(TypeMirror type, Theta map) {
         this.type = type;
         this.map = map;
     }
@@ -32,9 +30,9 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first) {
+    public AbstractType asSuper(TypeMirror first, Context context) {
         return InferenceTypeUtil.create(
-                types.asSuper((Type) type, ((Type) first).asElement()), map);
+                context.types.asSuper((Type) type, ((Type) first).asElement()), map);
     }
 
     @Override
@@ -63,8 +61,8 @@ public class InferenceType extends AbstractType {
         return false;
     }
 
-    public InferenceType getTypeVarLowerBound() {
-        return new InferenceType(((TypeVar) type).getLowerBound(), map);
+    public AbstractType getTypeVarLowerBound() {
+        return InferenceTypeUtil.create(((TypeVar) type).getLowerBound(), map);
     }
 
     public boolean isUnboundWildcard() {
@@ -132,8 +130,9 @@ public class InferenceType extends AbstractType {
         return InferenceTypeUtil.isParameterizedType(type);
     }
 
-    public AbstractType getMostSpecificArrayType() {
-        return InferenceTypeUtil.create(InternalUtils.getMostSpecificArrayType(type, types), map);
+    public AbstractType getMostSpecificArrayType(Context context) {
+        return InferenceTypeUtil.create(
+                InternalUtils.getMostSpecificArrayType(type, context.types), map);
     }
 
     public boolean isPrimitiveArray() {
@@ -154,13 +153,6 @@ public class InferenceType extends AbstractType {
         return boundTypes;
     }
 
-    public AbstractType applyInstantiation(Instantiation instantiation) {
-        TypeMirror newType =
-                InternalUtils.subs(
-                        env, type, instantiation.getA().p, instantiation.getT().getProperType());
-        return InferenceTypeUtil.create(newType, map);
-    }
-
     /** @return all inference variables mentioned in this type. */
     @Override
     public Collection<? extends Variable> getInferenceVariables() {
@@ -179,8 +171,17 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
-        return null;
+    public AbstractType applyInstantiations(List<Instantiation> instantiations, Context context) {
+        List<TypeVariable> typeVariables = new ArrayList<>(instantiations.size());
+        List<TypeMirror> arguments = new ArrayList<>(instantiations.size());
+
+        for (Instantiation instantiation : instantiations) {
+            typeVariables.add(instantiation.getA().p);
+            arguments.add(instantiation.getT().getProperType());
+        }
+
+        TypeMirror newType = InternalUtils.subs(context.env, type, typeVariables, arguments);
+        return InferenceTypeUtil.create(newType, map);
     }
 
     @Override

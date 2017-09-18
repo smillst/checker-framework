@@ -9,13 +9,14 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Reduce {
-    public BoundSet reduce(ConstraintSet constraintSet, Theta map) {
-        BoundSet boundSet = new BoundSet();
+    public BoundSet reduce(ConstraintSet constraintSet, Theta map, Context context) {
+        BoundSet boundSet = new BoundSet(context);
         while (!constraintSet.isEmpty()) {
             Constraint constraint = constraintSet.pop();
-            ReductionResult result = reduce(constraint, map);
+            ReductionResult result = reduce(constraint, map, context);
             if (result instanceof Constraint) {
                 constraintSet.add((Constraint) result);
             } else if (result instanceof ConstraintSet) {
@@ -31,14 +32,14 @@ public class Reduce {
         return boundSet;
     }
 
-    public ReductionResult reduce(Constraint constraint, Theta map) {
+    public ReductionResult reduce(Constraint constraint, Theta map, Context context) {
         switch (constraint.getKind()) {
             case EXPRESSION:
-                return ReduceExpression.reduce((Expression) constraint, map);
+                return ReduceExpression.reduce((Expression) constraint, map, context);
             case TYPE_COMPATIBILITY:
-                return ReduceTyping.reduceCompatible((Typing) constraint);
+                return ReduceTyping.reduceCompatible((Typing) constraint, context);
             case SUBTYPE:
-                return ReduceTyping.reduceSubtyping((Typing) constraint);
+                return ReduceTyping.reduceSubtyping((Typing) constraint, context);
             case CONTAINED:
                 return ReduceTyping.reduceContained((Typing) constraint);
             case TYPE_EQUALITY:

@@ -9,6 +9,7 @@ import org.checkerframework.framework.util.typeinference8.reduction.ReductionRes
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 
 /**
  * Created by smillst on 12/7/16.
@@ -49,6 +50,7 @@ public abstract class Constraint implements ReductionResult {
     protected AbstractType T;
 
     protected Constraint(AbstractType t) {
+        assert t != null;
         T = t;
     }
 
@@ -62,8 +64,8 @@ public abstract class Constraint implements ReductionResult {
 
     public abstract List<Variable> getOutputVariables();
 
-    protected void applyInstantiations(List<Instantiation> instantiations) {
-        T = T.applyInstantiations(instantiations);
+    protected void applyInstantiations(List<Instantiation> instantiations, Context context) {
+        T = T.applyInstantiations(instantiations, context);
     }
 
     public static class Typing extends Constraint {
@@ -72,6 +74,7 @@ public abstract class Constraint implements ReductionResult {
 
         public Typing(AbstractType s, AbstractType t, Kind kind) {
             super(t);
+            assert s != null;
             this.S = s;
             this.kind = kind;
         }
@@ -96,9 +99,9 @@ public abstract class Constraint implements ReductionResult {
         }
 
         @Override
-        protected void applyInstantiations(List<Instantiation> instantiations) {
-            super.applyInstantiations(instantiations);
-            S = S.applyInstantiations(instantiations);
+        protected void applyInstantiations(List<Instantiation> instantiations, Context context) {
+            super.applyInstantiations(instantiations, context);
+            S = S.applyInstantiations(instantiations, context);
         }
     }
 

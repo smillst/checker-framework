@@ -1,11 +1,13 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Variable extends AbstractType {
     final TypeVariable p;
@@ -15,8 +17,8 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first) {
-        throw new RuntimeException("Not implemented");
+    public AbstractType asSuper(TypeMirror first, Context context) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -35,8 +37,8 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType getMostSpecificArrayType() {
-        return null;
+    public AbstractType getMostSpecificArrayType(Context context) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -66,7 +68,7 @@ public class Variable extends AbstractType {
 
     @Override
     public Collection<? extends Variable> getInferenceVariables() {
-        return null;
+        return Collections.singleton(this);
     }
 
     @Override
@@ -80,8 +82,8 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
-        return null;
+    public AbstractType applyInstantiations(List<Instantiation> instantiations, Context context) {
+        return this;
     }
 
     @Override

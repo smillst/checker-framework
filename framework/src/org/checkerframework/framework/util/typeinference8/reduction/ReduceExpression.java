@@ -16,18 +16,18 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
-import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUtil;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class ReduceExpression {
     /** See JLS 18.2.1 */
-    public static ReductionResult reduce(Expression constraint, Theta map) {
+    public static ReductionResult reduce(Expression constraint, Theta map, Context context) {
         switch (constraint.getExpressionKind()) {
             case PROPER_TYPE:
                 return reduceProperType(constraint);
@@ -36,7 +36,7 @@ public class ReduceExpression {
             case PARENTHESIZED:
                 return reduceParenthesized(constraint);
             case METHOD_INVOCATION:
-                return reduceMethodInvocation(constraint, map);
+                return reduceMethodInvocation(constraint, map, context);
             case CONDITIONAL:
                 return reduceConditional(constraint);
             case LAMBDA:
@@ -164,7 +164,8 @@ public class ReduceExpression {
      * <p>This bound set may contain new inference variables, as well as dependencies between these
      * new variables and the inference variables in T.
      */
-    private static ReductionResult reduceMethodInvocation(Expression constraint, Theta map) {
+    private static ReductionResult reduceMethodInvocation(
+            Expression constraint, Theta map, Context context) {
         if (constraint.getExpression().getKind() == Kind.NEW_CLASS) {
             throw new RuntimeException("Not implemented");
         }
@@ -172,9 +173,8 @@ public class ReduceExpression {
         MethodInvocationTree methodInvocation = (MethodInvocationTree) constraint.getExpression();
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         map.putAll(Theta.theta(element));
-        BoundSet b2 = InvocationTypeInference.INSTANCE.createB2(methodInvocation, map);
-        return InvocationTypeInference.INSTANCE.createB3(
-                b2, methodInvocation, constraint.getT(), map);
+        BoundSet b2 = context.inference.createB2(methodInvocation, map);
+        return context.inference.createB3(b2, methodInvocation, constraint.getT(), map);
     }
 
     private static Constraint reduceParenthesized(Expression constraint) {

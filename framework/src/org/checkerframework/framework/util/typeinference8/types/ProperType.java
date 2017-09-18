@@ -1,7 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,11 +12,11 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class ProperType extends AbstractType {
-    Types types;
     private final TypeMirror properType;
 
     public ProperType(TypeMirror properType) {
@@ -29,8 +28,8 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first) {
-        return new ProperType(types.asSuper((Type) properType, ((Type) first).asElement()));
+    public AbstractType asSuper(TypeMirror first, Context context) {
+        return new ProperType(context.types.asSuper((Type) properType, ((Type) first).asElement()));
     }
 
     @Override
@@ -50,8 +49,8 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType getMostSpecificArrayType() {
-        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, types);
+    public AbstractType getMostSpecificArrayType(Context context) {
+        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, context.types);
         return new ProperType(mostSpecific);
     }
 
@@ -96,8 +95,8 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
-        return null;
+    public AbstractType applyInstantiations(List<Instantiation> instantiations, Context context) {
+        return this;
     }
 
     @Override
@@ -110,9 +109,9 @@ public class ProperType extends AbstractType {
         return properType.getKind();
     }
 
-    public ProperType boxType() {
+    public ProperType boxType(Context context) {
         if (properType.getKind().isPrimitive()) {
-            return new ProperType(types.boxedClass((Type) properType).asType());
+            return new ProperType(context.types.boxedClass((Type) properType).asType());
         }
         return this;
     }

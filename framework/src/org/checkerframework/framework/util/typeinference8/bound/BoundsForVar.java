@@ -15,6 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 
@@ -26,9 +27,11 @@ public class BoundsForVar {
     private final VarBounds equalBounds = new VarBounds();
 
     private final LinkedHashSet<Constraint> toIncorporate = new LinkedHashSet<>();
+    private final Context context;
 
-    public BoundsForVar(Variable var) {
+    public BoundsForVar(Variable var, Context context) {
         this.var = var;
+        this.context = context;
     }
 
     /** var = s */
@@ -110,8 +113,8 @@ public class BoundsForVar {
         }
         LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
 
-        List<AbstractType> ss = s.asSuper(pair.first).getTypeArguments();
-        List<AbstractType> ts = t.asSuper(pair.second).getTypeArguments();
+        List<AbstractType> ss = s.asSuper(pair.first, context).getTypeArguments();
+        List<AbstractType> ts = t.asSuper(pair.second, context).getTypeArguments();
         assert ss.size() == ts.size();
 
         for (int i = 0; i < ss.size(); i++) {
@@ -209,19 +212,19 @@ public class BoundsForVar {
 
         // var = T imply <varPrime = T[alpha:=U]›
         for (AbstractType T : equalBounds.getAll()) {
-            AbstractType tPrime = T.applyInstantiations(instantiations);
+            AbstractType tPrime = T.applyInstantiations(instantiations, context);
             constraintSet.add(new Typing(varPrime, tPrime, Kind.TYPE_EQUALITY));
         }
 
         // var <: T imply <varPrime <: T[alpha:=U]›
         for (AbstractType T : upperBounds.getAll()) {
-            AbstractType tPrime = T.applyInstantiations(instantiations);
+            AbstractType tPrime = T.applyInstantiations(instantiations, context);
             constraintSet.add(new Typing(varPrime, tPrime, Kind.SUBTYPE));
         }
 
         // S <: var imply <S[alpha:=U] <: varPrime]›
         for (AbstractType s : upperBounds.getAll()) {
-            AbstractType sPrime = s.applyInstantiations(instantiations);
+            AbstractType sPrime = s.applyInstantiations(instantiations, context);
             constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
         }
         return constraintSet;

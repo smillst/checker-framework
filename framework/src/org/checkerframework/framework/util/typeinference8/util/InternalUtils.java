@@ -36,12 +36,23 @@ public class InternalUtils {
     }
 
     public static TypeMirror subs(
-            ProcessingEnvironment env, TypeMirror type, TypeVariable p, TypeMirror t) {
+            ProcessingEnvironment env, TypeMirror type, List<TypeVariable> p, List<TypeMirror> t) {
+
+        List<Type> newP = new ArrayList<>();
+        for (TypeVariable typeVariable : p) {
+            newP.add((Type) typeVariable);
+        }
+
+        List<Type> newT = new ArrayList<>();
+        for (TypeMirror typeMirror : t) {
+            newT.add((Type) typeMirror);
+        }
+
         Types types = getTypes(env);
         return types.subst(
                 (Type) type,
-                com.sun.tools.javac.util.List.of((Type) p),
-                com.sun.tools.javac.util.List.of((Type) t));
+                com.sun.tools.javac.util.List.from(newP),
+                com.sun.tools.javac.util.List.from(newT));
     }
 
     public static boolean isImplicitlyType(Tree lambdaTree) {

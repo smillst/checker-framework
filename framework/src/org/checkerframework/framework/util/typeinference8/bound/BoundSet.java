@@ -6,8 +6,12 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.bound.Subtype.NonProperLowerBound;
@@ -20,9 +24,11 @@ import org.checkerframework.framework.util.typeinference8.reduction.ReductionRes
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
+import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUtil;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 
 public class BoundSet implements ReductionResult {
@@ -32,25 +38,88 @@ public class BoundSet implements ReductionResult {
      */
     private static final int MAX_INCORPORATION_STEPS = 100;
 
-    public static final BoundSet TRUE = new BoundSet();
+    public static final BoundSet TRUE = new BoundSet(null);
 
-    public static final BoundSet FALSE = new BoundSet(Bound.FALSE);
+    public static final BoundSet FALSE = new BoundSet(Bound.FALSE, null);
 
     private final Map<Variable, BoundsForVar> boundsOnVariables;
     private final LinkedHashSet<Capture> captures;
     private final LinkedHashSet<Throws> throwsList;
 
+    private final Context context;
+
     private boolean isFalse = false;
 
-    private BoundSet(Bound false1) {
-        this();
+    private BoundSet(Bound false1, Context context) {
+        this(context);
         add(false1);
     }
 
-    public BoundSet() {
+    public BoundSet(Context context) {
         boundsOnVariables = new HashMap<>();
         captures = new LinkedHashSet<>();
         throwsList = new LinkedHashSet<>();
+        this.context = context;
+    }
+
+    /**
+     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.3-410:
+     *
+     * <p>When inference begins, a bound set is typically generated from a list of type parameter
+     * declarations P1, ..., Pp and associated inference variables a1, ..., ap.
+     *
+     * <p>Such a bound set is constructed as follows:
+     *
+     * <p>For each l ({@literal 1 <= l <= p)}:
+     *
+     * <p>If Pl has no TypeBound, the bound {@literal al <:Object} appears in the set.
+     *
+     * <p>Otherwise, for each type T delimited by & in the TypeBound, the bound {@literal al <:
+     * T[P1:=a1,..., Pp:=ap]} appears in the set; if this results in no proper upper bounds for al
+     * (only dependencies), then the bound {@literal al <: Object} also appears in the set.
+     *
+     * @param object type mirror for java.lang.Object
+     */
+    public static BoundSet initialBounds(Theta map, Context context) {
+        BoundSet boundSet = new BoundSet(context);
+
+        for (Entry<TypeVariable, Variable> entry : map.entrySet()) {
+            TypeVariable pl = entry.getKey();
+            Variable al = entry.getValue();
+            TypeMirror upperBound = pl.getUpperBound();
+            BoundSet boundsForAL = initialBoundForL(map, al, upperBound, context);
+            if (!boundsForAL.containsProperUpperBound(al)) {
+                boundsForAL.add(Subtype.createSubtype(al, new ProperType(context.object)));
+            }
+            boundSet.add(boundsForAL);
+        }
+        return boundSet;
+    }
+
+    /**
+     * If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set. Otherwise, for
+     * each type T delimited by & in the TypeBound, the bound {@literal al <: T[P1:=a1,..., Pp:=ap]}
+     * appears in the set; if this results in no proper upper bounds for al (only dependencies),
+     * then the bound {@literal al <: Object} also appears in the set.
+     */
+    private static BoundSet initialBoundForL(
+            Theta map, Variable al, TypeMirror upperBound, Context context) {
+        BoundSet boundSet = new BoundSet(context);
+        switch (upperBound.getKind()) {
+            case DECLARED:
+            case TYPEVAR:
+                AbstractType t1 = InferenceTypeUtil.create(upperBound, map);
+                boundSet.add(Subtype.createSubtype(al, t1));
+                break;
+            case INTERSECTION:
+                for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
+                    boundSet.add(initialBoundForL(map, al, bound, context));
+                }
+                break;
+            default:
+                ErrorReporter.errorAbort("Unexpected kind: %s", upperBound.getKind());
+        }
+        return boundSet;
     }
 
     public boolean add(BoundSet newSet) {
@@ -95,7 +164,7 @@ public class BoundSet implements ReductionResult {
 
         // A set of bounds on alpha1, ..., alphan is implied, constructed from the declared bounds of
         // P1, ..., Pn as specified in §18.1.3.
-        add(BoundUtil.initialBounds(capture.getMap(), null));
+        add(initialBounds(capture.getMap(), context));
 
         // If Ai is not a wildcard, then the bound αi = Ai is implied.
         for (Bound b : capture.getInitialBounds()) {
@@ -134,7 +203,7 @@ public class BoundSet implements ReductionResult {
     private BoundsForVar getBoundsForVar(Variable var) {
         BoundsForVar bound = boundsOnVariables.get(var);
         if (bound == null) {
-            bound = new BoundsForVar(var);
+            bound = new BoundsForVar(var, context);
             boundsOnVariables.put(var, bound);
         }
         return bound;
@@ -168,19 +237,37 @@ public class BoundSet implements ReductionResult {
         return getBoundsForVar(alpha).getInstantiation();
     }
 
+    /** Gets the instantiations for all alphas that currently have one. */
     public List<Instantiation> getInstantiations(List<Variable> alphas) {
-        // TODO:
-        throw new RuntimeException("Not implemented");
+        List<Instantiation> list = new ArrayList<>();
+        for (Variable var : alphas) {
+            if (boundsOnVariables.containsKey(var)) {
+                BoundsForVar bounds = boundsOnVariables.get(var);
+                if (bounds.hasInstantiation()) {
+                    ProperType properType = bounds.getInstantiation();
+                    list.add(new Instantiation(var, properType));
+                }
+            }
+        }
+        return list;
     }
 
     public List<Instantiation> getInstantiationsAll() {
-        // TODO:
-        throw new RuntimeException("Not implemented");
+        List<Instantiation> list = new ArrayList<>();
+        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
+            Variable var = entry.getKey();
+            BoundsForVar bounds = entry.getValue();
+            if (bounds.hasInstantiation()) {
+                ProperType properType = bounds.getInstantiation();
+                list.add(new Instantiation(var, properType));
+            }
+        }
+        return list;
     }
 
     /** Resolve all inference variables mentioned in any bound. */
     public List<Instantiation> resolve(ProcessingEnvironment env, Theta map) {
-        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, env, map);
+        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, map, context);
         return b.getInstantiations(getAllInferenceVariables());
     }
 
@@ -276,7 +363,7 @@ public class BoundSet implements ReductionResult {
                 constraints.add(incorporate(capture));
             }
 
-            newBounds = constraints.reduce(map);
+            newBounds = constraints.reduce(map, context);
         } while (!isFalse
                 && !newBounds.containsFalse()
                 && changed

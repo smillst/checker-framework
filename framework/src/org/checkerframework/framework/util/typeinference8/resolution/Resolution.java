@@ -2,7 +2,6 @@ package org.checkerframework.framework.util.typeinference8.resolution;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
@@ -11,17 +10,18 @@ import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
 public class Resolution {
     public static BoundSet resolve(
-            List<Variable> as, BoundSet boundSet, ProcessingEnvironment env, Theta map) {
+            List<Variable> as, BoundSet boundSet, Theta map, Context context) {
         if (as.isEmpty()) {
             return BoundSet.TRUE;
         }
-        Resolution resolution = new Resolution(env);
+        Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
-        BoundSet resolved = new BoundSet();
+        BoundSet resolved = new BoundSet(context);
         for (Variable alpha : as) {
             resolved.add(resolution.resolve(dependencies.get(alpha), boundSet, map));
         }
@@ -29,10 +29,10 @@ public class Resolution {
         return resolved;
     }
 
-    private final ProcessingEnvironment env;
+    private final Context context;
 
-    public Resolution(ProcessingEnvironment env) {
-        this.env = env;
+    public Resolution(Context context) {
+        this.context = context;
     }
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet, Theta map) {
@@ -51,7 +51,7 @@ public class Resolution {
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-A */
     private BoundSet resolve1(LinkedHashSet<Variable> as, BoundSet boundSet, Theta map) {
-        BoundSet resolvedBoundSet = new BoundSet();
+        BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
             LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             if (!lowerBounds.isEmpty()) {
@@ -61,7 +61,7 @@ public class Resolution {
                     if (ti == null) {
                         ti = li;
                     } else {
-                        ti = InternalUtils.lub(env, ti, li);
+                        ti = InternalUtils.lub(context.env, ti, li);
                     }
                 }
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
@@ -77,7 +77,7 @@ public class Resolution {
                     if (ti == null) {
                         ti = li;
                     } else {
-                        ti = InternalUtils.glb(env, ti, li);
+                        ti = InternalUtils.glb(context.env, ti, li);
                     }
                 }
                 if (!throwsBounds.isEmpty()) {

@@ -16,7 +16,6 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
-import org.checkerframework.framework.util.typeinference8.bound.BoundUtil;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
@@ -31,17 +30,19 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUti
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class InvocationTypeInference {
-    public static InvocationTypeInference INSTANCE;
     private final ProcessingEnvironment env;
     private final TypeMirror object;
     private final AnnotatedTypeFactory factory;
     private final TreePath pathToExpression;
+
+    private final Context context;
 
     public InvocationTypeInference(AnnotatedTypeFactory factory, TreePath pathToExpression) {
         this.env = factory.getProcessingEnv();
@@ -52,6 +53,7 @@ public class InvocationTypeInference {
                         Object.class);
         this.factory = factory;
         this.pathToExpression = pathToExpression;
+        this.context = new Context(env, object, factory, pathToExpression, this);
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
@@ -79,7 +81,7 @@ public class InvocationTypeInference {
     }
 
     public BoundSet createB2(MethodInvocationTree methodInvocation, Theta map) {
-        BoundSet b0 = BoundUtil.initialBounds(map, object);
+        BoundSet b0 = BoundSet.initialBounds(map, context);
         // TODO:
         // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
@@ -98,7 +100,7 @@ public class InvocationTypeInference {
             }
         }
 
-        BoundSet newBounds = c.reduce(map);
+        BoundSet newBounds = c.reduce(map, context);
         b1.incorporateToFixedPoint(newBounds, map);
 
         return b1;
@@ -121,9 +123,9 @@ public class InvocationTypeInference {
             ConstraintSet subset = c.getMagicalSubSet(current.getDependencies());
             c.remove(subset);
             List<Variable> alphas = c.getAllInferenceVariables();
-            current = Resolution.resolve(alphas, current, env, map);
-            c.applyInstantiations(current.getInstantiations(alphas));
-            BoundSet newBounds = c.reduce(map);
+            current = Resolution.resolve(alphas, current, map, context);
+            c.applyInstantiations(current.getInstantiations(alphas), context);
+            BoundSet newBounds = c.reduce(map, context);
             current.incorporateToFixedPoint(newBounds, map);
         }
         return current;
@@ -148,23 +150,24 @@ public class InvocationTypeInference {
             ConstraintSet set =
                     new ConstraintSet(
                             new Typing(capture.getLHS(), target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = set.reduce(map);
+            BoundSet newBounds = set.reduce(map, context);
             newBounds.add(capture);
             b2.incorporateToFixedPoint(newBounds, map);
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
-            BoundSet resolve = Resolution.resolve(Collections.singletonList(alpha), b2, env, map);
+            BoundSet resolve =
+                    Resolution.resolve(Collections.singletonList(alpha), b2, map, context);
             ProperType u = resolve.getInstantiation(alpha);
             ConstraintSet constraintSet =
                     new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(map);
+            BoundSet newBounds = constraintSet.reduce(map, context);
             resolve.incorporateToFixedPoint(newBounds, map);
             return resolve;
         } else {
             ConstraintSet constraintSet =
                     new ConstraintSet(new Typing(r, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(map);
+            BoundSet newBounds = constraintSet.reduce(map, context);
             b2.incorporateToFixedPoint(newBounds, map);
             return b2;
         }

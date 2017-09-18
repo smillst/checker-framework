@@ -35,12 +35,12 @@ public class ContainsInferenceVariable {
 
         @Override
         public Boolean visit(TypeMirror t, Void aVoid) {
-            return t.accept(this, aVoid);
+            return t == null ? false : t.accept(this, aVoid);
         }
 
         @Override
         public Boolean visit(TypeMirror t) {
-            return t.accept(this, null);
+            return t == null ? false : t.accept(this, null);
         }
 
         @Override
@@ -94,17 +94,17 @@ public class ContainsInferenceVariable {
 
         @Override
         public Boolean visitExecutable(ExecutableType t, Void aVoid) {
-            return null;
+            return false;
         }
 
         @Override
         public Boolean visitNoType(NoType t, Void aVoid) {
-            return null;
+            return false;
         }
 
         @Override
         public Boolean visitUnknown(TypeMirror t, Void aVoid) {
-            return null;
+            return false;
         }
 
         @Override
