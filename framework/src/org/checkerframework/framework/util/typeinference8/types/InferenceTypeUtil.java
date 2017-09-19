@@ -11,7 +11,7 @@ import javax.lang.model.type.TypeVariable;
 public class InferenceTypeUtil {
     public static boolean containsInferenceVar(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
-        return ContainsInferenceVariable.containsInferenceVar(typeVariables, type);
+        return ContainsInferenceVariable.hasAnyInferenceVar(typeVariables, type);
     }
 
     public static AbstractType create(TypeMirror type, Theta map) {

@@ -17,7 +17,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first, Context context) {
+    public AbstractType asSuper(TypeMirror superType, Context context) {
         throw new UnsupportedOperationException();
     }
 
@@ -124,5 +124,10 @@ public class Variable extends AbstractType {
     @Override
     public boolean isLowerBoundedWildcard() {
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Variable: " + p;
     }
 }

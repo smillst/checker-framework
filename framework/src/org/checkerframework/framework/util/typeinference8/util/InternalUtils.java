@@ -220,4 +220,8 @@ public class InternalUtils {
             return null;
         }
     }
+
+    public static boolean isParameterized(TypeMirror result) {
+        return ((Type) result).isParameterized();
+    }
 }

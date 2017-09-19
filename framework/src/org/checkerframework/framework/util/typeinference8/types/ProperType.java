@@ -20,6 +20,7 @@ public class ProperType extends AbstractType {
     private final TypeMirror properType;
 
     public ProperType(TypeMirror properType) {
+        assert properType != null;
         this.properType = properType;
     }
 
@@ -28,8 +29,13 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first, Context context) {
-        return new ProperType(context.types.asSuper((Type) properType, ((Type) first).asElement()));
+    public AbstractType asSuper(TypeMirror superType, Context context) {
+        TypeMirror asSuper =
+                context.types.asSuper((Type) properType, ((Type) superType).asElement());
+        if (asSuper == null) {
+            return null;
+        }
+        return new ProperType(asSuper);
     }
 
     @Override
@@ -171,5 +177,10 @@ public class ProperType extends AbstractType {
     @Override
     public boolean isLowerBoundedWildcard() {
         return TypesUtils.isSuperBoundWildcard(properType);
+    }
+
+    @Override
+    public String toString() {
+        return "ProperType: " + properType;
     }
 }

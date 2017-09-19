@@ -8,7 +8,14 @@ import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiat
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public abstract class AbstractType {
-    public abstract AbstractType asSuper(TypeMirror first, Context context);
+    /**
+     * Returns null if superType isn't a super type.
+     *
+     * @param superType
+     * @param context
+     * @return
+     */
+    public abstract AbstractType asSuper(TypeMirror superType, Context context);
 
     public abstract boolean isObject();
 

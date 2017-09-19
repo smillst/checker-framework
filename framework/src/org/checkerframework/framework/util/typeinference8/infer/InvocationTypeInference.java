@@ -57,10 +57,16 @@ public class InvocationTypeInference {
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
-        ProperType r = new ProperType(InferenceUtils.assignedTo(pathToExpression));
+        TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
+        ProperType r = returnType != null ? new ProperType(returnType) : null;
         return infer(methodInvocation, r);
     }
 
+    /**
+     * @param methodInvocation
+     * @param target Nullable
+     * @return
+     */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         Theta map = Theta.theta(element);

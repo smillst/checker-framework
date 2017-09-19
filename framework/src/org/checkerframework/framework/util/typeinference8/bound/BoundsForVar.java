@@ -1,11 +1,13 @@
 package org.checkerframework.framework.util.typeinference8.bound;
 
+import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
@@ -16,6 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 
@@ -134,8 +137,14 @@ public class BoundsForVar {
      */
     private Pair<TypeMirror, TypeMirror> getParameterizedSupers(TypeMirror s, TypeMirror t) {
         // com.sun.tools.javac.comp.Infer#getParameterizedSupers
-        // TODO:
-        throw new RuntimeException("Not implemented");
+        TypeMirror lubResult = InternalUtils.lub(context.env, t, s);
+        if (!InternalUtils.isParameterized(lubResult)) {
+            return null;
+        }
+
+        Type asSuperOfT = context.types.asSuper((Type) t, ((Type) lubResult).asElement());
+        Type asSuperOfS = context.types.asSuper((Type) s, ((Type) lubResult).asElement());
+        return Pair.of(asSuperOfT, asSuperOfS);
     }
 
     /** {@code t <: var} */
@@ -223,7 +232,7 @@ public class BoundsForVar {
         }
 
         // S <: var imply <S[alpha:=U] <: varPrime]›
-        for (AbstractType s : upperBounds.getAll()) {
+        for (AbstractType s : lowerBounds.getAll()) {
             AbstractType sPrime = s.applyInstantiations(instantiations, context);
             constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
         }
@@ -353,5 +362,30 @@ public class BoundsForVar {
                     return false;
             }
         }
+
+        @Override
+        public String toString() {
+            return PluginUtil.join("\n", getAll());
+        }
+
+        public String toStringSingleLine() {
+            return PluginUtil.join(" ", getAll());
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "BoundsForVar{"
+                + "var="
+                + var
+                + "\nupperBounds="
+                + upperBounds.toStringSingleLine()
+                + "\nlowerBounds="
+                + lowerBounds.toStringSingleLine()
+                + "\nequalBounds="
+                + equalBounds.toStringSingleLine()
+                + "\ntoIncorporate="
+                + toIncorporate
+                + "\n}";
     }
 }

@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,7 +37,8 @@ public class BoundSet implements ReductionResult {
      * Max number of incorporation loops. Use same constant as {@link
      * com.sun.tools.javac.comp.Infer#MAX_INCORPORATION_STEPS}
      */
-    private static final int MAX_INCORPORATION_STEPS = 100;
+    //    private static final int MAX_INCORPORATION_STEPS = 100;
+    private static final int MAX_INCORPORATION_STEPS = 10;
 
     public static final BoundSet TRUE = new BoundSet(null);
 
@@ -190,7 +192,7 @@ public class BoundSet implements ReductionResult {
             getBoundsForVar(subVar).addLowerBound(subVar);
         } else if (bound instanceof ProperUpperBound || bound instanceof NonProperUpperBound) {
             Variable var = (Variable) bound.getSubtype();
-            getBoundsForVar(var).addUpperBound(bound.getSubtype());
+            getBoundsForVar(var).addUpperBound(bound.getSupertype());
         } else if (bound instanceof ProperLowerBound || bound instanceof NonProperLowerBound) {
             Variable var = (Variable) bound.getSupertype();
             getBoundsForVar(var).addLowerBound(bound.getSubtype());
@@ -213,8 +215,16 @@ public class BoundSet implements ReductionResult {
      * Does the bound set contain a bound of the form {@code G<..., ai, ...> = capture(G<...>) }?
      */
     public boolean containsCapture(Collection<Variable> as) {
-        // TODO: Implement
-        throw new RuntimeException("Not Implemented");
+        List<Variable> list = new ArrayList<>();
+        for (Capture c : captures) {
+            list.addAll(c.getAllIVOnLHS());
+        }
+        for (Variable ai : as) {
+            if (list.contains(ai)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean containsFalse() {
@@ -324,7 +334,7 @@ public class BoundSet implements ReductionResult {
 
     public List<Throws> findThrowsBounds(Variable ai) {
         // TODO: Implement
-        throw new RuntimeException("Not implemented");
+        return Collections.emptyList();
     }
 
     /**
@@ -340,7 +350,8 @@ public class BoundSet implements ReductionResult {
      * @param map type vars to inference vars
      */
     public void incorporateToFixedPoint(BoundSet newBounds, Theta map) {
-        if (newBounds.containsFalse() || this.containsFalse()) {
+        this.isFalse &= newBounds.isFalse;
+        if (this.containsFalse()) {
             return;
         }
         boolean changed;
@@ -364,10 +375,8 @@ public class BoundSet implements ReductionResult {
             }
 
             newBounds = constraints.reduce(map, context);
-        } while (!isFalse
-                && !newBounds.containsFalse()
-                && changed
-                && count < MAX_INCORPORATION_STEPS);
+            isFalse &= newBounds.isFalse;
+        } while (!isFalse && changed && count < MAX_INCORPORATION_STEPS);
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2 */

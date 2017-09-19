@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
+import com.sun.tools.javac.code.Type;
 import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
@@ -13,7 +14,6 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.javacutil.ErrorReporter;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
@@ -23,7 +23,13 @@ public class ReduceTyping {
         AbstractType t = c.getT();
 
         if (s.isProper() && t.isProper()) {
-            return BoundSet.TRUE;
+            TypeMirror subType = ((ProperType) s).getProperType();
+            TypeMirror superType = ((ProperType) t).getProperType();
+            if (context.types.isSubtype((Type) subType, (Type) superType)) {
+                return BoundSet.TRUE;
+            } else {
+                return BoundSet.FALSE;
+            }
         } else if (s.getTypeKind() == TypeKind.NULL) {
             return BoundSet.TRUE;
         } else if (t.getTypeKind() == TypeKind.NULL) {
@@ -63,6 +69,9 @@ public class ReduceTyping {
             TypeMirror tTypeMirror =
                     t.isProper() ? ((ProperType) t).getProperType() : ((InferenceType) t).getType();
             AbstractType sAsSuper = s.asSuper(tTypeMirror, context);
+            if (sAsSuper == null) {
+                return BoundSet.FALSE;
+            }
 
             List<AbstractType> Bs = sAsSuper.getTypeArguments();
             Iterator<AbstractType> As = t.getTypeArguments().iterator();
@@ -224,7 +233,6 @@ public class ReduceTyping {
             return new Typing(
                     t.getWildcardLowerBound(), s.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
         }
-        ErrorReporter.errorAbort("Shouldn't be here.");
         return BoundSet.FALSE;
     }
 }

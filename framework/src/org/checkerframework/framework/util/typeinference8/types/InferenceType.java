@@ -5,6 +5,7 @@ import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -30,9 +31,12 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror first, Context context) {
-        return InferenceTypeUtil.create(
-                context.types.asSuper((Type) type, ((Type) first).asElement()), map);
+    public AbstractType asSuper(TypeMirror superType, Context context) {
+        TypeMirror asSuper = context.types.asSuper((Type) type, ((Type) superType).asElement());
+        if (asSuper == null) {
+            return null;
+        }
+        return InferenceTypeUtil.create(asSuper, map);
     }
 
     @Override
@@ -156,8 +160,11 @@ public class InferenceType extends AbstractType {
     /** @return all inference variables mentioned in this type. */
     @Override
     public Collection<? extends Variable> getInferenceVariables() {
-        // TODO: implement
-        throw new RuntimeException("not implemented");
+        LinkedHashSet<Variable> variables = new LinkedHashSet<>();
+        for (TypeVariable typeVar : ContainsInferenceVariable.getInferenceVar(map.keySet(), type)) {
+            variables.add(map.get(typeVar));
+        }
+        return variables;
     }
 
     @Override
@@ -187,5 +194,10 @@ public class InferenceType extends AbstractType {
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "InferenceType: " + type;
     }
 }

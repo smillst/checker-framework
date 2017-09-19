@@ -103,6 +103,23 @@ public abstract class Constraint implements ReductionResult {
             super.applyInstantiations(instantiations, context);
             S = S.applyInstantiations(instantiations, context);
         }
+
+        @Override
+        public String toString() {
+            switch (kind) {
+                case TYPE_COMPATIBILITY:
+                    return S + " -> " + T;
+                case SUBTYPE:
+                    return S + " <: " + T;
+                case CONTAINED:
+                    return S + "<=" + T;
+                case TYPE_EQUALITY:
+                    return S + " = " + T;
+                default:
+                    assert false;
+                    return super.toString();
+            }
+        }
     }
 
     /**

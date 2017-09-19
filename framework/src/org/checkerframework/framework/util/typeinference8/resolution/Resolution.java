@@ -68,7 +68,6 @@ public class Resolution {
                 continue;
             }
 
-            List<Throws> throwsBounds = boundSet.findThrowsBounds(ai);
             LinkedHashSet<ProperType> upperBounds = boundSet.findProperUpperBounds(ai);
             if (!upperBounds.isEmpty()) {
                 TypeMirror ti = null;
@@ -80,6 +79,7 @@ public class Resolution {
                         ti = InternalUtils.glb(context.env, ti, li);
                     }
                 }
+                List<Throws> throwsBounds = boundSet.findThrowsBounds(ai);
                 if (!throwsBounds.isEmpty()) {
                     // TODO: if ti is Exception or Throwable ti = RuntimeException
                     throw new RuntimeException("Not implemented.");

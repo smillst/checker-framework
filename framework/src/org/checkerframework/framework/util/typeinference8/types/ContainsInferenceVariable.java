@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ErrorType;
@@ -17,19 +18,28 @@ import javax.lang.model.type.WildcardType;
 
 public class ContainsInferenceVariable {
 
-    public static boolean containsInferenceVar(
+    public static boolean hasAnyInferenceVar(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
         return new Visitor(typeVariables).visit(type);
     }
 
+    public static LinkedHashSet<TypeVariable> getInferenceVar(
+            Collection<TypeVariable> typeVariables, TypeMirror type) {
+        Visitor visitor = new Visitor(typeVariables);
+        visitor.visit(type);
+        return visitor.foundVariables;
+    }
+
     static class Visitor implements TypeVisitor<Boolean, Void> {
         private final Collection<TypeVariable> typeVariables;
+        final LinkedHashSet<TypeVariable> foundVariables = new LinkedHashSet<>();
 
         Visitor(Collection<TypeVariable> variables) {
             typeVariables = variables;
         }
 
         private boolean isInferenceVariable(TypeVariable typeVar) {
+            foundVariables.add(typeVar);
             return typeVariables.contains(typeVar);
         }
 

@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
 import org.checkerframework.framework.util.typeinference8.bound.Bound;
+import org.checkerframework.framework.util.typeinference8.bound.Bound.Kind;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.LambdaExpression;
@@ -22,8 +23,14 @@ public class Reduce {
             } else if (result instanceof ConstraintSet) {
                 constraintSet.add((ConstraintSet) result);
             } else if (result instanceof Bound) {
+                if (((Bound) result).getKind() == Kind.FALSE) {
+                    return BoundSet.FALSE;
+                }
                 boundSet.add((Bound) result);
             } else if (result instanceof BoundSet) {
+                if (((BoundSet) result).containsFalse()) {
+                    return BoundSet.FALSE;
+                }
                 boundSet.add((BoundSet) result);
             } else {
                 throw new RuntimeException("Not found " + result);
