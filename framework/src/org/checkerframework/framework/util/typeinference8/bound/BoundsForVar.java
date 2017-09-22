@@ -287,7 +287,7 @@ public class BoundsForVar {
             if (!lowerBoundsNonVar.isEmpty()) {
                 return null;
             }
-            AbstractType T = Ai.getWildcardUpperBound();
+            AbstractType T = Ai.getWildcardUpperBound(context);
             if (Bi.isObject()) {
                 // If Bi is Object, then var <: R implies the constraint formula ‹T <: R›
                 for (AbstractType r : upperBoundsNonVar) {

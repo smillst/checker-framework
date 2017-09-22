@@ -48,9 +48,9 @@ public class Reduce {
             case SUBTYPE:
                 return ReduceTyping.reduceSubtyping((Typing) constraint, context);
             case CONTAINED:
-                return ReduceTyping.reduceContained((Typing) constraint);
+                return ReduceTyping.reduceContained((Typing) constraint, context);
             case TYPE_EQUALITY:
-                return ReduceTyping.reduceEquality((Typing) constraint);
+                return ReduceTyping.reduceEquality((Typing) constraint, context);
             case LAMBDA_EXCEPTION:
                 return reduceLambdaExpression((LambdaExpression) constraint);
             case METHOD_REF_EXCEPTION:

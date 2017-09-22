@@ -15,6 +15,7 @@ public class InferenceTypeUtil {
     }
 
     public static AbstractType create(TypeMirror type, Theta map) {
+        assert type != null;
         if (type.getKind() == TypeKind.TYPEVAR && map.containsKey(type)) {
             return map.get(type);
         } else if (containsInferenceVar(map.keySet(), type)) {

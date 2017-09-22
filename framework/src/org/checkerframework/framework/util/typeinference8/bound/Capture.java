@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.bound;
 
+import com.sun.source.tree.ExpressionTree;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -15,6 +16,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUti
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
 
@@ -38,7 +40,7 @@ public class Capture extends Bound {
 
     private final List<CaptureTuple> tuples = new ArrayList<>();
 
-    public Capture(AbstractType capturedType) {
+    public Capture(AbstractType capturedType, ExpressionTree tree) {
         this.capturedType = capturedType;
         if (capturedType.isInferenceType()) {
             InferenceType inferenceTypeG = (InferenceType) capturedType;
@@ -52,7 +54,7 @@ public class Capture extends Bound {
         List<Pair<Variable, ProperType>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {
             TypeVariable pl = (TypeVariable) pEle.asType();
-            Variable al = new Variable(pl);
+            Variable al = new CaptureVariable(pl, tree);
             map.put(pl, al);
             pairs.add(Pair.of(al, new ProperType(pl.getUpperBound())));
         }

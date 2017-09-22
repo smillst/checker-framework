@@ -64,15 +64,15 @@ public class InvocationTypeInference {
 
     /**
      * @param methodInvocation
-     * @param target Nullable
+     * @param target Nullable if methodInvocation isn't assigned.
      * @return
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
-        Theta map = Theta.theta(element);
+        Theta map = Theta.theta(element, methodInvocation);
         BoundSet b2 = createB2(methodInvocation, map);
         BoundSet b3 = b2;
-        if (InternalUtils.isPolyExpression(methodInvocation)) {
+        if (InternalUtils.isPolyExpression(methodInvocation) && target != null) {
             b3 = createB3(b2, methodInvocation, target, map);
         }
 
@@ -214,7 +214,7 @@ public class InvocationTypeInference {
                 if (InternalUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
-                    map.putAll(Theta.theta(ele));
+                    map.putAll(Theta.theta(ele, methodInvocation));
                     c.add(createC(ele, methodInvocation, map));
                 }
                 break;

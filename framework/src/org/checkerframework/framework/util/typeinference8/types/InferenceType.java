@@ -18,8 +18,8 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
 public class InferenceType extends AbstractType {
-    final TypeMirror type;
-    final Theta map;
+    private final TypeMirror type;
+    private final Theta map;
 
     InferenceType(TypeMirror type, Theta map) {
         this.type = type;
@@ -93,6 +93,7 @@ public class InferenceType extends AbstractType {
         }
     }
 
+    @Override
     public AbstractType getWildcardLowerBound() {
         if (type.getKind() == TypeKind.WILDCARD) {
             return InferenceTypeUtil.create(((WildcardType) type).getLowerBound(), map);
@@ -100,9 +101,14 @@ public class InferenceType extends AbstractType {
         return null;
     }
 
-    public AbstractType getWildcardUpperBound() {
+    @Override
+    public AbstractType getWildcardUpperBound(Context context) {
         if (type.getKind() == TypeKind.WILDCARD) {
-            return InferenceTypeUtil.create(((WildcardType) type).getUpperBound(), map);
+            TypeMirror upperBound = ((WildcardType) type).getUpperBound();
+            if (upperBound == null) {
+                upperBound = context.object;
+            }
+            return InferenceTypeUtil.create(upperBound, map);
         }
         return null;
     }

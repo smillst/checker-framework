@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
+import com.sun.source.tree.ExpressionTree;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -11,9 +12,12 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Variable extends AbstractType {
     final TypeVariable p;
+    /** The expression for which this variable is being solved. */
+    final ExpressionTree invocation;
 
-    public Variable(TypeVariable p) {
+    public Variable(TypeVariable p, ExpressionTree invocation) {
         this.p = p;
+        this.invocation = invocation;
     }
 
     @Override
@@ -43,12 +47,12 @@ public class Variable extends AbstractType {
 
     @Override
     public boolean isPrimitiveArray() {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isUpperBoundedWildcard() {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -107,7 +111,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType getWildcardUpperBound() {
+    public AbstractType getWildcardUpperBound(Context context) {
         return null;
     }
 
@@ -129,5 +133,19 @@ public class Variable extends AbstractType {
     @Override
     public String toString() {
         return "Variable: " + p;
+    }
+
+    public static class CaptureVariable extends Variable {
+        AbstractType type;
+
+        public CaptureVariable(AbstractType p, ExpressionTree invocation) {
+            super(null, invocation);
+            this.type = p;
+        }
+
+        @Override
+        public String toString() {
+            return "CaptureVariable: " + type;
+        }
     }
 }
