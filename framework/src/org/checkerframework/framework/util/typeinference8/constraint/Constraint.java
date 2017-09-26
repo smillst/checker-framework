@@ -50,7 +50,7 @@ public abstract class Constraint implements ReductionResult {
     protected AbstractType T;
 
     protected Constraint(AbstractType t) {
-        assert t != null;
+        assert t != null : "Can't create a constraint with a null type.";
         T = t;
     }
 

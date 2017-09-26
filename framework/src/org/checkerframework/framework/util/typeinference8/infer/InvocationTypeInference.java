@@ -71,9 +71,11 @@ public class InvocationTypeInference {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         Theta map = Theta.theta(element);
         BoundSet b2 = createB2(methodInvocation, map);
-        BoundSet b3 = b2;
-        if (InternalUtils.isPolyExpression(methodInvocation)) {
+        BoundSet b3;
+        if (target != null && InternalUtils.isPolyExpression(methodInvocation)) {
             b3 = createB3(b2, methodInvocation, target, map);
+        } else {
+            b3 = b2;
         }
 
         ConstraintSet c = createC(element, methodInvocation, map);
