@@ -59,7 +59,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
@@ -2302,7 +2301,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * <p>Note this method requires the lists to have the same length, as it does not handle cases
      * like var args.
      *
-     * @see #checkVarargs(AnnotatedExecutableType, Tree)
+     * @see #checkVarargs(AnnotatedTypeMirror.AnnotatedExecutableType, Tree)
      * @param requiredArgs the required types
      * @param passedArgs the expressions passed to the corresponding types
      */
@@ -3252,8 +3251,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             return true;
         }
 
-        Name when = AnnotationUtils.getElementValueClassName(unused, "when", false);
-        if (receiver.getAnnotation(when) == null) {
+        String when =
+                AnnotationUtils.getElementValueClassName(unused, "when", false).toString().intern();
+        if (!AnnotationUtils.containsSameByName(receiver.getAnnotations(), when)) {
             return true;
         }
 
