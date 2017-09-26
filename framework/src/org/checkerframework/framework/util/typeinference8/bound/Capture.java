@@ -136,4 +136,23 @@ public class Capture extends Bound {
             return new CaptureTuple(alpha, capturedTypeArg, bound);
         }
     }
+
+    void method(AbstractType capturedType) {
+        // A1,...,An
+        List<AbstractType> capturedTypeArgs = capturedType.getTypeArguments();
+        // P1,...,Pn
+        List<? extends TypeParameterElement> typeParameters =
+                InternalUtils.getTypeElement(underlying).getTypeParameters();
+    }
+
+    static class Something {
+        // Betai or alphai
+        Variable beta;
+
+        // Bi Theta
+        AbstractType bound;
+
+        // Ai
+        AbstractType capturedArg;
+    }
 }

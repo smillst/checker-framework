@@ -14,6 +14,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
@@ -243,6 +244,9 @@ public class InferenceType extends AbstractType {
         List<TypeMirror> arguments = new ArrayList<>(instantiations.size());
 
         for (Instantiation instantiation : instantiations) {
+            if (instantiation.getA() instanceof CaptureVariable) {
+                throw new RuntimeException("Not implemented");
+            }
             typeVariables.add(instantiation.getA().p);
             arguments.add(instantiation.getT().getProperType());
         }
