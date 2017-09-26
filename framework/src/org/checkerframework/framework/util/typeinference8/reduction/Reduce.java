@@ -44,13 +44,13 @@ public class Reduce {
             case EXPRESSION:
                 return ReduceExpression.reduce((Expression) constraint, map, context);
             case TYPE_COMPATIBILITY:
-                return ReduceTyping.reduceCompatible((Typing) constraint, context);
+                return ReduceTyping.reduceCompatible((Typing) constraint);
             case SUBTYPE:
                 return ReduceTyping.reduceSubtyping((Typing) constraint, context);
             case CONTAINED:
-                return ReduceTyping.reduceContained((Typing) constraint, context);
+                return ReduceTyping.reduceContained((Typing) constraint);
             case TYPE_EQUALITY:
-                return ReduceTyping.reduceEquality((Typing) constraint, context);
+                return ReduceTyping.reduceEquality((Typing) constraint);
             case LAMBDA_EXCEPTION:
                 return reduceLambdaExpression((LambdaExpression) constraint);
             case METHOD_REF_EXCEPTION:

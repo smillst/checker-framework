@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -250,5 +252,14 @@ public class InferenceUtils {
         } else {
             return atypeFactory.getAnnotatedType(assignmentContext);
         }
+    }
+
+    public static boolean isParameterizedType(TypeMirror type) {
+        if (type == null || type.getKind() != TypeKind.DECLARED) {
+            return false;
+        }
+        DeclaredType declaredType = (DeclaredType) type;
+        return !declaredType.getTypeArguments().isEmpty()
+                || isParameterizedType(declaredType.getEnclosingType());
     }
 }

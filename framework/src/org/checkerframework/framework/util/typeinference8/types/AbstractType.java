@@ -5,17 +5,15 @@ import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
-import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public abstract class AbstractType {
     /**
      * Returns null if superType isn't a super type.
      *
      * @param superType
-     * @param context
      * @return
      */
-    public abstract AbstractType asSuper(TypeMirror superType, Context context);
+    public abstract AbstractType asSuper(TypeMirror superType);
 
     public abstract boolean isObject();
 
@@ -41,7 +39,7 @@ public abstract class AbstractType {
 
     public abstract boolean isParameterizedType();
 
-    public abstract AbstractType getMostSpecificArrayType(Context context);
+    public abstract AbstractType getMostSpecificArrayType();
 
     public abstract boolean isPrimitiveArray();
 
@@ -60,8 +58,7 @@ public abstract class AbstractType {
 
     public abstract boolean isWildcardParameterizedType();
 
-    public abstract AbstractType applyInstantiations(
-            List<Instantiation> instantiations, Context context);
+    public abstract AbstractType applyInstantiations(List<Instantiation> instantiations);
 
     public abstract List<AbstractType> getFunctionTypeParameters();
 
@@ -71,7 +68,7 @@ public abstract class AbstractType {
 
     public abstract AbstractType getComponentType();
 
-    public abstract AbstractType getWildcardUpperBound(Context context);
+    public abstract AbstractType getWildcardUpperBound();
 
     public abstract AbstractType getWildcardLowerBound();
 

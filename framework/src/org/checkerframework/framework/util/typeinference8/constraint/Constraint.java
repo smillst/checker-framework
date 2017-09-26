@@ -9,7 +9,6 @@ import org.checkerframework.framework.util.typeinference8.reduction.ReductionRes
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.util.Context;
 
 /**
  * Created by smillst on 12/7/16.
@@ -64,8 +63,8 @@ public abstract class Constraint implements ReductionResult {
 
     public abstract List<Variable> getOutputVariables();
 
-    protected void applyInstantiations(List<Instantiation> instantiations, Context context) {
-        T = T.applyInstantiations(instantiations, context);
+    protected void applyInstantiations(List<Instantiation> instantiations) {
+        T = T.applyInstantiations(instantiations);
     }
 
     public static class Typing extends Constraint {
@@ -99,9 +98,9 @@ public abstract class Constraint implements ReductionResult {
         }
 
         @Override
-        protected void applyInstantiations(List<Instantiation> instantiations, Context context) {
-            super.applyInstantiations(instantiations, context);
-            S = S.applyInstantiations(instantiations, context);
+        protected void applyInstantiations(List<Instantiation> instantiations) {
+            super.applyInstantiations(instantiations);
+            S = S.applyInstantiations(instantiations);
         }
 
         @Override

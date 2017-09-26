@@ -26,7 +26,7 @@ import org.checkerframework.framework.util.typeinference8.constraint.ConstraintS
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUtil;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
@@ -34,11 +34,9 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 public class InvocationTypeInference {
     private final ProcessingEnvironment env;
-    private final TypeMirror object;
     private final AnnotatedTypeFactory factory;
     private final TreePath pathToExpression;
 
@@ -46,19 +44,14 @@ public class InvocationTypeInference {
 
     public InvocationTypeInference(AnnotatedTypeFactory factory, TreePath pathToExpression) {
         this.env = factory.getProcessingEnv();
-        this.object =
-                TypesUtils.typeFromClass(
-                        factory.getContext().getTypeUtils(),
-                        factory.getElementUtils(),
-                        Object.class);
         this.factory = factory;
         this.pathToExpression = pathToExpression;
-        this.context = new Context(env, object, factory, pathToExpression, this);
+        this.context = new Context(env, factory, pathToExpression, this);
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
-        ProperType r = returnType != null ? new ProperType(returnType) : null;
+        ProperType r = returnType != null ? new ProperType(returnType, context) : null;
         return infer(methodInvocation, r);
     }
 
@@ -69,7 +62,7 @@ public class InvocationTypeInference {
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
-        Theta map = Theta.theta(element, methodInvocation);
+        Theta map = Theta.theta(element, methodInvocation, context);
         BoundSet b2 = createB2(methodInvocation, map);
         BoundSet b3;
         if (target != null && InternalUtils.isPolyExpression(methodInvocation)) {
@@ -123,7 +116,7 @@ public class InvocationTypeInference {
                 params.add(vararg.getComponentType());
             }
         }
-        return InferenceTypeUtil.create(params, map);
+        return InferenceType.create(params, map, context);
     }
 
     private BoundSet getB4(Theta map, BoundSet current, ConstraintSet c) {
@@ -142,7 +135,8 @@ public class InvocationTypeInference {
     public BoundSet createB3(
             BoundSet b2, MethodInvocationTree invocation, AbstractType target, Theta map) {
         AbstractType r =
-                InferenceTypeUtil.create(TreeUtils.elementFromUse(invocation).getReturnType(), map);
+                InferenceType.create(
+                        TreeUtils.elementFromUse(invocation).getReturnType(), map, context);
         // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-100-C.1-A
         // If unchecked conversion was necessary for the method to be applicable during
         // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
@@ -153,7 +147,7 @@ public class InvocationTypeInference {
             // An is a wildcard, then, for fresh inference variables β1, ..., βn, the constraint
             // formula ‹G<β1, ..., βn> → T› is reduced and incorporated, along with the bound
             // G<β1, ..., βn> = capture(G<A1, ..., An>), with B2.
-            Capture capture = new Capture(r, invocation);
+            Capture capture = new Capture(r, invocation, context);
             map.putAll(capture.getMap());
             ConstraintSet set =
                     new ConstraintSet(
@@ -216,7 +210,7 @@ public class InvocationTypeInference {
                 if (InternalUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
-                    map.putAll(Theta.theta(ele, methodInvocation));
+                    map.putAll(Theta.theta(ele, methodInvocation, context));
                     c.add(createC(ele, methodInvocation, map));
                 }
                 break;

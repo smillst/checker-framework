@@ -18,14 +18,17 @@ import org.checkerframework.javacutil.TypesUtils;
 
 public class ProperType extends AbstractType {
     private final TypeMirror properType;
+    private final Context context;
 
-    public ProperType(TypeMirror properType) {
+    public ProperType(TypeMirror properType, Context context) {
         assert properType != null;
         this.properType = properType;
+        this.context = context;
     }
 
     @Override
     public boolean equals(Object o) {
+
         if (this == o) {
             return true;
         }
@@ -35,12 +38,15 @@ public class ProperType extends AbstractType {
 
         ProperType otherProperType = (ProperType) o;
 
-        return properType.equals(otherProperType.properType);
+        return context.factory
+                .getContext()
+                .getTypeUtils()
+                .isSameType(properType, otherProperType.properType);
     }
 
     @Override
     public int hashCode() {
-        int result = properType.hashCode();
+        int result = properType.toString().hashCode();
         result = 31 * result + Kind.PROPER.hashCode();
         return result;
     }
@@ -50,13 +56,13 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror superType, Context context) {
+    public AbstractType asSuper(TypeMirror superType) {
         TypeMirror asSuper =
                 context.types.asSuper((Type) properType, ((Type) superType).asElement());
         if (asSuper == null) {
             return null;
         }
-        return new ProperType(asSuper);
+        return new ProperType(asSuper, context);
     }
 
     @Override
@@ -76,10 +82,10 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType getMostSpecificArrayType(Context context) {
+    public AbstractType getMostSpecificArrayType() {
         TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, context.types);
         if (mostSpecific != null) {
-            return new ProperType(mostSpecific);
+            return new ProperType(mostSpecific, context);
         } else {
             return null;
         }
@@ -95,14 +101,14 @@ public class ProperType extends AbstractType {
     public List<AbstractType> getIntersectionBounds() {
         List<AbstractType> bounds = new ArrayList<>();
         for (TypeMirror bound : ((IntersectionType) properType).getBounds()) {
-            bounds.add(new ProperType(bound));
+            bounds.add(new ProperType(bound, context));
         }
         return bounds;
     }
 
     @Override
     public AbstractType getTypeVarLowerBound() {
-        return new ProperType(((TypeVariable) properType).getLowerBound());
+        return new ProperType(((TypeVariable) properType).getLowerBound(), context);
     }
 
     @Override
@@ -126,13 +132,13 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations, Context context) {
+    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
         return this;
     }
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        return null;
+        throw new RuntimeException("Not implemented");
     }
 
     @Override
@@ -140,9 +146,9 @@ public class ProperType extends AbstractType {
         return properType.getKind();
     }
 
-    public ProperType boxType(Context context) {
+    public ProperType boxType() {
         if (properType.getKind().isPrimitive()) {
-            return new ProperType(context.types.boxedClass((Type) properType).asType());
+            return new ProperType(context.types.boxedClass((Type) properType).asType(), context);
         }
         return this;
     }
@@ -154,7 +160,7 @@ public class ProperType extends AbstractType {
         }
         List<AbstractType> typeArgs = new ArrayList<>();
         for (TypeMirror t : ((DeclaredType) properType).getTypeArguments()) {
-            typeArgs.add(new ProperType(t));
+            typeArgs.add(new ProperType(t, context));
         }
         return typeArgs;
     }
@@ -164,7 +170,7 @@ public class ProperType extends AbstractType {
         if (properType.getKind() != TypeKind.ARRAY) {
             return null;
         }
-        return new ProperType(((ArrayType) properType).getComponentType());
+        return new ProperType(((ArrayType) properType).getComponentType(), context);
     }
 
     @Override
@@ -172,22 +178,22 @@ public class ProperType extends AbstractType {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isSuperBound()) {
-            return new ProperType(((Type.WildcardType) properType).getLowerBound());
+            return new ProperType(TypesUtils.wildLowerBound(context.env, properType), context);
         } else {
             return null;
         }
     }
 
     @Override
-    public AbstractType getWildcardUpperBound(Context context) {
+    public AbstractType getWildcardUpperBound() {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isExtendsBound()) {
             TypeMirror upperBound = ((Type.WildcardType) properType).getUpperBound();
             if (upperBound == null) {
-                upperBound = context.object;
+                return context.object;
             }
-            return new ProperType(upperBound);
+            return new ProperType(upperBound, context);
         } else {
             return null;
         }

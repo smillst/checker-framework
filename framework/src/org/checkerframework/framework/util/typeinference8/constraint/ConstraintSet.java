@@ -135,7 +135,7 @@ public class ConstraintSet implements ReductionResult {
 
     public void applyInstantiations(List<Instantiation> instantiations, Context context) {
         for (Constraint constraint : list) {
-            constraint.applyInstantiations(instantiations, context);
+            constraint.applyInstantiations(instantiations);
         }
     }
 }

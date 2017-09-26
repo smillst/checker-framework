@@ -25,7 +25,7 @@ import org.checkerframework.framework.util.typeinference8.reduction.ReductionRes
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
-import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUtil;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
@@ -91,7 +91,7 @@ public class BoundSet implements ReductionResult {
             TypeMirror upperBound = pl.getUpperBound();
             BoundSet boundsForAL = initialBoundForL(map, al, upperBound, context);
             if (!boundsForAL.containsProperUpperBound(al)) {
-                boundsForAL.add(Subtype.createSubtype(al, new ProperType(context.object)));
+                boundsForAL.add(Subtype.createSubtype(al, context.object));
             }
             boundSet.add(boundsForAL);
         }
@@ -110,7 +110,7 @@ public class BoundSet implements ReductionResult {
         switch (upperBound.getKind()) {
             case DECLARED:
             case TYPEVAR:
-                AbstractType t1 = InferenceTypeUtil.create(upperBound, map);
+                AbstractType t1 = InferenceType.create(upperBound, map, context);
                 boundSet.add(Subtype.createSubtype(al, t1));
                 break;
             case INTERSECTION:
@@ -245,6 +245,10 @@ public class BoundSet implements ReductionResult {
 
     public ProperType getInstantiation(Variable alpha) {
         return getBoundsForVar(alpha).getInstantiation();
+    }
+
+    public boolean hasInstantiation(Variable alpha) {
+        return getBoundsForVar(alpha).hasInstantiation();
     }
 
     /** Gets the instantiations for all alphas that currently have one. */

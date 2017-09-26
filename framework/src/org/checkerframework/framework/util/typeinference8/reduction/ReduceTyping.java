@@ -43,9 +43,9 @@ public class ReduceTyping {
 
         switch (c.getT().getTypeKind()) {
             case DECLARED:
-                return reduceSubtypeClass(c, context);
+                return reduceSubtypeClass(c);
             case ARRAY:
-                return reduceSubtypeArray(c, context);
+                return reduceSubtypeArray(c);
             case TYPEVAR:
             case WILDCARD: // ?
                 return reduceSubtypeTypeVariable(c);
@@ -55,7 +55,7 @@ public class ReduceTyping {
         return BoundSet.FALSE;
     }
 
-    private static ReductionResult reduceSubtypeClass(Typing c, Context context) {
+    private static ReductionResult reduceSubtypeClass(Typing c) {
         if (c.getT().isParameterizedType()) {
             // let A1, ..., An be the type arguments of T. Among the supertypes of S, a
             // corresponding class or interface type is identified, with type arguments B1, ...,
@@ -68,7 +68,7 @@ public class ReduceTyping {
 
             TypeMirror tTypeMirror =
                     t.isProper() ? ((ProperType) t).getProperType() : ((InferenceType) t).getType();
-            AbstractType sAsSuper = s.asSuper(tTypeMirror, context);
+            AbstractType sAsSuper = s.asSuper(tTypeMirror);
             if (sAsSuper == null) {
                 return BoundSet.FALSE;
             }
@@ -88,8 +88,8 @@ public class ReduceTyping {
         }
     }
 
-    private static ReductionResult reduceSubtypeArray(Typing c, Context context) {
-        AbstractType s = c.getS().getMostSpecificArrayType(context);
+    private static ReductionResult reduceSubtypeArray(Typing c) {
+        AbstractType s = c.getS().getMostSpecificArrayType();
         if (s == null) {
             return BoundSet.FALSE;
         }
@@ -118,10 +118,10 @@ public class ReduceTyping {
         return constraintSet;
     }
 
-    public static ReductionResult reduceContained(Typing contained, Context context) {
+    public static ReductionResult reduceContained(Typing contained) {
         AbstractType s = contained.getS();
         AbstractType t = contained.getT();
-        if (s.getTypeKind() != TypeKind.WILDCARD) {
+        if (t.getTypeKind() != TypeKind.WILDCARD) {
             if (s.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(s, t, Kind.TYPE_EQUALITY);
             } else {
@@ -130,29 +130,29 @@ public class ReduceTyping {
         } else if (t.isUnboundWildcard()) {
             return BoundSet.TRUE;
         } else if (t.isUpperBoundedWildcard()) {
-            AbstractType bound = t.getWildcardUpperBound(context);
+            AbstractType bound = t.getWildcardUpperBound();
             if (s.getTypeKind() == TypeKind.WILDCARD) {
                 if (s.isUnboundWildcard() || s.isUpperBoundedWildcard()) {
-                    return new Typing(s.getWildcardUpperBound(context), bound, Kind.SUBTYPE);
+                    return new Typing(s.getWildcardUpperBound(), bound, Kind.SUBTYPE);
                 } else {
-                    return new Typing(s.getWildcardUpperBound(context), bound, Kind.TYPE_EQUALITY);
+                    return new Typing(s.getWildcardUpperBound(), bound, Kind.TYPE_EQUALITY);
                 }
             } else {
                 return new Typing(s, bound, Kind.SUBTYPE);
             }
         } else {
             AbstractType tPrime = t.getWildcardLowerBound();
-            if (s.isLowerBoundedWildcard()) {
-                return new Typing(tPrime, s.getWildcardLowerBound(), Kind.SUBTYPE);
-            } else if (s.getTypeKind() == TypeKind.WILDCARD) {
-                return BoundSet.FALSE;
-            } else {
+            if (s.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(tPrime, s, Kind.SUBTYPE);
+            } else if (s.isLowerBoundedWildcard()) {
+                return new Typing(tPrime, s.getWildcardLowerBound(), Kind.SUBTYPE);
+            } else {
+                return BoundSet.FALSE;
             }
         }
     }
 
-    public static ReductionResult reduceCompatible(Typing c, Context context) {
+    public static ReductionResult reduceCompatible(Typing c) {
         ProperType t = null;
         ProperType s = null;
         if (c.getT().isProper()) {
@@ -168,9 +168,9 @@ public class ReduceTyping {
             // with T (§5.3), and false otherwise.
             return BoundSet.TRUE;
         } else if (s != null && s.getTypeKind().isPrimitive()) {
-            return new Typing(s.boxType(context), c.getT(), Kind.TYPE_COMPATIBILITY);
+            return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
         } else if (t != null && t.getTypeKind().isPrimitive()) {
-            return new Typing(c.getS(), t.boxType(context), Kind.TYPE_EQUALITY);
+            return new Typing(c.getS(), t.boxType(), Kind.TYPE_EQUALITY);
 
         } else {
             // TODO: handle unchecked conversions
@@ -179,7 +179,7 @@ public class ReduceTyping {
         }
     }
 
-    public static ReductionResult reduceEquality(Typing constraint, Context context) {
+    public static ReductionResult reduceEquality(Typing constraint) {
         AbstractType s = constraint.getS();
         AbstractType t = constraint.getT();
 
@@ -223,7 +223,7 @@ public class ReduceTyping {
 
         AbstractType sComponentType = s.getComponentType();
         AbstractType tComponentType = t.getComponentType();
-        if (sComponentType != null || tComponentType != null) {
+        if (sComponentType != null && tComponentType != null) {
             return new Typing(sComponentType, tComponentType, Kind.TYPE_EQUALITY);
         }
 
@@ -232,9 +232,7 @@ public class ReduceTyping {
                 return BoundSet.TRUE;
             } else if (!s.isLowerBoundedWildcard() && !t.isLowerBoundedWildcard()) {
                 return new Typing(
-                        s.getWildcardUpperBound(context),
-                        t.getWildcardUpperBound(context),
-                        Kind.TYPE_EQUALITY);
+                        s.getWildcardUpperBound(), t.getWildcardUpperBound(), Kind.TYPE_EQUALITY);
             } else if (t.isLowerBoundedWildcard() && s.isLowerBoundedWildcard()) {
                 return new Typing(
                         t.getWildcardLowerBound(), s.getWildcardLowerBound(), Kind.TYPE_EQUALITY);

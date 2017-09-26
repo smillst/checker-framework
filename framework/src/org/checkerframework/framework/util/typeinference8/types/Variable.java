@@ -15,10 +15,13 @@ public class Variable extends AbstractType {
     /** The expression for which this variable is being solved. */
     final ExpressionTree invocation;
 
-    public Variable(TypeVariable p, ExpressionTree invocation) {
+    protected final Context context;
+
+    public Variable(TypeVariable p, ExpressionTree invocation, Context context) {
         assert p != null;
         this.p = p;
         this.invocation = invocation;
+        this.context = context;
     }
 
     @Override
@@ -32,18 +35,18 @@ public class Variable extends AbstractType {
 
         Variable variable = (Variable) o;
 
-        return p.equals(variable.p);
+        return context.factory.getContext().getTypeUtils().isSameType(p, variable.p);
     }
 
     @Override
     public int hashCode() {
-        int result = p.hashCode();
+        int result = p.toString().hashCode();
         result = 31 * result + Kind.VARIABLE.hashCode();
         return result;
     }
 
     @Override
-    public AbstractType asSuper(TypeMirror superType, Context context) {
+    public AbstractType asSuper(TypeMirror superType) {
         throw new UnsupportedOperationException();
     }
 
@@ -63,7 +66,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType getMostSpecificArrayType(Context context) {
+    public AbstractType getMostSpecificArrayType() {
         throw new UnsupportedOperationException();
     }
 
@@ -108,7 +111,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations, Context context) {
+    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
         return this;
     }
 
@@ -133,7 +136,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType getWildcardUpperBound(Context context) {
+    public AbstractType getWildcardUpperBound() {
         return null;
     }
 
@@ -160,8 +163,8 @@ public class Variable extends AbstractType {
     public static class CaptureVariable extends Variable {
         AbstractType type;
 
-        public CaptureVariable(AbstractType p, ExpressionTree invocation) {
-            super(null, invocation);
+        public CaptureVariable(AbstractType p, ExpressionTree invocation, Context context) {
+            super(null, invocation, context);
             this.type = p;
         }
 

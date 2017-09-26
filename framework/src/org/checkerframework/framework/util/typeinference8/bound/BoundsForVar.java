@@ -61,6 +61,9 @@ public class BoundsForVar {
             toIncorporate.add(new Typing(t, s, Kind.SUBTYPE));
         }
 
+        if (s.getKind() == AbstractType.Kind.PROPER) {
+            assert equalBounds.properTypes.isEmpty() || equalBounds.properTypes.contains(s);
+        }
         equalBounds.add(s);
         return true;
     }
@@ -116,8 +119,8 @@ public class BoundsForVar {
         }
         LinkedHashSet<Constraint> constraints = new LinkedHashSet<>();
 
-        List<AbstractType> ss = s.asSuper(pair.first, context).getTypeArguments();
-        List<AbstractType> ts = t.asSuper(pair.second, context).getTypeArguments();
+        List<AbstractType> ss = s.asSuper(pair.first).getTypeArguments();
+        List<AbstractType> ts = t.asSuper(pair.second).getTypeArguments();
         assert ss.size() == ts.size();
 
         for (int i = 0; i < ss.size(); i++) {
@@ -221,19 +224,19 @@ public class BoundsForVar {
 
         // var = T imply <varPrime = T[alpha:=U]›
         for (AbstractType T : equalBounds.getAll()) {
-            AbstractType tPrime = T.applyInstantiations(instantiations, context);
+            AbstractType tPrime = T.applyInstantiations(instantiations);
             constraintSet.add(new Typing(varPrime, tPrime, Kind.TYPE_EQUALITY));
         }
 
         // var <: T imply <varPrime <: T[alpha:=U]›
         for (AbstractType T : upperBounds.getAll()) {
-            AbstractType tPrime = T.applyInstantiations(instantiations, context);
+            AbstractType tPrime = T.applyInstantiations(instantiations);
             constraintSet.add(new Typing(varPrime, tPrime, Kind.SUBTYPE));
         }
 
         // S <: var imply <S[alpha:=U] <: varPrime]›
         for (AbstractType s : lowerBounds.getAll()) {
-            AbstractType sPrime = s.applyInstantiations(instantiations, context);
+            AbstractType sPrime = s.applyInstantiations(instantiations);
             constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
         }
         return constraintSet;
@@ -287,7 +290,7 @@ public class BoundsForVar {
             if (!lowerBoundsNonVar.isEmpty()) {
                 return null;
             }
-            AbstractType T = Ai.getWildcardUpperBound(context);
+            AbstractType T = Ai.getWildcardUpperBound();
             if (Bi.isObject()) {
                 // If Bi is Object, then var <: R implies the constraint formula ‹T <: R›
                 for (AbstractType r : upperBoundsNonVar) {

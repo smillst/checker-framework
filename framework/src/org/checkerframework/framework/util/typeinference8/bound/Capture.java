@@ -12,11 +12,11 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceTypeUtil;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
 
@@ -40,7 +40,7 @@ public class Capture extends Bound {
 
     private final List<CaptureTuple> tuples = new ArrayList<>();
 
-    public Capture(AbstractType capturedType, ExpressionTree tree) {
+    public Capture(AbstractType capturedType, ExpressionTree tree, Context context) {
         this.capturedType = capturedType;
         if (capturedType.isInferenceType()) {
             InferenceType inferenceTypeG = (InferenceType) capturedType;
@@ -50,16 +50,17 @@ public class Capture extends Bound {
             underlying = (DeclaredType) properTypeG.getProperType();
         }
         TypeElement ele = InternalUtils.getTypeElement(underlying);
+        // TODO: FIX ME
         map = new Theta();
         List<Pair<Variable, ProperType>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {
             TypeVariable pl = (TypeVariable) pEle.asType();
-            Variable al = new CaptureVariable(pl, tree);
+            Variable al = new CaptureVariable(new ProperType(pl, context), tree, context);
             map.put(pl, al);
-            pairs.add(Pair.of(al, new ProperType(pl.getUpperBound())));
+            pairs.add(Pair.of(al, new ProperType(pl.getUpperBound(), context)));
         }
 
-        lhs = (InferenceType) InferenceTypeUtil.create(underlying, map);
+        lhs = (InferenceType) InferenceType.create(underlying, map, context);
 
         Iterator<AbstractType> args = lhs.getTypeArguments().iterator();
         for (Pair<Variable, ProperType> pair : pairs) {

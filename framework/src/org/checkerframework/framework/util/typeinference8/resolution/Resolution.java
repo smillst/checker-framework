@@ -22,6 +22,10 @@ public class Resolution {
         Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
         BoundSet resolved = new BoundSet(context);
+        if (boundSet.getInstantiations(as).size() == as.size()) {
+            // If all variables have an instantiation, resolution is complete.
+            return boundSet;
+        }
         for (Variable alpha : as) {
             resolved.add(resolution.resolve(dependencies.get(alpha), boundSet, map));
         }
@@ -53,6 +57,9 @@ public class Resolution {
     private BoundSet resolve1(LinkedHashSet<Variable> as, BoundSet boundSet, Theta map) {
         BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
+            if (boundSet.hasInstantiation(ai)) {
+                continue;
+            }
             LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             if (!lowerBounds.isEmpty()) {
                 TypeMirror ti = null;
@@ -64,7 +71,7 @@ public class Resolution {
                         ti = InternalUtils.lub(context.env, ti, li);
                     }
                 }
-                resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
+                resolvedBoundSet.add(Equal.create(ai, new ProperType(ti, context)));
                 continue;
             }
 
@@ -84,7 +91,7 @@ public class Resolution {
                     // TODO: if ti is Exception or Throwable ti = RuntimeException
                     throw new RuntimeException("Not implemented.");
                 }
-                resolvedBoundSet.add(Equal.create(ai, new ProperType(ti)));
+                resolvedBoundSet.add(Equal.create(ai, new ProperType(ti, context)));
                 continue;
             }
             resolvedBoundSet = BoundSet.FALSE;
