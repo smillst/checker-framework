@@ -64,12 +64,12 @@ public class InvocationTypeInference {
 
     /**
      * @param methodInvocation
-     * @param target Nullable
+     * @param target Nullable if methodInvocation isn't assigned.
      * @return
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
-        Theta map = Theta.theta(element);
+        Theta map = Theta.theta(element, methodInvocation);
         BoundSet b2 = createB2(methodInvocation, map);
         BoundSet b3;
         if (target != null && InternalUtils.isPolyExpression(methodInvocation)) {
@@ -153,7 +153,7 @@ public class InvocationTypeInference {
             // An is a wildcard, then, for fresh inference variables β1, ..., βn, the constraint
             // formula ‹G<β1, ..., βn> → T› is reduced and incorporated, along with the bound
             // G<β1, ..., βn> = capture(G<A1, ..., An>), with B2.
-            Capture capture = new Capture(r);
+            Capture capture = new Capture(r, invocation);
             map.putAll(capture.getMap());
             ConstraintSet set =
                     new ConstraintSet(
@@ -216,7 +216,7 @@ public class InvocationTypeInference {
                 if (InternalUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
-                    map.putAll(Theta.theta(ele));
+                    map.putAll(Theta.theta(ele, methodInvocation));
                     c.add(createC(ele, methodInvocation, map));
                 }
                 break;

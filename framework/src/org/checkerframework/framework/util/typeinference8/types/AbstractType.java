@@ -71,7 +71,7 @@ public abstract class AbstractType {
 
     public abstract AbstractType getComponentType();
 
-    public abstract AbstractType getWildcardUpperBound();
+    public abstract AbstractType getWildcardUpperBound(Context context);
 
     public abstract AbstractType getWildcardLowerBound();
 

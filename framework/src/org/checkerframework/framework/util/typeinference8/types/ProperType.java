@@ -168,7 +168,7 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType getWildcardUpperBound() {
+    public AbstractType getWildcardLowerBound() {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isSuperBound()) {
@@ -179,11 +179,15 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType getWildcardLowerBound() {
+    public AbstractType getWildcardUpperBound(Context context) {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isExtendsBound()) {
-            return new ProperType(((Type.WildcardType) properType).getUpperBound());
+            TypeMirror upperBound = ((Type.WildcardType) properType).getUpperBound();
+            if (upperBound == null) {
+                upperBound = context.object;
+            }
+            return new ProperType(upperBound);
         } else {
             return null;
         }

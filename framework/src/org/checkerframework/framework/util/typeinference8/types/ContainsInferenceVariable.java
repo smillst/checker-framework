@@ -1,7 +1,9 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ErrorType;
@@ -33,6 +35,7 @@ public class ContainsInferenceVariable {
     static class Visitor implements TypeVisitor<Boolean, Void> {
         private final Collection<TypeVariable> typeVariables;
         final LinkedHashSet<TypeVariable> foundVariables = new LinkedHashSet<>();
+        private final Set<TypeMirror> visitedTypes = new HashSet<>();
 
         Visitor(Collection<TypeVariable> variables) {
             typeVariables = variables;
@@ -85,6 +88,10 @@ public class ContainsInferenceVariable {
 
         @Override
         public Boolean visitTypeVariable(TypeVariable t, Void aVoid) {
+            if (visitedTypes.contains(t)) {
+                return false;
+            }
+            visitedTypes.add(t);
             if (isInferenceVariable(t)) {
                 return true;
             }
@@ -96,6 +103,11 @@ public class ContainsInferenceVariable {
 
         @Override
         public Boolean visitWildcard(WildcardType t, Void aVoid) {
+            if (visitedTypes.contains(t)) {
+                return false;
+            }
+            visitedTypes.add(t);
+
             if (visit(t.getSuperBound())) {
                 return true;
             }
