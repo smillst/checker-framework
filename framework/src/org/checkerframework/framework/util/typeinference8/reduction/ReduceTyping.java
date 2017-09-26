@@ -90,6 +90,9 @@ public class ReduceTyping {
 
     private static ReductionResult reduceSubtypeArray(Typing c, Context context) {
         AbstractType s = c.getS().getMostSpecificArrayType(context);
+        if (s == null) {
+            return BoundSet.FALSE;
+        }
         if (s.isPrimitiveArray() && c.getT().isPrimitiveArray()) {
             return BoundSet.TRUE;
         } else {
@@ -224,14 +227,16 @@ public class ReduceTyping {
             return new Typing(sComponentType, tComponentType, Kind.TYPE_EQUALITY);
         }
 
-        if (t.isUnboundWildcard() && s.isUnboundWildcard()) {
-            return BoundSet.TRUE;
-        } else if (!s.isLowerBoundedWildcard() && !t.isLowerBoundedWildcard()) {
-            return new Typing(
-                    s.getWildcardUpperBound(), t.getWildcardUpperBound(), Kind.TYPE_EQUALITY);
-        } else if (t.isLowerBoundedWildcard() && s.isLowerBoundedWildcard()) {
-            return new Typing(
-                    t.getWildcardLowerBound(), s.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
+        if (t.getTypeKind() == TypeKind.WILDCARD && s.getTypeKind() == TypeKind.WILDCARD) {
+            if (t.isUnboundWildcard() && s.isUnboundWildcard()) {
+                return BoundSet.TRUE;
+            } else if (!s.isLowerBoundedWildcard() && !t.isLowerBoundedWildcard()) {
+                return new Typing(
+                        s.getWildcardUpperBound(), t.getWildcardUpperBound(), Kind.TYPE_EQUALITY);
+            } else if (t.isLowerBoundedWildcard() && s.isLowerBoundedWildcard()) {
+                return new Typing(
+                        t.getWildcardLowerBound(), s.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
+            }
         }
         return BoundSet.FALSE;
     }

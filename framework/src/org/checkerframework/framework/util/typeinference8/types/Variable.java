@@ -13,7 +13,29 @@ public class Variable extends AbstractType {
     final TypeVariable p;
 
     public Variable(TypeVariable p) {
+        assert p != null;
         this.p = p;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Variable variable = (Variable) o;
+
+        return p.equals(variable.p);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = p.hashCode();
+        result = 31 * result + Kind.VARIABLE.hashCode();
+        return result;
     }
 
     @Override

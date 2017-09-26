@@ -26,6 +26,27 @@ public class InferenceType extends AbstractType {
         this.map = map;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        InferenceType variable = (InferenceType) o;
+
+        return type.equals(variable.type);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + Kind.INFERENCE_TYPE.hashCode();
+        return result;
+    }
+
     public TypeMirror getType() {
         return type;
     }
@@ -134,9 +155,14 @@ public class InferenceType extends AbstractType {
         return InferenceTypeUtil.isParameterizedType(type);
     }
 
+    /** @return the most specific array type or null if there isn't one. */
     public AbstractType getMostSpecificArrayType(Context context) {
-        return InferenceTypeUtil.create(
-                InternalUtils.getMostSpecificArrayType(type, context.types), map);
+        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(type, context.types);
+        if (mostSpecific != null) {
+            return InferenceTypeUtil.create(mostSpecific, map);
+        } else {
+            return null;
+        }
     }
 
     public boolean isPrimitiveArray() {

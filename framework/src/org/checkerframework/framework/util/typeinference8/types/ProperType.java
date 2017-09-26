@@ -24,6 +24,27 @@ public class ProperType extends AbstractType {
         this.properType = properType;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ProperType otherProperType = (ProperType) o;
+
+        return properType.equals(otherProperType.properType);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = properType.hashCode();
+        result = 31 * result + Kind.PROPER.hashCode();
+        return result;
+    }
+
     public TypeMirror getProperType() {
         return properType;
     }
@@ -57,7 +78,11 @@ public class ProperType extends AbstractType {
     @Override
     public AbstractType getMostSpecificArrayType(Context context) {
         TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, context.types);
-        return new ProperType(mostSpecific);
+        if (mostSpecific != null) {
+            return new ProperType(mostSpecific);
+        } else {
+            return null;
+        }
     }
 
     @Override
