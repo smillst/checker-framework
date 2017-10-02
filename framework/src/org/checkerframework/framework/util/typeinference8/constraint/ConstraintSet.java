@@ -12,7 +12,6 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.reduction.Reduce;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
-import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
@@ -50,8 +49,8 @@ public class ConstraintSet implements ReductionResult {
         list.addAll(result.list);
     }
 
-    public BoundSet reduce(Theta map, Context context) {
-        return new Reduce().reduce(this, map, context);
+    public BoundSet reduce(Context context) {
+        return new Reduce().reduce(this, context);
     }
 
     /**

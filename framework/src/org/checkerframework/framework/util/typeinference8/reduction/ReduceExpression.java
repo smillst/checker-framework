@@ -5,8 +5,10 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
+import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
@@ -17,7 +19,6 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.util.Context;
@@ -27,7 +28,7 @@ import org.checkerframework.javacutil.TreeUtils;
 
 public class ReduceExpression {
     /** See JLS 18.2.1 */
-    public static ReductionResult reduce(Expression constraint, Theta map, Context context) {
+    public static ReductionResult reduce(Expression constraint, Context context) {
         switch (constraint.getExpressionKind()) {
             case PROPER_TYPE:
                 return reduceProperType(constraint);
@@ -36,20 +37,18 @@ public class ReduceExpression {
             case PARENTHESIZED:
                 return reduceParenthesized(constraint);
             case METHOD_INVOCATION:
-                return reduceMethodInvocation(constraint, map, context);
+                return reduceMethodInvocation(constraint, context);
             case CONDITIONAL:
                 return reduceConditional(constraint);
             case LAMBDA:
                 return reduceLambda(
                         constraint.getT(),
                         (LambdaExpressionTree) constraint.getExpression(),
-                        map,
                         context);
             case METHOD_REF:
                 return reduceMethodRef(
                         constraint.getT(),
                         (MemberReferenceTree) constraint.getExpression(),
-                        map,
                         context);
             default:
                 ErrorReporter.errorAbort("Unexpected ExpressionKind: %s", constraint.getKind());
@@ -59,16 +58,16 @@ public class ReduceExpression {
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300 */
     private static ReductionResult reduceMethodRef(
-            AbstractType t, MemberReferenceTree memRef, Theta map, Context context) {
+            AbstractType t, MemberReferenceTree memRef, Context context) {
         if (org.checkerframework.framework.util.typeinference8.util.InternalUtils.isExact(memRef)) {
             ConstraintSet constraintSet = new ConstraintSet();
             List<AbstractType> ps = t.getFunctionTypeParameters();
-            List<AbstractType> fs =
-                    InferenceType.create(
-                            org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                                    .getParametersOfPAMethod(memRef),
-                            map,
-                            context);
+            List<AbstractType> fs = new ArrayList<>();
+            for (TypeMirror param :
+                    org.checkerframework.framework.util.typeinference8.util.InternalUtils
+                            .getParametersOfPAMethod(memRef)) {
+                fs.add(new ProperType(param, context));
+            }
 
             if (ps.size() == fs.size() + 1) {
                 AbstractType targetReference = ps.remove(0);
@@ -115,40 +114,32 @@ public class ReduceExpression {
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
     private static ReductionResult reduceLambda(
-            AbstractType t, LambdaExpressionTree lambda, Theta map, Context context) {
+            AbstractType t, LambdaExpressionTree lambda, Context context) {
         AbstractType tPrime = getGroundTargetType(t, lambda);
         ConstraintSet constraintSet = new ConstraintSet();
 
         if (!org.checkerframework.framework.util.typeinference8.util.InternalUtils.isImplicitlyType(
                 lambda)) {
+            // Explicitly typed lambda
             List<? extends VariableTree> parameters = lambda.getParameters();
             List<AbstractType> gs = t.getFunctionTypeParameters();
             assert parameters.size() == gs.size();
 
             for (int i = 0; i < gs.size(); i++) {
                 VariableTree parameter = parameters.get(i);
-                AbstractType fi =
-                        InferenceType.create(InternalUtils.typeOf(parameter), map, context);
+                AbstractType fi = new ProperType(InternalUtils.typeOf(parameter), context);
                 AbstractType gi = gs.get(i);
                 constraintSet.add(new Typing(fi, gi, Constraint.Kind.TYPE_EQUALITY));
             }
             constraintSet.add(new Typing(tPrime, t, Constraint.Kind.SUBTYPE));
         }
 
+        // Implicitly typed lambda
         TypeMirror lambdaReturnType =
                 org.checkerframework.framework.util.typeinference8.util.InternalUtils
                         .getLambdaReturnType(lambda);
         if (lambdaReturnType.getKind() != TypeKind.VOID) {
-            AbstractType r = InferenceType.create(lambdaReturnType, map, context);
-            if (!r.isProper()) {
-                List<ExpressionTree> expressions =
-                        org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                                .getReturnedExpressions(lambda);
-                for (ExpressionTree expression : expressions) {
-                    constraintSet.add(new Expression(expression, r));
-                }
-            }
-            //TODO: if r is a proper type, then qualifier constraints may be needed.
+            throw new RuntimeException("Lambdas: Not implemented ");
         }
         return constraintSet;
     }
@@ -173,17 +164,22 @@ public class ReduceExpression {
      * <p>This bound set may contain new inference variables, as well as dependencies between these
      * new variables and the inference variables in T.
      */
-    private static ReductionResult reduceMethodInvocation(
-            Expression constraint, Theta map, Context context) {
-        if (constraint.getExpression().getKind() == Kind.NEW_CLASS) {
-            throw new RuntimeException("Not implemented");
+    private static ReductionResult reduceMethodInvocation(Expression constraint, Context context) {
+        ExecutableElement element;
+        ExpressionTree expressionTree = constraint.getExpression();
+        List<? extends ExpressionTree> args;
+        if (expressionTree.getKind() == Kind.NEW_CLASS) {
+            NewClassTree newClassTree = (NewClassTree) expressionTree;
+            args = newClassTree.getArguments();
+            element = TreeUtils.elementFromUse(newClassTree);
+        } else {
+            MethodInvocationTree methodInvocationTree = (MethodInvocationTree) expressionTree;
+            args = methodInvocationTree.getArguments();
+            element = TreeUtils.elementFromUse(methodInvocationTree);
         }
-
-        MethodInvocationTree methodInvocation = (MethodInvocationTree) constraint.getExpression();
-        ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
-        map.putAll(Theta.theta(element, methodInvocation, context));
-        BoundSet b2 = context.inference.createB2(methodInvocation, map);
-        return context.inference.createB3(b2, methodInvocation, constraint.getT(), map);
+        Theta map = Theta.theta(element, expressionTree, context);
+        BoundSet b2 = context.inference.createB2(element, args, map);
+        return context.inference.createB3(b2, element, expressionTree, constraint.getT(), map);
     }
 
     private static Constraint reduceParenthesized(Expression constraint) {

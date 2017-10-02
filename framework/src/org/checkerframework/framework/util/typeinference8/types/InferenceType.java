@@ -257,7 +257,7 @@ public class InferenceType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        throw new RuntimeException("Not implemented");
+        throw new RuntimeException("getFunctionTypeParameters: Not implemented");
     }
 
     @Override

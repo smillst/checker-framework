@@ -9,15 +9,14 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
-import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Reduce {
-    public BoundSet reduce(ConstraintSet constraintSet, Theta map, Context context) {
+    public BoundSet reduce(ConstraintSet constraintSet, Context context) {
         BoundSet boundSet = new BoundSet(context);
         while (!constraintSet.isEmpty()) {
             Constraint constraint = constraintSet.pop();
-            ReductionResult result = reduce(constraint, map, context);
+            ReductionResult result = reduce(constraint, context);
             if (result instanceof Constraint) {
                 constraintSet.add((Constraint) result);
             } else if (result instanceof ConstraintSet) {
@@ -39,10 +38,10 @@ public class Reduce {
         return boundSet;
     }
 
-    public ReductionResult reduce(Constraint constraint, Theta map, Context context) {
+    public ReductionResult reduce(Constraint constraint, Context context) {
         switch (constraint.getKind()) {
             case EXPRESSION:
-                return ReduceExpression.reduce((Expression) constraint, map, context);
+                return ReduceExpression.reduce((Expression) constraint, context);
             case TYPE_COMPATIBILITY:
                 return ReduceTyping.reduceCompatible((Typing) constraint);
             case SUBTYPE:

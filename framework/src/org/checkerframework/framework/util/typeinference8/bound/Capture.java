@@ -9,6 +9,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
@@ -50,23 +51,22 @@ public class Capture extends Bound {
             underlying = (DeclaredType) properTypeG.getProperType();
         }
         TypeElement ele = InternalUtils.getTypeElement(underlying);
-        // TODO: FIX ME
         map = new Theta();
-        List<Pair<Variable, ProperType>> pairs = new ArrayList<>();
+        List<Pair<CaptureVariable, TypeMirror>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {
             TypeVariable pl = (TypeVariable) pEle.asType();
-            Variable al = new CaptureVariable(new ProperType(pl, context), tree, context);
+            CaptureVariable al = new CaptureVariable(new ProperType(pl, context), tree, context);
             map.put(pl, al);
-            pairs.add(Pair.of(al, new ProperType(pl.getUpperBound(), context)));
+            pairs.add(Pair.of(al, pl.getUpperBound()));
         }
 
         lhs = (InferenceType) InferenceType.create(underlying, map, context);
 
         Iterator<AbstractType> args = lhs.getTypeArguments().iterator();
-        for (Pair<Variable, ProperType> pair : pairs) {
+        for (Pair<CaptureVariable, TypeMirror> pair : pairs) {
             AbstractType Ai = args.next();
-            Variable alaphi = pair.first;
-            ProperType Bi = pair.second;
+            CaptureVariable alaphi = pair.first;
+            AbstractType Bi = InferenceType.create(pair.second, map, context);
             tuples.add(CaptureTuple.of(alaphi, Ai, Bi));
         }
     }
@@ -87,8 +87,8 @@ public class Capture extends Bound {
     public LinkedHashSet<Variable> getAllIVOnRHS() {
         LinkedHashSet<Variable> set = new LinkedHashSet<>();
         for (CaptureTuple tuple : tuples) {
-            if (tuple.typeArg.getKind() == AbstractType.Kind.VARIABLE) {
-                set.add((Variable) tuple.typeArg);
+            if (tuple.capturedTypeArg.getKind() == AbstractType.Kind.VARIABLE) {
+                set.add((Variable) tuple.capturedTypeArg);
             }
         }
         return set;
@@ -103,7 +103,7 @@ public class Capture extends Bound {
         List<Bound> bounds = new ArrayList<>();
         for (CaptureTuple t : tuples) {
             Variable alphaI = t.alpha;
-            AbstractType Ai = t.typeArg;
+            AbstractType Ai = t.capturedTypeArg;
             if (Ai.getTypeKind() != TypeKind.WILDCARD) {
                 // If Ai is not a wildcard, then the bound αi = Ai is implied.
                 Equal.create(alphaI, Ai);
@@ -121,38 +121,35 @@ public class Capture extends Bound {
     }
 
     public static class CaptureTuple {
-        public final Variable alpha;
-        public final AbstractType typeArg;
-        public final ProperType bound;
 
-        private CaptureTuple(Variable alpha, AbstractType typeArg, ProperType bound) {
+        /**
+         * Fresh inference variable (in the left hand side of the capture). (Also referred to as
+         * beta in the some places in the JLS.) For example {@code a1} in {@code G<a1, ..., an> =
+         * capture(G<A1, ..., An>)}.
+         */
+        public final CaptureVariable alpha;
+        /**
+         * Type argument in the right hand side for the capture. For example {@code A1} in {@code
+         * G<a1, ..., an> = capture(G<A1, ..., An>)}.
+         */
+        public final AbstractType capturedTypeArg;
+
+        /**
+         * Upper bound of one of the type parameters of G that has been substituted using the fresh
+         * inference variables.
+         */
+        public final AbstractType bound;
+
+        private CaptureTuple(
+                CaptureVariable alpha, AbstractType capturedTypeArg, AbstractType bound) {
             this.alpha = alpha;
-            this.typeArg = typeArg;
+            this.capturedTypeArg = capturedTypeArg;
             this.bound = bound;
         }
 
         public static CaptureTuple of(
-                Variable alpha, AbstractType capturedTypeArg, ProperType bound) {
+                CaptureVariable alpha, AbstractType capturedTypeArg, AbstractType bound) {
             return new CaptureTuple(alpha, capturedTypeArg, bound);
         }
-    }
-
-    void method(AbstractType capturedType) {
-        // A1,...,An
-        List<AbstractType> capturedTypeArgs = capturedType.getTypeArguments();
-        // P1,...,Pn
-        List<? extends TypeParameterElement> typeParameters =
-                InternalUtils.getTypeElement(underlying).getTypeParameters();
-    }
-
-    static class Something {
-        // Betai or alphai
-        Variable beta;
-
-        // Bi Theta
-        AbstractType bound;
-
-        // Ai
-        AbstractType capturedArg;
     }
 }

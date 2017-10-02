@@ -8,7 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -74,13 +73,11 @@ public class BoundSet implements ReductionResult {
      *
      * <p>For each l ({@literal 1 <= l <= p)}:
      *
-     * <p>If Pl has no TypeBound, the bound {@literal al <:Object} appears in the set.
+     * <p>If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set.
      *
      * <p>Otherwise, for each type T delimited by & in the TypeBound, the bound {@literal al <:
      * T[P1:=a1,..., Pp:=ap]} appears in the set; if this results in no proper upper bounds for al
      * (only dependencies), then the bound {@literal al <: Object} also appears in the set.
-     *
-     * @param object type mirror for java.lang.Object
      */
     public static BoundSet initialBounds(Theta map, Context context) {
         BoundSet boundSet = new BoundSet(context);
@@ -280,8 +277,8 @@ public class BoundSet implements ReductionResult {
     }
 
     /** Resolve all inference variables mentioned in any bound. */
-    public List<Instantiation> resolve(ProcessingEnvironment env, Theta map) {
-        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, map, context);
+    public List<Instantiation> resolve() {
+        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, context);
         return b.getInstantiations(getAllInferenceVariables());
     }
 
@@ -353,7 +350,7 @@ public class BoundSet implements ReductionResult {
      * @param newBounds bounds to incorporate
      * @param map type vars to inference vars
      */
-    public void incorporateToFixedPoint(BoundSet newBounds, Theta map) {
+    public void incorporateToFixedPoint(BoundSet newBounds) {
         this.isFalse &= newBounds.isFalse;
         if (this.containsFalse()) {
             return;
@@ -378,7 +375,7 @@ public class BoundSet implements ReductionResult {
                 constraints.add(incorporate(capture));
             }
 
-            newBounds = constraints.reduce(map, context);
+            newBounds = constraints.reduce(context);
             isFalse &= newBounds.isFalse;
         } while (!isFalse && changed && count < MAX_INCORPORATION_STEPS);
     }
@@ -389,8 +386,9 @@ public class BoundSet implements ReductionResult {
         ConstraintSet constraintSet = new ConstraintSet();
         for (CaptureTuple c : bound.getTuples()) {
             BoundsForVar boundsForAlphaI = getBoundsForVar(c.alpha);
-            if (c.typeArg.getTypeKind() == TypeKind.WILDCARD) {
-                ConstraintSet newCon = boundsForAlphaI.getWildcardConstraints(c.typeArg, c.bound);
+            if (c.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
+                ConstraintSet newCon =
+                        boundsForAlphaI.getWildcardConstraints(c.capturedTypeArg, c.bound);
                 if (newCon == null) {
                     this.isFalse = true;
                     return new ConstraintSet();

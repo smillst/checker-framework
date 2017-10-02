@@ -259,7 +259,7 @@ public class BoundsForVar {
     }
 
     /** Returns null if the bound false is implied. */
-    public ConstraintSet getWildcardConstraints(AbstractType Ai, ProperType Bi) {
+    public ConstraintSet getWildcardConstraints(AbstractType Ai, AbstractType Bi) {
         ConstraintSet constraintSet = new ConstraintSet();
 
         // Only concerned with bounds against proper types or inference types.

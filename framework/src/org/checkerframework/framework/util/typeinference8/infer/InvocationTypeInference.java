@@ -5,6 +5,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,14 +38,12 @@ import org.checkerframework.javacutil.TreeUtils;
 
 public class InvocationTypeInference {
     private final ProcessingEnvironment env;
-    private final AnnotatedTypeFactory factory;
     private final TreePath pathToExpression;
 
     private final Context context;
 
     public InvocationTypeInference(AnnotatedTypeFactory factory, TreePath pathToExpression) {
         this.env = factory.getProcessingEnv();
-        this.factory = factory;
         this.pathToExpression = pathToExpression;
         this.context = new Context(env, factory, pathToExpression, this);
     }
@@ -63,33 +62,32 @@ public class InvocationTypeInference {
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         Theta map = Theta.theta(element, methodInvocation, context);
-        BoundSet b2 = createB2(methodInvocation, map);
+        BoundSet b2 = createB2(element, methodInvocation.getArguments(), map);
         BoundSet b3;
         if (target != null && InternalUtils.isPolyExpression(methodInvocation)) {
-            b3 = createB3(b2, methodInvocation, target, map);
+            b3 = createB3(b2, element, methodInvocation, target, map);
         } else {
             b3 = b2;
         }
 
-        ConstraintSet c = createC(element, methodInvocation, map);
+        ConstraintSet c = createC(element, methodInvocation.getArguments(), map);
 
-        BoundSet b4 = getB4(map, b3, c);
-        List<Instantiation> thetaPrime = b4.resolve(env, map);
+        BoundSet b4 = getB4(b3, c);
+        List<Instantiation> thetaPrime = b4.resolve();
         // TODO: implement
         boolean uncheckedConversion = false;
         if (uncheckedConversion) {}
         return thetaPrime;
     }
 
-    public BoundSet createB2(MethodInvocationTree methodInvocation, Theta map) {
+    public BoundSet createB2(
+            ExecutableElement element, List<? extends ExpressionTree> args, Theta map) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
         // TODO:
         // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         BoundSet b1 = b0;
-        ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         ConstraintSet c = new ConstraintSet();
-        List<? extends ExpressionTree> args = methodInvocation.getArguments();
         List<AbstractType> formals = getFormals(element, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
@@ -101,8 +99,8 @@ public class InvocationTypeInference {
             }
         }
 
-        BoundSet newBounds = c.reduce(map, context);
-        b1.incorporateToFixedPoint(newBounds, map);
+        BoundSet newBounds = c.reduce(context);
+        b1.incorporateToFixedPoint(newBounds);
 
         return b1;
     }
@@ -119,24 +117,26 @@ public class InvocationTypeInference {
         return InferenceType.create(params, map, context);
     }
 
-    private BoundSet getB4(Theta map, BoundSet current, ConstraintSet c) {
+    private BoundSet getB4(BoundSet current, ConstraintSet c) {
         while (!c.isEmpty()) {
             ConstraintSet subset = c.getMagicalSubSet(current.getDependencies());
             c.remove(subset);
             List<Variable> alphas = c.getAllInferenceVariables();
-            current = Resolution.resolve(alphas, current, map, context);
+            current = Resolution.resolve(alphas, current, context);
             c.applyInstantiations(current.getInstantiations(alphas), context);
-            BoundSet newBounds = c.reduce(map, context);
-            current.incorporateToFixedPoint(newBounds, map);
+            BoundSet newBounds = c.reduce(context);
+            current.incorporateToFixedPoint(newBounds);
         }
         return current;
     }
 
     public BoundSet createB3(
-            BoundSet b2, MethodInvocationTree invocation, AbstractType target, Theta map) {
-        AbstractType r =
-                InferenceType.create(
-                        TreeUtils.elementFromUse(invocation).getReturnType(), map, context);
+            BoundSet b2,
+            ExecutableElement element,
+            ExpressionTree invocation,
+            AbstractType target,
+            Theta map) {
+        AbstractType r = InferenceType.create(element.getReturnType(), map, context);
         // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-100-C.1-A
         // If unchecked conversion was necessary for the method to be applicable during
         // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
@@ -148,37 +148,34 @@ public class InvocationTypeInference {
             // formula ‹G<β1, ..., βn> → T› is reduced and incorporated, along with the bound
             // G<β1, ..., βn> = capture(G<A1, ..., An>), with B2.
             Capture capture = new Capture(r, invocation, context);
-            map.putAll(capture.getMap());
             ConstraintSet set =
                     new ConstraintSet(
                             new Typing(capture.getLHS(), target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = set.reduce(map, context);
+            BoundSet newBounds = set.reduce(context);
             newBounds.add(capture);
-            b2.incorporateToFixedPoint(newBounds, map);
+            b2.incorporateToFixedPoint(newBounds);
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
-            BoundSet resolve =
-                    Resolution.resolve(Collections.singletonList(alpha), b2, map, context);
+            BoundSet resolve = Resolution.resolve(Collections.singletonList(alpha), b2, context);
             ProperType u = resolve.getInstantiation(alpha);
             ConstraintSet constraintSet =
                     new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(map, context);
-            resolve.incorporateToFixedPoint(newBounds, map);
+            BoundSet newBounds = constraintSet.reduce(context);
+            resolve.incorporateToFixedPoint(newBounds);
             return resolve;
         } else {
             ConstraintSet constraintSet =
                     new ConstraintSet(new Typing(r, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(map, context);
-            b2.incorporateToFixedPoint(newBounds, map);
+            BoundSet newBounds = constraintSet.reduce(context);
+            b2.incorporateToFixedPoint(newBounds);
             return b2;
         }
     }
 
     private ConstraintSet createC(
-            ExecutableElement element, MethodInvocationTree methodInvocation, Theta map) {
+            ExecutableElement element, List<? extends ExpressionTree> args, Theta map) {
         ConstraintSet c = new ConstraintSet();
-        List<? extends ExpressionTree> args = methodInvocation.getArguments();
         List<AbstractType> formals = getFormals(element, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
@@ -210,14 +207,18 @@ public class InvocationTypeInference {
                 if (InternalUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
-                    map.putAll(Theta.theta(ele, methodInvocation, context));
-                    c.add(createC(ele, methodInvocation, map));
+                    Theta newMap = Theta.theta(ele, methodInvocation, context);
+                    c.add(createC(ele, methodInvocation.getArguments(), newMap));
                 }
                 break;
             case NEW_CLASS:
-                // TODO: I think this is the same as a method invocation...
-                throw new RuntimeException("Not implemented");
-                // break;
+                if (InternalUtils.isPolyExpression(ei)) {
+                    NewClassTree newClassTree = (NewClassTree) ei;
+                    ExecutableElement ele = TreeUtils.elementFromUse(newClassTree);
+                    Theta newMap = Theta.theta(ele, newClassTree, context);
+                    c.add(createC(ele, newClassTree.getArguments(), newMap));
+                }
+                break;
             case PARENTHESIZED:
                 c.add(getConstraint(TreeUtils.skipParens(ei), fi, map));
                 break;
