@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.IntersectionType;
@@ -138,7 +140,19 @@ public class ProperType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        throw new RuntimeException("Not implemented");
+        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(
+                properType, context.env)) {
+            ExecutableElement element =
+                    org.checkerframework.javacutil.InternalUtils.findFunction(
+                            (Type) properType, context.env);
+            List<AbstractType> params = new ArrayList<>();
+            for (VariableElement var : element.getParameters()) {
+                params.add(new ProperType(var.asType(), context));
+            }
+            return params;
+        } else {
+            return null;
+        }
     }
 
     @Override

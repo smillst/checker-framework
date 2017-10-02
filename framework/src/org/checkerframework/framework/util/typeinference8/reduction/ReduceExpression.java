@@ -87,7 +87,7 @@ public class ReduceExpression {
         if (memRef.getTypeArguments() == null
                 && org.checkerframework.framework.util.typeinference8.util.InternalUtils
                         .isGenericMethod(memRef)) {
-            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-B
+            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
             // Otherwise, if the method reference expression elides TypeArguments, and the
             // compile-time declaration is a generic method, and the return type of the
             // compile-time declaration mentions at least one of the method's type parameters,

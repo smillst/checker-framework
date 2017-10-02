@@ -1,8 +1,10 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
+import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
 import java.util.List;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.bound.Throws;
@@ -20,13 +22,12 @@ public class Resolution {
         }
         Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
-        BoundSet resolved = new BoundSet(context);
 
         for (Variable alpha : as) {
-            resolved.add(resolution.resolve(dependencies.get(alpha), boundSet));
+            boundSet = resolution.resolve(dependencies.get(alpha), boundSet);
         }
 
-        return resolved;
+        return boundSet;
     }
 
     private final Context context;
@@ -38,13 +39,13 @@ public class Resolution {
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
-            resolvedBounds = resolve2(as, boundSet);
+            resolvedBounds = resolve2(as, boundSet, context);
         } else {
             BoundSet copy = new BoundSet(boundSet);
             resolvedBounds = resolve1(as, boundSet);
             if (resolvedBounds.containsFalse()) {
                 boundSet = copy;
-                resolvedBounds = resolve2(as, boundSet);
+                resolvedBounds = resolve2(as, boundSet, context);
             }
         }
         return resolvedBounds;
@@ -100,7 +101,49 @@ public class Resolution {
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-B */
-    private static BoundSet resolve2(LinkedHashSet<Variable> as, BoundSet boundSet) {
-        throw new RuntimeException("Resolve2: Not Implemented");
+    private static BoundSet resolve2(
+            LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
+        BoundSet resolvedBoundSet = new BoundSet(context);
+        for (Variable ai : as) {
+            if (boundSet.hasInstantiation(ai)) {
+                continue;
+            }
+            LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
+            TypeMirror lowerBound = null;
+            if (!lowerBounds.isEmpty()) {
+                for (ProperType liProperType : lowerBounds) {
+                    TypeMirror li = liProperType.getProperType();
+                    if (lowerBound == null) {
+                        lowerBound = li;
+                    } else {
+                        lowerBound = InternalUtils.lub(context.env, lowerBound, li);
+                    }
+                }
+            }
+
+            LinkedHashSet<ProperType> upperBounds = boundSet.findProperUpperBounds(ai);
+            TypeMirror upperBound = null;
+            if (!upperBounds.isEmpty()) {
+                for (ProperType liProperType : upperBounds) {
+                    TypeMirror li = liProperType.getProperType();
+                    if (upperBound == null) {
+                        upperBound = li;
+                    } else {
+                        upperBound = InternalUtils.glb(context.env, upperBound, li);
+                    }
+                }
+            }
+            WildcardType wildcardType;
+            try {
+                wildcardType = context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
+            } catch (Exception ex) {
+                return BoundSet.FALSE;
+            }
+            TypeMirror freshTypeVar = context.types.capture((Type) wildcardType);
+            resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
+        }
+        boundSet.removeCaptures(as);
+        boundSet.incorporateToFixedPoint(resolvedBoundSet);
+        return boundSet;
     }
 }

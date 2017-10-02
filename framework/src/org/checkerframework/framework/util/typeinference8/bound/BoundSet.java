@@ -408,4 +408,8 @@ public class BoundSet implements ReductionResult {
         }
         return constraintSet;
     }
+
+    public void removeCaptures(LinkedHashSet<Variable> as) {
+        captures.removeIf((Capture c) -> c.isCaptureMentionsAny(as));
+    }
 }

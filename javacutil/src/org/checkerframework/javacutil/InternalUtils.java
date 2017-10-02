@@ -461,9 +461,23 @@ public class InternalUtils {
      * @param env ProcessingEnvironment
      * @return the single abstract method declared by the type of the tree
      */
-    public static Symbol findFunction(Tree tree, ProcessingEnvironment env) {
+    public static ExecutableElement findFunction(Tree tree, ProcessingEnvironment env) {
+        return findFunction((Type) typeOf(tree), env);
+    }
+
+    /**
+     * TThis method eturns the single abstract method declared by {@code functionalInterfaceType}.
+     * (The type of this method is referred to as the function type.)
+     *
+     * @param functionalInterfaceType functional interface
+     * @param env ProcessingEnvironment
+     * @return the single abstract method declared by the type of the tree
+     */
+    public static ExecutableElement findFunction(
+            Type functionalInterfaceType, ProcessingEnvironment env) {
         Context ctx = ((JavacProcessingEnvironment) env).getContext();
         com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
-        return javacTypes.findDescriptorSymbol(((Type) typeOf(tree)).asElement());
+        return (ExecutableElement)
+                javacTypes.findDescriptorSymbol(functionalInterfaceType.asElement());
     }
 }

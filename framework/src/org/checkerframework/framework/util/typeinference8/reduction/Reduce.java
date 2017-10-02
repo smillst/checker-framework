@@ -10,6 +10,7 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.javacutil.ErrorReporter;
 
 public class Reduce {
     public BoundSet reduce(ConstraintSet constraintSet, Context context) {
@@ -57,7 +58,8 @@ public class Reduce {
             case QUALIFIER_SUBTYPE:
                 throw new RuntimeException("Not implemented");
             default:
-                throw new RuntimeException("Not Implemented");
+                ErrorReporter.errorAbort("Unexpected constraint kind: " + constraint.getKind());
+                throw new RuntimeException(""); // dead code
         }
     }
 

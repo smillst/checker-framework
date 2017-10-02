@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.IntersectionType;
@@ -257,7 +259,18 @@ public class InferenceType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        throw new RuntimeException("getFunctionTypeParameters: Not implemented");
+        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element =
+                    org.checkerframework.javacutil.InternalUtils.findFunction(
+                            (Type) type, context.env);
+            List<AbstractType> params = new ArrayList<>();
+            for (VariableElement var : element.getParameters()) {
+                params.add(InferenceType.create(var.asType(), map, context));
+            }
+            return params;
+        } else {
+            return null;
+        }
     }
 
     @Override
