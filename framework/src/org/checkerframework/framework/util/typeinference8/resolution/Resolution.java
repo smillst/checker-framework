@@ -14,16 +14,14 @@ import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
 
 public class Resolution {
     public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
-        if (as.isEmpty()) {
-            return BoundSet.TRUE;
+        if (as.isEmpty() || boundSet.getInstantiations(as).size() == as.size()) {
+            // If all variables have an instantiation, resolution is complete.
+            return boundSet;
         }
         Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
         BoundSet resolved = new BoundSet(context);
-        if (boundSet.getInstantiations(as).size() == as.size()) {
-            // If all variables have an instantiation, resolution is complete.
-            return boundSet;
-        }
+
         for (Variable alpha : as) {
             resolved.add(resolution.resolve(dependencies.get(alpha), boundSet));
         }
@@ -42,9 +40,10 @@ public class Resolution {
         if (boundSet.containsCapture(as)) {
             resolvedBounds = resolve2(as, boundSet);
         } else {
+            BoundSet copy = new BoundSet(boundSet);
             resolvedBounds = resolve1(as, boundSet);
             if (resolvedBounds.containsFalse()) {
-                //TODO: must boundSet is sideeffected above, need a way to roll back.
+                boundSet = copy;
                 resolvedBounds = resolve2(as, boundSet);
             }
         }

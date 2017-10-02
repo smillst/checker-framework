@@ -39,7 +39,7 @@ public class BoundSet implements ReductionResult {
     //    private static final int MAX_INCORPORATION_STEPS = 100;
     private static final int MAX_INCORPORATION_STEPS = 10;
 
-    public static final BoundSet TRUE = new BoundSet(null);
+    public static final BoundSet TRUE = new BoundSet((Context) null);
 
     public static final BoundSet FALSE = new BoundSet(Bound.FALSE, null);
 
@@ -57,10 +57,22 @@ public class BoundSet implements ReductionResult {
     }
 
     public BoundSet(Context context) {
-        boundsOnVariables = new HashMap<>();
-        captures = new LinkedHashSet<>();
-        throwsList = new LinkedHashSet<>();
+        this.boundsOnVariables = new HashMap<>();
+        this.captures = new LinkedHashSet<>();
+        this.throwsList = new LinkedHashSet<>();
         this.context = context;
+        this.isFalse = false;
+    }
+
+    public BoundSet(BoundSet toCopy) {
+        this(toCopy.context);
+        this.isFalse = toCopy.isFalse;
+        this.captures.addAll(toCopy.captures);
+        this.throwsList.addAll(toCopy.throwsList);
+        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
+            BoundsForVar copy = new BoundsForVar(entry.getValue());
+            boundsOnVariables.put(entry.getKey(), copy);
+        }
     }
 
     /**
@@ -86,11 +98,7 @@ public class BoundSet implements ReductionResult {
             TypeVariable pl = entry.getKey();
             Variable al = entry.getValue();
             TypeMirror upperBound = pl.getUpperBound();
-            BoundSet boundsForAL = initialBoundForL(map, al, upperBound, context);
-            if (!boundsForAL.containsProperUpperBound(al)) {
-                boundsForAL.add(Subtype.createSubtype(al, context.object));
-            }
-            boundSet.add(boundsForAL);
+            boundSet.add(initialBoundForL(map, al, upperBound, context));
         }
         return boundSet;
     }
@@ -348,7 +356,6 @@ public class BoundSet implements ReductionResult {
      * defines this fixed point and further explains incorporation.
      *
      * @param newBounds bounds to incorporate
-     * @param map type vars to inference vars
      */
     public void incorporateToFixedPoint(BoundSet newBounds) {
         this.isFalse &= newBounds.isFalse;
@@ -359,7 +366,10 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
-            changed = add(newBounds);
+            if (!add(newBounds)) {
+                // No new bounds, a fixed point has been reached.
+                break;
+            }
 
             ConstraintSet constraints = new ConstraintSet();
             for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
@@ -377,7 +387,7 @@ public class BoundSet implements ReductionResult {
 
             newBounds = constraints.reduce(context);
             isFalse &= newBounds.isFalse;
-        } while (!isFalse && changed && count < MAX_INCORPORATION_STEPS);
+        } while (!isFalse && count < MAX_INCORPORATION_STEPS);
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2 */

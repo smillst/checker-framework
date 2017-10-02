@@ -91,14 +91,14 @@ public class Expression extends Constraint {
                     return Collections.singletonList((Variable) t);
                 } else {
                     // TODO
-                    throw new RuntimeException("Not Implemented");
+                    throw new RuntimeException("getInputVariablesForExpression: Not Implemented");
                 }
             case MEMBER_REFERENCE:
                 if (t.isVariable()) {
                     return Collections.singletonList((Variable) t);
                 } else {
                     // TODO
-                    throw new RuntimeException("Not Implemented");
+                    throw new RuntimeException("getInputVariablesForExpression: Not Implemented");
                 }
             case PARENTHESIZED:
                 return getInputVariablesForExpression(TreeUtils.skipParens(tree), t);

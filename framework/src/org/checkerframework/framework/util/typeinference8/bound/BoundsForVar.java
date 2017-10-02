@@ -25,9 +25,9 @@ import org.checkerframework.javacutil.Pair;
 public class BoundsForVar {
 
     private final Variable var;
-    private final VarBounds upperBounds = new VarBounds();
-    private final VarBounds lowerBounds = new VarBounds();
-    private final VarBounds equalBounds = new VarBounds();
+    private final VarBounds upperBounds;
+    private final VarBounds lowerBounds;
+    private final VarBounds equalBounds;
 
     private final LinkedHashSet<Constraint> toIncorporate = new LinkedHashSet<>();
     private final Context context;
@@ -35,6 +35,18 @@ public class BoundsForVar {
     public BoundsForVar(Variable var, Context context) {
         this.var = var;
         this.context = context;
+        this.upperBounds = new VarBounds();
+        this.lowerBounds = new VarBounds();
+        this.equalBounds = new VarBounds();
+    }
+
+    public BoundsForVar(BoundsForVar toCopy) {
+        this.var = toCopy.var;
+        this.context = toCopy.context;
+        this.upperBounds = new VarBounds(toCopy.upperBounds);
+        this.lowerBounds = new VarBounds(toCopy.lowerBounds);
+        this.equalBounds = new VarBounds(toCopy.equalBounds);
+        this.toIncorporate.addAll(toCopy.toIncorporate);
     }
 
     /** var = s */
@@ -328,6 +340,13 @@ public class BoundsForVar {
             this.properTypes = new LinkedHashSet<>();
             this.variables = new LinkedHashSet<>();
             this.inferenceTypes = new LinkedHashSet<>();
+        }
+
+        public VarBounds(VarBounds toCopy) {
+            this();
+            properTypes.addAll(toCopy.properTypes);
+            variables.addAll(toCopy.variables);
+            inferenceTypes.addAll(toCopy.inferenceTypes);
         }
 
         boolean add(AbstractType t) {
