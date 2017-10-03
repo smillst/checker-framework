@@ -18,7 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 
@@ -152,8 +152,8 @@ public class BoundsForVar {
      */
     private Pair<TypeMirror, TypeMirror> getParameterizedSupers(TypeMirror s, TypeMirror t) {
         // com.sun.tools.javac.comp.Infer#getParameterizedSupers
-        TypeMirror lubResult = InternalUtils.lub(context.env, t, s);
-        if (!InternalUtils.isParameterized(lubResult)) {
+        TypeMirror lubResult = InternalInferenceUtils.lub(context.env, t, s);
+        if (!InternalInferenceUtils.isParameterized(lubResult)) {
             return null;
         }
 

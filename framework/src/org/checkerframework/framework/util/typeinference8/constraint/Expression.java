@@ -11,7 +11,7 @@ import java.util.List;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TreeUtils;
 
@@ -40,7 +40,7 @@ public class Expression extends Constraint {
 
         if (t.isProper()) {
             this.expressionKind = ExpressionKind.PROPER_TYPE;
-        } else if (InternalUtils.isStandaloneExpression(expressionTree)) {
+        } else if (InternalInferenceUtils.isStandaloneExpression(expressionTree)) {
             this.expressionKind = ExpressionKind.STANDALONE;
         } else if (expressionTree.getKind() == Tree.Kind.PARENTHESIZED) {
             this.expressionKind = ExpressionKind.PARENTHESIZED;
@@ -96,7 +96,7 @@ public class Expression extends Constraint {
                 } else {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) tree;
                     List<Variable> inputs = new ArrayList<>();
-                    if (InternalUtils.isImplicitlyType(lambdaTree)) {
+                    if (InternalInferenceUtils.isImplicitlyType(lambdaTree)) {
                         List<AbstractType> params = T.getFunctionTypeParameters();
                         if (params == null) {
                             // T is not a function type.
@@ -110,7 +110,8 @@ public class Expression extends Constraint {
                     if (R == null || R.getTypeKind() == TypeKind.NONE) {
                         return inputs;
                     }
-                    for (ExpressionTree e : InternalUtils.getReturnedExpressions(lambdaTree)) {
+                    for (ExpressionTree e :
+                            InternalInferenceUtils.getReturnedExpressions(lambdaTree)) {
                         Constraint c = new Expression(e, R);
                         inputs.addAll(c.getInputVariables());
                     }
@@ -119,7 +120,7 @@ public class Expression extends Constraint {
             case MEMBER_REFERENCE:
                 if (t.isVariable()) {
                     return Collections.singletonList((Variable) t);
-                } else if (InternalUtils.isExact((MemberReferenceTree) tree)) {
+                } else if (InternalInferenceUtils.isExact((MemberReferenceTree) tree)) {
                     return Collections.emptyList();
                 } else {
                     List<AbstractType> params = T.getFunctionTypeParameters();

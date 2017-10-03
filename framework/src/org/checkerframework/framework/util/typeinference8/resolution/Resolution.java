@@ -12,7 +12,7 @@ import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
 public class Resolution {
     public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
@@ -66,7 +66,7 @@ public class Resolution {
                     if (ti == null) {
                         ti = li;
                     } else {
-                        ti = InternalUtils.lub(context.env, ti, li);
+                        ti = InternalInferenceUtils.lub(context.env, ti, li);
                     }
                 }
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti, context)));
@@ -81,7 +81,7 @@ public class Resolution {
                     if (ti == null) {
                         ti = li;
                     } else {
-                        ti = InternalUtils.glb(context.env, ti, li);
+                        ti = InternalInferenceUtils.glb(context.env, ti, li);
                     }
                 }
                 List<Throws> throwsBounds = boundSet.findThrowsBounds(ai);
@@ -116,7 +116,7 @@ public class Resolution {
                     if (lowerBound == null) {
                         lowerBound = li;
                     } else {
-                        lowerBound = InternalUtils.lub(context.env, lowerBound, li);
+                        lowerBound = InternalInferenceUtils.lub(context.env, lowerBound, li);
                     }
                 }
             }
@@ -129,7 +129,7 @@ public class Resolution {
                     if (upperBound == null) {
                         upperBound = li;
                     } else {
-                        upperBound = InternalUtils.glb(context.env, upperBound, li);
+                        upperBound = InternalInferenceUtils.glb(context.env, upperBound, li);
                     }
                 }
             }

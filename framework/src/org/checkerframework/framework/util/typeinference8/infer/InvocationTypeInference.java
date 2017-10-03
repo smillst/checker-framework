@@ -30,7 +30,7 @@ import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class InvocationTypeInference {
@@ -61,7 +61,7 @@ public class InvocationTypeInference {
         Theta map = Theta.theta(element, methodInvocation, context);
         BoundSet b2 = createB2(element, methodInvocation.getArguments(), map);
         BoundSet b3;
-        if (target != null && InternalUtils.isPolyExpression(methodInvocation)) {
+        if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
             b3 = createB3(b2, element, methodInvocation, target, map);
         } else {
             b3 = b2;
@@ -91,7 +91,7 @@ public class InvocationTypeInference {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
 
-            if (!InternalUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+            if (!InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
         }
@@ -186,14 +186,15 @@ public class InvocationTypeInference {
 
     private ConstraintSet getConstraint(ExpressionTree ei, AbstractType fi, Theta map) {
         ConstraintSet c = new ConstraintSet();
-        if (InternalUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+        if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
             c.add(new Expression(ei, fi));
         }
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 c.add(new Expression(lambda, fi));
-                for (ExpressionTree expression : InternalUtils.getReturnedExpressions(lambda)) {
+                for (ExpressionTree expression :
+                        InternalInferenceUtils.getReturnedExpressions(lambda)) {
                     c.add(getConstraint(expression, fi, map));
                 }
                 break;
@@ -201,7 +202,7 @@ public class InvocationTypeInference {
                 c.add(new Expression(ei, fi));
                 break;
             case METHOD_INVOCATION:
-                if (InternalUtils.isPolyExpression(ei)) {
+                if (InternalInferenceUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
                     Theta newMap = Theta.theta(ele, methodInvocation, context);
@@ -209,7 +210,7 @@ public class InvocationTypeInference {
                 }
                 break;
             case NEW_CLASS:
-                if (InternalUtils.isPolyExpression(ei)) {
+                if (InternalInferenceUtils.isPolyExpression(ei)) {
                     NewClassTree newClassTree = (NewClassTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(newClassTree);
                     Theta newMap = Theta.theta(ele, newClassTree, context);

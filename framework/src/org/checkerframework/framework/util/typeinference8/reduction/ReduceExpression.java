@@ -22,6 +22,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -59,13 +60,11 @@ public class ReduceExpression {
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300 */
     private static ReductionResult reduceMethodRef(
             AbstractType t, MemberReferenceTree memRef, Context context) {
-        if (org.checkerframework.framework.util.typeinference8.util.InternalUtils.isExact(memRef)) {
+        if (InternalInferenceUtils.isExact(memRef)) {
             ConstraintSet constraintSet = new ConstraintSet();
             List<AbstractType> ps = t.getFunctionTypeParameters();
             List<AbstractType> fs = new ArrayList<>();
-            for (TypeMirror param :
-                    org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                            .getParametersOfPAMethod(memRef)) {
+            for (TypeMirror param : InternalInferenceUtils.getParametersOfPAMethod(memRef)) {
                 fs.add(new ProperType(param, context));
             }
 
@@ -84,9 +83,7 @@ public class ReduceExpression {
         }
         // else
 
-        if (memRef.getTypeArguments() == null
-                && org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                        .isGenericMethod(memRef)) {
+        if (memRef.getTypeArguments() == null && InternalInferenceUtils.isGenericMethod(memRef)) {
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
             // Otherwise, if the method reference expression elides TypeArguments, and the
             // compile-time declaration is a generic method, and the return type of the
@@ -118,8 +115,7 @@ public class ReduceExpression {
         AbstractType tPrime = getGroundTargetType(t, lambda);
         ConstraintSet constraintSet = new ConstraintSet();
 
-        if (!org.checkerframework.framework.util.typeinference8.util.InternalUtils.isImplicitlyType(
-                lambda)) {
+        if (!InternalInferenceUtils.isImplicitlyType(lambda)) {
             // Explicitly typed lambda
             List<? extends VariableTree> parameters = lambda.getParameters();
             List<AbstractType> gs = t.getFunctionTypeParameters();
@@ -136,9 +132,7 @@ public class ReduceExpression {
 
         AbstractType R = t.getFunctionTypeReturn();
         if (R != null && R.getTypeKind() != TypeKind.VOID) {
-            for (ExpressionTree e :
-                    org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                            .getReturnedExpressions(lambda)) {
+            for (ExpressionTree e : InternalInferenceUtils.getReturnedExpressions(lambda)) {
                 if (R.isProper()) {
                     if (!context.factory
                             .getContext()
@@ -221,8 +215,7 @@ public class ReduceExpression {
         }
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
-        if (org.checkerframework.framework.util.typeinference8.util.InternalUtils.isImplicitlyType(
-                lambda)) {
+        if (InternalInferenceUtils.isImplicitlyType(lambda)) {
             // TODO: call 18.5.3: Functional Interface Parameterization Inference
             throw new RuntimeException("Not implemented");
         } else {

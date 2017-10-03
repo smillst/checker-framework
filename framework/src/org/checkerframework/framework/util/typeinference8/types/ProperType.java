@@ -15,7 +15,8 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class ProperType extends AbstractType {
@@ -85,7 +86,8 @@ public class ProperType extends AbstractType {
 
     @Override
     public AbstractType getMostSpecificArrayType() {
-        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(properType, context.types);
+        TypeMirror mostSpecific =
+                InternalInferenceUtils.getMostSpecificArrayType(properType, context.types);
         if (mostSpecific != null) {
             return new ProperType(mostSpecific, context);
         } else {
@@ -140,11 +142,8 @@ public class ProperType extends AbstractType {
 
     @Override
     public AbstractType getFunctionTypeReturn() {
-        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(
-                properType, context.env)) {
-            ExecutableElement element =
-                    org.checkerframework.javacutil.InternalUtils.findFunction(
-                            (Type) properType, context.env);
+        if (InternalUtils.isFunctionalInterface(properType, context.env)) {
+            ExecutableElement element = InternalUtils.findFunction((Type) properType, context.env);
             return new ProperType(element.getReturnType(), context);
         } else {
             return null;
@@ -153,11 +152,8 @@ public class ProperType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(
-                properType, context.env)) {
-            ExecutableElement element =
-                    org.checkerframework.javacutil.InternalUtils.findFunction(
-                            (Type) properType, context.env);
+        if (InternalUtils.isFunctionalInterface(properType, context.env)) {
+            ExecutableElement element = InternalUtils.findFunction((Type) properType, context.env);
             List<AbstractType> params = new ArrayList<>();
             for (VariableElement var : element.getParameters()) {
                 params.add(new ProperType(var.asType(), context));

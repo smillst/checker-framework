@@ -26,11 +26,12 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
-public class InternalUtils {
+public class InternalInferenceUtils {
 
     public static Types getTypes(ProcessingEnvironment env) {
         JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
@@ -158,8 +159,7 @@ public class InternalUtils {
      * @return
      */
     public static List<? extends TypeMirror> getParametersOfPAMethod(MemberReferenceTree ref) {
-        ExecutableElement ele =
-                (ExecutableElement) org.checkerframework.javacutil.InternalUtils.symbol(ref);
+        ExecutableElement ele = (ExecutableElement) InternalUtils.symbol(ref);
         List<TypeMirror> params = new ArrayList<>();
         for (VariableElement var : ele.getParameters()) {
             params.add(var.asType());

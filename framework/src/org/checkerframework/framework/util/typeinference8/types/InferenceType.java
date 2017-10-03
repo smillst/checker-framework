@@ -19,7 +19,8 @@ import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiat
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
-import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class InferenceType extends AbstractType {
@@ -194,7 +195,8 @@ public class InferenceType extends AbstractType {
 
     /** @return the most specific array type or null if there isn't one. */
     public AbstractType getMostSpecificArrayType() {
-        TypeMirror mostSpecific = InternalUtils.getMostSpecificArrayType(type, context.types);
+        TypeMirror mostSpecific =
+                InternalInferenceUtils.getMostSpecificArrayType(type, context.types);
         if (mostSpecific != null) {
             return create(mostSpecific, map, context);
         } else {
@@ -253,16 +255,15 @@ public class InferenceType extends AbstractType {
             arguments.add(instantiation.getT().getProperType());
         }
 
-        TypeMirror newType = InternalUtils.subs(context.env, type, typeVariables, arguments);
+        TypeMirror newType =
+                InternalInferenceUtils.subs(context.env, type, typeVariables, arguments);
         return create(newType, map, context);
     }
 
     @Override
     public AbstractType getFunctionTypeReturn() {
-        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element =
-                    org.checkerframework.javacutil.InternalUtils.findFunction(
-                            (Type) type, context.env);
+        if (InternalUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element = InternalUtils.findFunction((Type) type, context.env);
             return InferenceType.create(element.getReturnType(), map, context);
         } else {
             return null;
@@ -271,10 +272,8 @@ public class InferenceType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element =
-                    org.checkerframework.javacutil.InternalUtils.findFunction(
-                            (Type) type, context.env);
+        if (InternalUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element = InternalUtils.findFunction((Type) type, context.env);
             List<AbstractType> params = new ArrayList<>();
             for (VariableElement var : element.getParameters()) {
                 params.add(InferenceType.create(var.asType(), map, context));
