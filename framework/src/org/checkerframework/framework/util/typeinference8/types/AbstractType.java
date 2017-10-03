@@ -17,6 +17,8 @@ public abstract class AbstractType {
 
     public abstract boolean isObject();
 
+    public abstract AbstractType getFunctionTypeReturn();
+
     public enum Kind {
         PROPER,
         VARIABLE,
@@ -51,7 +53,7 @@ public abstract class AbstractType {
 
     public abstract boolean hasLowerBound();
 
-    public abstract Collection<? extends Variable> getInferenceVariables();
+    public abstract Collection<Variable> getInferenceVariables();
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C */
     public abstract AbstractType getNonWildcardParameterization();

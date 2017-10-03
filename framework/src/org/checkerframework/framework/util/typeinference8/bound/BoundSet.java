@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -292,6 +293,10 @@ public class BoundSet implements ReductionResult {
 
     /** JLS 18.4. Guides order of resolution. */
     public Dependencies getDependencies() {
+        return getDependencies(null);
+    }
+
+    public Dependencies getDependencies(ConstraintSet c) {
         Dependencies dependencies = new Dependencies();
 
         LinkedHashSet<Variable> lhsCapture = new LinkedHashSet<>();
@@ -308,8 +313,11 @@ public class BoundSet implements ReductionResult {
 
             lhsCapture.addAll(lhsVars);
         }
-
-        for (Variable alpha : getAllInferenceVariables()) {
+        Set<Variable> set = new LinkedHashSet<>(getAllInferenceVariables());
+        if (c != null) {
+            set.addAll(c.getAllInferenceVariables());
+        }
+        for (Variable alpha : set) {
             LinkedHashSet<Variable> alphaDependencies = new LinkedHashSet<>();
             // An inference variable alpha depends on the resolution of itself.
             alphaDependencies.add(alpha);

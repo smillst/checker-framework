@@ -134,12 +134,23 @@ public class ReduceExpression {
             constraintSet.add(new Typing(tPrime, t, Constraint.Kind.SUBTYPE));
         }
 
-        // Implicitly typed lambda
-        TypeMirror lambdaReturnType =
-                org.checkerframework.framework.util.typeinference8.util.InternalUtils
-                        .getLambdaReturnType(lambda);
-        if (lambdaReturnType.getKind() != TypeKind.VOID) {
-            throw new RuntimeException("Lambdas: Not implemented ");
+        AbstractType R = t.getFunctionTypeReturn();
+        if (R != null && R.getTypeKind() != TypeKind.VOID) {
+            for (ExpressionTree e :
+                    org.checkerframework.framework.util.typeinference8.util.InternalUtils
+                            .getReturnedExpressions(lambda)) {
+                if (R.isProper()) {
+                    if (!context.factory
+                            .getContext()
+                            .getTypeUtils()
+                            .isAssignable(
+                                    InternalUtils.typeOf(e), ((ProperType) R).getProperType())) {
+                        return BoundSet.FALSE;
+                    }
+                } else {
+                    constraintSet.add(new Expression(e, R));
+                }
+            }
         }
         return constraintSet;
     }

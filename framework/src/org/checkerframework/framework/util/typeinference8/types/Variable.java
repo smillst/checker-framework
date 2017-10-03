@@ -96,7 +96,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public Collection<? extends Variable> getInferenceVariables() {
+    public Collection<Variable> getInferenceVariables() {
         return Collections.singleton(this);
     }
 
@@ -113,6 +113,11 @@ public class Variable extends AbstractType {
     @Override
     public AbstractType applyInstantiations(List<Instantiation> instantiations) {
         return this;
+    }
+
+    @Override
+    public AbstractType getFunctionTypeReturn() {
+        return null;
     }
 
     @Override

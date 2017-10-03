@@ -222,7 +222,7 @@ public class InferenceType extends AbstractType {
 
     /** @return all inference variables mentioned in this type. */
     @Override
-    public Collection<? extends Variable> getInferenceVariables() {
+    public Collection<Variable> getInferenceVariables() {
         LinkedHashSet<Variable> variables = new LinkedHashSet<>();
         for (TypeVariable typeVar : ContainsInferenceVariable.getInferenceVar(map.keySet(), type)) {
             variables.add(map.get(typeVar));
@@ -255,6 +255,18 @@ public class InferenceType extends AbstractType {
 
         TypeMirror newType = InternalUtils.subs(context.env, type, typeVariables, arguments);
         return create(newType, map, context);
+    }
+
+    @Override
+    public AbstractType getFunctionTypeReturn() {
+        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element =
+                    org.checkerframework.javacutil.InternalUtils.findFunction(
+                            (Type) type, context.env);
+            return InferenceType.create(element.getReturnType(), map, context);
+        } else {
+            return null;
+        }
     }
 
     @Override

@@ -2,8 +2,12 @@ package org.checkerframework.framework.util.typeinference8.constraint;
 
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
@@ -16,6 +20,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
  * <p>https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.2
  */
 public abstract class Constraint implements ReductionResult {
+
     public enum Kind {
         /**
          * &lt;Expression &rarr; T&gt; An expression is compatible in a loose invocation context
@@ -59,6 +64,10 @@ public abstract class Constraint implements ReductionResult {
 
     public abstract Kind getKind();
 
+    public Collection<Variable> getInferenceVariables() {
+        return T.getInferenceVariables();
+    }
+
     public abstract List<Variable> getInputVariables();
 
     public abstract List<Variable> getOutputVariables();
@@ -95,6 +104,14 @@ public abstract class Constraint implements ReductionResult {
         @Override
         public List<Variable> getOutputVariables() {
             return Collections.emptyList();
+        }
+
+        @Override
+        public List<Variable> getInferenceVariables() {
+            Set<Variable> vars = new HashSet<>();
+            vars.addAll(T.getInferenceVariables());
+            vars.addAll(S.getInferenceVariables());
+            return new ArrayList<>(vars);
         }
 
         @Override

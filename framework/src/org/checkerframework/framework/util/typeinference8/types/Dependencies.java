@@ -56,7 +56,8 @@ public class Dependencies {
     public LinkedHashSet<Variable> get(List<Variable> variables) {
         LinkedHashSet<Variable> set = new LinkedHashSet<>();
         for (Variable v : variables) {
-            set.addAll(get(v));
+            LinkedHashSet<Variable> get = get(v);
+            set.addAll(get);
         }
         return set;
     }

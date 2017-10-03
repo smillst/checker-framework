@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -80,11 +82,6 @@ public class InternalUtils {
             }
         }
         return list;
-    }
-
-    public static TypeMirror getLambdaReturnType(LambdaExpressionTree lambda) {
-        // TODO: implement
-        throw new RuntimeException("Not implemented");
     }
 
     public static boolean isExact(MemberReferenceTree ref) {
@@ -152,8 +149,22 @@ public class InternalUtils {
         return false;
     }
 
+    /**
+     * Returns the parameter types of the potentially applicable method.
+     *
+     * <p>See https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.1
+     *
+     * @param ref
+     * @return
+     */
     public static List<? extends TypeMirror> getParametersOfPAMethod(MemberReferenceTree ref) {
-        throw new RuntimeException("Not Implemented");
+        ExecutableElement ele =
+                (ExecutableElement) org.checkerframework.javacutil.InternalUtils.symbol(ref);
+        List<TypeMirror> params = new ArrayList<>();
+        for (VariableElement var : ele.getParameters()) {
+            params.add(var.asType());
+        }
+        return params;
     }
 
     public static boolean isStandaloneExpression(ExpressionTree expression) {

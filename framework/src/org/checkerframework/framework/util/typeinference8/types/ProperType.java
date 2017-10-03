@@ -119,7 +119,7 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public Collection<? extends Variable> getInferenceVariables() {
+    public Collection<Variable> getInferenceVariables() {
         return Collections.emptyList();
     }
 
@@ -136,6 +136,19 @@ public class ProperType extends AbstractType {
     @Override
     public AbstractType applyInstantiations(List<Instantiation> instantiations) {
         return this;
+    }
+
+    @Override
+    public AbstractType getFunctionTypeReturn() {
+        if (org.checkerframework.javacutil.InternalUtils.isFunctionalInterface(
+                properType, context.env)) {
+            ExecutableElement element =
+                    org.checkerframework.javacutil.InternalUtils.findFunction(
+                            (Type) properType, context.env);
+            return new ProperType(element.getReturnType(), context);
+        } else {
+            return null;
+        }
     }
 
     @Override

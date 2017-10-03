@@ -2,10 +2,13 @@ package org.checkerframework.framework.util.typeinference8.constraint;
 
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.LambdaExpressionTree;
+import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.InternalUtils;
@@ -83,6 +86,7 @@ public class Expression extends Constraint {
         return expression;
     }
 
+    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-200 */
     private List<Variable> getInputVariablesForExpression(ExpressionTree tree, AbstractType t) {
 
         switch (tree.getKind()) {
@@ -90,15 +94,44 @@ public class Expression extends Constraint {
                 if (t.isVariable()) {
                     return Collections.singletonList((Variable) t);
                 } else {
-                    // TODO
-                    throw new RuntimeException("getInputVariablesForExpression: Not Implemented");
+                    LambdaExpressionTree lambdaTree = (LambdaExpressionTree) tree;
+                    List<Variable> inputs = new ArrayList<>();
+                    if (InternalUtils.isImplicitlyType(lambdaTree)) {
+                        List<AbstractType> params = T.getFunctionTypeParameters();
+                        if (params == null) {
+                            // T is not a function type.
+                            return Collections.emptyList();
+                        }
+                        for (AbstractType param : params) {
+                            inputs.addAll(param.getInferenceVariables());
+                        }
+                    }
+                    AbstractType R = T.getFunctionTypeReturn();
+                    if (R == null || R.getTypeKind() == TypeKind.NONE) {
+                        return inputs;
+                    }
+                    for (ExpressionTree e : InternalUtils.getReturnedExpressions(lambdaTree)) {
+                        Constraint c = new Expression(e, R);
+                        inputs.addAll(c.getInputVariables());
+                    }
+                    return inputs;
                 }
             case MEMBER_REFERENCE:
                 if (t.isVariable()) {
                     return Collections.singletonList((Variable) t);
+                } else if (InternalUtils.isExact((MemberReferenceTree) tree)) {
+                    return Collections.emptyList();
                 } else {
-                    // TODO
-                    throw new RuntimeException("getInputVariablesForExpression: Not Implemented");
+                    List<AbstractType> params = T.getFunctionTypeParameters();
+                    if (params == null) {
+                        // T is not a function type.
+                        return Collections.emptyList();
+                    }
+                    List<Variable> inputs = new ArrayList<>();
+                    for (AbstractType param : params) {
+                        inputs.addAll(param.getInferenceVariables());
+                    }
+                    return inputs;
                 }
             case PARENTHESIZED:
                 return getInputVariablesForExpression(TreeUtils.skipParens(tree), t);

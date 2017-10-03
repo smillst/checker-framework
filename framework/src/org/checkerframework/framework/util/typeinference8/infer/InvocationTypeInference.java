@@ -3,7 +3,6 @@ package org.checkerframework.framework.util.typeinference8.infer;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
-import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.util.TreePath;
@@ -20,8 +19,6 @@ import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.LambdaExpression;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.MemberReferenceExpression;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
@@ -119,7 +116,7 @@ public class InvocationTypeInference {
 
     private BoundSet getB4(BoundSet current, ConstraintSet c) {
         while (!c.isEmpty()) {
-            ConstraintSet subset = c.getMagicalSubSet(current.getDependencies());
+            ConstraintSet subset = c.getMagicalSubSet(current.getDependencies(c));
             c.remove(subset);
             List<Variable> alphas = c.getAllInferenceVariables();
             current = Resolution.resolve(alphas, current, context);
@@ -195,13 +192,13 @@ public class InvocationTypeInference {
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
-                c.add(new LambdaExpression(lambda, fi));
+                c.add(new Expression(lambda, fi));
                 for (ExpressionTree expression : InternalUtils.getReturnedExpressions(lambda)) {
                     c.add(getConstraint(expression, fi, map));
                 }
                 break;
             case MEMBER_REFERENCE:
-                c.add(new MemberReferenceExpression((MemberReferenceTree) ei, fi));
+                c.add(new Expression(ei, fi));
                 break;
             case METHOD_INVOCATION:
                 if (InternalUtils.isPolyExpression(ei)) {

@@ -42,8 +42,11 @@ public class ContainsInferenceVariable {
         }
 
         private boolean isInferenceVariable(TypeVariable typeVar) {
-            foundVariables.add(typeVar);
-            return typeVariables.contains(typeVar);
+            if (typeVariables.contains(typeVar)) {
+                foundVariables.add(typeVar);
+                return true;
+            }
+            return false;
         }
 
         @Override
