@@ -35,6 +35,11 @@ public abstract class Equal extends Bound {
         public ProperType getT() {
             return t;
         }
+
+        @Override
+        public String toString() {
+            return "Instantiation{" + "a=" + a + ", t=" + t + '}';
+        }
     }
 
     /** a = T, where is a is an inference variable and T is an inference type. */

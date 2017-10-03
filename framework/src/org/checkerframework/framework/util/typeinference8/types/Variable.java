@@ -34,8 +34,10 @@ public class Variable extends AbstractType {
         }
 
         Variable variable = (Variable) o;
-
-        return context.factory.getContext().getTypeUtils().isSameType(p, variable.p);
+        if (context.factory.getContext().getTypeUtils().isSameType(p, variable.p)) {
+            return invocation == variable.invocation;
+        }
+        return false;
     }
 
     @Override
@@ -162,7 +164,7 @@ public class Variable extends AbstractType {
 
     @Override
     public String toString() {
-        return "Variable: " + p;
+        return "Variable{" + "p=" + p + ", invocation=" + invocation + '}';
     }
 
     public static class CaptureVariable extends Variable {

@@ -251,8 +251,11 @@ public class InferenceType extends AbstractType {
             if (instantiation.getA() instanceof CaptureVariable) {
                 throw new RuntimeException("Not implemented");
             }
-            typeVariables.add(instantiation.getA().p);
-            arguments.add(instantiation.getT().getProperType());
+            Variable alpha = instantiation.getA();
+            if (map.containsValue(alpha)) {
+                typeVariables.add(instantiation.getA().p);
+                arguments.add(instantiation.getT().getProperType());
+            }
         }
 
         TypeMirror newType =
