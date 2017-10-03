@@ -55,8 +55,6 @@ public class Reduce {
                 return reduceLambdaExpression((LambdaExpression) constraint);
             case METHOD_REF_EXCEPTION:
                 return reduceMemberReferenceExpression((MemberReferenceExpression) constraint);
-            case QUALIFIER_SUBTYPE:
-                throw new RuntimeException("Not implemented");
             default:
                 ErrorReporter.errorAbort("Unexpected constraint kind: " + constraint.getKind());
                 throw new RuntimeException(""); // dead code

@@ -11,7 +11,6 @@ import java.util.Set;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 
 /**
@@ -48,7 +47,6 @@ public abstract class Constraint implements ReductionResult {
          * method are declared by the throws clause of the function type derived from T.
          */
         METHOD_REF_EXCEPTION,
-        QUALIFIER_SUBTYPE;
     }
     /** T: may contain inference variables. */
     protected AbstractType T;
@@ -142,12 +140,8 @@ public abstract class Constraint implements ReductionResult {
      * &lt;LambdaExpression &rarr;throws T&gt;: The checked exceptions thrown by the body of the
      * LambdaExpression are declared by the throws clause of the function type derived from T.
      */
-    public static class LambdaExpression extends Constraint {
+    public abstract static class LambdaExpression extends Constraint {
         LambdaExpressionTree lambda;
-
-        public LambdaExpression(InferenceType t) {
-            super(t);
-        }
 
         public LambdaExpression(LambdaExpressionTree lambda, AbstractType fi) {
             super(fi);
@@ -158,30 +152,14 @@ public abstract class Constraint implements ReductionResult {
         public Kind getKind() {
             return Kind.LAMBDA_EXCEPTION;
         }
-
-        @Override
-        public List<Variable> getInputVariables() {
-            //TODO:
-            throw new RuntimeException("Not Implemented");
-        }
-
-        @Override
-        public List<Variable> getOutputVariables() {
-            //TODO:
-            throw new RuntimeException("Not Implemented");
-        }
     }
 
     /**
      * &lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
      * method are declared by the throws clause of the function type derived from T.
      */
-    public static class MemberReferenceExpression extends Constraint {
+    public abstract static class MemberReferenceExpression extends Constraint {
         MemberReferenceTree memberRef;
-
-        public MemberReferenceExpression(InferenceType t) {
-            super(t);
-        }
 
         public MemberReferenceExpression(MemberReferenceTree memberRef, AbstractType fi) {
             super(fi);
@@ -191,18 +169,6 @@ public abstract class Constraint implements ReductionResult {
         @Override
         public Kind getKind() {
             return Kind.METHOD_REF_EXCEPTION;
-        }
-
-        @Override
-        public List<Variable> getInputVariables() {
-            //TODO:
-            throw new RuntimeException("Not Implemented");
-        }
-
-        @Override
-        public List<Variable> getOutputVariables() {
-            //TODO:
-            throw new RuntimeException("Not Implemented");
         }
     }
 }
