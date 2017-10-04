@@ -107,7 +107,7 @@ public class InvocationTypeInference {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
         if (element.isVarArgs()) {
             ArrayType vararg = (ArrayType) params.remove(params.size() - 1);
-            for (int i = 0; i < size; i++) {
+            for (int i = params.size(); i < size; i++) {
                 params.add(vararg.getComponentType());
             }
         }
