@@ -5,7 +5,6 @@ import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
-import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
@@ -118,10 +117,6 @@ public class InferenceUtils {
                 return InternalUtils.typeOf(variableTree.getType());
             case METHOD_INVOCATION:
                 MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
-                // This was copied from old code.  Probably can be removed.
-                assert methodInvocation.getMethodSelect().getKind() != Kind.MEMBER_SELECT
-                        || ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression()
-                                != path.getLeaf();
                 ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
                 return assignedToExecutable(path, methodElt, methodInvocation.getArguments());
             case NEW_CLASS:

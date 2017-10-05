@@ -367,8 +367,21 @@ public final class TreeUtils {
                 }
                 // Otherwise use the context of the ConditionalExpressionTree.
                 return getAssignmentContext(parentPath);
-            case ASSIGNMENT:
             case METHOD_INVOCATION:
+                MethodInvocationTree methodInvocation = (MethodInvocationTree) parent;
+                // This was copied from old code.  Probably can be removed.
+                if (methodInvocation.getMethodSelect().getKind() == Kind.MEMBER_SELECT
+                        && ((MemberSelectTree) methodInvocation.getMethodSelect()).getExpression()
+                                == treePath.getLeaf()) {
+                    // a().b()
+                    // a() is the leaf of TreePath.
+                    // parent is a().b().
+                    return null;
+                } else {
+                    return parent;
+                }
+
+            case ASSIGNMENT:
             case NEW_ARRAY:
             case NEW_CLASS:
             case RETURN:

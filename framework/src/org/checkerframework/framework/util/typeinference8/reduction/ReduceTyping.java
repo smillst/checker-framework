@@ -210,7 +210,7 @@ public class ReduceTyping {
 
         List<AbstractType> sTypeArgs = s.getTypeArguments();
         List<AbstractType> tTypeArgs = t.getTypeArguments();
-        if (sTypeArgs != null && tTypeArgs != null) {
+        if (sTypeArgs != null && tTypeArgs != null && sTypeArgs.size() == tTypeArgs.size()) {
             // Assume if both have type arguments, then s and t are class or interface types with
             // the same erasure
             ConstraintSet constraintSet = new ConstraintSet();
