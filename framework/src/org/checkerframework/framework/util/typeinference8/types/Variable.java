@@ -11,17 +11,25 @@ import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiat
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Variable extends AbstractType {
-    final TypeVariable p;
+    private final TypeVariable typeVariable;
     /** The expression for which this variable is being solved. */
-    final ExpressionTree invocation;
+    private final ExpressionTree invocation;
 
     protected final Context context;
 
-    public Variable(TypeVariable p, ExpressionTree invocation, Context context) {
-        assert p != null;
-        this.p = p;
+    public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
+        assert typeVariable != null;
+        this.typeVariable = typeVariable;
         this.invocation = invocation;
         this.context = context;
+    }
+
+    public TypeVariable getTypeVariable() {
+        return typeVariable;
+    }
+
+    public ExpressionTree getInvocation() {
+        return invocation;
     }
 
     @Override
@@ -34,7 +42,10 @@ public class Variable extends AbstractType {
         }
 
         Variable variable = (Variable) o;
-        if (context.factory.getContext().getTypeUtils().isSameType(p, variable.p)) {
+        if (context.factory
+                .getContext()
+                .getTypeUtils()
+                .isSameType(typeVariable, variable.typeVariable)) {
             return invocation == variable.invocation;
         }
         return false;
@@ -42,7 +53,7 @@ public class Variable extends AbstractType {
 
     @Override
     public int hashCode() {
-        int result = p.toString().hashCode();
+        int result = typeVariable.toString().hashCode();
         result = 31 * result + Kind.VARIABLE.hashCode();
         return result;
     }
@@ -164,7 +175,7 @@ public class Variable extends AbstractType {
 
     @Override
     public String toString() {
-        return "Variable{" + "p=" + p + ", invocation=" + invocation + '}';
+        return "Variable{" + "typeVariable=" + typeVariable + ", invocation=" + invocation + '}';
     }
 
     public static class CaptureVariable extends Variable {

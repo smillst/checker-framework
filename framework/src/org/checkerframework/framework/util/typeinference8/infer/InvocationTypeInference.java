@@ -6,14 +6,18 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.util.TreePath;
+import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
@@ -48,7 +52,28 @@ public class InvocationTypeInference {
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
         ProperType r = returnType != null ? new ProperType(returnType, context) : null;
-        return infer(methodInvocation, r);
+        List<Instantiation> result = infer(methodInvocation, r);
+        checkResult(result, methodInvocation);
+        return result;
+    }
+
+    private void checkResult(List<Instantiation> result, MethodInvocationTree methodInvocation) {
+        Map<TypeVariable, TypeMirror> fromReturn =
+                InferenceUtils.getMappingFromReturnType(
+                        methodInvocation, TreeUtils.elementFromUse(methodInvocation), context.env);
+        for (Instantiation inst : result) {
+            TypeVariable typeVariable = inst.getA().getTypeVariable();
+            if (fromReturn.containsKey(typeVariable)) {
+                TypeMirror correctType = fromReturn.get(typeVariable);
+                TypeMirror inferredType = inst.getT().getProperType();
+                if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
+                    context.factory
+                            .getContext()
+                            .getChecker()
+                            .report(Result.failure(""), methodInvocation);
+                }
+            }
+        }
     }
 
     /**

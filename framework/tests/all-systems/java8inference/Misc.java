@@ -1,3 +1,4 @@
+@SuppressWarnings("unchecked")
 class Misc<T> {
     Misc<? super T> forward;
 

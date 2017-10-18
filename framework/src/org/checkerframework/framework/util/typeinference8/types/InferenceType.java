@@ -253,7 +253,7 @@ public class InferenceType extends AbstractType {
             }
             Variable alpha = instantiation.getA();
             if (map.containsValue(alpha)) {
-                typeVariables.add(instantiation.getA().p);
+                typeVariables.add(instantiation.getA().getTypeVariable());
                 arguments.add(instantiation.getT().getProperType());
             }
         }
