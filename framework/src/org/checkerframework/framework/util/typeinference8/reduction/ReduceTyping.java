@@ -159,8 +159,8 @@ public class ReduceTyping {
             t = (ProperType) c.getT();
         }
 
-        if (c.getT().isProper()) {
-            s = (ProperType) c.getT();
+        if (c.getS().isProper()) {
+            s = (ProperType) c.getS();
         }
 
         if (t != null && s != null) {

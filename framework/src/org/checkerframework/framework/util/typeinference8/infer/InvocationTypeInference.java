@@ -62,15 +62,25 @@ public class InvocationTypeInference {
                 InferenceUtils.getMappingFromReturnType(
                         methodInvocation, TreeUtils.elementFromUse(methodInvocation), context.env);
         for (Instantiation inst : result) {
+            if (!inst.getA().getInvocation().equals(methodInvocation)) {
+                continue;
+            }
             TypeVariable typeVariable = inst.getA().getTypeVariable();
             if (fromReturn.containsKey(typeVariable)) {
                 TypeMirror correctType = fromReturn.get(typeVariable);
                 TypeMirror inferredType = inst.getT().getProperType();
                 if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
+                    // type.inference.not.same=type variable: %s\ninferred: %s\njava type: %s
                     context.factory
                             .getContext()
                             .getChecker()
-                            .report(Result.failure(""), methodInvocation);
+                            .report(
+                                    Result.failure(
+                                            "type.inference.not.same",
+                                            typeVariable,
+                                            inferredType,
+                                            correctType),
+                                    methodInvocation);
                 }
             }
         }

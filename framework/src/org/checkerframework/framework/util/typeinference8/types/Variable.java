@@ -125,6 +125,11 @@ public class Variable extends AbstractType {
 
     @Override
     public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+        for (Instantiation inst : instantiations) {
+            if (inst.getA().equals(this)) {
+                return inst.getT();
+            }
+        }
         return this;
     }
 
