@@ -129,7 +129,7 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
         final TreePath pathToExpression = typeFactory.getPath(expressionTree);
 
         if (expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION
-                && InternalInferenceUtils.isPolyExpression(expressionTree)) {
+                && !InternalInferenceUtils.isPolyExpression(expressionTree)) {
             InvocationTypeInference java8inference =
                     new InvocationTypeInference(typeFactory, pathToExpression);
             List<Instantiation> result =
