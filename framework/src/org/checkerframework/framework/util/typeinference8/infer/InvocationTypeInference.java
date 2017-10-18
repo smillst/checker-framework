@@ -5,6 +5,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
@@ -50,6 +51,10 @@ public class InvocationTypeInference {
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
+        Tree t = TreeUtils.getAssignmentContext(pathToExpression);
+        if (t != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
+            return null;
+        }
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
         ProperType r = returnType != null ? new ProperType(returnType, context) : null;
         List<Instantiation> result = infer(methodInvocation, r);
