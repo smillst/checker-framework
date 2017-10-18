@@ -55,6 +55,7 @@ import org.checkerframework.framework.util.typeinference.solver.SubtypesSolver;
 import org.checkerframework.framework.util.typeinference.solver.SupertypesSolver;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -127,7 +128,8 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
 
         final TreePath pathToExpression = typeFactory.getPath(expressionTree);
 
-        if (expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
+        if (expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION
+                && InternalInferenceUtils.isPolyExpression(expressionTree)) {
             InvocationTypeInference java8inference =
                     new InvocationTypeInference(typeFactory, pathToExpression);
             List<Instantiation> result =
