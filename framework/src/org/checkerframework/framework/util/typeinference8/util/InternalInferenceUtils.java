@@ -17,6 +17,8 @@ import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCLambda.ParameterKind;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.OverloadKind;
+import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
+import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -234,5 +236,15 @@ public class InternalInferenceUtils {
 
     public static boolean isParameterized(TypeMirror result) {
         return ((Type) result).isParameterized();
+    }
+
+    public static boolean isVarArgMethodCall(ExpressionTree methodInvocation) {
+        if (methodInvocation.getKind() == Kind.METHOD_INVOCATION) {
+            return ((JCMethodInvocation) methodInvocation).varargsElement != null;
+        } else if (methodInvocation.getKind() == Kind.NEW_CLASS) {
+            return ((JCNewClass) methodInvocation).varargsElement != null;
+        } else {
+            return false;
+        }
     }
 }

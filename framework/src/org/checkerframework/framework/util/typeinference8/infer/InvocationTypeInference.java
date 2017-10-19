@@ -52,7 +52,9 @@ public class InvocationTypeInference {
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
         Tree t = TreeUtils.getAssignmentContext(pathToExpression);
-        if (t != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
+        if (t != null
+                && t instanceof ExpressionTree
+                && InternalInferenceUtils.isPolyExpression((ExpressionTree) t)) {
             return null;
         }
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
@@ -97,17 +99,18 @@ public class InvocationTypeInference {
      * @return
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
+        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
+
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         Theta map = Theta.theta(element, methodInvocation, context);
-        BoundSet b2 = createB2(element, methodInvocation.getArguments(), map);
+        BoundSet b2 = createB2(element, methodInvocation.getArguments(), map, isVarArg);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
             b3 = createB3(b2, element, methodInvocation, target, map);
         } else {
             b3 = b2;
         }
-
-        ConstraintSet c = createC(element, methodInvocation.getArguments(), map);
+        ConstraintSet c = createC(element, methodInvocation.getArguments(), map, isVarArg);
 
         BoundSet b4 = getB4(b3, c);
         List<Instantiation> thetaPrime = b4.resolve();
@@ -118,14 +121,17 @@ public class InvocationTypeInference {
     }
 
     public BoundSet createB2(
-            ExecutableElement element, List<? extends ExpressionTree> args, Theta map) {
+            ExecutableElement element,
+            List<? extends ExpressionTree> args,
+            Theta map,
+            boolean isVarArg) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
         // TODO:
         // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(element, map, args.size());
+        List<AbstractType> formals = getFormals(element, map, args.size(), isVarArg);
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -142,10 +148,18 @@ public class InvocationTypeInference {
         return b1;
     }
 
-    public List<AbstractType> getFormals(ExecutableElement element, Theta map, int size) {
+    /**
+     * @param element
+     * @param map
+     * @param size
+     * @param isVarArg is was the method applicatably by variable arrity..
+     * @return
+     */
+    public List<AbstractType> getFormals(
+            ExecutableElement element, Theta map, int size, boolean isVarArg) {
         ExecutableType executableType = (ExecutableType) element.asType();
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
-        if (element.isVarArgs()) {
+        if (isVarArg && element.isVarArgs()) {
             ArrayType vararg = (ArrayType) params.remove(params.size() - 1);
             for (int i = params.size(); i < size; i++) {
                 params.add(vararg.getComponentType());
@@ -194,37 +208,59 @@ public class InvocationTypeInference {
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
-            BoundSet resolve = Resolution.resolve(Collections.singletonList(alpha), b2, context);
-            ProperType u = resolve.getInstantiation(alpha);
-            ConstraintSet constraintSet =
-                    new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(context);
-            resolve.incorporateToFixedPoint(newBounds);
-            return resolve;
-        } else {
-            ConstraintSet constraintSet =
-                    new ConstraintSet(new Typing(r, target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = constraintSet.reduce(context);
-            b2.incorporateToFixedPoint(newBounds);
-            return b2;
+            // TODO: implement
+            boolean compatiblity = false;
+            // T is a reference type, but is not a wildcard-parameterized type, and either
+            if (!target.isWildcardParameterizedType()) {
+                // i) B2 contains a bound of one of the forms α = S or S <: α, where S is a wildcard-parameterized type, or
+                // ii) B2 contains two bounds of the forms S1 <: α and S2 <: α, where S1 and S2
+                // have supertypes that are two different parameterizations of the same generic class or interface.
+                //                compatiblity = true;
+            } else if (target.isParameterizedType()) {
+                // T is a parameterization of a generic class or interface, G, and B2 contains a
+                // bound of one of the forms α = S or S <: α, where there exists no type of the form
+                // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
+                //                compatiblity = true;
+            } else if (target.getTypeKind().isPrimitive()) {
+                // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
+                //                compatiblity = true;
+            }
+            if (compatiblity) {
+                BoundSet resolve =
+                        Resolution.resolve(Collections.singletonList(alpha), b2, context);
+                ProperType u = resolve.getInstantiation(alpha);
+                ConstraintSet constraintSet =
+                        new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
+                BoundSet newBounds = constraintSet.reduce(context);
+                resolve.incorporateToFixedPoint(newBounds);
+                return resolve;
+            }
         }
+        ConstraintSet constraintSet =
+                new ConstraintSet(new Typing(r, target, Kind.TYPE_COMPATIBILITY));
+        BoundSet newBounds = constraintSet.reduce(context);
+        b2.incorporateToFixedPoint(newBounds);
+        return b2;
     }
 
     private ConstraintSet createC(
-            ExecutableElement element, List<? extends ExpressionTree> args, Theta map) {
+            ExecutableElement element,
+            List<? extends ExpressionTree> args,
+            Theta map,
+            boolean isVarArg) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(element, map, args.size());
+        List<AbstractType> formals = getFormals(element, map, args.size(), isVarArg);
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
-            c.add(getConstraint(ei, fi, map));
+            c.add(getConstraint(ei, fi));
         }
 
         return c;
     }
 
-    private ConstraintSet getConstraint(ExpressionTree ei, AbstractType fi, Theta map) {
+    private ConstraintSet getConstraint(ExpressionTree ei, AbstractType fi) {
         ConstraintSet c = new ConstraintSet();
         if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
             c.add(new Expression(ei, fi));
@@ -235,7 +271,7 @@ public class InvocationTypeInference {
                 c.add(new Expression(lambda, fi));
                 for (ExpressionTree expression :
                         InternalInferenceUtils.getReturnedExpressions(lambda)) {
-                    c.add(getConstraint(expression, fi, map));
+                    c.add(getConstraint(expression, fi));
                 }
                 break;
             case MEMBER_REFERENCE:
@@ -246,7 +282,8 @@ public class InvocationTypeInference {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
                     Theta newMap = Theta.theta(ele, methodInvocation, context);
-                    c.add(createC(ele, methodInvocation.getArguments(), newMap));
+                    boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
+                    c.add(createC(ele, methodInvocation.getArguments(), newMap, isVarArg));
                 }
                 break;
             case NEW_CLASS:
@@ -254,16 +291,17 @@ public class InvocationTypeInference {
                     NewClassTree newClassTree = (NewClassTree) ei;
                     ExecutableElement ele = TreeUtils.elementFromUse(newClassTree);
                     Theta newMap = Theta.theta(ele, newClassTree, context);
-                    c.add(createC(ele, newClassTree.getArguments(), newMap));
+                    boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(newClassTree);
+                    c.add(createC(ele, newClassTree.getArguments(), newMap, isVarArg));
                 }
                 break;
             case PARENTHESIZED:
-                c.add(getConstraint(TreeUtils.skipParens(ei), fi, map));
+                c.add(getConstraint(TreeUtils.skipParens(ei), fi));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.add(getConstraint(conditional.getTrueExpression(), fi, map));
-                c.add(getConstraint(conditional.getFalseExpression(), fi, map));
+                c.add(getConstraint(conditional.getTrueExpression(), fi));
+                c.add(getConstraint(conditional.getFalseExpression(), fi));
                 break;
             default:
                 // no constraints

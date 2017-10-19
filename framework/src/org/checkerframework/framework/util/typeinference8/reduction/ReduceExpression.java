@@ -183,7 +183,8 @@ public class ReduceExpression {
             element = TreeUtils.elementFromUse(methodInvocationTree);
         }
         Theta map = Theta.theta(element, expressionTree, context);
-        BoundSet b2 = context.inference.createB2(element, args, map);
+        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expressionTree);
+        BoundSet b2 = context.inference.createB2(element, args, map, isVarArg);
         return context.inference.createB3(b2, element, expressionTree, constraint.getT(), map);
     }
 

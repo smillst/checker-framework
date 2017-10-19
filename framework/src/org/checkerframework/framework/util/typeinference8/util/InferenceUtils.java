@@ -188,6 +188,9 @@ public class InferenceUtils {
 
         if (treeIndex >= methodElt.getParameters().size() && methodElt.isVarArgs()) {
             treeIndex = methodElt.getParameters().size() - 1;
+            VariableElement paramElement = methodElt.getParameters().get(treeIndex);
+            TypeMirror typeMirror = ElementUtils.getType(paramElement);
+            return ((ArrayType) typeMirror).getComponentType();
         }
 
         VariableElement paramElement = methodElt.getParameters().get(treeIndex);

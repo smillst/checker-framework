@@ -44,7 +44,7 @@ public class Reduce {
             case EXPRESSION:
                 return ReduceExpression.reduce((Expression) constraint, context);
             case TYPE_COMPATIBILITY:
-                return ReduceTyping.reduceCompatible((Typing) constraint);
+                return ReduceTyping.reduceCompatible((Typing) constraint, context);
             case SUBTYPE:
                 return ReduceTyping.reduceSubtyping((Typing) constraint, context);
             case CONTAINED:

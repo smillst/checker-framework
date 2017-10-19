@@ -176,7 +176,7 @@ public class BoundsForVar {
 
         // Lower Bound Constraints
         // T <: a and a <: S imply <T <: S>
-        for (AbstractType s : lowerBounds.getAll()) {
+        for (AbstractType s : upperBounds.getAll()) {
             toIncorporate.add(new Typing(t, s, Kind.SUBTYPE));
         }
 

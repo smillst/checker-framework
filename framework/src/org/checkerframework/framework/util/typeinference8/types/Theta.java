@@ -2,12 +2,14 @@ package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.source.tree.ExpressionTree;
 import java.util.HashMap;
+import java.util.Map;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Theta extends HashMap<TypeVariable, Variable> {
+    private static Map<ExpressionTree, Theta> maps = new HashMap<>();
     private static final long serialVersionUID = 42L;
 
     @Override
@@ -18,6 +20,9 @@ public class Theta extends HashMap<TypeVariable, Variable> {
 
     public static Theta theta(
             ExecutableElement methodElement, ExpressionTree tree, Context context) {
+        if (maps.containsKey(tree)) {
+            return maps.get(tree);
+        }
         ExecutableType type = (ExecutableType) methodElement.asType();
 
         Theta map = new Theta();
@@ -25,6 +30,7 @@ public class Theta extends HashMap<TypeVariable, Variable> {
             Variable al = new Variable(pl, tree, context);
             map.put(pl, al);
         }
+        maps.put(tree, map);
         return map;
     }
 }

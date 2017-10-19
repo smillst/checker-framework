@@ -152,7 +152,7 @@ public class ReduceTyping {
         }
     }
 
-    public static ReductionResult reduceCompatible(Typing c) {
+    public static ReductionResult reduceCompatible(Typing c, Context contex) {
         ProperType t = null;
         ProperType s = null;
         if (c.getT().isProper()) {
@@ -166,7 +166,11 @@ public class ReduceTyping {
         if (t != null && s != null) {
             // the constraint reduces to true if S is compatible in a loose invocation context
             // with T (§5.3), and false otherwise.
-            return BoundSet.TRUE;
+            if (contex.types.isAssignable((Type) s.getProperType(), (Type) t.getProperType())) {
+                return BoundSet.TRUE;
+            } else {
+                return BoundSet.FALSE;
+            }
         } else if (s != null && s.getTypeKind().isPrimitive()) {
             return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
         } else if (t != null && t.getTypeKind().isPrimitive()) {
