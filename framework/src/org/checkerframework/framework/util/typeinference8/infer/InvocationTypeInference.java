@@ -52,9 +52,7 @@ public class InvocationTypeInference {
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
         Tree t = TreeUtils.getAssignmentContext(pathToExpression);
-        if (t != null
-                && t instanceof ExpressionTree
-                && InternalInferenceUtils.isPolyExpression((ExpressionTree) t)) {
+        if (!shouldTryInference(t)) {
             return null;
         }
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
@@ -62,6 +60,24 @@ public class InvocationTypeInference {
         List<Instantiation> result = infer(methodInvocation, r);
         checkResult(result, methodInvocation);
         return result;
+    }
+
+    private boolean shouldTryInference(Tree t) {
+        if (t == null || !(t instanceof ExpressionTree)) {
+            return true;
+        }
+        if (InternalInferenceUtils.isPolyExpression((ExpressionTree) t)) {
+            return false;
+        }
+
+        if (t.getKind() == Tree.Kind.METHOD_INVOCATION) {
+            MethodInvocationTree methodInvocationTree = (MethodInvocationTree) t;
+            if (methodInvocationTree.getTypeArguments().isEmpty()) {
+                ExecutableElement ele = TreeUtils.elementFromUse(methodInvocationTree);
+                return ele.getTypeParameters().isEmpty();
+            }
+        }
+        return true;
     }
 
     private void checkResult(List<Instantiation> result, MethodInvocationTree methodInvocation) {
