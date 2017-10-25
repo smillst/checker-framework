@@ -29,11 +29,7 @@ public class Resolution {
         Queue<Variable> unresolvedVars = new LinkedList<>(as);
         Resolution resolution = new Resolution(context, dependencies, resolvedVars);
         boundSet = resolution.resolve(boundSet, unresolvedVars);
-
-        if (unresolvedVars.isEmpty()) {
-            return boundSet;
-        }
-        throw new RuntimeException("Not implemented.");
+        return boundSet;
     }
 
     private final Context context;
@@ -49,12 +45,12 @@ public class Resolution {
     public BoundSet resolve(BoundSet boundSet, Queue<Variable> unresolvedVars) {
         Queue<Variable> queue = new LinkedList<>(unresolvedVars);
         unresolvedVars.clear();
-        // This loop is looking to resolve the variable with the smallest set of dependencies that
-        // have not been resolved.
+
         while (!unresolvedVars.isEmpty()) {
             LinkedHashSet<Variable> smallestDependencySet = null;
             queue.addAll(unresolvedVars);
             unresolvedVars.clear();
+            // This loop is looking for the smallest set of dependencies that have not been resolved.
             while (!queue.isEmpty()) {
                 Variable alpha = queue.remove();
                 LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
