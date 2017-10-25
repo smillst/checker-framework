@@ -7,6 +7,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
+import org.checkerframework.framework.util.typeinference8.bound.Subtype;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -37,8 +38,7 @@ public class ReduceTyping {
         }
 
         if (c.getS().isVariable() || c.getT().isVariable()) {
-            return org.checkerframework.framework.util.typeinference8.bound.Subtype.createSubtype(
-                    c.getS(), c.getT());
+            return Subtype.createSubtype(c.getS(), c.getT());
         }
 
         switch (c.getT().getTypeKind()) {
@@ -135,7 +135,7 @@ public class ReduceTyping {
                 if (s.isUnboundWildcard() || s.isUpperBoundedWildcard()) {
                     return new Typing(s.getWildcardUpperBound(), bound, Kind.SUBTYPE);
                 } else {
-                    return new Typing(s.getWildcardUpperBound(), bound, Kind.TYPE_EQUALITY);
+                    return new Typing(s.getWildcardLowerBound(), bound, Kind.TYPE_EQUALITY);
                 }
             } else {
                 return new Typing(s, bound, Kind.SUBTYPE);

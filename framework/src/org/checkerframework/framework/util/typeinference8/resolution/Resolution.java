@@ -43,16 +43,10 @@ public class Resolution {
     }
 
     public BoundSet resolve(BoundSet boundSet, Queue<Variable> unresolvedVars) {
-        Queue<Variable> queue = new LinkedList<>(unresolvedVars);
-        unresolvedVars.clear();
-
         while (!unresolvedVars.isEmpty()) {
             LinkedHashSet<Variable> smallestDependencySet = null;
-            queue.addAll(unresolvedVars);
-            unresolvedVars.clear();
             // This loop is looking for the smallest set of dependencies that have not been resolved.
-            while (!queue.isEmpty()) {
-                Variable alpha = queue.remove();
+            for (Variable alpha : unresolvedVars) {
                 LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
                 alphasDependencySet.removeAll(resolvedVars);
 
@@ -64,18 +58,15 @@ public class Resolution {
                 if (smallestDependencySet.size() == 1) {
                     // If the size is 1, then alpha has the smallest possible set of unresolved dependencies.
                     // (A variable is always dependent on itself.) So, stop looking for smaller ones.
-                    unresolvedVars.addAll(queue);
                     break;
-                } else {
-                    unresolvedVars.add(alpha);
                 }
             }
 
             // Resolve the smallest unresolved dependency set.
             boundSet = resolve(smallestDependencySet, boundSet);
             resolvedVars.addAll(smallestDependencySet);
+            unresolvedVars.removeAll(smallestDependencySet);
         }
-        assert unresolvedVars.isEmpty();
         return boundSet;
     }
 
