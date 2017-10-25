@@ -50,7 +50,7 @@ public class Dependencies {
     }
 
     public LinkedHashSet<Variable> get(Variable alpha) {
-        return map.get(alpha);
+        return new LinkedHashSet<>(map.get(alpha));
     }
 
     public LinkedHashSet<Variable> get(List<Variable> variables) {

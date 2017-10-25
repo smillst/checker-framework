@@ -1,8 +1,12 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
 import com.sun.tools.javac.code.Type;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
@@ -23,11 +27,40 @@ public class Resolution {
         Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
 
-        for (Variable alpha : as) {
-            boundSet = resolution.resolve(dependencies.get(alpha), boundSet);
+        List<Variable> resolvedVars = new ArrayList<>();
+
+        Queue<Variable> queue = new LinkedList<>(as);
+        Queue<Variable> unresolvedVars = new LinkedList<>();
+        boolean newResolveVar = false;
+        while (!queue.isEmpty()) {
+            Variable alpha = queue.remove();
+            Set<Variable> alphaDepend = dependencies.get(alpha);
+            alphaDepend.remove(alpha);
+            if (resolvedVars.containsAll(alphaDepend)) {
+                resolvedVars.add(alpha);
+                boundSet = resolution.resolve(dependencies.get(alpha), boundSet);
+                newResolveVar = true;
+            } else {
+                unresolvedVars.add(alpha);
+            }
+
+            if (queue.isEmpty()) {
+                if (newResolveVar && !unresolvedVars.isEmpty()) {
+                    Queue<Variable> tmp = queue;
+                    queue = unresolvedVars;
+                    unresolvedVars = tmp;
+                    newResolveVar = false;
+                } else {
+                    // All remaining variables depend on unresolved vars.
+                    break;
+                }
+            }
         }
 
-        return boundSet;
+        if (unresolvedVars.isEmpty()) {
+            return boundSet;
+        }
+        throw new RuntimeException("Not implemented.");
     }
 
     private final Context context;
