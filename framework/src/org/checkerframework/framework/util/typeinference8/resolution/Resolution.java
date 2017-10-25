@@ -1,12 +1,10 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
 import com.sun.tools.javac.code.Type;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
@@ -24,38 +22,13 @@ public class Resolution {
             // If all variables have an instantiation, resolution is complete.
             return boundSet;
         }
-        Resolution resolution = new Resolution(context);
         Dependencies dependencies = boundSet.getDependencies();
 
-        List<Variable> resolvedVars = new ArrayList<>();
-
-        Queue<Variable> queue = new LinkedList<>(as);
-        Queue<Variable> unresolvedVars = new LinkedList<>();
-        boolean newResolveVar = false;
-        while (!queue.isEmpty()) {
-            Variable alpha = queue.remove();
-            Set<Variable> alphaDepend = dependencies.get(alpha);
-            alphaDepend.remove(alpha);
-            if (resolvedVars.containsAll(alphaDepend)) {
-                resolvedVars.add(alpha);
-                boundSet = resolution.resolve(dependencies.get(alpha), boundSet);
-                newResolveVar = true;
-            } else {
-                unresolvedVars.add(alpha);
-            }
-
-            if (queue.isEmpty()) {
-                if (newResolveVar && !unresolvedVars.isEmpty()) {
-                    Queue<Variable> tmp = queue;
-                    queue = unresolvedVars;
-                    unresolvedVars = tmp;
-                    newResolveVar = false;
-                } else {
-                    // All remaining variables depend on unresolved vars.
-                    break;
-                }
-            }
-        }
+        List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
+        as.removeAll(resolvedVars);
+        Queue<Variable> unresolvedVars = new LinkedList<>(as);
+        Resolution resolution = new Resolution(context, dependencies, resolvedVars);
+        boundSet = resolution.resolve(boundSet, unresolvedVars);
 
         if (unresolvedVars.isEmpty()) {
             return boundSet;
@@ -64,9 +37,50 @@ public class Resolution {
     }
 
     private final Context context;
+    private final Dependencies dependencies;
+    private final List<Variable> resolvedVars;
 
-    public Resolution(Context context) {
+    public Resolution(Context context, Dependencies dependencies, List<Variable> resolvedVars) {
         this.context = context;
+        this.dependencies = dependencies;
+        this.resolvedVars = resolvedVars;
+    }
+
+    public BoundSet resolve(BoundSet boundSet, Queue<Variable> unresolvedVars) {
+        Queue<Variable> queue = new LinkedList<>(unresolvedVars);
+        unresolvedVars.clear();
+        // This loop is looking to resolve the variable with the smallest set of dependencies that
+        // have not been resolved.
+        while (!unresolvedVars.isEmpty()) {
+            LinkedHashSet<Variable> smallestDependencySet = null;
+            queue.addAll(unresolvedVars);
+            unresolvedVars.clear();
+            while (!queue.isEmpty()) {
+                Variable alpha = queue.remove();
+                LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
+                alphasDependencySet.removeAll(resolvedVars);
+
+                if (smallestDependencySet == null
+                        || alphasDependencySet.size() < smallestDependencySet.size()) {
+                    smallestDependencySet = alphasDependencySet;
+                }
+
+                if (smallestDependencySet.size() == 1) {
+                    // If the size is 1, then alpha has the smallest possible set of unresolved dependencies.
+                    // (A variable is always dependent on itself.) So, stop looking for smaller ones.
+                    unresolvedVars.addAll(queue);
+                    break;
+                } else {
+                    unresolvedVars.add(alpha);
+                }
+            }
+
+            // Resolve the smallest unresolved dependency set.
+            boundSet = resolve(smallestDependencySet, boundSet);
+            resolvedVars.addAll(smallestDependencySet);
+        }
+        assert unresolvedVars.isEmpty();
+        return boundSet;
     }
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
@@ -88,9 +102,7 @@ public class Resolution {
     private BoundSet resolve1(LinkedHashSet<Variable> as, BoundSet boundSet) {
         BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
-            if (boundSet.hasInstantiation(ai)) {
-                continue;
-            }
+            assert !boundSet.hasInstantiation(ai);
             LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             if (!lowerBounds.isEmpty()) {
                 TypeMirror ti = null;
@@ -138,9 +150,7 @@ public class Resolution {
             LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
         BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
-            if (boundSet.hasInstantiation(ai)) {
-                continue;
-            }
+            assert !boundSet.hasInstantiation(ai);
             LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             TypeMirror lowerBound = null;
             if (!lowerBounds.isEmpty()) {

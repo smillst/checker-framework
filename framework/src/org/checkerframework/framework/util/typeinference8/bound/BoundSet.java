@@ -285,6 +285,18 @@ public class BoundSet implements ReductionResult {
         return list;
     }
 
+    public List<Variable> getInstantiatedVariables() {
+        List<Variable> list = new ArrayList<>();
+        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
+            Variable var = entry.getKey();
+            BoundsForVar bounds = entry.getValue();
+            if (bounds.hasInstantiation()) {
+                list.add(var);
+            }
+        }
+        return list;
+    }
+
     /** Resolve all inference variables mentioned in any bound. */
     public List<Instantiation> resolve() {
         BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, context);
