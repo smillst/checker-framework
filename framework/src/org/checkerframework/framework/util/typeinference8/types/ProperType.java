@@ -132,7 +132,7 @@ public class ProperType extends AbstractType {
 
     @Override
     public boolean isWildcardParameterizedType() {
-        return false;
+        return InternalInferenceUtils.isWildcardParameterized(properType);
     }
 
     @Override

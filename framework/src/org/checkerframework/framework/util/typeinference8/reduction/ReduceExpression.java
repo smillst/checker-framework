@@ -184,7 +184,13 @@ public class ReduceExpression {
         }
         Theta map = Theta.theta(element, expressionTree, context);
         boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expressionTree);
-        BoundSet b2 = context.inference.createB2(element, args, map, isVarArg);
+        BoundSet b2 =
+                context.inference.createB2(
+                        InternalInferenceUtils.getReceiverType(expressionTree),
+                        element,
+                        args,
+                        map,
+                        isVarArg);
         return context.inference.createB3(b2, element, expressionTree, constraint.getT(), map);
     }
 

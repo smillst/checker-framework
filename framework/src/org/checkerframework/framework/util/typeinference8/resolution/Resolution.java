@@ -34,7 +34,7 @@ public class Resolution {
 
     private final Context context;
     private final Dependencies dependencies;
-    private final List<Variable> resolvedVars;
+    private List<Variable> resolvedVars;
 
     public Resolution(Context context, Dependencies dependencies, List<Variable> resolvedVars) {
         this.context = context;
@@ -64,8 +64,8 @@ public class Resolution {
 
             // Resolve the smallest unresolved dependency set.
             boundSet = resolve(smallestDependencySet, boundSet);
-            resolvedVars.addAll(smallestDependencySet);
-            unresolvedVars.removeAll(smallestDependencySet);
+            resolvedVars = boundSet.getInstantiatedVariables();
+            unresolvedVars.removeAll(resolvedVars);
         }
         return boundSet;
     }

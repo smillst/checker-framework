@@ -239,7 +239,7 @@ public class InferenceType extends AbstractType {
 
     @Override
     public boolean isWildcardParameterizedType() {
-        return false;
+        return InternalInferenceUtils.isWildcardParameterized(type);
     }
 
     @Override

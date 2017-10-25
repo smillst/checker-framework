@@ -25,6 +25,7 @@ import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -238,6 +239,17 @@ public class InternalInferenceUtils {
         return ((Type) result).isParameterized();
     }
 
+    public static boolean isWildcardParameterized(TypeMirror result) {
+        if (isParameterized(result) && result.getKind() == TypeKind.DECLARED) {
+            for (TypeMirror t : ((DeclaredType) result).getTypeArguments()) {
+                if (t.getKind() == TypeKind.WILDCARD) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static boolean isVarArgMethodCall(ExpressionTree methodInvocation) {
         if (methodInvocation.getKind() == Kind.METHOD_INVOCATION) {
             return ((JCMethodInvocation) methodInvocation).varargsElement != null;
@@ -246,5 +258,15 @@ public class InternalInferenceUtils {
         } else {
             return false;
         }
+    }
+
+    public static DeclaredType getReceiverType(ExpressionTree tree) {
+        Tree receiverTree = TreeUtils.getReceiverTree(tree);
+        if (receiverTree == null) {
+            return null;
+        }
+        TypeMirror type = InternalUtils.typeOf(receiverTree);
+        // TODO: this must exist else where.....
+        return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
     }
 }

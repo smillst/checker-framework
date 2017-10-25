@@ -15,6 +15,7 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -116,17 +117,20 @@ public class InvocationTypeInference {
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
+        DeclaredType declaredType = InternalInferenceUtils.getReceiverType(methodInvocation);
 
         ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
         Theta map = Theta.theta(element, methodInvocation, context);
-        BoundSet b2 = createB2(element, methodInvocation.getArguments(), map, isVarArg);
+        BoundSet b2 =
+                createB2(declaredType, element, methodInvocation.getArguments(), map, isVarArg);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
             b3 = createB3(b2, element, methodInvocation, target, map);
         } else {
             b3 = b2;
         }
-        ConstraintSet c = createC(element, methodInvocation.getArguments(), map, isVarArg);
+        ConstraintSet c =
+                createC(declaredType, element, methodInvocation.getArguments(), map, isVarArg);
 
         BoundSet b4 = getB4(b3, c);
         List<Instantiation> thetaPrime = b4.resolve();
@@ -137,6 +141,7 @@ public class InvocationTypeInference {
     }
 
     public BoundSet createB2(
+            DeclaredType receiver,
             ExecutableElement element,
             List<? extends ExpressionTree> args,
             Theta map,
@@ -147,7 +152,7 @@ public class InvocationTypeInference {
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(element, map, args.size(), isVarArg);
+        List<AbstractType> formals = getFormals(receiver, element, map, args.size(), isVarArg);
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -172,8 +177,22 @@ public class InvocationTypeInference {
      * @return
      */
     public List<AbstractType> getFormals(
-            ExecutableElement element, Theta map, int size, boolean isVarArg) {
-        ExecutableType executableType = (ExecutableType) element.asType();
+            DeclaredType receiver,
+            ExecutableElement element,
+            Theta map,
+            int size,
+            boolean isVarArg) {
+        ExecutableType executableType;
+        if (receiver != null) {
+            executableType =
+                    (ExecutableType)
+                            context.factory
+                                    .getContext()
+                                    .getTypeUtils()
+                                    .asMemberOf(receiver, element);
+        } else {
+            executableType = (ExecutableType) element.asType();
+        }
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
         if (isVarArg && element.isVarArgs()) {
             ArrayType vararg = (ArrayType) params.remove(params.size() - 1);
@@ -260,12 +279,13 @@ public class InvocationTypeInference {
     }
 
     private ConstraintSet createC(
+            DeclaredType receiver,
             ExecutableElement element,
             List<? extends ExpressionTree> args,
             Theta map,
             boolean isVarArg) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(element, map, args.size(), isVarArg);
+        List<AbstractType> formals = getFormals(receiver, element, map, args.size(), isVarArg);
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -299,7 +319,13 @@ public class InvocationTypeInference {
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
                     Theta newMap = Theta.theta(ele, methodInvocation, context);
                     boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
-                    c.add(createC(ele, methodInvocation.getArguments(), newMap, isVarArg));
+                    c.add(
+                            createC(
+                                    InternalInferenceUtils.getReceiverType(methodInvocation),
+                                    ele,
+                                    methodInvocation.getArguments(),
+                                    newMap,
+                                    isVarArg));
                 }
                 break;
             case NEW_CLASS:
@@ -308,7 +334,13 @@ public class InvocationTypeInference {
                     ExecutableElement ele = TreeUtils.elementFromUse(newClassTree);
                     Theta newMap = Theta.theta(ele, newClassTree, context);
                     boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(newClassTree);
-                    c.add(createC(ele, newClassTree.getArguments(), newMap, isVarArg));
+                    c.add(
+                            createC(
+                                    InternalInferenceUtils.getReceiverType(newClassTree),
+                                    ele,
+                                    newClassTree.getArguments(),
+                                    newMap,
+                                    isVarArg));
                 }
                 break;
             case PARENTHESIZED:
