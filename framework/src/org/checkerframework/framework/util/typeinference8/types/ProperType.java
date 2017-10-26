@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,7 +25,7 @@ public class ProperType extends AbstractType {
     private final Context context;
 
     public ProperType(TypeMirror properType, Context context) {
-        assert properType != null;
+        assert properType != null && context != null;
         this.properType = properType;
         this.context = context;
     }
@@ -41,10 +42,7 @@ public class ProperType extends AbstractType {
 
         ProperType otherProperType = (ProperType) o;
 
-        return context.factory
-                .getContext()
-                .getTypeUtils()
-                .isSameType(properType, otherProperType.properType);
+        return context.env.getTypeUtils().isSameType(properType, otherProperType.properType);
     }
 
     @Override
@@ -212,7 +210,7 @@ public class ProperType extends AbstractType {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isExtendsBound()) {
-            TypeMirror upperBound = ((Type.WildcardType) properType).getUpperBound();
+            TypeMirror upperBound = ((WildcardType) properType).getExtendsBound();
             if (upperBound == null) {
                 return context.object;
             }

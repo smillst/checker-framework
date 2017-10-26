@@ -13,6 +13,7 @@ import java.util.List;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
@@ -53,7 +54,7 @@ public class ReduceExpression {
                         context);
             default:
                 ErrorReporter.errorAbort("Unexpected ExpressionKind: %s", constraint.getKind());
-                return BoundSet.FALSE;
+                return Bound.FALSE;
         }
     }
 
@@ -139,7 +140,7 @@ public class ReduceExpression {
                             .getTypeUtils()
                             .isAssignable(
                                     InternalUtils.typeOf(e), ((ProperType) R).getProperType())) {
-                        return BoundSet.FALSE;
+                        return Bound.FALSE;
                     }
                 } else {
                     constraintSet.add(new Expression(e, R));
@@ -201,12 +202,12 @@ public class ReduceExpression {
      * JSL 18.2.1: "If T is a proper type, the constraint reduces to true if the expression is
      * compatible in a loose invocation context with T (5.3), and false otherwise."
      */
-    private static BoundSet reduceProperType(Expression constraint) {
+    private static ReductionResult reduceProperType(Expression constraint) {
         // Assume the constraint reduces to TRUE, if it did not the code wouldn't compile with
         // javac.
 
         // com.sun.tools.javac.code.Types.isConvertible(com.sun.tools.javac.code.Type, com.sun.tools.javac.code.Type)
-        return BoundSet.TRUE;
+        return Bound.TRUE;
     }
 
     private static AbstractType getGroundTargetType(AbstractType t, LambdaExpressionTree lambda) {

@@ -10,6 +10,7 @@ import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
@@ -31,6 +32,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
@@ -284,10 +286,23 @@ public class InternalInferenceUtils {
         }
         ExecutableElement ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
 
-        if (ElementUtils.isStatic(ele) || receiverType == null) {
+        if (ElementUtils.isStatic(ele)
+                || receiverType == null
+                || expressionTree.getKind() == Kind.NEW_CLASS) {
             return (ExecutableType) ele.asType();
         }
+
         javax.lang.model.util.Types types = context.env.getTypeUtils();
+        //  Type site = (Type)containing;
+        // Symbol sym = (Symbol)element;
+        //   if (types.asSuper(site, sym.getEnclosingElement()) == null)
+        while (context.types.asSuper((Type) receiverType, (Symbol) ele.getEnclosingElement())
+                == null) {
+            receiverType = (DeclaredType) receiverType.getEnclosingType();
+            if (receiverType == null) {
+                ErrorReporter.errorAbort("Method not found");
+            }
+        }
         return (ExecutableType) types.asMemberOf(receiverType, ele);
     }
 }

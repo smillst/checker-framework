@@ -30,6 +30,7 @@ public class BoundsForVar {
     private final VarBounds equalBounds;
 
     private final LinkedHashSet<Constraint> toIncorporate = new LinkedHashSet<>();
+    private final LinkedHashSet<Constraint> previsoulyIncorporated = new LinkedHashSet<>();
     private final Context context;
 
     public BoundsForVar(Variable var, Context context) {
@@ -226,36 +227,46 @@ public class BoundsForVar {
 
     public ConstraintSet getConstraintFromComplementaryBounds() {
         ConstraintSet constraintSet = new ConstraintSet(toIncorporate.toArray(new Constraint[0]));
+        previsoulyIncorporated.addAll(toIncorporate);
         toIncorporate.clear();
         return constraintSet;
     }
 
     public ConstraintSet getConstraintsFromInst(List<Instantiation> instantiations) {
         ConstraintSet constraintSet = new ConstraintSet();
+        if (instantiations.isEmpty()) {
+            return constraintSet;
+        }
         AbstractType varPrime = hasInstantiation() ? getInstantiation() : var;
 
         // var = T imply <varPrime = T[alpha:=U]›
         for (AbstractType T : equalBounds.getAll()) {
             AbstractType tPrime = T.applyInstantiations(instantiations);
-            constraintSet.add(new Typing(varPrime, tPrime, Kind.TYPE_EQUALITY));
+            if (T != tPrime) {
+                constraintSet.add(new Typing(varPrime, tPrime, Kind.TYPE_EQUALITY));
+            }
         }
 
         // var <: T imply <varPrime <: T[alpha:=U]›
         for (AbstractType T : upperBounds.getAll()) {
             AbstractType tPrime = T.applyInstantiations(instantiations);
-            constraintSet.add(new Typing(varPrime, tPrime, Kind.SUBTYPE));
+            if (T != tPrime) {
+                constraintSet.add(new Typing(varPrime, tPrime, Kind.SUBTYPE));
+            }
         }
 
         // S <: var imply <S[alpha:=U] <: varPrime]›
         for (AbstractType s : lowerBounds.getAll()) {
             AbstractType sPrime = s.applyInstantiations(instantiations);
-            constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
+            if (s != sPrime) {
+                constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
+            }
         }
         return constraintSet;
     }
 
     public boolean merge(BoundsForVar other) {
-        boolean changed = this.toIncorporate.addAll(other.toIncorporate);
+        boolean changed = false;
 
         for (AbstractType t : other.equalBounds.getAll()) {
             changed |= this.addEqual(t);
@@ -265,6 +276,16 @@ public class BoundsForVar {
         }
         for (AbstractType t : other.upperBounds.getAll()) {
             changed |= this.addUpperBound(t);
+        }
+
+        if (changed) {
+            this.toIncorporate.addAll(other.toIncorporate);
+            this.previsoulyIncorporated.addAll(other.previsoulyIncorporated);
+        } else {
+            if (!this.previsoulyIncorporated.containsAll(other.toIncorporate)) {
+                changed = this.toIncorporate.addAll(other.toIncorporate);
+                changed |= this.previsoulyIncorporated.addAll(other.previsoulyIncorporated);
+            }
         }
 
         return changed;
@@ -350,6 +371,7 @@ public class BoundsForVar {
         }
 
         boolean add(AbstractType t) {
+            assert t != null;
             switch (t.getKind()) {
                 case PROPER:
                     return properTypes.add((ProperType) t);

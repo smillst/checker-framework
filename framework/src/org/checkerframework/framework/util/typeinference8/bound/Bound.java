@@ -14,6 +14,14 @@ public abstract class Bound implements ReductionResult {
                 }
             };
 
+    public static Bound TRUE =
+            new Bound() {
+                @Override
+                public Kind getKind() {
+                    return Kind.TRUE;
+                }
+            };
+
     public enum Kind {
         /**
          * {@code S = T}, where at least one of S or T is an inference variable: S is the same as T.
@@ -28,6 +36,9 @@ public abstract class Bound implements ReductionResult {
 
         /** false: No valid choice of inference variables exists. */
         FALSE,
+
+        /** true * */
+        TRUE,
 
         /**
          * {@code G<a1, ..., an> = capture(G<A1, ..., An>)}: The variables a1, ..., an represent the

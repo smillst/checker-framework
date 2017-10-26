@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
+import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.bound.Throws;
@@ -15,6 +16,7 @@ import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class Resolution {
     public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
@@ -124,7 +126,7 @@ public class Resolution {
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(ti, context)));
                 continue;
             }
-            resolvedBoundSet = BoundSet.FALSE;
+            resolvedBoundSet.add(Bound.FALSE);
             break;
         }
         boundSet.incorporateToFixedPoint(resolvedBoundSet);
@@ -135,6 +137,7 @@ public class Resolution {
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-B */
     private static BoundSet resolve2(
             LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
+        assert !boundSet.containsFalse();
         BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
             assert !boundSet.hasInstantiation(ai);
@@ -164,13 +167,15 @@ public class Resolution {
                 }
             }
             WildcardType wildcardType;
-            try {
-                wildcardType = context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
-            } catch (Exception ex) {
-                return BoundSet.FALSE;
+            if (lowerBound != null) {
+                if (TypesUtils.isObject(upperBound)) {
+                    upperBound = null;
+                }
             }
+            wildcardType = context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
             TypeMirror freshTypeVar = context.types.capture((Type) wildcardType);
             resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
+            assert !resolvedBoundSet.containsFalse();
         }
         boundSet.removeCaptures(as);
         boundSet.incorporateToFixedPoint(resolvedBoundSet);

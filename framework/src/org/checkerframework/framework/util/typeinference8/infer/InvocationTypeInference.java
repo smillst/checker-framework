@@ -236,7 +236,7 @@ public class InvocationTypeInference {
                 // T is a parameterization of a generic class or interface, G, and B2 contains a
                 // bound of one of the forms α = S or S <: α, where there exists no type of the form
                 // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
-                //                compatiblity = true;
+                throw new RuntimeException("Not implemented");
             } else if (target.getTypeKind().isPrimitive()) {
                 // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
                 //                compatiblity = true;

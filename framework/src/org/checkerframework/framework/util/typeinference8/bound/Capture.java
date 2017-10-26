@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import com.sun.source.tree.ExpressionTree;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -118,6 +119,16 @@ public class Capture extends Bound {
 
     public InferenceType getLHS() {
         return lhs;
+    }
+
+    @Override
+    public boolean isCaptureMentionsAny(Collection<Variable> as) {
+        for (Variable a : as) {
+            if (map.containsValue(a)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static class CaptureTuple {

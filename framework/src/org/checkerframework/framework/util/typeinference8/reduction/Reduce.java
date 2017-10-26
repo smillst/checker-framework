@@ -23,15 +23,13 @@ public class Reduce {
             } else if (result instanceof ConstraintSet) {
                 constraintSet.add((ConstraintSet) result);
             } else if (result instanceof Bound) {
-                if (((Bound) result).getKind() == Kind.FALSE) {
-                    return BoundSet.FALSE;
-                }
                 boundSet.add((Bound) result);
-            } else if (result instanceof BoundSet) {
-                if (((BoundSet) result).containsFalse()) {
-                    return BoundSet.FALSE;
+                if (((Bound) result).getKind() == Kind.FALSE) {
+                    return boundSet;
                 }
+            } else if (result instanceof BoundSet) {
                 boundSet.add((BoundSet) result);
+                return boundSet;
             } else {
                 throw new RuntimeException("Not found " + result);
             }

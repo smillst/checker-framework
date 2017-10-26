@@ -49,7 +49,7 @@ public abstract class Constraint implements ReductionResult {
         METHOD_REF_EXCEPTION,
     }
     /** T: may contain inference variables. */
-    protected AbstractType T;
+    public AbstractType T;
 
     protected Constraint(AbstractType t) {
         assert t != null : "Can't create a constraint with a null type.";
@@ -58,6 +58,25 @@ public abstract class Constraint implements ReductionResult {
 
     public AbstractType getT() {
         return T;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Constraint that = (Constraint) o;
+
+        return T.equals(that.T);
+    }
+
+    @Override
+    public int hashCode() {
+        return T.hashCode();
     }
 
     public abstract Kind getKind();
@@ -126,13 +145,41 @@ public abstract class Constraint implements ReductionResult {
                 case SUBTYPE:
                     return S + " <: " + T;
                 case CONTAINED:
-                    return S + "<=" + T;
+                    return S + " <= " + T;
                 case TYPE_EQUALITY:
                     return S + " = " + T;
                 default:
                     assert false;
                     return super.toString();
             }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+
+            Typing typing = (Typing) o;
+
+            if (!S.equals(typing.S)) {
+                return false;
+            }
+            return kind == typing.kind;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + S.hashCode();
+            result = 31 * result + kind.hashCode();
+            return result;
         }
     }
 
@@ -152,6 +199,30 @@ public abstract class Constraint implements ReductionResult {
         public Kind getKind() {
             return Kind.LAMBDA_EXCEPTION;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+
+            LambdaExpression that = (LambdaExpression) o;
+
+            return lambda != null ? lambda.equals(that.lambda) : that.lambda == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + (lambda != null ? lambda.hashCode() : 0);
+            return result;
+        }
     }
 
     /**
@@ -169,6 +240,30 @@ public abstract class Constraint implements ReductionResult {
         @Override
         public Kind getKind() {
             return Kind.METHOD_REF_EXCEPTION;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+
+            MemberReferenceExpression that = (MemberReferenceExpression) o;
+
+            return memberRef.equals(that.memberRef);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + memberRef.hashCode();
+            return result;
         }
     }
 }

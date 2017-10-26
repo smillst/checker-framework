@@ -146,4 +146,37 @@ public class Expression extends Constraint {
                 return Collections.emptyList();
         }
     }
+
+    @Override
+    public String toString() {
+        return expression + " -> " + T;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        Expression that = (Expression) o;
+
+        if (!expression.equals(that.expression)) {
+            return false;
+        }
+        return expressionKind == that.expressionKind;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + expression.hashCode();
+        result = 31 * result + expressionKind.hashCode();
+        return result;
+    }
 }

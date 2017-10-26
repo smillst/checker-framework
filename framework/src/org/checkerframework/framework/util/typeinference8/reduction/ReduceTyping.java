@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
+import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.bound.Subtype;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
@@ -27,14 +27,14 @@ public class ReduceTyping {
             TypeMirror subType = ((ProperType) s).getProperType();
             TypeMirror superType = ((ProperType) t).getProperType();
             if (context.types.isSubtype((Type) subType, (Type) superType)) {
-                return BoundSet.TRUE;
+                return Bound.TRUE;
             } else {
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         } else if (s.getTypeKind() == TypeKind.NULL) {
-            return BoundSet.TRUE;
+            return Bound.TRUE;
         } else if (t.getTypeKind() == TypeKind.NULL) {
-            return BoundSet.FALSE;
+            return Bound.FALSE;
         }
 
         if (c.getS().isVariable() || c.getT().isVariable()) {
@@ -52,7 +52,7 @@ public class ReduceTyping {
             case INTERSECTION:
                 return reduceSubtypingIntersection(c);
         }
-        return BoundSet.FALSE;
+        return Bound.FALSE;
     }
 
     private static ReductionResult reduceSubtypeClass(Typing c) {
@@ -70,7 +70,7 @@ public class ReduceTyping {
                     t.isProper() ? ((ProperType) t).getProperType() : ((InferenceType) t).getType();
             AbstractType sAsSuper = s.asSuper(tTypeMirror);
             if (sAsSuper == null) {
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
 
             List<AbstractType> Bs = sAsSuper.getTypeArguments();
@@ -84,17 +84,17 @@ public class ReduceTyping {
             return set;
         } else {
             //the constraint reduces to true if T is among the supertypes of S, and false otherwise.
-            return BoundSet.TRUE;
+            return Bound.TRUE;
         }
     }
 
     private static ReductionResult reduceSubtypeArray(Typing c) {
         AbstractType s = c.getS().getMostSpecificArrayType();
         if (s == null) {
-            return BoundSet.FALSE;
+            return Bound.FALSE;
         }
         if (s.isPrimitiveArray() && c.getT().isPrimitiveArray()) {
-            return BoundSet.TRUE;
+            return Bound.TRUE;
         } else {
             return new Typing(s.getComponentType(), c.getT().getComponentType(), Kind.SUBTYPE);
         }
@@ -102,11 +102,11 @@ public class ReduceTyping {
 
     private static ReductionResult reduceSubtypeTypeVariable(Typing c) {
         if (c.getS().getTypeKind() == TypeKind.INTERSECTION) {
-            return BoundSet.TRUE;
+            return Bound.TRUE;
         } else if (c.getT().hasLowerBound()) {
             return new Typing(c.getS(), c.getT().getTypeVarLowerBound(), Kind.SUBTYPE);
         } else {
-            return BoundSet.FALSE;
+            return Bound.FALSE;
         }
     }
 
@@ -125,10 +125,10 @@ public class ReduceTyping {
             if (s.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(s, t, Kind.TYPE_EQUALITY);
             } else {
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         } else if (t.isUnboundWildcard()) {
-            return BoundSet.TRUE;
+            return Bound.TRUE;
         } else if (t.isUpperBoundedWildcard()) {
             AbstractType bound = t.getWildcardUpperBound();
             if (s.getTypeKind() == TypeKind.WILDCARD) {
@@ -147,7 +147,7 @@ public class ReduceTyping {
             } else if (s.isLowerBoundedWildcard()) {
                 return new Typing(tPrime, s.getWildcardLowerBound(), Kind.SUBTYPE);
             } else {
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         }
     }
@@ -167,9 +167,9 @@ public class ReduceTyping {
             // the constraint reduces to true if S is compatible in a loose invocation context
             // with T (§5.3), and false otherwise.
             if (contex.types.isAssignable((Type) s.getProperType(), (Type) t.getProperType())) {
-                return BoundSet.TRUE;
+                return Bound.TRUE;
             } else {
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         } else if (s != null && s.getTypeKind().isPrimitive()) {
             return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
@@ -191,18 +191,18 @@ public class ReduceTyping {
             if (t.isProper()) {
                 // If S and T are proper types, the constraint reduces to true if S is the same
                 // as T (4.3.4), and false otherwise.
-                return BoundSet.TRUE;
+                return Bound.TRUE;
             }
             ProperType sProper = (ProperType) s;
             if (sProper.getTypeKind() == TypeKind.NULL || sProper.getTypeKind().isPrimitive()) {
                 // if S or T is the null type, the constraint reduces to false.
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         } else if (t.isProper()) {
             ProperType tProper = (ProperType) t;
             if (tProper.getTypeKind() == TypeKind.NULL || tProper.getTypeKind().isPrimitive()) {
                 // if S or T is the null type, the constraint reduces to false.
-                return BoundSet.FALSE;
+                return Bound.FALSE;
             }
         }
 
@@ -233,7 +233,7 @@ public class ReduceTyping {
 
         if (t.getTypeKind() == TypeKind.WILDCARD && s.getTypeKind() == TypeKind.WILDCARD) {
             if (t.isUnboundWildcard() && s.isUnboundWildcard()) {
-                return BoundSet.TRUE;
+                return Bound.TRUE;
             } else if (!s.isLowerBoundedWildcard() && !t.isLowerBoundedWildcard()) {
                 return new Typing(
                         s.getWildcardUpperBound(), t.getWildcardUpperBound(), Kind.TYPE_EQUALITY);
@@ -242,6 +242,6 @@ public class ReduceTyping {
                         t.getWildcardLowerBound(), s.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
             }
         }
-        return BoundSet.FALSE;
+        return Bound.FALSE;
     }
 }

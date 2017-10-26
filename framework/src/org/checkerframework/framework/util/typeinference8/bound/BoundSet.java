@@ -3,7 +3,7 @@ package org.checkerframework.framework.util.typeinference8.bound;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +38,7 @@ public class BoundSet implements ReductionResult {
      * com.sun.tools.javac.comp.Infer#MAX_INCORPORATION_STEPS}
      */
     //    private static final int MAX_INCORPORATION_STEPS = 100;
-    private static final int MAX_INCORPORATION_STEPS = 10;
-
-    public static final BoundSet TRUE = new BoundSet((Context) null);
-
-    public static final BoundSet FALSE = new BoundSet(Bound.FALSE, null);
+    private static final int MAX_INCORPORATION_STEPS = 100;
 
     private final Map<Variable, BoundsForVar> boundsOnVariables;
     private final LinkedHashSet<Capture> captures;
@@ -58,7 +54,8 @@ public class BoundSet implements ReductionResult {
     }
 
     public BoundSet(Context context) {
-        this.boundsOnVariables = new HashMap<>();
+        assert context != null;
+        this.boundsOnVariables = new LinkedHashMap<>();
         this.captures = new LinkedHashSet<>();
         this.throwsList = new LinkedHashSet<>();
         this.context = context;
@@ -95,7 +92,7 @@ public class BoundSet implements ReductionResult {
     public static BoundSet initialBounds(Theta map, Context context) {
         BoundSet boundSet = new BoundSet(context);
 
-        for (Entry<TypeVariable, Variable> entry : map.entrySet()) {
+        for (Entry<TypeVariable, Variable> entry : map.getEntryList()) {
             TypeVariable pl = entry.getKey();
             Variable al = entry.getValue();
             TypeMirror upperBound = pl.getUpperBound();
@@ -114,18 +111,15 @@ public class BoundSet implements ReductionResult {
             Theta map, Variable al, TypeMirror upperBound, Context context) {
         BoundSet boundSet = new BoundSet(context);
         switch (upperBound.getKind()) {
-            case DECLARED:
-            case TYPEVAR:
-                AbstractType t1 = InferenceType.create(upperBound, map, context);
-                boundSet.add(Subtype.createSubtype(al, t1));
-                break;
             case INTERSECTION:
                 for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
                     boundSet.add(initialBoundForL(map, al, bound, context));
                 }
                 break;
             default:
-                ErrorReporter.errorAbort("Unexpected kind: %s", upperBound.getKind());
+                AbstractType t1 = InferenceType.create(upperBound, map, context);
+                boundSet.add(Subtype.createSubtype(al, t1));
+                break;
         }
         return boundSet;
     }
@@ -157,6 +151,8 @@ public class BoundSet implements ReductionResult {
             case THROWS:
                 throwsList.add((Throws) bound);
                 break;
+            case TRUE:
+                // Do nothing
         }
     }
 
@@ -382,7 +378,6 @@ public class BoundSet implements ReductionResult {
         if (this.containsFalse()) {
             return;
         }
-        boolean changed;
         int count = 0;
         do {
             count++;
@@ -397,8 +392,10 @@ public class BoundSet implements ReductionResult {
             }
 
             List<Instantiation> instantiations = getInstantiationsAll();
-            for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
-                constraints.add(boundsForVar.getConstraintsFromInst(instantiations));
+            if (!instantiations.isEmpty()) {
+                for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
+                    constraints.add(boundsForVar.getConstraintsFromInst(instantiations));
+                }
             }
 
             for (Capture capture : captures) {
@@ -407,6 +404,7 @@ public class BoundSet implements ReductionResult {
 
             newBounds = constraints.reduce(context);
             isFalse &= newBounds.isFalse;
+            assert count < MAX_INCORPORATION_STEPS : "Max incorporation steps reached.";
         } while (!isFalse && count < MAX_INCORPORATION_STEPS);
     }
 
