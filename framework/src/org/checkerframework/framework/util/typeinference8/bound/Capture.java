@@ -55,12 +55,12 @@ public class Capture extends Bound {
         List<Pair<CaptureVariable, TypeMirror>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {
             TypeVariable pl = (TypeVariable) pEle.asType();
-            CaptureVariable al = new CaptureVariable(new ProperType(pl, context), tree, context);
+            CaptureVariable al = new CaptureVariable(pl, tree, context);
             map.put(pl, al);
             pairs.add(Pair.of(al, pl.getUpperBound()));
         }
 
-        lhs = (InferenceType) InferenceType.create(underlying, map, context);
+        lhs = (InferenceType) InferenceType.create(ele.asType(), map, context);
 
         Iterator<AbstractType> args = lhs.getTypeArguments().iterator();
         for (Pair<CaptureVariable, TypeMirror> pair : pairs) {

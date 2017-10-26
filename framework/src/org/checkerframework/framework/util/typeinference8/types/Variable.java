@@ -11,9 +11,9 @@ import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiat
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class Variable extends AbstractType {
-    private final TypeVariable typeVariable;
+    protected final TypeVariable typeVariable;
     /** The expression for which this variable is being solved. */
-    private final ExpressionTree invocation;
+    protected final ExpressionTree invocation;
 
     protected final Context context;
 
@@ -184,16 +184,18 @@ public class Variable extends AbstractType {
     }
 
     public static class CaptureVariable extends Variable {
-        AbstractType type;
-
-        public CaptureVariable(AbstractType p, ExpressionTree invocation, Context context) {
-            super(null, invocation, context);
-            this.type = p;
+        public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {
+            super(type, invocation, context);
         }
 
         @Override
         public String toString() {
-            return "CaptureVariable: " + type;
+            return "Capture {"
+                    + "typeVariable="
+                    + typeVariable
+                    + ", invocation="
+                    + invocation
+                    + '}';
         }
     }
 }
