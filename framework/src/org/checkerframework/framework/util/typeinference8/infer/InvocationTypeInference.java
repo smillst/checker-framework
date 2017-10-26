@@ -15,7 +15,6 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -40,6 +39,7 @@ import org.checkerframework.framework.util.typeinference8.util.InternalInference
 import org.checkerframework.javacutil.TreeUtils;
 
 public class InvocationTypeInference {
+
     private final ProcessingEnvironment env;
     private final TreePath pathToExpression;
 
@@ -57,9 +57,12 @@ public class InvocationTypeInference {
             return null;
         }
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
+
         ProperType r = returnType != null ? new ProperType(returnType, context) : null;
         List<Instantiation> result = infer(methodInvocation, r);
-        checkResult(result, methodInvocation);
+        ExecutableType methodType =
+                InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
+        checkResult(result, methodInvocation, methodType);
         return result;
     }
 
@@ -81,10 +84,12 @@ public class InvocationTypeInference {
         return true;
     }
 
-    private void checkResult(List<Instantiation> result, MethodInvocationTree methodInvocation) {
+    private void checkResult(
+            List<Instantiation> result,
+            MethodInvocationTree methodInvocation,
+            ExecutableType methodType) {
         Map<TypeVariable, TypeMirror> fromReturn =
-                InferenceUtils.getMappingFromReturnType(
-                        methodInvocation, TreeUtils.elementFromUse(methodInvocation), context.env);
+                InferenceUtils.getMappingFromReturnType(methodInvocation, methodType, context.env);
         for (Instantiation inst : result) {
             if (!inst.getA().getInvocation().equals(methodInvocation)) {
                 continue;
@@ -116,21 +121,18 @@ public class InvocationTypeInference {
      * @return
      */
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
-        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
-        DeclaredType declaredType = InternalInferenceUtils.getReceiverType(methodInvocation);
-
-        ExecutableElement element = TreeUtils.elementFromUse(methodInvocation);
-        Theta map = Theta.theta(element, methodInvocation, context);
-        BoundSet b2 =
-                createB2(declaredType, element, methodInvocation.getArguments(), map, isVarArg);
+        ExecutableType methodType =
+                InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
+        Theta map = Theta.theta(methodType, methodInvocation, context);
+        BoundSet b2 = createB2(methodInvocation, methodType, methodInvocation.getArguments(), map);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
-            b3 = createB3(b2, element, methodInvocation, target, map);
+            b3 = createB3(b2, methodType, methodInvocation, target, map);
         } else {
             b3 = b2;
         }
         ConstraintSet c =
-                createC(declaredType, element, methodInvocation.getArguments(), map, isVarArg);
+                createC(methodInvocation, methodType, methodInvocation.getArguments(), map);
 
         BoundSet b4 = getB4(b3, c);
         List<Instantiation> thetaPrime = b4.resolve();
@@ -141,18 +143,17 @@ public class InvocationTypeInference {
     }
 
     public BoundSet createB2(
-            DeclaredType receiver,
-            ExecutableElement element,
+            ExpressionTree expression,
+            ExecutableType methodType,
             List<? extends ExpressionTree> args,
-            Theta map,
-            boolean isVarArg) {
+            Theta map) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
         // TODO:
         // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(receiver, element, map, args.size(), isVarArg);
+        List<AbstractType> formals = getFormals(methodType, expression, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -169,32 +170,12 @@ public class InvocationTypeInference {
         return b1;
     }
 
-    /**
-     * @param element
-     * @param map
-     * @param size
-     * @param isVarArg is was the method applicatably by variable arrity..
-     * @return
-     */
     public List<AbstractType> getFormals(
-            DeclaredType receiver,
-            ExecutableElement element,
-            Theta map,
-            int size,
-            boolean isVarArg) {
-        ExecutableType executableType;
-        if (receiver != null) {
-            executableType =
-                    (ExecutableType)
-                            context.factory
-                                    .getContext()
-                                    .getTypeUtils()
-                                    .asMemberOf(receiver, element);
-        } else {
-            executableType = (ExecutableType) element.asType();
-        }
+            ExecutableType executableType, ExpressionTree expression, Theta map, int size) {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
-        if (isVarArg && element.isVarArgs()) {
+
+        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expression);
+        if (isVarArg) {
             ArrayType vararg = (ArrayType) params.remove(params.size() - 1);
             for (int i = params.size(); i < size; i++) {
                 params.add(vararg.getComponentType());
@@ -218,11 +199,11 @@ public class InvocationTypeInference {
 
     public BoundSet createB3(
             BoundSet b2,
-            ExecutableElement element,
+            ExecutableType methodType,
             ExpressionTree invocation,
             AbstractType target,
             Theta map) {
-        AbstractType r = InferenceType.create(element.getReturnType(), map, context);
+        AbstractType r = InferenceType.create(methodType.getReturnType(), map, context);
         // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-100-C.1-A
         // If unchecked conversion was necessary for the method to be applicable during
         // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
@@ -279,13 +260,12 @@ public class InvocationTypeInference {
     }
 
     private ConstraintSet createC(
-            DeclaredType receiver,
-            ExecutableElement element,
+            ExpressionTree expression,
+            ExecutableType methodType,
             List<? extends ExpressionTree> args,
-            Theta map,
-            boolean isVarArg) {
+            Theta map) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(receiver, element, map, args.size(), isVarArg);
+        List<AbstractType> formals = getFormals(methodType, expression, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -316,31 +296,26 @@ public class InvocationTypeInference {
             case METHOD_INVOCATION:
                 if (InternalInferenceUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
-                    ExecutableElement ele = TreeUtils.elementFromUse(methodInvocation);
-                    Theta newMap = Theta.theta(ele, methodInvocation, context);
-                    boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(methodInvocation);
+                    ExecutableType methodType =
+                            InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
+                                    methodInvocation, context);
+                    Theta newMap = Theta.theta(methodType, methodInvocation, context);
                     c.add(
                             createC(
-                                    InternalInferenceUtils.getReceiverType(methodInvocation),
-                                    ele,
+                                    methodInvocation,
+                                    methodType,
                                     methodInvocation.getArguments(),
-                                    newMap,
-                                    isVarArg));
+                                    newMap));
                 }
                 break;
             case NEW_CLASS:
                 if (InternalInferenceUtils.isPolyExpression(ei)) {
                     NewClassTree newClassTree = (NewClassTree) ei;
-                    ExecutableElement ele = TreeUtils.elementFromUse(newClassTree);
-                    Theta newMap = Theta.theta(ele, newClassTree, context);
-                    boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(newClassTree);
-                    c.add(
-                            createC(
-                                    InternalInferenceUtils.getReceiverType(newClassTree),
-                                    ele,
-                                    newClassTree.getArguments(),
-                                    newMap,
-                                    isVarArg));
+                    ExecutableType methodType =
+                            InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
+                                    newClassTree, context);
+                    Theta newMap = Theta.theta(methodType, newClassTree, context);
+                    c.add(createC(newClassTree, methodType, newClassTree.getArguments(), newMap));
                 }
                 break;
             case PARENTHESIZED:

@@ -279,9 +279,10 @@ public class InferenceUtils {
     }
 
     public static Map<TypeVariable, TypeMirror> getMappingFromReturnType(
-            ExpressionTree methodInvocationTree, ExecutableElement ele, ProcessingEnvironment env) {
+            ExpressionTree methodInvocationTree,
+            ExecutableType methodType,
+            ProcessingEnvironment env) {
         TypeMirror methodCallType = InternalUtils.typeOf(methodInvocationTree);
-        ExecutableType methodType = (ExecutableType) ele.asType();
         JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
         Types types = Types.instance(javacEnv.getContext());
         GetMapping mapping = new GetMapping(methodType.getTypeVariables(), types);

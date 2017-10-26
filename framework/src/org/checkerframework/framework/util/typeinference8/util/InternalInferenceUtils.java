@@ -26,9 +26,11 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
@@ -268,5 +270,24 @@ public class InternalInferenceUtils {
         TypeMirror type = InternalUtils.typeOf(receiverTree);
         // TODO: this must exist else where.....
         return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
+    }
+
+    public static ExecutableType getTypeOfMethodAdaptedToUse(
+            ExpressionTree expressionTree, Context context) {
+        if (expressionTree.getKind() != Kind.METHOD_INVOCATION
+                && expressionTree.getKind() != Kind.NEW_CLASS) {
+            return null;
+        }
+        DeclaredType receiverType = getReceiverType(expressionTree);
+        if (receiverType == null) {
+            receiverType = context.enclosingType;
+        }
+        ExecutableElement ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
+
+        if (ElementUtils.isStatic(ele) || receiverType == null) {
+            return (ExecutableType) ele.asType();
+        }
+        javax.lang.model.util.Types types = context.env.getTypeUtils();
+        return (ExecutableType) types.asMemberOf(receiverType, ele);
     }
 }

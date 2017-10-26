@@ -10,7 +10,7 @@ import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
@@ -170,28 +170,21 @@ public class ReduceExpression {
      * new variables and the inference variables in T.
      */
     private static ReductionResult reduceMethodInvocation(Expression constraint, Context context) {
-        ExecutableElement element;
         ExpressionTree expressionTree = constraint.getExpression();
         List<? extends ExpressionTree> args;
         if (expressionTree.getKind() == Kind.NEW_CLASS) {
             NewClassTree newClassTree = (NewClassTree) expressionTree;
             args = newClassTree.getArguments();
-            element = TreeUtils.elementFromUse(newClassTree);
         } else {
             MethodInvocationTree methodInvocationTree = (MethodInvocationTree) expressionTree;
             args = methodInvocationTree.getArguments();
-            element = TreeUtils.elementFromUse(methodInvocationTree);
         }
-        Theta map = Theta.theta(element, expressionTree, context);
-        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expressionTree);
-        BoundSet b2 =
-                context.inference.createB2(
-                        InternalInferenceUtils.getReceiverType(expressionTree),
-                        element,
-                        args,
-                        map,
-                        isVarArg);
-        return context.inference.createB3(b2, element, expressionTree, constraint.getT(), map);
+
+        ExecutableType methodType =
+                InternalInferenceUtils.getTypeOfMethodAdaptedToUse(expressionTree, context);
+        Theta map = Theta.theta(methodType, expressionTree, context);
+        BoundSet b2 = context.inference.createB2(expressionTree, methodType, args, map);
+        return context.inference.createB3(b2, methodType, expressionTree, constraint.getT(), map);
     }
 
     private static Constraint reduceParenthesized(Expression constraint) {
