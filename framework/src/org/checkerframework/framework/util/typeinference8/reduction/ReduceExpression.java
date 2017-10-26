@@ -182,7 +182,7 @@ public class ReduceExpression {
 
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(expressionTree, context);
-        Theta map = Theta.theta(methodType, expressionTree, context);
+        Theta map = Theta.theta(expressionTree, methodType, context);
         BoundSet b2 = context.inference.createB2(expressionTree, methodType, args, map);
         return context.inference.createB3(b2, methodType, expressionTree, constraint.getT(), map);
     }

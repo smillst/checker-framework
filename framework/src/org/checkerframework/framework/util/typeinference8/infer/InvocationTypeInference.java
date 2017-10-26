@@ -123,7 +123,7 @@ public class InvocationTypeInference {
     public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
-        Theta map = Theta.theta(methodType, methodInvocation, context);
+        Theta map = Theta.theta(methodInvocation, methodType, context);
         BoundSet b2 = createB2(methodInvocation, methodType, methodInvocation.getArguments(), map);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
@@ -153,7 +153,7 @@ public class InvocationTypeInference {
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(methodType, expression, map, args.size());
+        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -171,7 +171,7 @@ public class InvocationTypeInference {
     }
 
     public List<AbstractType> getFormals(
-            ExecutableType executableType, ExpressionTree expression, Theta map, int size) {
+            ExpressionTree expression, ExecutableType executableType, Theta map, int size) {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
 
         boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expression);
@@ -265,7 +265,7 @@ public class InvocationTypeInference {
             List<? extends ExpressionTree> args,
             Theta map) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(methodType, expression, map, args.size());
+        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -299,7 +299,7 @@ public class InvocationTypeInference {
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     methodInvocation, context);
-                    Theta newMap = Theta.theta(methodType, methodInvocation, context);
+                    Theta newMap = Theta.theta(methodInvocation, methodType, context);
                     c.add(
                             createC(
                                     methodInvocation,
@@ -314,7 +314,7 @@ public class InvocationTypeInference {
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     newClassTree, context);
-                    Theta newMap = Theta.theta(methodType, newClassTree, context);
+                    Theta newMap = Theta.theta(newClassTree, methodType, context);
                     c.add(createC(newClassTree, methodType, newClassTree.getArguments(), newMap));
                 }
                 break;

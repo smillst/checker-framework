@@ -17,12 +17,12 @@ public class Theta extends HashMap<TypeVariable, Variable> {
         return super.put(key, value);
     }
 
-    public static Theta theta(ExecutableType type, ExpressionTree tree, Context context) {
+    public static Theta theta(ExpressionTree tree, ExecutableType methodType, Context context) {
         if (maps.containsKey(tree)) {
             return maps.get(tree);
         }
         Theta map = new Theta();
-        for (TypeVariable pl : type.getTypeVariables()) {
+        for (TypeVariable pl : methodType.getTypeVariables()) {
             Variable al = new Variable(pl, tree, context);
             map.put(pl, al);
         }
