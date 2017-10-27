@@ -270,6 +270,11 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
+    public boolean isRaw() {
+        return InternalInferenceUtils.isRaw(type);
+    }
+
+    @Override
     public List<AbstractType> getFunctionTypeParameters() {
         if (InternalUtils.isFunctionalInterface(type, context.env)) {
             ExecutableElement element = InternalUtils.findFunction((Type) type, context.env);

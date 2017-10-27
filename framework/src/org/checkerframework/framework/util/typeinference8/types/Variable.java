@@ -139,6 +139,11 @@ public class Variable extends AbstractType {
     }
 
     @Override
+    public boolean isRaw() {
+        return false;
+    }
+
+    @Override
     public List<AbstractType> getFunctionTypeParameters() {
         return null;
     }

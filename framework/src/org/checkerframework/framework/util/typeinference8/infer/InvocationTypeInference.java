@@ -224,22 +224,24 @@ public class InvocationTypeInference {
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
-            // TODO: implement
             boolean compatiblity = false;
             // T is a reference type, but is not a wildcard-parameterized type, and either
             if (!target.isWildcardParameterizedType()) {
                 // i) B2 contains a bound of one of the forms α = S or S <: α, where S is a wildcard-parameterized type, or
-                // ii) B2 contains two bounds of the forms S1 <: α and S2 <: α, where S1 and S2
-                // have supertypes that are two different parameterizations of the same generic class or interface.
-                //                compatiblity = true;
+                compatiblity = b2.hasWildcardParameterizedLowerOrEqualBound(alpha);
+                if (!compatiblity) {
+                    // ii) B2 contains two bounds of the forms S1 <: α and S2 <: α, where S1 and S2
+                    // have supertypes that are two different parameterizations of the same generic class or interface.
+                    compatiblity = b2.hasLowerBoundDifferentParam(alpha);
+                }
             } else if (target.isParameterizedType()) {
                 // T is a parameterization of a generic class or interface, G, and B2 contains a
                 // bound of one of the forms α = S or S <: α, where there exists no type of the form
                 // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
-                throw new RuntimeException("Not implemented");
+                compatiblity = b2.hasRawTypeLowerOrEqualBound(alpha, target);
             } else if (target.getTypeKind().isPrimitive()) {
                 // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
-                //                compatiblity = true;
+                compatiblity = b2.hasPrimitiveWrapperBound(alpha);
             }
             if (compatiblity) {
                 BoundSet resolve =

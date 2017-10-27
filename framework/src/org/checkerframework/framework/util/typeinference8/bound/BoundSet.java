@@ -443,4 +443,40 @@ public class BoundSet implements ReductionResult {
             return "Instantiated variables: " + vars;
         }
     }
+
+    /**
+     * @return whether or not one of the primitive wrapper classes mentioned is an instantiation,
+     *     upper bound, or lower
+     */
+    public boolean hasPrimitiveWrapperBound(Variable alpha) {
+        BoundsForVar boundsForVar = getBoundsForVar(alpha);
+        return boundsForVar.hasPrimitiveWrapperBound();
+    }
+
+    /**
+     * @return true if there exists a bound of one of the forms {@code alpha = S} or {@code S <:
+     *     alpha}, where S is a wildcard-parameterized type.
+     */
+    public boolean hasWildcardParameterizedLowerOrEqualBound(Variable alpha) {
+        BoundsForVar boundsForVar = getBoundsForVar(alpha);
+        return boundsForVar.hasWildcardParameterizedLowerOrEqualBound();
+    }
+
+    /**
+     * Does this bound set contain two bounds of the forms {@code S1 <: alpha} and {@code S2 <:
+     * alpha}, where S1 and S2 have supertypes that are two different parameterizations of the same
+     * generic class or interface?
+     */
+    public boolean hasLowerBoundDifferentParam(Variable alpha) {
+        return getBoundsForVar(alpha).hasLowerBoundDifferentParam();
+    }
+
+    /**
+     * Does this bound set contain a bound of one of the forms {@code alpha = S} or {@code S <:
+     * alpha}, where there exists no type of the form {@code G<...>} that is a supertype of S, but
+     * the raw type {@code |G<...>|} is a supertype of S?
+     */
+    public boolean hasRawTypeLowerOrEqualBound(Variable alpha, AbstractType g) {
+        return getBoundsForVar(alpha).hasRawTypeLowerOrEqualBound(g);
+    }
 }

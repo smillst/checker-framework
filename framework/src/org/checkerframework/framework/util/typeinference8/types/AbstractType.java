@@ -19,6 +19,8 @@ public abstract class AbstractType {
 
     public abstract AbstractType getFunctionTypeReturn();
 
+    public abstract boolean isRaw();
+
     public enum Kind {
         PROPER,
         VARIABLE,

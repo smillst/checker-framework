@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
@@ -304,5 +305,15 @@ public class InternalInferenceUtils {
             }
         }
         return (ExecutableType) types.asMemberOf(receiverType, ele);
+    }
+
+    public static boolean isRaw(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            TypeElement typeelem = (TypeElement) ((DeclaredType) type).asElement();
+            DeclaredType declty = (DeclaredType) typeelem.asType();
+            return !declty.getTypeArguments().isEmpty()
+                    && ((DeclaredType) type).getTypeArguments().isEmpty();
+        }
+        return false;
     }
 }

@@ -21,6 +21,7 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class BoundsForVar {
 
@@ -360,6 +361,91 @@ public class BoundsForVar {
             }
         }
         return constraintSet;
+    }
+
+    public boolean hasPrimitiveWrapperBound() {
+        if (hasInstantiation()) {
+            if (TypesUtils.isBoxedPrimitive(getInstantiation().getProperType())) {
+                return true;
+            }
+        }
+        for (ProperType type : getProperLowerBounds()) {
+            if (TypesUtils.isBoxedPrimitive(type.getProperType())) {
+                return true;
+            }
+        }
+
+        for (ProperType type : getProperUpperBounds()) {
+            if (TypesUtils.isBoxedPrimitive(type.getProperType())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean hasWildcardParameterizedLowerOrEqualBound() {
+        for (AbstractType type : equalBounds.getAll()) {
+            if (!type.isVariable() && type.isWildcardParameterizedType()) {
+                return true;
+            }
+        }
+        for (AbstractType type : lowerBounds.getAll()) {
+            if (!type.isVariable() && type.isWildcardParameterizedType()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Does this bound set contain two bounds of the forms {@code S1 <: var} and {@code S2 <: var},
+     * where S1 and S2 have supertypes that are two different parameterizations of the same generic
+     * class or interface?
+     */
+    public boolean hasLowerBoundDifferentParam() {
+        List<AbstractType> parameteredTypes = new ArrayList<>();
+        for (AbstractType type : lowerBounds.getAll()) {
+            if (!type.isVariable() && type.isParameterizedType()) {
+                parameteredTypes.add(type);
+            }
+        }
+        if (parameteredTypes.size() > 1) {
+            throw new RuntimeException("Not Implemented");
+        }
+        return false;
+    }
+
+    /**
+     * Does this bound set contain a bound of one of the forms {@code var = S} or {@code S <: var},
+     * where there exists no type of the form {@code G<...>} that is a supertype of S, but the raw
+     * type {@code |G<...>|} is a supertype of S?
+     */
+    public boolean hasRawTypeLowerOrEqualBound(AbstractType g) {
+        TypeMirror gTypeMirror =
+                g.isInferenceType()
+                        ? ((InferenceType) g).getType()
+                        : ((ProperType) g).getProperType();
+        for (AbstractType type : lowerBounds.getAll()) {
+            if (type.isVariable()) {
+                continue;
+            }
+            AbstractType superTypeOfS = type.asSuper(gTypeMirror);
+            if (superTypeOfS != null && superTypeOfS.isRaw()) {
+                return true;
+            }
+        }
+
+        for (AbstractType type : equalBounds.getAll()) {
+            if (type.isVariable()) {
+                continue;
+            }
+            AbstractType superTypeOfS = type.asSuper(gTypeMirror);
+            if (superTypeOfS != null && superTypeOfS.isRaw()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class VarBounds {

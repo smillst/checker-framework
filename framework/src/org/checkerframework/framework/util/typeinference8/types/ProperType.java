@@ -239,4 +239,9 @@ public class ProperType extends AbstractType {
     public String toString() {
         return properType.toString();
     }
+
+    @Override
+    public boolean isRaw() {
+        return InternalInferenceUtils.isRaw(properType);
+    }
 }
