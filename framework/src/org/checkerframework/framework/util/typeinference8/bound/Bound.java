@@ -61,4 +61,9 @@ public abstract class Bound implements ReductionResult {
     public boolean isCaptureMentionsAny(Collection<Variable> as) {
         return false;
     }
+
+    @Override
+    public String toString() {
+        return getKind().toString();
+    }
 }

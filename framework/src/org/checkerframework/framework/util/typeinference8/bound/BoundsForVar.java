@@ -63,8 +63,6 @@ public class BoundsForVar {
 
         if (s.isProper()) {
             assert equalBounds.properTypes.isEmpty() || equalBounds.properTypes.contains(s);
-            equalBounds.add(s);
-            return true;
         }
 
         // Equal Constraints

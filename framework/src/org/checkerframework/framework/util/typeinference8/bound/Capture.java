@@ -107,7 +107,7 @@ public class Capture extends Bound {
             AbstractType Ai = t.capturedTypeArg;
             if (Ai.getTypeKind() != TypeKind.WILDCARD) {
                 // If Ai is not a wildcard, then the bound αi = Ai is implied.
-                Equal.create(alphaI, Ai);
+                bounds.add(Equal.create(alphaI, Ai));
             }
         }
         return bounds;

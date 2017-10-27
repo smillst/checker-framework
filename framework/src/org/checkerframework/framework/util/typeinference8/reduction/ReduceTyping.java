@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
 import org.checkerframework.framework.util.typeinference8.bound.Subtype;
@@ -15,7 +16,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.javacutil.InternalUtils;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
@@ -26,13 +27,12 @@ public class ReduceTyping {
 
         if (s.isProper() && t.isProper()) {
             TypeMirror subType = ((ProperType) s).getProperType();
-            if (subType.getKind() == TypeKind.WILDCARD) {
-                subType = TypesUtils.wildUpperBound(context.env, subType);
-            }
             TypeMirror superType = ((ProperType) t).getProperType();
-            if (superType.getKind() == TypeKind.WILDCARD) {
-                subType = TypesUtils.wildUpperBound(context.env, subType);
-            }
+
+            // TODO:
+            // The JLS "is imprecise about the handling of wildcards when reducing subtyping constraints"
+            // See comment just before 18.3.1 of JLS.
+
             if (context.env.getTypeUtils().isSubtype(subType, superType)) {
                 return Bound.TRUE;
             } else {
@@ -60,6 +60,12 @@ public class ReduceTyping {
                 return reduceSubtypingIntersection(c);
         }
         return Bound.FALSE;
+    }
+
+    private static boolean isWildcardOrCapturedWildcard(TypeMirror subType) {
+        return subType.getKind() == TypeKind.WILDCARD
+                || subType.getKind() == TypeKind.TYPEVAR
+                        && InternalUtils.isCaptured((TypeVariable) subType);
     }
 
     private static ReductionResult reduceSubtypeClass(Typing c) {
