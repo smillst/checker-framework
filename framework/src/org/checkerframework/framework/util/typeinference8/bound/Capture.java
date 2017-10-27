@@ -63,7 +63,7 @@ public class Capture extends Bound {
 
         lhs = (InferenceType) InferenceType.create(ele.asType(), map, context);
 
-        Iterator<AbstractType> args = lhs.getTypeArguments().iterator();
+        Iterator<AbstractType> args = capturedType.getTypeArguments().iterator();
         for (Pair<CaptureVariable, TypeMirror> pair : pairs) {
             AbstractType Ai = args.next();
             CaptureVariable alaphi = pair.first;

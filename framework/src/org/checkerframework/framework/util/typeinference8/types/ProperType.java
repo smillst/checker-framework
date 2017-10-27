@@ -237,6 +237,6 @@ public class ProperType extends AbstractType {
 
     @Override
     public String toString() {
-        return "ProperType: " + properType;
+        return properType.toString();
     }
 }

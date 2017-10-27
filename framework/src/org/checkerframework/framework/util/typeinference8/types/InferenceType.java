@@ -285,6 +285,6 @@ public class InferenceType extends AbstractType {
 
     @Override
     public String toString() {
-        return "InferenceType: " + type;
+        return "inference type: " + type;
     }
 }

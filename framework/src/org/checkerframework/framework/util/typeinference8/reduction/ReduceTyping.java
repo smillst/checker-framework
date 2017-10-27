@@ -15,6 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
@@ -25,8 +26,14 @@ public class ReduceTyping {
 
         if (s.isProper() && t.isProper()) {
             TypeMirror subType = ((ProperType) s).getProperType();
+            if (subType.getKind() == TypeKind.WILDCARD) {
+                subType = TypesUtils.wildUpperBound(context.env, subType);
+            }
             TypeMirror superType = ((ProperType) t).getProperType();
-            if (context.types.isSubtype((Type) subType, (Type) superType)) {
+            if (superType.getKind() == TypeKind.WILDCARD) {
+                subType = TypesUtils.wildUpperBound(context.env, subType);
+            }
+            if (context.env.getTypeUtils().isSubtype(subType, superType)) {
                 return Bound.TRUE;
             } else {
                 return Bound.FALSE;

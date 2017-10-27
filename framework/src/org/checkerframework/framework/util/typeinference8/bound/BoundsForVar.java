@@ -50,10 +50,21 @@ public class BoundsForVar {
         this.toIncorporate.addAll(toCopy.toIncorporate);
     }
 
-    /** var = s */
+    /**
+     * Add bound {@code var = s }. Also, adds constraints implied by the bounds to {@link
+     * #toIncorporate} unless s is a proper type. In that case the constraints are added else where.
+     *
+     * @return true var = s is a new bound.
+     */
     public boolean addEqual(AbstractType s) {
         if (equalBounds.contains(s)) {
             return false;
+        }
+
+        if (s.isProper()) {
+            assert equalBounds.properTypes.isEmpty() || equalBounds.properTypes.contains(s);
+            equalBounds.add(s);
+            return true;
         }
 
         // Equal Constraints
@@ -73,15 +84,16 @@ public class BoundsForVar {
         for (AbstractType t : lowerBounds.getAll()) {
             toIncorporate.add(new Typing(t, s, Kind.SUBTYPE));
         }
-
-        if (s.getKind() == AbstractType.Kind.PROPER) {
-            assert equalBounds.properTypes.isEmpty() || equalBounds.properTypes.contains(s);
-        }
         equalBounds.add(s);
         return true;
     }
 
-    /** {@code var <: t} */
+    /**
+     * Add bound {@code var <: t}. Also, adds constraints implied by the bounds to {@link
+     * #toIncorporate}.
+     *
+     * @return true if {@code var <: t} is a new bound.
+     */
     public boolean addUpperBound(AbstractType t) {
         if (upperBounds.contains(t)) {
             return false;
@@ -385,6 +397,13 @@ public class BoundsForVar {
             }
         }
 
+        private List<AbstractType> getAllNonProper() {
+            List<AbstractType> list = new ArrayList<>();
+            list.addAll(variables);
+            list.addAll(inferenceTypes);
+            return list;
+        }
+
         private List<AbstractType> getAll() {
             List<AbstractType> list = new ArrayList<>();
             list.addAll(properTypes);
@@ -419,17 +438,17 @@ public class BoundsForVar {
 
     @Override
     public String toString() {
-        return "BoundsForVar{"
-                + "var="
-                + var
-                + "\nupperBounds="
-                + upperBounds.toStringSingleLine()
-                + "\nlowerBounds="
-                + lowerBounds.toStringSingleLine()
-                + "\nequalBounds="
-                + equalBounds.toStringSingleLine()
-                + "\ntoIncorporate="
-                + toIncorporate
-                + "\n}";
+        StringBuilder builder = new StringBuilder();
+        builder.append("BoundsForVar{");
+        if (equalBounds.properTypes.size() == 1) {
+            builder.append(var).append(" := ").append(equalBounds.properTypes.iterator().next());
+        } else {
+            builder.append(var);
+        }
+        builder.append("\nupperBounds=").append(upperBounds.toStringSingleLine());
+        builder.append("\nlowerBounds=").append(lowerBounds.toStringSingleLine());
+        builder.append("\nequalBounds=").append(equalBounds.toStringSingleLine());
+        builder.append("\ntoIncorporate=").append(toIncorporate).append("\n}");
+        return builder.toString();
     }
 }

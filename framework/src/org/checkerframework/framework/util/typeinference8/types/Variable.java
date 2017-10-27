@@ -180,22 +180,18 @@ public class Variable extends AbstractType {
 
     @Override
     public String toString() {
-        return "Variable{" + "typeVariable=" + typeVariable + ", invocation=" + invocation + '}';
+        return "var " + typeVariable + " for " + invocation;
     }
 
     public static class CaptureVariable extends Variable {
+
         public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {
             super(type, invocation, context);
         }
 
         @Override
         public String toString() {
-            return "Capture {"
-                    + "typeVariable="
-                    + typeVariable
-                    + ", invocation="
-                    + invocation
-                    + '}';
+            return "capture var " + typeVariable + " for " + invocation;
         }
     }
 }

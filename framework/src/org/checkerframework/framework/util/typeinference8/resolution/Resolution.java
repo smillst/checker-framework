@@ -172,13 +172,19 @@ public class Resolution {
                     upperBound = null;
                 }
             }
+
+            // TODO: This won't square with the capture that javac produces.
             wildcardType = context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
-            TypeMirror freshTypeVar = context.types.capture((Type) wildcardType);
+            TypeMirror freshTypeVar =
+                    context.types.freshTypeVariables(
+                                    com.sun.tools.javac.util.List.of((Type) wildcardType))
+                            .head;
             resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
             assert !resolvedBoundSet.containsFalse();
         }
         boundSet.removeCaptures(as);
         boundSet.incorporateToFixedPoint(resolvedBoundSet);
+        assert !boundSet.containsFalse();
         return boundSet;
     }
 }

@@ -13,6 +13,7 @@ import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.bound.Subtype.NonProperLowerBound;
@@ -365,9 +366,9 @@ public class BoundSet implements ReductionResult {
     /**
      * Incorporates {@code newBounds} into this bounds set.
      *
-     * <p>Incorporation creates new constraints that are then reduce to a bound set which is further
-     * incorporated into this bound set. Incorporation terminates when the bounds set has reached a
-     * fixed point. <a
+     * <p>Incorporation creates new constraints that are then reduced to a bound set which is
+     * further incorporated into this bound set. Incorporation terminates when the bounds set has
+     * reached a fixed point. <a
      * href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3">JLS 18 .1</a>
      * defines this fixed point and further explains incorporation.
      *
@@ -429,5 +430,20 @@ public class BoundSet implements ReductionResult {
 
     public void removeCaptures(LinkedHashSet<Variable> as) {
         captures.removeIf((Capture c) -> c.isCaptureMentionsAny(as));
+    }
+
+    @Override
+    public String toString() {
+        if (isFalse) {
+            return "FALSE";
+        } else if (boundsOnVariables.isEmpty()) {
+            return "EMPTY";
+        }
+        String vars = PluginUtil.join(", ", getInstantiatedVariables());
+        if (vars.isEmpty()) {
+            return "No instantiated variables";
+        } else {
+            return "Instantiated variables: " + vars;
+        }
     }
 }
