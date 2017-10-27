@@ -386,15 +386,12 @@ public class BoundSet implements ReductionResult {
                 // No new bounds, a fixed point has been reached.
                 break;
             }
+            List<Instantiation> instantiations = getInstantiationsAll();
 
             ConstraintSet constraints = new ConstraintSet();
             for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
                 constraints.add(boundsForVar.getConstraintFromComplementaryBounds());
-            }
-
-            List<Instantiation> instantiations = getInstantiationsAll();
-            if (!instantiations.isEmpty()) {
-                for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
+                if (!instantiations.isEmpty()) {
                     constraints.add(boundsForVar.getConstraintsFromInst(instantiations));
                 }
             }
