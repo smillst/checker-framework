@@ -38,7 +38,7 @@ public abstract class Equal extends Bound {
 
         @Override
         public String toString() {
-            return "Instantiation{" + "a=" + a + ", t=" + t + '}';
+            return "Instantiation{" + a + " := " + t + '}';
         }
     }
 

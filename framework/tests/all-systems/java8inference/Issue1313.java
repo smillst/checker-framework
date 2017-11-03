@@ -12,7 +12,7 @@ class Issue1313 {
     Stream<?> s;
     Iterable<?> i = s.collect(toMyList1313());
 
-    <E> Collector<E, ?, MyList1313<E>> toMyList1313() {
+    <F> Collector<F, ?, MyList1313<F>> toMyList1313() {
         return null;
     }
 }
