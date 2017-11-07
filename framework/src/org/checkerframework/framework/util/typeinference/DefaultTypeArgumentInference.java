@@ -118,9 +118,9 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
             ExpressionTree expressionTree,
             ExecutableElement methodElem,
             AnnotatedExecutableType methodType) {
-        //TODO: REMOVE THIS HACK WHEN YOU CAN CALL getTopAnnotations on GeneralAnnotatedTypeFactory
-        //TODO: currently this will only affect inferring METHOD type arguments on constructor
-        //TODO: invocations for the Nullness type system
+        // TODO: REMOVE THIS HACK WHEN YOU CAN CALL getTopAnnotations on GeneralAnnotatedTypeFactory
+        // TODO: currently this will only affect inferring METHOD type arguments on constructor
+        // TODO: invocations for the Nullness type system
         if (typeFactory instanceof GeneralAnnotatedTypeFactory) {
             return new HashMap<>();
         }
@@ -162,7 +162,8 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
             // <T> T outMethod()
             // <U> void inMethod(U u);
             // inMethod(outMethod())
-            // would require solving the constraints for both type argument inferences simultaneously
+            // would require solving the constraints for both type argument inferences
+            // simultaneously
             Map<TypeVariable, AnnotatedTypeMirror> inferredArgs = new LinkedHashMap<>();
             handleUninferredTypeVariables(typeFactory, methodType, targets, inferredArgs);
             return inferredArgs;
@@ -346,13 +347,13 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
             final Set<TypeVariable> targets,
             final boolean useNullArguments) {
 
-        //1.  Step 1 - Build up argument constraints
+        // 1.  Step 1 - Build up argument constraints
         // The AFConstraints for arguments are used also in the
         Set<AFConstraint> afArgumentConstraints =
                 createArgumentAFConstraints(
                         typeFactory, argumentTypes, methodType, targets, useNullArguments);
 
-        //2. Step 2 - Solve the constraints.
+        // 2. Step 2 - Solve the constraints.
         Pair<InferenceResult, InferenceResult> argInference =
                 inferFromArguments(typeFactory, afArgumentConstraints, targets);
 
@@ -391,11 +392,13 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
                     combineSupertypeAndAssignmentResults(
                             targets, typeFactory, fromAssignmentEqualities, fromArgSubandSupers);
 
-            // Step 5 - Combine the result from 2.a and step 4, if there is a conflict use the result from step 2.a
+            // Step 5 - Combine the result from 2.a and step 4, if there is a conflict use the
+            // result from step 2.a
             fromArgEqualities.mergeSubordinate(combinedSupertypesAndAssignment);
 
             // if we don't have a result for all type arguments
-            // Step 6 - Infer the type arguments from the greatest-lower-bounds of all "subtype" constraints
+            // Step 6 - Infer the type arguments from the greatest-lower-bounds of all "subtype"
+            // constraints
             if (!fromArguments.isComplete(targets)) {
                 InferenceResult fromAssignment =
                         inferFromAssignment(
@@ -617,8 +620,8 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
         for (AnnotatedTypeVariable typeParam : methodType.getTypeVariables()) {
             final TypeVariable target = typeParam.getUnderlyingType();
             final AnnotatedTypeMirror inferredType = inferredArgs.get(target);
-            // for all inferred types Ti:  Ti >> Bi where Bi is upper bound and Ti << Li where Li is the lower bound
-            // for all uninferred types Tu: Tu >> Bi and Lu >> Tu
+            // for all inferred types Ti:  Ti >> Bi where Bi is upper bound and Ti << Li where Li is
+            // the lower bound for all uninferred types Tu: Tu >> Bi and Lu >> Tu
             if (inferredType != null) {
                 assignmentAfs.add(new A2F(inferredType, typeParam.getUpperBound()));
                 assignmentAfs.add(new F2A(typeParam.getLowerBound(), inferredType));
