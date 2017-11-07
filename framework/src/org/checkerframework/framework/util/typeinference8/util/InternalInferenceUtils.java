@@ -32,6 +32,7 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
@@ -315,5 +316,20 @@ public class InternalInferenceUtils {
                     && ((DeclaredType) type).getTypeArguments().isEmpty();
         }
         return false;
+    }
+
+    public static TypeMirror getFreshTypeVar(
+            Context context, TypeMirror lowerBound, TypeMirror upperBound) {
+        if (lowerBound != null) {
+            if (TypesUtils.isObject(upperBound)) {
+                upperBound = null;
+            }
+        }
+        assert lowerBound == null || upperBound == null;
+        WildcardType wildcardType =
+                context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
+        return context.types.freshTypeVariables(
+                        com.sun.tools.javac.util.List.of((Type) wildcardType))
+                .head;
     }
 }

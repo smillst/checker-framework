@@ -1,12 +1,10 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
-import com.sun.tools.javac.code.Type;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Equal;
@@ -16,7 +14,6 @@ import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 public class Resolution {
     public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
@@ -138,9 +135,14 @@ public class Resolution {
     private static BoundSet resolve2(
             LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
         assert !boundSet.containsFalse();
-        BoundSet resolvedBoundSet = new BoundSet(context);
+        boundSet.removeCaptures(as);
         for (Variable ai : as) {
-            assert !boundSet.hasInstantiation(ai);
+            BoundSet resolvedBoundSet = new BoundSet(context);
+            if (boundSet.hasInstantiation(ai)) {
+                // If ai is equal to a variable that was resolved in the last loop,
+                // ai would now have an instantiation.
+                continue;
+            }
             LinkedHashSet<ProperType> lowerBounds = boundSet.findProperLowerBounds(ai);
             TypeMirror lowerBound = null;
             if (!lowerBounds.isEmpty()) {
@@ -166,24 +168,21 @@ public class Resolution {
                     }
                 }
             }
-            WildcardType wildcardType;
-            if (lowerBound != null) {
-                if (TypesUtils.isObject(upperBound)) {
-                    upperBound = null;
-                }
+
+            if (lowerBound == upperBound && lowerBound != null) {
+                // TODO: I'm not sure if this should happen:
+                resolvedBoundSet.add(Equal.create(ai, new ProperType(lowerBound, context)));
+            } else {
+                // TODO: This won't square with the capture that javac produces.
+                TypeMirror freshTypeVar =
+                        InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
+                resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
             }
 
-            // TODO: This won't square with the capture that javac produces.
-            wildcardType = context.env.getTypeUtils().getWildcardType(lowerBound, upperBound);
-            TypeMirror freshTypeVar =
-                    context.types.freshTypeVariables(
-                                    com.sun.tools.javac.util.List.of((Type) wildcardType))
-                            .head;
-            resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
             assert !resolvedBoundSet.containsFalse();
+            boundSet.incorporateToFixedPoint(resolvedBoundSet);
         }
-        boundSet.removeCaptures(as);
-        boundSet.incorporateToFixedPoint(resolvedBoundSet);
+
         assert !boundSet.containsFalse();
         return boundSet;
     }

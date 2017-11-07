@@ -429,6 +429,10 @@ public class BoundSet implements ReductionResult {
         captures.removeIf((Capture c) -> c.isCaptureMentionsAny(as));
     }
 
+    public void removeCapture(Variable a) {
+        captures.removeIf((Capture c) -> c.isCaptureMentionsAny(Collections.singleton(a)));
+    }
+
     @Override
     public String toString() {
         if (isFalse) {
