@@ -70,6 +70,7 @@ public class Resolution {
     }
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
+        assert !boundSet.containsFalse();
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
             resolvedBounds = resolve2(as, boundSet, context);
