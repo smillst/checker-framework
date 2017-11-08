@@ -276,6 +276,9 @@ public class InternalInferenceUtils {
         return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
     }
 
+    /**
+     * @return ExecutableType of the method invocation or new class tree adapted to the call site.
+     */
     public static ExecutableType getTypeOfMethodAdaptedToUse(
             ExpressionTree expressionTree, Context context) {
         if (expressionTree.getKind() != Kind.METHOD_INVOCATION

@@ -56,7 +56,7 @@ public class InvocationTypeInference {
         if (!shouldTryInference(t)) {
             return null;
         }
-        TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression);
+        TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression, context);
 
         ProperType r = returnType != null ? new ProperType(returnType, context) : null;
         List<Instantiation> result = infer(methodInvocation, r);
@@ -286,14 +286,14 @@ public class InvocationTypeInference {
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
-                c.add(new Expression(lambda, fi));
+                // TODO: ‹LambdaExpression →throws Fi θ›
                 for (ExpressionTree expression :
                         InternalInferenceUtils.getReturnedExpressions(lambda)) {
                     c.add(getConstraint(expression, fi));
                 }
                 break;
             case MEMBER_REFERENCE:
-                c.add(new Expression(ei, fi));
+                // TODO: ‹MethodReference →throws Fi θ›
                 break;
             case METHOD_INVOCATION:
                 if (InternalInferenceUtils.isPolyExpression(ei)) {

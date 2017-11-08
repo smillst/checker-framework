@@ -21,8 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ErrorType;
@@ -40,7 +38,6 @@ import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
-import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -119,7 +116,7 @@ public class InferenceUtils {
      *
      * @return type that path leaf is assigned to
      */
-    public static TypeMirror assignedTo(TreePath path) {
+    public static TypeMirror assignedTo(TreePath path, Context context) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(path);
         if (assignmentContext == null) {
             return null;
@@ -134,12 +131,12 @@ public class InferenceUtils {
                 return InternalUtils.typeOf(variableTree.getType());
             case METHOD_INVOCATION:
                 MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
-                ExecutableElement methodElt = TreeUtils.elementFromUse(methodInvocation);
-                return assignedToExecutable(path, methodElt, methodInvocation.getArguments());
+                return assignedToExecutable(
+                        path, methodInvocation, methodInvocation.getArguments(), context);
             case NEW_CLASS:
                 NewClassTree newClassTree = (NewClassTree) assignmentContext;
-                ExecutableElement constructorElt = InternalUtils.constructor(newClassTree);
-                return assignedToExecutable(path, constructorElt, newClassTree.getArguments());
+                return assignedToExecutable(
+                        path, newClassTree, newClassTree.getArguments(), context);
             case NEW_ARRAY:
                 throw new RuntimeException("Not implement");
             case RETURN:
@@ -172,8 +169,10 @@ public class InferenceUtils {
     }
 
     private static TypeMirror assignedToExecutable(
-            TreePath path, ExecutableElement methodElt, List<? extends ExpressionTree> arguments) {
-
+            TreePath path,
+            ExpressionTree methodInvocation,
+            List<? extends ExpressionTree> arguments,
+            Context context) {
         int treeIndex = -1;
         for (int i = 0; i < arguments.size(); ++i) {
             ExpressionTree argumentTree = arguments.get(i);
@@ -184,17 +183,21 @@ public class InferenceUtils {
         }
 
         assert treeIndex != -1
-                : "Could not find path in MethodInvocationTree.\n" + "treePath=" + path.toString();
+                : "Could not find path in MethodInvocationTree.\n"
+                        + "methodInvocation="
+                        + methodInvocation;
 
-        if (treeIndex >= methodElt.getParameters().size() && methodElt.isVarArgs()) {
-            treeIndex = methodElt.getParameters().size() - 1;
-            VariableElement paramElement = methodElt.getParameters().get(treeIndex);
-            TypeMirror typeMirror = ElementUtils.getType(paramElement);
+        ExecutableType methodType =
+                InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
+
+        if (treeIndex >= methodType.getParameterTypes().size()
+                && InternalInferenceUtils.isVarArgMethodCall(methodInvocation)) {
+            treeIndex = methodType.getParameterTypes().size() - 1;
+            TypeMirror typeMirror = methodType.getParameterTypes().get(treeIndex);
             return ((ArrayType) typeMirror).getComponentType();
         }
 
-        VariableElement paramElement = methodElt.getParameters().get(treeIndex);
-        return ElementUtils.getType(paramElement);
+        return methodType.getParameterTypes().get(treeIndex);
     }
 
     /**
