@@ -188,10 +188,11 @@ public class InvocationTypeInference {
         while (!c.isEmpty()) {
             ConstraintSet subset = c.getMagicalSubSet(current.getDependencies(c));
             c.remove(subset);
-            List<Variable> alphas = c.getAllInferenceVariables();
-            current = Resolution.resolve(alphas, current, context);
-            c.applyInstantiations(current.getInstantiations(alphas), context);
+            List<Variable> alphas = subset.getAllInferenceVariables();
+            BoundSet resolved = Resolution.resolve(alphas, current, context);
+            c.applyInstantiations(resolved.getInstantiations(alphas), context);
             BoundSet newBounds = c.reduce(context);
+            newBounds.add(resolved);
             current.incorporateToFixedPoint(newBounds);
         }
         return current;
