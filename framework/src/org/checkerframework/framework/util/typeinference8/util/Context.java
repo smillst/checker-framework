@@ -27,6 +27,7 @@ public class Context {
     public final Types types;
     public final DeclaredType enclosingType;
     public final Map<ExpressionTree, Theta> maps;
+    public int variableCount = 0;
 
     public Context(
             ProcessingEnvironment env,
@@ -48,5 +49,9 @@ public class Context {
         ClassTree clazz = TreeUtils.enclosingClass(treePath);
         this.enclosingType = (DeclaredType) InternalUtils.typeOf(clazz);
         this.maps = new HashMap<>();
+    }
+
+    public int getNextVariableId() {
+        return variableCount++;
     }
 }
