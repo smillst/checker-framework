@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
@@ -28,12 +29,33 @@ public class ReduceTyping {
         if (s.isProper() && t.isProper()) {
             TypeMirror subType = ((ProperType) s).getProperType();
             TypeMirror superType = ((ProperType) t).getProperType();
+            if (subType == superType) {
+                return Bound.TRUE;
+            }
 
             // TODO:
             // The JLS "is imprecise about the handling of wildcards when reducing subtyping constraints"
             // See comment just before 18.3.1 of JLS.
-
-            if (context.env.getTypeUtils().isSubtype(subType, superType)) {
+            if (superType.getKind() == TypeKind.WILDCARD
+                    && !((WildcardType) superType).isExtendsBound()) {
+                if (context.env
+                        .getTypeUtils()
+                        .isSubtype(subType, ((WildcardType) superType).getSuperBound())) {
+                    return Bound.TRUE;
+                } else {
+                    return Bound.TRUE;
+                }
+            } else if (subType.getKind() == TypeKind.WILDCARD) {
+                TypeMirror subUpper = ((WildcardType) subType).getExtendsBound();
+                if (subUpper == null) {
+                    subUpper = context.object.getProperType();
+                }
+                if (context.env.getTypeUtils().isSubtype(subUpper, superType)) {
+                    return Bound.TRUE;
+                } else {
+                    return Bound.TRUE;
+                }
+            } else if (context.env.getTypeUtils().isSubtype(subType, superType)) {
                 return Bound.TRUE;
             } else {
                 return Bound.FALSE;

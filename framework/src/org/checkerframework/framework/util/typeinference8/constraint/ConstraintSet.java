@@ -31,7 +31,9 @@ public class ConstraintSet implements ReductionResult {
 
     public void add(Constraint c) {
         if (c != null) {
-            list.add(c);
+            if (!list.contains(c)) {
+                list.add(c);
+            }
         }
     }
 

@@ -29,7 +29,9 @@ public class Reduce {
                 }
             } else if (result instanceof BoundSet) {
                 boundSet.add((BoundSet) result);
-                return boundSet;
+                if (boundSet.containsFalse()) {
+                    return boundSet;
+                }
             } else {
                 throw new RuntimeException("Not found " + result);
             }

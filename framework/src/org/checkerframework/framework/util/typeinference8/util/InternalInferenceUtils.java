@@ -331,8 +331,7 @@ public class InternalInferenceUtils {
         assert lowerBound == null || upperBound == null;
         WildcardType wildcardType =
                 context.env.getTypeUtils().getWildcardType(upperBound, lowerBound);
-        return context.types.freshTypeVariables(
-                        com.sun.tools.javac.util.List.of((Type) wildcardType))
-                .head;
+        //        return context.types.freshTypeVariables(
+        return com.sun.tools.javac.util.List.of((Type) wildcardType).head;
     }
 }

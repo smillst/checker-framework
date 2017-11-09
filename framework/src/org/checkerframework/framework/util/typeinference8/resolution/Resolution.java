@@ -28,6 +28,7 @@ public class Resolution {
         Queue<Variable> unresolvedVars = new LinkedList<>(as);
         Resolution resolution = new Resolution(context, dependencies, resolvedVars);
         boundSet = resolution.resolve(boundSet, unresolvedVars);
+        assert !boundSet.containsFalse();
         return boundSet;
     }
 
@@ -182,9 +183,9 @@ public class Resolution {
 
             assert !resolvedBoundSet.containsFalse();
             boundSet.incorporateToFixedPoint(resolvedBoundSet);
+            assert !boundSet.containsFalse();
         }
 
-        assert !boundSet.containsFalse();
         return boundSet;
     }
 }

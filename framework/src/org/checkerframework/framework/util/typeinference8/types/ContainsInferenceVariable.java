@@ -76,12 +76,13 @@ public class ContainsInferenceVariable {
 
         @Override
         public Boolean visitDeclared(DeclaredType t, Void aVoid) {
+            boolean found = false;
             for (TypeMirror typeArg : t.getTypeArguments()) {
                 if (visit(typeArg)) {
-                    return true;
+                    found = true;
                 }
             }
-            return false;
+            return found;
         }
 
         @Override
