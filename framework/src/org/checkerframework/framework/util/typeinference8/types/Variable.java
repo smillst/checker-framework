@@ -19,11 +19,16 @@ public class Variable extends AbstractType {
     protected final Context context;
 
     public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
+        this(typeVariable, invocation, context, context.getNextVariableId());
+    }
+
+    private Variable(
+            TypeVariable typeVariable, ExpressionTree invocation, Context context, int id) {
         assert typeVariable != null;
         this.typeVariable = typeVariable;
         this.invocation = invocation;
         this.context = context;
-        this.id = context.getNextVariableId();
+        this.id = id;
     }
 
     public TypeVariable getTypeVariable() {
@@ -193,7 +198,7 @@ public class Variable extends AbstractType {
     public static class CaptureVariable extends Variable {
 
         public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {
-            super(type, invocation, context);
+            super(type, invocation, context, context.getNextCaputerVariableId());
         }
 
         @Override

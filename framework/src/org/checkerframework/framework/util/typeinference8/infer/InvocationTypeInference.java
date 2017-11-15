@@ -120,7 +120,7 @@ public class InvocationTypeInference {
      * @param target Nullable if methodInvocation isn't assigned.
      * @return
      */
-    public List<Instantiation> infer(MethodInvocationTree methodInvocation, AbstractType target) {
+    public List<Instantiation> infer(MethodInvocationTree methodInvocation, ProperType target) {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         Theta map = Theta.theta(methodInvocation, methodType, context);

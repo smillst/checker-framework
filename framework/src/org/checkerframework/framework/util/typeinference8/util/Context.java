@@ -28,6 +28,7 @@ public class Context {
     public final DeclaredType enclosingType;
     public final Map<ExpressionTree, Theta> maps;
     public int variableCount = 1;
+    public int captureVariableCount = 1;
 
     public Context(
             ProcessingEnvironment env,
@@ -53,5 +54,9 @@ public class Context {
 
     public int getNextVariableId() {
         return variableCount++;
+    }
+
+    public int getNextCaputerVariableId() {
+        return captureVariableCount++;
     }
 }
