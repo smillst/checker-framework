@@ -510,6 +510,10 @@ public class BoundsForVar {
             }
         }
 
+        public boolean isEmpty() {
+            return variables.isEmpty() && properTypes.isEmpty() && inferenceTypes.isEmpty();
+        }
+
         @Override
         public String toString() {
             return PluginUtil.join("\n", getAll());
@@ -523,16 +527,25 @@ public class BoundsForVar {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("BoundsForVar{");
         if (equalBounds.properTypes.size() == 1) {
             builder.append(var).append(" := ").append(equalBounds.properTypes.iterator().next());
         } else {
             builder.append(var);
         }
-        builder.append("\nupperBounds=").append(upperBounds.toStringSingleLine());
-        builder.append("\nlowerBounds=").append(lowerBounds.toStringSingleLine());
-        builder.append("\nequalBounds=").append(equalBounds.toStringSingleLine());
-        builder.append("\ntoIncorporate=").append(toIncorporate).append("\n}");
+        builder.append(" {");
+        if (!upperBounds.isEmpty()) {
+            builder.append(" upperBounds = ").append(upperBounds.toStringSingleLine());
+        }
+        if (!lowerBounds.isEmpty()) {
+            builder.append(" lowerBounds = ").append(lowerBounds.toStringSingleLine());
+        }
+        if (!equalBounds.isEmpty()) {
+            builder.append(" equalBounds = ").append(equalBounds.toStringSingleLine());
+        }
+        if (!toIncorporate.isEmpty()) {
+            builder.append("\ntoIncorporate = ").append(toIncorporate);
+        }
+        builder.append("}");
         return builder.toString();
     }
 }
