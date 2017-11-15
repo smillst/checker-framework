@@ -27,7 +27,7 @@ public class Context {
     public final Types types;
     public final DeclaredType enclosingType;
     public final Map<ExpressionTree, Theta> maps;
-    public int variableCount = 0;
+    public int variableCount = 1;
 
     public Context(
             ProcessingEnvironment env,

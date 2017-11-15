@@ -30,6 +30,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 
@@ -308,7 +309,6 @@ public class BoundSet implements ReductionResult {
     public Dependencies getDependencies(ConstraintSet c) {
         Dependencies dependencies = new Dependencies();
 
-        LinkedHashSet<Variable> lhsCapture = new LinkedHashSet<>();
         for (Capture capture : captures) {
             LinkedHashSet<Variable> lhsVars = capture.getAllIVOnLHS();
             LinkedHashSet<Variable> rhsVars = capture.getAllIVOnRHS();
@@ -319,8 +319,6 @@ public class BoundSet implements ReductionResult {
                 dependencies.putOrAddAll(var, rhsVars);
                 dependencies.putOrAddAll(var, lhsVars);
             }
-
-            lhsCapture.addAll(lhsVars);
         }
         Set<Variable> set = new LinkedHashSet<>(getAllInferenceVariables());
         if (c != null) {
@@ -334,7 +332,7 @@ public class BoundSet implements ReductionResult {
             BoundsForVar boundsForAlpha = getBoundsForVar(alpha);
             alphaDependencies.addAll(boundsForAlpha.getAllMentionedVars());
 
-            if (lhsCapture.contains(alpha)) {
+            if (alpha instanceof CaptureVariable) {
                 // If alpha appears on the left-hand side of another bound of the form
                 // G<..., alpha, ...> = capture(G<...>), then beta depends on the resolution of
                 // alpha.
