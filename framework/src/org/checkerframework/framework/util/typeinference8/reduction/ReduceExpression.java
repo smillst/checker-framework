@@ -9,6 +9,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
@@ -214,6 +215,7 @@ public class ReduceExpression {
         if (!t.isWildcardParameterizedType()) {
             return t;
         }
+        // 15.27.3:
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
         if (InternalInferenceUtils.isImplicitlyType(lambda)) {
@@ -223,7 +225,26 @@ public class ReduceExpression {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
             // is implicitly typed, then the ground target type is the non-wildcard parameterization (§9.9) of T.
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C
-            return t.getNonWildcardParameterization();
+            List<AbstractType> As = t.getTypeArguments();
+            Iterator<ProperType> Bs = t.getTypeParameterBounds();
+            List<AbstractType> Ts = new ArrayList<>();
+            for (AbstractType Ai : As) {
+                ProperType bi = Bs.next();
+                if (Ai.getTypeKind() != TypeKind.WILDCARD) {
+                    Ts.add(Ai);
+                } else if (Ai.isUnboundWildcard()) {
+                    Ts.add(bi);
+                } else if (Ai.isUpperBoundedWildcard()) {
+                    AbstractType Ui = Ai.getWildcardUpperBound();
+                    AbstractType glb = null; // glb(Ui, Bi)
+                    assert false : "Not implemented";
+                    Ts.add(glb);
+                } else {
+                    // Lower bounded wildcard
+                    Ts.add(Ai.getWildcardLowerBound());
+                }
+            }
+            return t.replaceTypeArgs(Ts);
         }
     }
 }

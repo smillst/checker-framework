@@ -5,9 +5,12 @@ import com.sun.tools.javac.code.Type.TypeVar;
 import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -232,8 +235,39 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
-    public AbstractType getNonWildcardParameterization() {
-        return null;
+    public Iterator<ProperType> getTypeParameterBounds() {
+        List<ProperType> bounds = new ArrayList<>();
+        TypeElement typeelem = (TypeElement) ((DeclaredType) type).asElement();
+        for (TypeParameterElement ele : typeelem.getTypeParameters()) {
+            bounds.add(new ProperType(ele.asType(), context));
+        }
+        return bounds.iterator();
+    }
+
+    @Override
+    public AbstractType replaceTypeArgs(List<AbstractType> args) {
+        DeclaredType declaredType = (DeclaredType) type;
+        TypeMirror[] newArgs = new TypeMirror[args.size()];
+        int i = 0;
+        Theta map = null;
+        for (AbstractType t : args) {
+            if (t.isProper()) {
+                newArgs[i++] = ((ProperType) t).getProperType();
+            } else if (t.isVariable()) {
+                newArgs[i++] = ((Variable) t).getTypeVariable();
+            } else {
+                newArgs[i++] = ((InferenceType) t).getType();
+                if (map != null) {
+                    assert map == ((InferenceType) t).map;
+                }
+                map = ((InferenceType) t).map;
+            }
+        }
+        TypeMirror newType =
+                context.env
+                        .getTypeUtils()
+                        .getDeclaredType((TypeElement) declaredType.asElement(), newArgs);
+        return create(newType, map, context);
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.checkerframework.framework.util.typeinference8.types;
 import com.sun.source.tree.ExpressionTree;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -121,7 +122,12 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType getNonWildcardParameterization() {
+    public Iterator<ProperType> getTypeParameterBounds() {
+        return null;
+    }
+
+    @Override
+    public AbstractType replaceTypeArgs(List<AbstractType> ts) {
         return null;
     }
 

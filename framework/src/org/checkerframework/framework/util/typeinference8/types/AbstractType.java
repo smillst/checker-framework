@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -20,6 +21,8 @@ public abstract class AbstractType {
     public abstract AbstractType getFunctionTypeReturn();
 
     public abstract boolean isRaw();
+
+    public abstract AbstractType replaceTypeArgs(List<AbstractType> ts);
 
     public enum Kind {
         PROPER,
@@ -57,8 +60,7 @@ public abstract class AbstractType {
 
     public abstract Collection<Variable> getInferenceVariables();
 
-    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C */
-    public abstract AbstractType getNonWildcardParameterization();
+    public abstract Iterator<ProperType> getTypeParameterBounds();
 
     public abstract boolean isWildcardParameterizedType();
 
