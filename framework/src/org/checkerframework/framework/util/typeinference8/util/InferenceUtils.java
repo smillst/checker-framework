@@ -38,6 +38,10 @@ import javax.lang.model.type.WildcardType;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
+import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
+import org.checkerframework.framework.util.typeinference8.types.ProperType;
+import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -291,6 +295,35 @@ public class InferenceUtils {
         GetMapping mapping = new GetMapping(methodType.getTypeVariables(), types);
         mapping.visit(methodType.getReturnType(), methodCallType);
         return mapping.subs;
+    }
+
+    static TypeMirror getJavaType(AbstractType t) {
+        if (t.isProper()) {
+            return ((ProperType) t).getProperType();
+        } else if (t.isVariable()) {
+            return ((Variable) t).getTypeVariable();
+        } else {
+            return ((InferenceType) t).getType();
+        }
+    }
+
+    public static AbstractType glb(AbstractType a, AbstractType b, Context context) {
+        Type aJavaType = (Type) getJavaType(a);
+        Type bJavaType = (Type) getJavaType(b);
+        TypeMirror glb = InternalUtils.greatestLowerBound(context.env, aJavaType, bJavaType);
+        if (context.env.getTypeUtils().isSameType(glb, bJavaType)) {
+            return b;
+        } else if (context.env.getTypeUtils().isSameType(glb, aJavaType)) {
+            return a;
+        } else if (a.isInferenceType()) {
+            return InferenceType.create(
+                    glb, ((InferenceType) a).getMap(), ((InferenceType) a).getContext());
+        } else if (b.isInferenceType()) {
+            return InferenceType.create(
+                    glb, ((InferenceType) b).getMap(), ((InferenceType) b).getContext());
+        }
+        assert a.isProper() && b.isProper();
+        return new ProperType(glb, context);
     }
 
     private static class GetMapping implements TypeVisitor<Void, TypeMirror> {

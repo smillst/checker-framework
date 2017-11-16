@@ -36,6 +36,14 @@ public class InferenceType extends AbstractType {
         this.context = context;
     }
 
+    public Theta getMap() {
+        return map;
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
     public static boolean containsInferenceVar(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
         return ContainsInferenceVariable.hasAnyInferenceVar(typeVariables, type);
@@ -249,7 +257,6 @@ public class InferenceType extends AbstractType {
         DeclaredType declaredType = (DeclaredType) type;
         TypeMirror[] newArgs = new TypeMirror[args.size()];
         int i = 0;
-        Theta map = null;
         for (AbstractType t : args) {
             if (t.isProper()) {
                 newArgs[i++] = ((ProperType) t).getProperType();
@@ -257,10 +264,6 @@ public class InferenceType extends AbstractType {
                 newArgs[i++] = ((Variable) t).getTypeVariable();
             } else {
                 newArgs[i++] = ((InferenceType) t).getType();
-                if (map != null) {
-                    assert map == ((InferenceType) t).map;
-                }
-                map = ((InferenceType) t).map;
             }
         }
         TypeMirror newType =

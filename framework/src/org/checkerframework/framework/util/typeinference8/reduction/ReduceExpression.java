@@ -24,6 +24,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
@@ -114,7 +115,7 @@ public class ReduceExpression {
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
     private static ReductionResult reduceLambda(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
-        AbstractType tPrime = getGroundTargetType(t, lambda);
+        AbstractType tPrime = getGroundTargetType(t, lambda, context);
         ConstraintSet constraintSet = new ConstraintSet();
 
         if (!InternalInferenceUtils.isImplicitlyType(lambda)) {
@@ -211,7 +212,8 @@ public class ReduceExpression {
         return Bound.TRUE;
     }
 
-    private static AbstractType getGroundTargetType(AbstractType t, LambdaExpressionTree lambda) {
+    private static AbstractType getGroundTargetType(
+            AbstractType t, LambdaExpressionTree lambda, Context context) {
         if (!t.isWildcardParameterizedType()) {
             return t;
         }
@@ -236,8 +238,7 @@ public class ReduceExpression {
                     Ts.add(bi);
                 } else if (Ai.isUpperBoundedWildcard()) {
                     AbstractType Ui = Ai.getWildcardUpperBound();
-                    AbstractType glb = null; // glb(Ui, Bi)
-                    assert false : "Not implemented";
+                    AbstractType glb = InferenceUtils.glb(Ui, bi, context);
                     Ts.add(glb);
                 } else {
                     // Lower bounded wildcard
