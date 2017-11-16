@@ -12,6 +12,7 @@ import org.checkerframework.framework.util.typeinference8.bound.Throws;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
@@ -70,7 +71,26 @@ public class Resolution {
         return boundSet;
     }
 
+    private LinkedHashSet<Variable> getNonCaputres(LinkedHashSet<Variable> as) {
+        LinkedHashSet<Variable> nonCaptures = new LinkedHashSet<>();
+        for (Variable a : as) {
+            if (!(a instanceof CaptureVariable)) {
+                nonCaptures.add(a);
+            }
+        }
+        return nonCaptures;
+    }
+
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
+        LinkedHashSet<Variable> nons = getNonCaputres(as);
+        if (nons.size() != as.size()) {
+            // This isn't in the JLS, but resolutions only seems to work if the non-captures are resolved first.
+            boundSet = resolve(nons, boundSet);
+            as.removeAll(nons);
+            if (as.isEmpty()) {
+                return boundSet;
+            }
+        }
         assert !boundSet.containsFalse();
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
