@@ -55,7 +55,7 @@ public class ReduceTyping {
                 } else {
                     return Bound.TRUE;
                 }
-            } else if (context.env.getTypeUtils().isSubtype(subType, superType)) {
+            } else if (context.env.getTypeUtils().isAssignable(subType, superType)) {
                 return Bound.TRUE;
             } else {
                 return Bound.FALSE;

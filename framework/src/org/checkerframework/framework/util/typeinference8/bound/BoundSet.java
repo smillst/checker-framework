@@ -481,4 +481,13 @@ public class BoundSet implements ReductionResult {
     public boolean hasRawTypeLowerOrEqualBound(Variable alpha, AbstractType g) {
         return getBoundsForVar(alpha).hasRawTypeLowerOrEqualBound(g);
     }
+
+    public boolean needsIncorp() {
+        for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
+            if (boundsForVar.containsUnincorporated()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

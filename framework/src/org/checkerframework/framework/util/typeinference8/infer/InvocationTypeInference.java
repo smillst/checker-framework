@@ -10,7 +10,6 @@ import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -251,8 +250,7 @@ public class InvocationTypeInference {
                 compatiblity = b2.hasPrimitiveWrapperBound(alpha);
             }
             if (compatiblity) {
-                BoundSet resolve =
-                        Resolution.resolve(Collections.singletonList(alpha), b2, context);
+                BoundSet resolve = Resolution.resolve(alpha, b2, context);
                 ProperType u = resolve.getInstantiation(alpha);
                 ConstraintSet constraintSet =
                         new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));

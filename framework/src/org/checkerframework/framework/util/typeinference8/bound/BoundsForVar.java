@@ -449,6 +449,10 @@ public class BoundsForVar {
         return false;
     }
 
+    public boolean containsUnincorporated() {
+        return !toIncorporate.isEmpty();
+    }
+
     private static class VarBounds {
         final LinkedHashSet<ProperType> properTypes;
         final LinkedHashSet<Variable> variables;

@@ -22,6 +22,7 @@ public class Resolution {
             // If all variables have an instantiation, resolution is complete.
             return boundSet;
         }
+        assert !boundSet.needsIncorp();
         Dependencies dependencies = boundSet.getDependencies();
 
         List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
@@ -29,6 +30,19 @@ public class Resolution {
         Queue<Variable> unresolvedVars = new LinkedList<>(as);
         Resolution resolution = new Resolution(context, dependencies, resolvedVars);
         boundSet = resolution.resolve(boundSet, unresolvedVars);
+        assert !boundSet.containsFalse();
+        return boundSet;
+    }
+
+    public static BoundSet resolve(Variable a, BoundSet boundSet, Context context) {
+
+        Dependencies dependencies = boundSet.getDependencies();
+
+        List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
+        LinkedHashSet<Variable> unresolvedVars = new LinkedHashSet<>();
+        unresolvedVars.add(a);
+        Resolution resolution = new Resolution(context, dependencies, resolvedVars);
+        boundSet = resolution.resolve(unresolvedVars, boundSet);
         assert !boundSet.containsFalse();
         return boundSet;
     }
@@ -63,12 +77,27 @@ public class Resolution {
                 }
             }
 
+            //            smallestDependencySet = lookForSmallerSubSet(smallestDependencySet);
+
             // Resolve the smallest unresolved dependency set.
             boundSet = resolve(smallestDependencySet, boundSet);
             resolvedVars = boundSet.getInstantiatedVariables();
             unresolvedVars.removeAll(resolvedVars);
         }
         return boundSet;
+    }
+
+    private LinkedHashSet<Variable> lookForSmallerSubSet(
+            LinkedHashSet<Variable> smallestDependencySet) {
+        LinkedHashSet<Variable> smallest = smallestDependencySet;
+        for (Variable alpha : smallestDependencySet) {
+            LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
+            alphasDependencySet.removeAll(resolvedVars);
+            if (alphasDependencySet.size() < smallest.size()) {
+                smallest = alphasDependencySet;
+            }
+        }
+        return smallest;
     }
 
     private LinkedHashSet<Variable> getNonCaputres(LinkedHashSet<Variable> as) {
@@ -158,8 +187,8 @@ public class Resolution {
             LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
         assert !boundSet.containsFalse();
         boundSet.removeCaptures(as);
+        BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
-            BoundSet resolvedBoundSet = new BoundSet(context);
             if (boundSet.hasInstantiation(ai)) {
                 // If ai is equal to a variable that was resolved in the last loop,
                 // ai would now have an instantiation.
@@ -200,11 +229,8 @@ public class Resolution {
                         InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
                 resolvedBoundSet.add(Equal.create(ai, new ProperType(freshTypeVar, context)));
             }
-
-            assert !resolvedBoundSet.containsFalse();
-            boundSet.incorporateToFixedPoint(resolvedBoundSet);
-            assert !boundSet.containsFalse();
         }
+        boundSet.incorporateToFixedPoint(resolvedBoundSet);
 
         return boundSet;
     }
