@@ -136,10 +136,13 @@ public class ReduceTyping {
     }
 
     private static ReductionResult reduceSubtypeTypeVariable(Typing c) {
+        AbstractType t = c.getT();
         if (c.getS().getTypeKind() == TypeKind.INTERSECTION) {
             return Bound.TRUE;
-        } else if (c.getT().hasLowerBound()) {
+        } else if (t.getTypeKind() == TypeKind.TYPEVAR && t.hasLowerBound()) {
             return new Typing(c.getS(), c.getT().getTypeVarLowerBound(), Kind.SUBTYPE);
+        } else if (t.getTypeKind() == TypeKind.WILDCARD && t.isLowerBoundedWildcard()) {
+            return new Typing(c.getS(), c.getT().getWildcardLowerBound(), Kind.SUBTYPE);
         } else {
             return Bound.FALSE;
         }

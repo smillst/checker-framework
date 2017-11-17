@@ -36,6 +36,7 @@ import javax.lang.model.type.WildcardType;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.InternalUtils;
+import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -333,5 +334,23 @@ public class InternalInferenceUtils {
                 context.env.getTypeUtils().getWildcardType(upperBound, lowerBound);
         //        return context.types.freshTypeVariables(
         return com.sun.tools.javac.util.List.of((Type) wildcardType).head;
+    }
+
+    /**
+     * @return a supertype of S of the form G<S1, ..., Sn> and a supertype of T of the form
+     *     G<T1,..., Tn> for some generic class or interface, G. If such types exist; otherwise,
+     *     null is returned.
+     */
+    public static Pair<TypeMirror, TypeMirror> getParameterizedSupers(
+            Context context, TypeMirror s, TypeMirror t) {
+        // com.sun.tools.javac.comp.Infer#getParameterizedSupers
+        TypeMirror lubResult = lub(context.env, t, s);
+        if (!isParameterized(lubResult)) {
+            return null;
+        }
+
+        Type asSuperOfT = context.types.asSuper((Type) t, ((Type) lubResult).asElement());
+        Type asSuperOfS = context.types.asSuper((Type) s, ((Type) lubResult).asElement());
+        return Pair.of(asSuperOfT, asSuperOfS);
     }
 }

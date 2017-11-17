@@ -1,6 +1,5 @@
 package org.checkerframework.framework.util.typeinference8.bound;
 
-import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -18,6 +17,7 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
@@ -122,12 +122,14 @@ public class BoundsForVar {
                             : ((ProperType) t).getProperType();
             for (ProperType s : upperBounds.properTypes) {
                 Pair<TypeMirror, TypeMirror> pair =
-                        getParameterizedSupers(s.getProperType(), tType);
+                        InternalInferenceUtils.getParameterizedSupers(
+                                context, s.getProperType(), tType);
                 toIncorporate.addAll(getConstraintsFromParameterized(pair, s, t));
             }
 
             for (InferenceType s : upperBounds.inferenceTypes) {
-                Pair<TypeMirror, TypeMirror> pair = getParameterizedSupers(s.getType(), tType);
+                Pair<TypeMirror, TypeMirror> pair =
+                        InternalInferenceUtils.getParameterizedSupers(context, s.getType(), tType);
                 toIncorporate.addAll(getConstraintsFromParameterized(pair, s, t));
             }
         }
@@ -155,23 +157,6 @@ public class BoundsForVar {
             }
         }
         return constraints;
-    }
-
-    /**
-     * @return a supertype of S of the form G<S1, ..., Sn> and a supertype of T of the form
-     *     G<T1,..., Tn> for some generic class or interface, G. If such types exist; otherwise,
-     *     null is returned.
-     */
-    private Pair<TypeMirror, TypeMirror> getParameterizedSupers(TypeMirror s, TypeMirror t) {
-        // com.sun.tools.javac.comp.Infer#getParameterizedSupers
-        TypeMirror lubResult = InternalInferenceUtils.lub(context.env, t, s);
-        if (!InternalInferenceUtils.isParameterized(lubResult)) {
-            return null;
-        }
-
-        Type asSuperOfT = context.types.asSuper((Type) t, ((Type) lubResult).asElement());
-        Type asSuperOfS = context.types.asSuper((Type) s, ((Type) lubResult).asElement());
-        return Pair.of(asSuperOfT, asSuperOfS);
     }
 
     /** {@code t <: var} */
@@ -410,9 +395,25 @@ public class BoundsForVar {
                 parameteredTypes.add(type);
             }
         }
-        if (parameteredTypes.size() > 1) {
-            throw new RuntimeException("Not Implemented");
+        for (int i = 0; i < parameteredTypes.size(); i++) {
+            AbstractType s1 = parameteredTypes.get(i);
+            TypeMirror s1Java = InferenceUtils.getJavaType(s1);
+            for (int j = i + 1; j < parameteredTypes.size(); j++) {
+                AbstractType s2 = parameteredTypes.get(j);
+                TypeMirror s2Java = InferenceUtils.getJavaType(s2);
+                Pair<TypeMirror, TypeMirror> supers =
+                        InternalInferenceUtils.getParameterizedSupers(context, s1Java, s2Java);
+                if (supers == null) {
+                    continue;
+                }
+                List<AbstractType> s1TypeArgs = s1.asSuper(supers.first).getTypeArguments();
+                List<AbstractType> s2TypeArgs = s2.asSuper(supers.second).getTypeArguments();
+                if (!s1TypeArgs.equals(s2TypeArgs)) {
+                    return true;
+                }
+            }
         }
+
         return false;
     }
 

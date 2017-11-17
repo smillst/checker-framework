@@ -297,7 +297,7 @@ public class InferenceUtils {
         return mapping.subs;
     }
 
-    static TypeMirror getJavaType(AbstractType t) {
+    public static TypeMirror getJavaType(AbstractType t) {
         if (t.isProper()) {
             return ((ProperType) t).getProperType();
         } else if (t.isVariable()) {
