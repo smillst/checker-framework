@@ -9,7 +9,9 @@ import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -53,7 +55,7 @@ public class InvocationTypeInference {
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
         Tree t = TreeUtils.getAssignmentContext(pathToExpression);
-        if (!shouldTryInference(t)) {
+        if (!shouldTryInference(t, pathToExpression)) {
             return null;
         }
         TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression, context);
@@ -66,22 +68,26 @@ public class InvocationTypeInference {
         return result;
     }
 
-    private boolean shouldTryInference(Tree t) {
-        if (t == null || !(t instanceof ExpressionTree)) {
+    private boolean shouldTryInference(Tree assignedTo, TreePath path) {
+        if (assignedTo == null) {
             return true;
         }
-        if (InternalInferenceUtils.isPolyExpression((ExpressionTree) t)) {
-            return false;
+        switch (assignedTo.getKind()) {
+            case RETURN:
+                HashSet<Tree.Kind> kinds =
+                        new HashSet<>(Arrays.asList(Tree.Kind.LAMBDA_EXPRESSION, Tree.Kind.METHOD));
+                Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
+                return enclosing.getKind() != Tree.Kind.LAMBDA_EXPRESSION;
+            case METHOD_INVOCATION:
+                MethodInvocationTree methodInvocationTree = (MethodInvocationTree) assignedTo;
+                if (methodInvocationTree.getTypeArguments().isEmpty()) {
+                    ExecutableElement ele = TreeUtils.elementFromUse(methodInvocationTree);
+                    return ele.getTypeParameters().isEmpty();
+                }
         }
 
-        if (t.getKind() == Tree.Kind.METHOD_INVOCATION) {
-            MethodInvocationTree methodInvocationTree = (MethodInvocationTree) t;
-            if (methodInvocationTree.getTypeArguments().isEmpty()) {
-                ExecutableElement ele = TreeUtils.elementFromUse(methodInvocationTree);
-                return ele.getTypeParameters().isEmpty();
-            }
-        }
-        return true;
+        return !(assignedTo instanceof ExpressionTree
+                && InternalInferenceUtils.isPolyExpression((ExpressionTree) assignedTo));
     }
 
     private void checkResult(
