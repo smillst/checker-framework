@@ -69,7 +69,7 @@ public class BoundSet implements ReductionResult {
         this.isFalse = toCopy.isFalse;
         this.captures.addAll(toCopy.captures);
         this.throwsList.addAll(toCopy.throwsList);
-        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
+        for (Entry<Variable, BoundsForVar> entry : toCopy.boundsOnVariables.entrySet()) {
             BoundsForVar copy = new BoundsForVar(entry.getValue());
             boundsOnVariables.put(entry.getKey(), copy);
         }
