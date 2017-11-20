@@ -25,7 +25,7 @@ import org.checkerframework.javacutil.TypesUtils;
 
 public class BoundsForVar {
 
-    private final Variable var;
+    public final Variable var;
     private final VarBounds upperBounds;
     private final VarBounds lowerBounds;
     private final VarBounds equalBounds;

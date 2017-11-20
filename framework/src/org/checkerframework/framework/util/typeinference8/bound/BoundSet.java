@@ -388,7 +388,13 @@ public class BoundSet implements ReductionResult {
 
             ConstraintSet constraints = new ConstraintSet();
             for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
-                constraints.add(boundsForVar.getConstraintFromComplementaryBounds());
+                if (boundsForVar.var instanceof CaptureVariable) {
+                    // call to clear them out.
+                    boundsForVar.getConstraintFromComplementaryBounds();
+                } else {
+                    // See note com.sun.tools.javac.code.Type.CapturedUndetVar
+                    constraints.add(boundsForVar.getConstraintFromComplementaryBounds());
+                }
                 if (!instantiations.isEmpty()) {
                     constraints.add(boundsForVar.getConstraintsFromInst(instantiations));
                 }
