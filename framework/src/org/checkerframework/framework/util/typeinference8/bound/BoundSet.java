@@ -126,11 +126,25 @@ public class BoundSet implements ReductionResult {
         return boundSet;
     }
 
+    public boolean addBoundsFromIncorp(BoundSet newSet) {
+        return add(newSet, true);
+    }
+
     public boolean add(BoundSet newSet) {
+        return add(newSet, false);
+    }
+
+    private boolean add(BoundSet newSet, boolean isIncorp) {
         boolean changed = captures.addAll(newSet.captures);
         changed |= throwsList.addAll(newSet.throwsList);
         for (Variable v : newSet.getAllInferenceVariables()) {
-            changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
+            if (v instanceof CaptureVariable && isIncorp) {
+                if (!this.boundsOnVariables.containsKey(v)) {
+                    changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
+                }
+            } else {
+                changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
+            }
         }
         isFalse |= newSet.isFalse;
         return changed;
@@ -380,7 +394,7 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
-            if (!add(newBounds)) {
+            if (!addBoundsFromIncorp(newBounds)) {
                 // No new bounds, a fixed point has been reached.
                 break;
             }

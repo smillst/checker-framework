@@ -67,6 +67,37 @@ public class Variable extends AbstractType {
     }
 
     @Override
+    public Kind getKind() {
+        return Kind.VARIABLE;
+    }
+
+    @Override
+    public Collection<Variable> getInferenceVariables() {
+        return Collections.singleton(this);
+    }
+
+    @Override
+    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+        for (Instantiation inst : instantiations) {
+            if (inst.getA().equals(this)) {
+                return inst.getT();
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "a" + id;
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="Unsupported opps">
+    @Override
+    public TypeKind getTypeKind() {
+        return TypeKind.TYPEVAR;
+    }
+
+    @Override
     public AbstractType asSuper(TypeMirror superType) {
         throw new UnsupportedOperationException();
     }
@@ -74,11 +105,6 @@ public class Variable extends AbstractType {
     @Override
     public boolean isObject() {
         return false;
-    }
-
-    @Override
-    public Kind getKind() {
-        return Kind.VARIABLE;
     }
 
     @Override
@@ -117,11 +143,6 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public Collection<Variable> getInferenceVariables() {
-        return Collections.singleton(this);
-    }
-
-    @Override
     public Iterator<ProperType> getTypeParameterBounds() {
         return null;
     }
@@ -137,16 +158,6 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
-        for (Instantiation inst : instantiations) {
-            if (inst.getA().equals(this)) {
-                return inst.getT();
-            }
-        }
-        return this;
-    }
-
-    @Override
     public AbstractType getFunctionTypeReturn() {
         return null;
     }
@@ -159,11 +170,6 @@ public class Variable extends AbstractType {
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
         return null;
-    }
-
-    @Override
-    public TypeKind getTypeKind() {
-        return TypeKind.TYPEVAR;
     }
 
     @Override
@@ -195,11 +201,7 @@ public class Variable extends AbstractType {
     public boolean isLowerBoundedWildcard() {
         return false;
     }
-
-    @Override
-    public String toString() {
-        return "a" + id;
-    }
+    // </editor-fold>
 
     /**
      * @link com.sun.tools.javac.code.Type.CapturedUndetVar}: The only difference between these
