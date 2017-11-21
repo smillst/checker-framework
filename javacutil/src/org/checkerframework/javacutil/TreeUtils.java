@@ -1017,7 +1017,7 @@ public final class TreeUtils {
                 ElementUtils.getQualifiedClassName(declarationElement.getEnclosingElement())
                         .toString();
         return ownerName.equals("java.lang.Object")
-                && declarationElement.getSimpleName().toString().equals("getClass");
+                && declarationElement.getSimpleName().contentEquals("getClass");
     }
 
     /**
