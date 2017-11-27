@@ -39,7 +39,6 @@ public class BoundSet implements ReductionResult {
      * Max number of incorporation loops. Use same constant as {@link
      * com.sun.tools.javac.comp.Infer#MAX_INCORPORATION_STEPS}
      */
-    //    private static final int MAX_INCORPORATION_STEPS = 100;
     private static final int MAX_INCORPORATION_STEPS = 100;
 
     private final Map<Variable, BoundsForVar> boundsOnVariables;
@@ -139,8 +138,11 @@ public class BoundSet implements ReductionResult {
         changed |= throwsList.addAll(newSet.throwsList);
         for (Variable v : newSet.getAllInferenceVariables()) {
             if (v instanceof CaptureVariable && isIncorp) {
+                BoundsForVar newBounds = newSet.getBoundsForVar(v);
                 if (!this.boundsOnVariables.containsKey(v)) {
-                    changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
+                    changed |= getBoundsForVar(v).merge(newBounds);
+                } else if (newBounds.hasInstantiation()) {
+                    changed |= getBoundsForVar(v).addEqual(newBounds.getInstantiation());
                 }
             } else {
                 changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
@@ -394,11 +396,18 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
+            List<Instantiation> instantiations = getInstantiationsAll();
+            instantiations.addAll(newBounds.getInstantiationsAll());
+            if (!instantiations.isEmpty()) {
+                for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
+                    boundsForVar.applyInstantiations(instantiations);
+                }
+            }
+
             if (!addBoundsFromIncorp(newBounds)) {
                 // No new bounds, a fixed point has been reached.
                 break;
             }
-            List<Instantiation> instantiations = getInstantiationsAll();
 
             ConstraintSet constraints = new ConstraintSet();
             for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
@@ -408,9 +417,6 @@ public class BoundSet implements ReductionResult {
                 } else {
                     // See note com.sun.tools.javac.code.Type.CapturedUndetVar
                     constraints.add(boundsForVar.getConstraintFromComplementaryBounds());
-                }
-                if (!instantiations.isEmpty()) {
-                    constraints.add(boundsForVar.getConstraintsFromInst(instantiations));
                 }
             }
 

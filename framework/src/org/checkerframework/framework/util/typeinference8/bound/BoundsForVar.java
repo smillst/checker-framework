@@ -228,18 +228,15 @@ public class BoundsForVar {
         return constraintSet;
     }
 
-    public ConstraintSet getConstraintsFromInst(List<Instantiation> instantiations) {
-        ConstraintSet constraintSet = new ConstraintSet();
+    public void applyInstantiations(List<Instantiation> instantiations) {
         if (instantiations.isEmpty()) {
-            return constraintSet;
+            return;
         }
-        AbstractType varPrime = hasInstantiation() ? getInstantiation() : var;
-
         // var = T imply <varPrime = T[alpha:=U]›
         for (AbstractType T : equalBounds.getAll()) {
             AbstractType tPrime = T.applyInstantiations(instantiations);
             if (T != tPrime) {
-                constraintSet.add(new Typing(varPrime, tPrime, Kind.TYPE_EQUALITY));
+                equalBounds.replace(T, tPrime);
             }
         }
 
@@ -247,7 +244,7 @@ public class BoundsForVar {
         for (AbstractType T : upperBounds.getAll()) {
             AbstractType tPrime = T.applyInstantiations(instantiations);
             if (T != tPrime) {
-                constraintSet.add(new Typing(varPrime, tPrime, Kind.SUBTYPE));
+                upperBounds.replace(T, tPrime);
             }
         }
 
@@ -255,10 +252,9 @@ public class BoundsForVar {
         for (AbstractType s : lowerBounds.getAll()) {
             AbstractType sPrime = s.applyInstantiations(instantiations);
             if (s != sPrime) {
-                constraintSet.add(new Typing(sPrime, varPrime, Kind.SUBTYPE));
+                lowerBounds.replace(s, sPrime);
             }
         }
-        return constraintSet;
     }
 
     public boolean merge(BoundsForVar other) {
@@ -526,6 +522,23 @@ public class BoundsForVar {
 
         public String toStringSingleLine() {
             return PluginUtil.join(" ", getAll());
+        }
+
+        public void replace(AbstractType oldBound, AbstractType newBound) {
+            switch (oldBound.getKind()) {
+                case PROPER:
+                    properTypes.remove(oldBound);
+                    break;
+                case VARIABLE:
+                    variables.remove(oldBound);
+                    break;
+                case INFERENCE_TYPE:
+                    inferenceTypes.remove(oldBound);
+                    break;
+                default:
+                    ErrorReporter.errorAbort("Unexpected type");
+            }
+            add(newBound);
         }
     }
 
