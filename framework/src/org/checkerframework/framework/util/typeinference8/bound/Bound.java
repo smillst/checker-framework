@@ -1,11 +1,10 @@
 package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.Collection;
-import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.3 */
-public abstract class Bound implements ReductionResult {
+public abstract class Bound {
     public static Bound FALSE =
             new Bound() {
                 @Override
@@ -26,13 +25,13 @@ public abstract class Bound implements ReductionResult {
         /**
          * {@code S = T}, where at least one of S or T is an inference variable: S is the same as T.
          */
-        EQUAL,
+        //        EQUAL,
 
         /**
          * {@code S <: T}, where at least one of S or T is an inference variable: S is a subtype of
          * T.
          */
-        SUBTYPE,
+        //        SUBTYPE,
 
         /** false: No valid choice of inference variables exists. */
         FALSE,

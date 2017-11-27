@@ -7,7 +7,6 @@ import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.PluginUtil;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;

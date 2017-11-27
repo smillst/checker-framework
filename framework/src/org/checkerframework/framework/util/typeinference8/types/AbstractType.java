@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 
 public abstract class AbstractType {
     /**

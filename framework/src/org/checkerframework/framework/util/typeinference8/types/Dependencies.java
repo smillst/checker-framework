@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,7 +19,7 @@ public class Dependencies {
         return set.add(value);
     }
 
-    public boolean putOrAddAll(Variable key, LinkedHashSet<Variable> value) {
+    public boolean putOrAddAll(Variable key, Collection<? extends Variable> value) {
         LinkedHashSet<Variable> set = map.get(key);
         if (set == null) {
             set = new LinkedHashSet<>();

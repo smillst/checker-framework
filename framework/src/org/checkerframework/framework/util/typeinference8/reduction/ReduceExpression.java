@@ -14,7 +14,6 @@ import java.util.List;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.framework.util.typeinference8.bound.Bound;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
@@ -56,7 +55,9 @@ public class ReduceExpression {
                         context);
             default:
                 ErrorReporter.errorAbort("Unexpected ExpressionKind: %s", constraint.getKind());
-                return Bound.FALSE;
+                BoundSet boundSet = new BoundSet(context);
+                boundSet.addFalse();
+                return boundSet;
         }
     }
 
@@ -137,12 +138,13 @@ public class ReduceExpression {
         if (R != null && R.getTypeKind() != TypeKind.VOID) {
             for (ExpressionTree e : InternalInferenceUtils.getReturnedExpressions(lambda)) {
                 if (R.isProper()) {
-                    if (!context.factory
-                            .getContext()
+                    if (!context.env
                             .getTypeUtils()
                             .isAssignable(
                                     InternalUtils.typeOf(e), ((ProperType) R).getProperType())) {
-                        return Bound.FALSE;
+                        BoundSet boundSet = new BoundSet(context);
+                        boundSet.addFalse();
+                        return boundSet;
                     }
                 } else {
                     constraintSet.add(new Expression(e, R));
@@ -172,7 +174,7 @@ public class ReduceExpression {
      * <p>This bound set may contain new inference variables, as well as dependencies between these
      * new variables and the inference variables in T.
      */
-    private static ReductionResult reduceMethodInvocation(Expression constraint, Context context) {
+    private static BoundSet reduceMethodInvocation(Expression constraint, Context context) {
         ExpressionTree expressionTree = constraint.getExpression();
         List<? extends ExpressionTree> args;
         if (expressionTree.getKind() == Kind.NEW_CLASS) {
@@ -209,7 +211,7 @@ public class ReduceExpression {
         // javac.
 
         // com.sun.tools.javac.code.Types.isConvertible(com.sun.tools.javac.code.Type, com.sun.tools.javac.code.Type)
-        return Bound.TRUE;
+        return new ConstraintSet();
     }
 
     private static AbstractType getGroundTargetType(

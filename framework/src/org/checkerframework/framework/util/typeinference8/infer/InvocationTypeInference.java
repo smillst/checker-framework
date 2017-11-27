@@ -17,13 +17,15 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -224,9 +226,22 @@ public class InvocationTypeInference {
             ConstraintSet set =
                     new ConstraintSet(
                             new Typing(capture.getLHS(), target, Kind.TYPE_COMPATIBILITY));
-            BoundSet newBounds = set.reduce(context);
-            newBounds.add(capture);
-            b2.incorporateToFixedPoint(newBounds);
+            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2
+            // Let R be a type that is not an inference variable (but is not necessarily a proper type).
+            ConstraintSet constraintSet = new ConstraintSet();
+            for (CaptureTuple c : capture.getTuples()) {
+                if (c.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
+                    ConstraintSet newCon =
+                            c.alpha.getWildcardConstraints(c.capturedTypeArg, c.bound);
+                    if (newCon == null) {
+                        b2.addFalse();
+                    }
+                    constraintSet.add(newCon);
+                }
+            }
+            BoundSet b = set.reduce(context);
+            b.addCapture(capture);
+            b2.incorporateToFixedPoint(b);
             return b2;
         } else if (r.isVariable()) {
             Variable alpha = (Variable) r;
@@ -234,24 +249,24 @@ public class InvocationTypeInference {
             // T is a reference type, but is not a wildcard-parameterized type, and either
             if (!target.isWildcardParameterizedType()) {
                 // i) B2 contains a bound of one of the forms α = S or S <: α, where S is a wildcard-parameterized type, or
-                compatiblity = b2.hasWildcardParameterizedLowerOrEqualBound(alpha);
+                compatiblity = alpha.hasWildcardParameterizedLowerOrEqualBound();
                 if (!compatiblity) {
                     // ii) B2 contains two bounds of the forms S1 <: α and S2 <: α, where S1 and S2
                     // have supertypes that are two different parameterizations of the same generic class or interface.
-                    compatiblity = b2.hasLowerBoundDifferentParam(alpha);
+                    compatiblity = alpha.hasLowerBoundDifferentParam();
                 }
             } else if (target.isParameterizedType()) {
                 // T is a parameterization of a generic class or interface, G, and B2 contains a
                 // bound of one of the forms α = S or S <: α, where there exists no type of the form
                 // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
-                compatiblity = b2.hasRawTypeLowerOrEqualBound(alpha, target);
+                compatiblity = alpha.hasRawTypeLowerOrEqualBound(target);
             } else if (target.getTypeKind().isPrimitive()) {
                 // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
-                compatiblity = b2.hasPrimitiveWrapperBound(alpha);
+                compatiblity = alpha.hasPrimitiveWrapperBound();
             }
             if (compatiblity) {
                 BoundSet resolve = Resolution.resolve(alpha, b2, context);
-                ProperType u = resolve.getInstantiation(alpha);
+                ProperType u = alpha.getInstantiation();
                 ConstraintSet constraintSet =
                         new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
                 BoundSet newBounds = constraintSet.reduce(context);

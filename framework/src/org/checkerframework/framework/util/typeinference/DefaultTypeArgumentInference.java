@@ -53,7 +53,7 @@ import org.checkerframework.framework.util.typeinference.solver.InferredValue;
 import org.checkerframework.framework.util.typeinference.solver.InferredValue.InferredType;
 import org.checkerframework.framework.util.typeinference.solver.SubtypesSolver;
 import org.checkerframework.framework.util.typeinference.solver.SupertypesSolver;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;

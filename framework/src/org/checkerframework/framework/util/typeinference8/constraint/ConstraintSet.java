@@ -8,7 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.reduction.Reduce;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
@@ -17,6 +17,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class ConstraintSet implements ReductionResult {
+    public static final ConstraintSet TRUE = new ConstraintSet();
     /**
      * This needs to be kept in the order created, which should be lexically left to right. This is
      * for {@link #getMagicalSubSet(Dependencies)}.

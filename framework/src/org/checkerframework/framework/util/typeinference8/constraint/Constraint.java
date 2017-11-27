@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;

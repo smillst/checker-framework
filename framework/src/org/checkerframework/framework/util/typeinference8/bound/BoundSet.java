@@ -3,36 +3,19 @@ package org.checkerframework.framework.util.typeinference8.bound;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import javax.lang.model.type.IntersectionType;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.PluginUtil;
-import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
-import org.checkerframework.framework.util.typeinference8.bound.Equal.Instantiation;
-import org.checkerframework.framework.util.typeinference8.bound.Subtype.NonProperLowerBound;
-import org.checkerframework.framework.util.typeinference8.bound.Subtype.NonProperUpperBound;
-import org.checkerframework.framework.util.typeinference8.bound.Subtype.ProperLowerBound;
-import org.checkerframework.framework.util.typeinference8.bound.Subtype.ProperUpperBound;
-import org.checkerframework.framework.util.typeinference8.bound.Subtype.SubtypeVV;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
+import org.checkerframework.framework.util.typeinference8.reduction.ReduceTyping;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
-import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
-import org.checkerframework.framework.util.typeinference8.types.InferenceType;
-import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.javacutil.ErrorReporter;
 
 public class BoundSet implements ReductionResult {
     /**
@@ -41,7 +24,7 @@ public class BoundSet implements ReductionResult {
      */
     private static final int MAX_INCORPORATION_STEPS = 100;
 
-    private final Map<Variable, BoundsForVar> boundsOnVariables;
+    private final LinkedHashSet<Variable> variables;
     private final LinkedHashSet<Capture> captures;
     private final LinkedHashSet<Throws> throwsList;
 
@@ -51,12 +34,12 @@ public class BoundSet implements ReductionResult {
 
     private BoundSet(Bound false1, Context context) {
         this(context);
-        add(false1);
+        isFalse = true;
     }
 
     public BoundSet(Context context) {
         assert context != null;
-        this.boundsOnVariables = new LinkedHashMap<>();
+        this.variables = new LinkedHashSet<>();
         this.captures = new LinkedHashSet<>();
         this.throwsList = new LinkedHashSet<>();
         this.context = context;
@@ -68,10 +51,7 @@ public class BoundSet implements ReductionResult {
         this.isFalse = toCopy.isFalse;
         this.captures.addAll(toCopy.captures);
         this.throwsList.addAll(toCopy.throwsList);
-        for (Entry<Variable, BoundsForVar> entry : toCopy.boundsOnVariables.entrySet()) {
-            BoundsForVar copy = new BoundsForVar(entry.getValue());
-            boundsOnVariables.put(entry.getKey(), copy);
-        }
+        throw new RuntimeException("Not implemented");
     }
 
     /**
@@ -92,41 +72,8 @@ public class BoundSet implements ReductionResult {
      */
     public static BoundSet initialBounds(Theta map, Context context) {
         BoundSet boundSet = new BoundSet(context);
-
-        for (Entry<TypeVariable, Variable> entry : map.getEntryList()) {
-            TypeVariable pl = entry.getKey();
-            Variable al = entry.getValue();
-            TypeMirror upperBound = pl.getUpperBound();
-            boundSet.add(initialBoundForL(map, al, upperBound, context));
-        }
+        boundSet.variables.addAll(map.values());
         return boundSet;
-    }
-
-    /**
-     * If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set. Otherwise, for
-     * each type T delimited by & in the TypeBound, the bound {@literal al <: T[P1:=a1,..., Pp:=ap]}
-     * appears in the set; if this results in no proper upper bounds for al (only dependencies),
-     * then the bound {@literal al <: Object} also appears in the set.
-     */
-    private static BoundSet initialBoundForL(
-            Theta map, Variable al, TypeMirror upperBound, Context context) {
-        BoundSet boundSet = new BoundSet(context);
-        switch (upperBound.getKind()) {
-            case INTERSECTION:
-                for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
-                    boundSet.add(initialBoundForL(map, al, bound, context));
-                }
-                break;
-            default:
-                AbstractType t1 = InferenceType.create(upperBound, map, context);
-                boundSet.add(Subtype.createSubtype(al, t1));
-                break;
-        }
-        return boundSet;
-    }
-
-    public boolean addBoundsFromIncorp(BoundSet newSet) {
-        return add(newSet, true);
     }
 
     public boolean add(BoundSet newSet) {
@@ -136,99 +83,18 @@ public class BoundSet implements ReductionResult {
     private boolean add(BoundSet newSet, boolean isIncorp) {
         boolean changed = captures.addAll(newSet.captures);
         changed |= throwsList.addAll(newSet.throwsList);
-        for (Variable v : newSet.getAllInferenceVariables()) {
-            if (v instanceof CaptureVariable && isIncorp) {
-                BoundsForVar newBounds = newSet.getBoundsForVar(v);
-                if (!this.boundsOnVariables.containsKey(v)) {
-                    changed |= getBoundsForVar(v).merge(newBounds);
-                } else if (newBounds.hasInstantiation()) {
-                    changed |= getBoundsForVar(v).addEqual(newBounds.getInstantiation());
-                }
-            } else {
-                changed |= getBoundsForVar(v).merge(newSet.getBoundsForVar(v));
-            }
-        }
+        changed |= variables.addAll(newSet.variables);
         isFalse |= newSet.isFalse;
         return changed;
     }
 
-    public void add(Bound bound) {
-        switch (bound.getKind()) {
-            case EQUAL:
-                addEqual((Equal) bound);
-                break;
-            case SUBTYPE:
-                addSubtype((Subtype) bound);
-                break;
-            case FALSE:
-                isFalse = true;
-                break;
-            case CAPTURE:
-                addCapture((Capture) bound);
-                break;
-            case THROWS:
-                throwsList.add((Throws) bound);
-                break;
-            case TRUE:
-                // Do nothing
-        }
+    public void addFalse() {
+        isFalse = true;
     }
 
-    private void addCapture(Capture capture) {
+    public void addCapture(Capture capture) {
         captures.add(capture);
-
-        // When a bound set contains a bound of the form G<alpha1, ..., alphan> = capture(G<A1, ..., An>), new
-        // bounds are implied and new constraint formulas may be implied, as follows.
-
-        // Let P1, ..., Pn represent the type parameters of G and let B1, ..., Bn represent the
-        // bounds of these type parameters. Let θ represent the substitution [P1:=alpha1, ..., Pn:=alphan].
-        // Let R be a type that is not an inference variable (but is not necessarily a proper type).
-
-        // A set of bounds on alpha1, ..., alphan is implied, constructed from the declared bounds of
-        // P1, ..., Pn as specified in §18.1.3.
-        add(initialBounds(capture.getMap(), context));
-
-        // If Ai is not a wildcard, then the bound αi = Ai is implied.
-        for (Bound b : capture.getInitialBounds()) {
-            add(b);
-        }
-    }
-
-    private void addEqual(Equal bound) {
-        BoundsForVar boundsForVar = getBoundsForVar(bound.getA());
-        boundsForVar.addEqual(bound.getT());
-
-        if (bound.getT().getKind() == AbstractType.Kind.VARIABLE) {
-            Variable v = (Variable) bound.getT();
-            getBoundsForVar(v).addEqual(bound.getA());
-        }
-    }
-
-    private void addSubtype(Subtype bound) {
-        if (bound instanceof SubtypeVV) {
-            Variable subVar = ((SubtypeVV) bound).getSubtype();
-            Variable superVar = ((SubtypeVV) bound).getSupertype();
-            getBoundsForVar(subVar).addUpperBound(superVar);
-            getBoundsForVar(subVar).addLowerBound(subVar);
-        } else if (bound instanceof ProperUpperBound || bound instanceof NonProperUpperBound) {
-            Variable var = (Variable) bound.getSubtype();
-            getBoundsForVar(var).addUpperBound(bound.getSupertype());
-        } else if (bound instanceof ProperLowerBound || bound instanceof NonProperLowerBound) {
-            Variable var = (Variable) bound.getSupertype();
-            getBoundsForVar(var).addLowerBound(bound.getSubtype());
-        } else {
-            ErrorReporter.errorAbort("Unexpected type");
-            throw new RuntimeException("");
-        }
-    }
-
-    private BoundsForVar getBoundsForVar(Variable var) {
-        BoundsForVar bound = boundsOnVariables.get(var);
-        if (bound == null) {
-            bound = new BoundsForVar(var, context);
-            boundsOnVariables.put(var, bound);
-        }
-        return bound;
+        variables.addAll(capture.getAllIVOnLHS());
     }
 
     /**
@@ -251,36 +117,12 @@ public class BoundSet implements ReductionResult {
         return isFalse;
     }
 
-    public boolean containsProperUpperBound(Variable a) {
-        return getBoundsForVar(a).hasProperUpperBound();
-    }
-
-    public LinkedHashSet<ProperType> findProperLowerBounds(Variable a) {
-        return getBoundsForVar(a).getProperLowerBounds();
-    }
-
-    public LinkedHashSet<ProperType> findProperUpperBounds(Variable a) {
-        return getBoundsForVar(a).getProperUpperBounds();
-    }
-
-    public ProperType getInstantiation(Variable alpha) {
-        return getBoundsForVar(alpha).getInstantiation();
-    }
-
-    public boolean hasInstantiation(Variable alpha) {
-        return getBoundsForVar(alpha).hasInstantiation();
-    }
-
     /** Gets the instantiations for all alphas that currently have one. */
     public List<Instantiation> getInstantiations(List<Variable> alphas) {
         List<Instantiation> list = new ArrayList<>();
         for (Variable var : alphas) {
-            if (boundsOnVariables.containsKey(var)) {
-                BoundsForVar bounds = boundsOnVariables.get(var);
-                if (bounds.hasInstantiation()) {
-                    ProperType properType = bounds.getInstantiation();
-                    list.add(new Instantiation(var, properType));
-                }
+            if (var.hasInstantiation()) {
+                list.add(new Instantiation(var, var.getInstantiation()));
             }
         }
         return list;
@@ -288,12 +130,9 @@ public class BoundSet implements ReductionResult {
 
     public List<Instantiation> getInstantiationsAll() {
         List<Instantiation> list = new ArrayList<>();
-        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
-            Variable var = entry.getKey();
-            BoundsForVar bounds = entry.getValue();
-            if (bounds.hasInstantiation()) {
-                ProperType properType = bounds.getInstantiation();
-                list.add(new Instantiation(var, properType));
+        for (Variable var : variables) {
+            if (var.hasInstantiation()) {
+                list.add(new Instantiation(var, var.getInstantiation()));
             }
         }
         return list;
@@ -301,10 +140,8 @@ public class BoundSet implements ReductionResult {
 
     public List<Variable> getInstantiatedVariables() {
         List<Variable> list = new ArrayList<>();
-        for (Entry<Variable, BoundsForVar> entry : boundsOnVariables.entrySet()) {
-            Variable var = entry.getKey();
-            BoundsForVar bounds = entry.getValue();
-            if (bounds.hasInstantiation()) {
+        for (Variable var : variables) {
+            if (var.hasInstantiation()) {
                 list.add(var);
             }
         }
@@ -326,7 +163,7 @@ public class BoundSet implements ReductionResult {
         Dependencies dependencies = new Dependencies();
 
         for (Capture capture : captures) {
-            LinkedHashSet<Variable> lhsVars = capture.getAllIVOnLHS();
+            List<? extends CaptureVariable> lhsVars = capture.getAllIVOnLHS();
             LinkedHashSet<Variable> rhsVars = capture.getAllIVOnRHS();
             for (Variable var : lhsVars) {
                 // An inference variable alpha appearing on the left-hand side of a bound of the
@@ -344,9 +181,7 @@ public class BoundSet implements ReductionResult {
             LinkedHashSet<Variable> alphaDependencies = new LinkedHashSet<>();
             // An inference variable alpha depends on the resolution of itself.
             alphaDependencies.add(alpha);
-
-            BoundsForVar boundsForAlpha = getBoundsForVar(alpha);
-            alphaDependencies.addAll(boundsForAlpha.getAllMentionedVars());
+            alphaDependencies.addAll(alpha.getAllMentionedVars());
 
             if (alpha instanceof CaptureVariable) {
                 // If alpha appears on the left-hand side of another bound of the form
@@ -368,8 +203,7 @@ public class BoundSet implements ReductionResult {
     }
 
     private List<Variable> getAllInferenceVariables() {
-        // TODO: sort
-        return new ArrayList<>(boundsOnVariables.keySet());
+        return new ArrayList<>(variables);
     }
 
     public List<Throws> findThrowsBounds(Variable ai) {
@@ -396,57 +230,32 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
+            variables.addAll(newBounds.variables);
             List<Instantiation> instantiations = getInstantiationsAll();
-            instantiations.addAll(newBounds.getInstantiationsAll());
+            boolean boundsChangeInst = false;
             if (!instantiations.isEmpty()) {
-                for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
-                    boundsForVar.applyInstantiations(instantiations);
+                for (Variable var : variables) {
+                    boundsChangeInst = var.applyInstantiationsToBounds(instantiations);
+                }
+            }
+            boundsChangeInst |= captures.addAll(newBounds.captures);
+            for (Variable alpha : variables) {
+                while (!alpha.constraints.isEmpty()) {
+                    boundsChangeInst = true;
+                    if (!ReduceTyping.reduceTyping(alpha.constraints.poll(), context)) {
+                        this.isFalse = true;
+                        return;
+                    }
                 }
             }
 
-            if (!addBoundsFromIncorp(newBounds)) {
-                // No new bounds, a fixed point has been reached.
-                break;
+            if (!boundsChangeInst) {
+                return;
             }
 
-            ConstraintSet constraints = new ConstraintSet();
-            for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
-                if (boundsForVar.var instanceof CaptureVariable) {
-                    // call to clear them out.
-                    boundsForVar.getConstraintFromComplementaryBounds();
-                } else {
-                    // See note com.sun.tools.javac.code.Type.CapturedUndetVar
-                    constraints.add(boundsForVar.getConstraintFromComplementaryBounds());
-                }
-            }
-
-            for (Capture capture : captures) {
-                constraints.add(incorporate(capture));
-            }
-
-            newBounds = constraints.reduce(context);
             isFalse &= newBounds.isFalse;
             assert count < MAX_INCORPORATION_STEPS : "Max incorporation steps reached.";
         } while (!isFalse && count < MAX_INCORPORATION_STEPS);
-    }
-
-    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2 */
-    private ConstraintSet incorporate(Capture bound) {
-        // Let R be a type that is not an inference variable (but is not necessarily a proper type).
-        ConstraintSet constraintSet = new ConstraintSet();
-        for (CaptureTuple c : bound.getTuples()) {
-            BoundsForVar boundsForAlphaI = getBoundsForVar(c.alpha);
-            if (c.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
-                ConstraintSet newCon =
-                        boundsForAlphaI.getWildcardConstraints(c.capturedTypeArg, c.bound);
-                if (newCon == null) {
-                    this.isFalse = true;
-                    return new ConstraintSet();
-                }
-                constraintSet.add(newCon);
-            }
-        }
-        return constraintSet;
     }
 
     public void removeCaptures(LinkedHashSet<Variable> as) {
@@ -461,7 +270,7 @@ public class BoundSet implements ReductionResult {
     public String toString() {
         if (isFalse) {
             return "FALSE";
-        } else if (boundsOnVariables.isEmpty()) {
+        } else if (variables.isEmpty()) {
             return "EMPTY";
         }
         String vars = PluginUtil.join(", ", getInstantiatedVariables());
@@ -470,50 +279,5 @@ public class BoundSet implements ReductionResult {
         } else {
             return "Instantiated variables: " + vars;
         }
-    }
-
-    /**
-     * @return whether or not one of the primitive wrapper classes mentioned is an instantiation,
-     *     upper bound, or lower
-     */
-    public boolean hasPrimitiveWrapperBound(Variable alpha) {
-        BoundsForVar boundsForVar = getBoundsForVar(alpha);
-        return boundsForVar.hasPrimitiveWrapperBound();
-    }
-
-    /**
-     * @return true if there exists a bound of one of the forms {@code alpha = S} or {@code S <:
-     *     alpha}, where S is a wildcard-parameterized type.
-     */
-    public boolean hasWildcardParameterizedLowerOrEqualBound(Variable alpha) {
-        BoundsForVar boundsForVar = getBoundsForVar(alpha);
-        return boundsForVar.hasWildcardParameterizedLowerOrEqualBound();
-    }
-
-    /**
-     * Does this bound set contain two bounds of the forms {@code S1 <: alpha} and {@code S2 <:
-     * alpha}, where S1 and S2 have supertypes that are two different parameterizations of the same
-     * generic class or interface?
-     */
-    public boolean hasLowerBoundDifferentParam(Variable alpha) {
-        return getBoundsForVar(alpha).hasLowerBoundDifferentParam();
-    }
-
-    /**
-     * Does this bound set contain a bound of one of the forms {@code alpha = S} or {@code S <:
-     * alpha}, where there exists no type of the form {@code G<...>} that is a supertype of S, but
-     * the raw type {@code |G<...>|} is a supertype of S?
-     */
-    public boolean hasRawTypeLowerOrEqualBound(Variable alpha, AbstractType g) {
-        return getBoundsForVar(alpha).hasRawTypeLowerOrEqualBound(g);
-    }
-
-    public boolean needsIncorp() {
-        for (BoundsForVar boundsForVar : boundsOnVariables.values()) {
-            if (boundsForVar.containsUnincorporated()) {
-                return true;
-            }
-        }
-        return false;
     }
 }

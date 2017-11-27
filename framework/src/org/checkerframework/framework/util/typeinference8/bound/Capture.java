@@ -18,6 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
+import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
@@ -42,6 +43,8 @@ public class Capture extends Bound {
 
     private final List<CaptureTuple> tuples = new ArrayList<>();
 
+    private final List<CaptureVariable> captureVariables = new ArrayList<>();
+
     public Capture(AbstractType capturedType, ExpressionTree tree, Context context) {
         this.capturedType = capturedType;
         if (capturedType.isInferenceType()) {
@@ -59,6 +62,7 @@ public class Capture extends Bound {
             CaptureVariable al = new CaptureVariable(pl, tree, context);
             map.put(pl, al);
             pairs.add(Pair.of(al, pl.getUpperBound()));
+            captureVariables.add(al);
         }
 
         lhs = (InferenceType) InferenceType.create(ele.asType(), map, context);
@@ -67,8 +71,19 @@ public class Capture extends Bound {
         for (Pair<CaptureVariable, TypeMirror> pair : pairs) {
             AbstractType Ai = args.next();
             CaptureVariable alaphi = pair.first;
+            alaphi.initalBounds(map);
             AbstractType Bi = InferenceType.create(pair.second, map, context);
             tuples.add(CaptureTuple.of(alaphi, Ai, Bi));
+        }
+
+        // 18.3.2  In addition, for all i (1 ≤ i ≤ n):
+        for (CaptureTuple t : tuples) {
+            Variable alphaI = t.alpha;
+            AbstractType Ai = t.capturedTypeArg;
+            if (Ai.getTypeKind() != TypeKind.WILDCARD) {
+                // If Ai is not a wildcard, then the bound αi = Ai is implied.
+                alphaI.addBound(InferBound.EQUAL, Ai);
+            }
         }
     }
 
@@ -81,8 +96,8 @@ public class Capture extends Bound {
         return Kind.CAPTURE;
     }
 
-    public LinkedHashSet<Variable> getAllIVOnLHS() {
-        return new LinkedHashSet<>(map.values());
+    public List<? extends CaptureVariable> getAllIVOnLHS() {
+        return captureVariables;
     }
 
     public LinkedHashSet<Variable> getAllIVOnRHS() {
@@ -97,20 +112,6 @@ public class Capture extends Bound {
 
     public Theta getMap() {
         return map;
-    }
-
-    public List<Bound> getInitialBounds() {
-        // 18.3.2  In addition, for all i (1 ≤ i ≤ n):
-        List<Bound> bounds = new ArrayList<>();
-        for (CaptureTuple t : tuples) {
-            Variable alphaI = t.alpha;
-            AbstractType Ai = t.capturedTypeArg;
-            if (Ai.getTypeKind() != TypeKind.WILDCARD) {
-                // If Ai is not a wildcard, then the bound αi = Ai is implied.
-                bounds.add(Equal.create(alphaI, Ai));
-            }
-        }
-        return bounds;
     }
 
     public List<CaptureTuple> getTuples() {
