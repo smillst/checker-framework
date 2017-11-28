@@ -109,15 +109,6 @@ public class Resolution {
     }
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
-        LinkedHashSet<Variable> nons = getNonCaputres(as);
-        if (nons.size() != as.size()) {
-            // This isn't in the JLS, but resolutions only seems to work if the non-captures are resolved first.
-            boundSet = resolve(nons, boundSet);
-            as.removeAll(nons);
-            if (as.isEmpty()) {
-                return boundSet;
-            }
-        }
         assert !boundSet.containsFalse();
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
@@ -127,6 +118,7 @@ public class Resolution {
             resolvedBounds = resolve1(as, boundSet);
             if (resolvedBounds.containsFalse()) {
                 boundSet = copy;
+                boundSet.restore();
                 resolvedBounds = resolve2(as, boundSet, context);
             }
         }

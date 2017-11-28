@@ -71,7 +71,7 @@ public class Capture extends Bound {
         for (Pair<CaptureVariable, TypeMirror> pair : pairs) {
             AbstractType Ai = args.next();
             CaptureVariable alaphi = pair.first;
-            alaphi.initalBounds(map);
+            alaphi.initialBounds(map);
             AbstractType Bi = InferenceType.create(pair.second, map, context);
             tuples.add(CaptureTuple.of(alaphi, Ai, Bi));
         }

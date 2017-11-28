@@ -51,7 +51,16 @@ public class BoundSet implements ReductionResult {
         this.isFalse = toCopy.isFalse;
         this.captures.addAll(toCopy.captures);
         this.throwsList.addAll(toCopy.throwsList);
-        throw new RuntimeException("Not implemented");
+        this.variables.addAll(toCopy.variables);
+        for (Variable v : variables) {
+            v.save();
+        }
+    }
+
+    public void restore() {
+        for (Variable v : variables) {
+            v.restore();
+        }
     }
 
     /**
@@ -183,7 +192,7 @@ public class BoundSet implements ReductionResult {
             alphaDependencies.add(alpha);
             alphaDependencies.addAll(alpha.getAllMentionedVars());
 
-            if (alpha instanceof CaptureVariable) {
+            if (alpha.isCaptureVariable()) {
                 // If alpha appears on the left-hand side of another bound of the form
                 // G<..., alpha, ...> = capture(G<...>), then beta depends on the resolution of
                 // alpha.
@@ -242,7 +251,7 @@ public class BoundSet implements ReductionResult {
             for (Variable alpha : variables) {
                 while (!alpha.constraints.isEmpty()) {
                     boundsChangeInst = true;
-                    if (!ReduceTyping.reduceTyping(alpha.constraints.poll(), context)) {
+                    if (!ReduceTyping.reduceTyping(alpha.constraints.remove(), context)) {
                         this.isFalse = true;
                         return;
                     }

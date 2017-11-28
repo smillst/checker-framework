@@ -37,6 +37,9 @@ public class Variable extends AbstractType {
 
     protected final Context context;
 
+    /** Constraints implied by complementary pairs of bounds. */
+    public Queue<Typing> constraints = new LinkedList<>();
+
     public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
         this(typeVariable, invocation, context, context.getNextVariableId());
     }
@@ -53,7 +56,30 @@ public class Variable extends AbstractType {
         bounds.put(InferBound.LOWER, new ArrayList<>());
     }
 
-    public void initalBounds(Theta map) {
+    protected EnumMap<InferBound, List<AbstractType>> savedBounds = null;
+
+    public void save() {
+        savedBounds = new EnumMap<>(InferBound.class);
+        savedBounds.put(InferBound.EQUAL, new ArrayList<>(bounds.get(InferBound.EQUAL)));
+        savedBounds.put(InferBound.UPPER, new ArrayList<>(bounds.get(InferBound.UPPER)));
+        savedBounds.put(InferBound.LOWER, new ArrayList<>(bounds.get(InferBound.LOWER)));
+    }
+
+    public void restore() {
+        assert savedBounds != null;
+        instantiation = null;
+        bounds.clear();
+        bounds.put(InferBound.EQUAL, new ArrayList<>(savedBounds.get(InferBound.EQUAL)));
+        bounds.put(InferBound.UPPER, new ArrayList<>(savedBounds.get(InferBound.UPPER)));
+        bounds.put(InferBound.LOWER, new ArrayList<>(savedBounds.get(InferBound.LOWER)));
+        for (AbstractType t : bounds.get(InferBound.EQUAL)) {
+            if (t.isProper()) {
+                instantiation = (ProperType) t;
+            }
+        }
+    }
+
+    public void initialBounds(Theta map) {
         TypeMirror upperBound = typeVariable.getUpperBound();
         // If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set. Otherwise, for
         // each type T delimited by & in the TypeBound, the bound {@literal al <: T[P1:=a1,..., Pp:=ap]}
@@ -151,14 +177,12 @@ public class Variable extends AbstractType {
         if (kind == InferBound.EQUAL && type.isProper()) {
             instantiation = (ProperType) type;
         }
-        if (bounds.get(kind).add(type) && !isCaptureVariable()) {
+        if (bounds.get(kind).add(type)) {
             addConstraints(kind, type);
             return true;
         }
         return false;
     }
-
-    public Queue<Typing> constraints = new LinkedList<>();
 
     private void addConstraints(InferBound kind, AbstractType s) {
         if (kind == InferBound.EQUAL) {

@@ -46,7 +46,7 @@ public class Theta extends HashMap<TypeVariable, Variable> {
             map.put(pl, al);
         }
         for (Variable v : map.values()) {
-            v.initalBounds(map);
+            v.initialBounds(map);
         }
         context.maps.put(tree, map);
         return map;

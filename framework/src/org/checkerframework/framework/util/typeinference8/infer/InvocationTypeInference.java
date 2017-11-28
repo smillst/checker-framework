@@ -113,7 +113,7 @@ public class InvocationTypeInference {
                             .report(
                                     Result.failure(
                                             "type.inference.not.same",
-                                            typeVariable,
+                                            typeVariable + "(" + inst.getA() + ")",
                                             inferredType,
                                             correctType),
                                     methodInvocation);
