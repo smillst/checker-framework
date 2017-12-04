@@ -304,6 +304,13 @@ public class Variable extends AbstractType {
             boundList.clear();
             boundList.addAll(newBounds);
         }
+        if (changed && instantiation == null) {
+            for (AbstractType bound : bounds.get(InferBound.EQUAL)) {
+                if (bound.isProper()) {
+                    instantiation = (ProperType) bound;
+                }
+            }
+        }
         return changed;
     }
 
