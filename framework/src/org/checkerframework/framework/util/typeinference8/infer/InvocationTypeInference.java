@@ -194,12 +194,13 @@ public class InvocationTypeInference {
     private BoundSet getB4(BoundSet current, ConstraintSet c) {
         while (!c.isEmpty()) {
             ConstraintSet subset = c.getMagicalSubSet(current.getDependencies(c));
+            List<Variable> alphas = subset.getAllInputVariables();
+            if (!alphas.isEmpty()) {
+                BoundSet resolved = Resolution.resolve(alphas, current, context);
+                c.applyInstantiations(resolved.getInstantiations(alphas), context);
+            }
             c.remove(subset);
-            List<Variable> alphas = subset.getAllInferenceVariables();
-            BoundSet resolved = Resolution.resolve(alphas, current, context);
-            c.applyInstantiations(resolved.getInstantiations(alphas), context);
-            BoundSet newBounds = c.reduce(context);
-            newBounds.add(resolved);
+            BoundSet newBounds = subset.reduce(context);
             current.incorporateToFixedPoint(newBounds);
         }
         return current;
@@ -292,6 +293,9 @@ public class InvocationTypeInference {
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
+            if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+                c.add(new Expression(ei, fi));
+            }
             c.add(getConstraint(ei, fi));
         }
 
@@ -300,9 +304,7 @@ public class InvocationTypeInference {
 
     private ConstraintSet getConstraint(ExpressionTree ei, AbstractType fi) {
         ConstraintSet c = new ConstraintSet();
-        if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
-            c.add(new Expression(ei, fi));
-        }
+
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;

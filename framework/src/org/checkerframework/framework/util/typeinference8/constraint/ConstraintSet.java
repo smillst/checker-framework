@@ -143,6 +143,14 @@ public class ConstraintSet implements ReductionResult {
         return new ArrayList<>(vars);
     }
 
+    public List<Variable> getAllInputVariables() {
+        Set<Variable> vars = new HashSet<>();
+        for (Constraint constraint : list) {
+            vars.addAll(constraint.getInputVariables());
+        }
+        return new ArrayList<>(vars);
+    }
+
     public void applyInstantiations(List<Instantiation> instantiations, Context context) {
         for (Constraint constraint : list) {
             constraint.applyInstantiations(instantiations);
