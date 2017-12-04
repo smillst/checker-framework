@@ -10,13 +10,13 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.util.Context;
@@ -32,8 +32,7 @@ public class Variable extends AbstractType {
     protected final ExpressionTree invocation;
 
     protected ProperType instantiation = null;
-    protected final EnumMap<InferBound, List<AbstractType>> bounds =
-            new EnumMap<>(InferBound.class);
+    protected final EnumMap<InferBound, Set<AbstractType>> bounds = new EnumMap<>(InferBound.class);
 
     protected final Context context;
 
@@ -51,27 +50,27 @@ public class Variable extends AbstractType {
         this.invocation = invocation;
         this.context = context;
         this.id = id;
-        bounds.put(InferBound.EQUAL, new ArrayList<>());
-        bounds.put(InferBound.UPPER, new ArrayList<>());
-        bounds.put(InferBound.LOWER, new ArrayList<>());
+        bounds.put(InferBound.EQUAL, new LinkedHashSet<>());
+        bounds.put(InferBound.UPPER, new LinkedHashSet<>());
+        bounds.put(InferBound.LOWER, new LinkedHashSet<>());
     }
 
-    protected EnumMap<InferBound, List<AbstractType>> savedBounds = null;
+    protected EnumMap<InferBound, LinkedHashSet<AbstractType>> savedBounds = null;
 
     public void save() {
         savedBounds = new EnumMap<>(InferBound.class);
-        savedBounds.put(InferBound.EQUAL, new ArrayList<>(bounds.get(InferBound.EQUAL)));
-        savedBounds.put(InferBound.UPPER, new ArrayList<>(bounds.get(InferBound.UPPER)));
-        savedBounds.put(InferBound.LOWER, new ArrayList<>(bounds.get(InferBound.LOWER)));
+        savedBounds.put(InferBound.EQUAL, new LinkedHashSet<>(bounds.get(InferBound.EQUAL)));
+        savedBounds.put(InferBound.UPPER, new LinkedHashSet<>(bounds.get(InferBound.UPPER)));
+        savedBounds.put(InferBound.LOWER, new LinkedHashSet<>(bounds.get(InferBound.LOWER)));
     }
 
     public void restore() {
         assert savedBounds != null;
         instantiation = null;
         bounds.clear();
-        bounds.put(InferBound.EQUAL, new ArrayList<>(savedBounds.get(InferBound.EQUAL)));
-        bounds.put(InferBound.UPPER, new ArrayList<>(savedBounds.get(InferBound.UPPER)));
-        bounds.put(InferBound.LOWER, new ArrayList<>(savedBounds.get(InferBound.LOWER)));
+        bounds.put(InferBound.EQUAL, new LinkedHashSet<>(savedBounds.get(InferBound.EQUAL)));
+        bounds.put(InferBound.UPPER, new LinkedHashSet<>(savedBounds.get(InferBound.UPPER)));
+        bounds.put(InferBound.LOWER, new LinkedHashSet<>(savedBounds.get(InferBound.LOWER)));
         for (AbstractType t : bounds.get(InferBound.EQUAL)) {
             if (t.isProper()) {
                 instantiation = (ProperType) t;
@@ -293,8 +292,8 @@ public class Variable extends AbstractType {
 
     public boolean applyInstantiationsToBounds(List<Instantiation> instantiations) {
         boolean changed = false;
-        for (List<AbstractType> boundList : bounds.values()) {
-            List<AbstractType> newBounds = new ArrayList<>(boundList.size());
+        for (Set<AbstractType> boundList : bounds.values()) {
+            LinkedHashSet<AbstractType> newBounds = new LinkedHashSet<>(boundList.size());
             for (AbstractType bound : boundList) {
                 AbstractType newBound = bound.applyInstantiations(instantiations);
                 if (newBound != bound) {
@@ -310,7 +309,7 @@ public class Variable extends AbstractType {
 
     public Collection<? extends Variable> getAllMentionedVars() {
         List<Variable> mentioned = new ArrayList<>();
-        for (List<AbstractType> boundList : bounds.values()) {
+        for (Set<AbstractType> boundList : bounds.values()) {
             for (AbstractType bound : boundList) {
                 mentioned.addAll(bound.getInferenceVariables());
             }
@@ -327,8 +326,7 @@ public class Variable extends AbstractType {
     }
 
     public boolean hasPrimitiveWrapperBound() {
-        List<Variable> mentioned = new ArrayList<>();
-        for (List<AbstractType> boundList : bounds.values()) {
+        for (Set<AbstractType> boundList : bounds.values()) {
             for (AbstractType bound : boundList) {
                 if (bound.isProper()
                         && TypesUtils.isBoxedPrimitive(((ProperType) bound).getProperType())) {
