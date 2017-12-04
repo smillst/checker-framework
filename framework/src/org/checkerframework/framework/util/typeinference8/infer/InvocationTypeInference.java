@@ -172,6 +172,7 @@ public class InvocationTypeInference {
         }
 
         BoundSet newBounds = c.reduce(context);
+        assert !newBounds.containsFalse();
         b1.incorporateToFixedPoint(newBounds);
 
         return b1;

@@ -7,12 +7,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -165,7 +164,7 @@ public class ProperType extends AbstractType {
     @Override
     public AbstractType getFunctionTypeReturn() {
         if (TypesUtils.isFunctionalInterface(properType, context.env)) {
-            ExecutableElement element = TypesUtils.findFunction(properType, context.env);
+            ExecutableType element = TypesUtils.findFunctionType(properType, context.env);
             return new ProperType(element.getReturnType(), context);
         } else {
             return null;
@@ -175,10 +174,10 @@ public class ProperType extends AbstractType {
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
         if (TypesUtils.isFunctionalInterface(properType, context.env)) {
-            ExecutableElement element = TypesUtils.findFunction(properType, context.env);
+            ExecutableType element = TypesUtils.findFunctionType(properType, context.env);
             List<AbstractType> params = new ArrayList<>();
-            for (VariableElement var : element.getParameters()) {
-                params.add(new ProperType(var.asType(), context));
+            for (TypeMirror param : element.getParameterTypes()) {
+                params.add(new ProperType(param, context));
             }
             return params;
         } else {

@@ -19,6 +19,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -670,7 +671,7 @@ public final class TypesUtils {
     }
 
     /**
-     * TThis method eturns the single abstract method declared by {@code functionalInterfaceType}.
+     * TThis method returns the single abstract method declared by {@code functionalInterfaceType}.
      * (The type of this method is referred to as the function type.)
      *
      * @param functionalInterfaceType functional interface
@@ -683,5 +684,20 @@ public final class TypesUtils {
         com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
         return (ExecutableElement)
                 javacTypes.findDescriptorSymbol(((Type) functionalInterfaceType).asElement());
+    }
+
+    /**
+     * TThis method eturns the single abstract method declared by {@code functionalInterfaceType}.
+     * (The type of this method is referred to as the function type.)
+     *
+     * @param functionalInterfaceType functional interface
+     * @param env ProcessingEnvironment
+     * @return the single abstract method declared by the type of the tree
+     */
+    public static ExecutableType findFunctionType(
+            TypeMirror functionalInterfaceType, ProcessingEnvironment env) {
+        Context ctx = ((JavacProcessingEnvironment) env).getContext();
+        com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
+        return (ExecutableType) javacTypes.findDescriptorType((Type) functionalInterfaceType);
     }
 }

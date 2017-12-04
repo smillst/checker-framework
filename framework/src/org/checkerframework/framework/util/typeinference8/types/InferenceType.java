@@ -8,12 +8,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -298,7 +297,7 @@ public class InferenceType extends AbstractType {
     @Override
     public AbstractType getFunctionTypeReturn() {
         if (TypesUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element = TypesUtils.findFunction(type, context.env);
+            ExecutableType element = TypesUtils.findFunctionType(type, context.env);
             return InferenceType.create(element.getReturnType(), map, context);
         } else {
             return null;
@@ -313,10 +312,10 @@ public class InferenceType extends AbstractType {
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
         if (TypesUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element = TypesUtils.findFunction(type, context.env);
+            ExecutableType element = TypesUtils.findFunctionType(type, context.env);
             List<AbstractType> params = new ArrayList<>();
-            for (VariableElement var : element.getParameters()) {
-                params.add(InferenceType.create(var.asType(), map, context));
+            for (TypeMirror param : element.getParameterTypes()) {
+                params.add(InferenceType.create(param, map, context));
             }
             return params;
         } else {
