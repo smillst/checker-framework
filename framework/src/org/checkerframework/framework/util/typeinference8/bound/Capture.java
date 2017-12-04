@@ -20,8 +20,8 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * {@code G<a1, ..., an> = capture(G<A1, ..., An>)}: The variables a1, ..., an represent the result
@@ -54,7 +54,7 @@ public class Capture extends Bound {
             ProperType properTypeG = (ProperType) capturedType;
             underlying = (DeclaredType) properTypeG.getProperType();
         }
-        TypeElement ele = InternalUtils.getTypeElement(underlying);
+        TypeElement ele = TypesUtils.getTypeElement(underlying);
         map = new Theta();
         List<Pair<CaptureVariable, TypeMirror>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {

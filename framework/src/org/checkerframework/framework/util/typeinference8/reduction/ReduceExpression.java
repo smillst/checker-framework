@@ -26,7 +26,6 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 public class ReduceExpression {
@@ -75,8 +74,7 @@ public class ReduceExpression {
             if (ps.size() == fs.size() + 1) {
                 AbstractType targetReference = ps.remove(0);
                 ProperType referenceType =
-                        new ProperType(
-                                InternalUtils.typeOf(memRef.getQualifierExpression()), context);
+                        new ProperType(TreeUtils.typeOf(memRef.getQualifierExpression()), context);
                 constraintSet.add(
                         new Typing(targetReference, referenceType, Constraint.Kind.SUBTYPE));
             }
@@ -127,7 +125,7 @@ public class ReduceExpression {
 
             for (int i = 0; i < gs.size(); i++) {
                 VariableTree parameter = parameters.get(i);
-                AbstractType fi = new ProperType(InternalUtils.typeOf(parameter), context);
+                AbstractType fi = new ProperType(TreeUtils.typeOf(parameter), context);
                 AbstractType gi = gs.get(i);
                 constraintSet.add(new Typing(fi, gi, Constraint.Kind.TYPE_EQUALITY));
             }
@@ -140,8 +138,7 @@ public class ReduceExpression {
                 if (R.isProper()) {
                     if (!context.env
                             .getTypeUtils()
-                            .isAssignable(
-                                    InternalUtils.typeOf(e), ((ProperType) R).getProperType())) {
+                            .isAssignable(TreeUtils.typeOf(e), ((ProperType) R).getProperType())) {
                         BoundSet boundSet = new BoundSet(context);
                         boundSet.addFalse();
                         return boundSet;
@@ -198,7 +195,7 @@ public class ReduceExpression {
     }
 
     private static Constraint reduceStandalone(Expression constraint, Context context) {
-        ProperType s = new ProperType(InternalUtils.typeOf(constraint.getExpression()), context);
+        ProperType s = new ProperType(TreeUtils.typeOf(constraint.getExpression()), context);
         return new Typing(s, constraint.getT(), Constraint.Kind.TYPE_COMPATIBILITY);
     }
 

@@ -22,7 +22,6 @@ import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class InferenceType extends AbstractType {
@@ -159,7 +158,7 @@ public class InferenceType extends AbstractType {
     @Override
     public AbstractType getWildcardLowerBound() {
         if (type.getKind() == TypeKind.WILDCARD) {
-            return create(TypesUtils.wildLowerBound(context.env, type), map, context);
+            return create(TypesUtils.wildLowerBound(type, context.env), map, context);
         }
         return null;
     }
@@ -298,8 +297,8 @@ public class InferenceType extends AbstractType {
 
     @Override
     public AbstractType getFunctionTypeReturn() {
-        if (InternalUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element = InternalUtils.findFunction((Type) type, context.env);
+        if (TypesUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element = TypesUtils.findFunction(type, context.env);
             return InferenceType.create(element.getReturnType(), map, context);
         } else {
             return null;
@@ -313,8 +312,8 @@ public class InferenceType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        if (InternalUtils.isFunctionalInterface(type, context.env)) {
-            ExecutableElement element = InternalUtils.findFunction((Type) type, context.env);
+        if (TypesUtils.isFunctionalInterface(type, context.env)) {
+            ExecutableElement element = TypesUtils.findFunction(type, context.env);
             List<AbstractType> params = new ArrayList<>();
             for (VariableElement var : element.getParameters()) {
                 params.add(InferenceType.create(var.asType(), map, context));

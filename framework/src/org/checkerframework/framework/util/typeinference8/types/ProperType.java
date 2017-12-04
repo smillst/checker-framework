@@ -20,7 +20,6 @@ import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class ProperType extends AbstractType {
@@ -165,8 +164,8 @@ public class ProperType extends AbstractType {
 
     @Override
     public AbstractType getFunctionTypeReturn() {
-        if (InternalUtils.isFunctionalInterface(properType, context.env)) {
-            ExecutableElement element = InternalUtils.findFunction((Type) properType, context.env);
+        if (TypesUtils.isFunctionalInterface(properType, context.env)) {
+            ExecutableElement element = TypesUtils.findFunction(properType, context.env);
             return new ProperType(element.getReturnType(), context);
         } else {
             return null;
@@ -175,8 +174,8 @@ public class ProperType extends AbstractType {
 
     @Override
     public List<AbstractType> getFunctionTypeParameters() {
-        if (InternalUtils.isFunctionalInterface(properType, context.env)) {
-            ExecutableElement element = InternalUtils.findFunction((Type) properType, context.env);
+        if (TypesUtils.isFunctionalInterface(properType, context.env)) {
+            ExecutableElement element = TypesUtils.findFunction(properType, context.env);
             List<AbstractType> params = new ArrayList<>();
             for (VariableElement var : element.getParameters()) {
                 params.add(new ProperType(var.asType(), context));
@@ -224,7 +223,7 @@ public class ProperType extends AbstractType {
         if (properType.getKind() != TypeKind.WILDCARD) {
             return null;
         } else if (((Type.WildcardType) properType).isSuperBound()) {
-            return new ProperType(TypesUtils.wildLowerBound(context.env, properType), context);
+            return new ProperType(TypesUtils.wildLowerBound(properType, context.env), context);
         } else {
             return null;
         }

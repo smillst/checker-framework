@@ -12,6 +12,7 @@ import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.util.Context;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
@@ -666,5 +667,21 @@ public final class TypesUtils {
         Context ctx = ((JavacProcessingEnvironment) env).getContext();
         com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
         return javacTypes.isFunctionalInterface((Type) type);
+    }
+
+    /**
+     * TThis method eturns the single abstract method declared by {@code functionalInterfaceType}.
+     * (The type of this method is referred to as the function type.)
+     *
+     * @param functionalInterfaceType functional interface
+     * @param env ProcessingEnvironment
+     * @return the single abstract method declared by the type of the tree
+     */
+    public static ExecutableElement findFunction(
+            TypeMirror functionalInterfaceType, ProcessingEnvironment env) {
+        Context ctx = ((JavacProcessingEnvironment) env).getContext();
+        com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
+        return (ExecutableElement)
+                javacTypes.findDescriptorSymbol(((Type) functionalInterfaceType).asElement());
     }
 }

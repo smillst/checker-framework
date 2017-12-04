@@ -43,8 +43,8 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.javacutil.ErrorReporter;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class InferenceUtils {
 
@@ -129,10 +129,10 @@ public class InferenceUtils {
         switch (assignmentContext.getKind()) {
             case ASSIGNMENT:
                 ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
-                return InternalUtils.typeOf(variable);
+                return TreeUtils.typeOf(variable);
             case VARIABLE:
                 VariableTree variableTree = (VariableTree) assignmentContext;
-                return InternalUtils.typeOf(variableTree.getType());
+                return TreeUtils.typeOf(variableTree.getType());
             case METHOD_INVOCATION:
                 MethodInvocationTree methodInvocation = (MethodInvocationTree) assignmentContext;
                 return assignedToExecutable(
@@ -149,11 +149,11 @@ public class InferenceUtils {
                 Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
                 if (enclosing.getKind() == Kind.METHOD) {
                     MethodTree methodTree = (MethodTree) enclosing;
-                    return InternalUtils.typeOf(methodTree.getReturnType());
+                    return TreeUtils.typeOf(methodTree.getReturnType());
                 } else {
                     // TODO: I don't think this should happen. during inference
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) enclosing;
-                    return InternalUtils.typeOf(lambdaTree);
+                    return TreeUtils.typeOf(lambdaTree);
                 }
             default:
                 if (assignmentContext
@@ -162,7 +162,7 @@ public class InferenceUtils {
                         .equals(CompoundAssignmentTree.class)) {
                     // 11 Tree kinds are compound assignments, so don't use it in the switch
                     ExpressionTree var = ((CompoundAssignmentTree) assignmentContext).getVariable();
-                    return InternalUtils.typeOf(var);
+                    return TreeUtils.typeOf(var);
                 } else {
                     ErrorReporter.errorAbort(
                             "Unexpected assignment context.\nKind: %s\nTree: %s",
@@ -289,7 +289,7 @@ public class InferenceUtils {
             ExpressionTree methodInvocationTree,
             ExecutableType methodType,
             ProcessingEnvironment env) {
-        TypeMirror methodCallType = InternalUtils.typeOf(methodInvocationTree);
+        TypeMirror methodCallType = TreeUtils.typeOf(methodInvocationTree);
         JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
         Types types = Types.instance(javacEnv.getContext());
         GetMapping mapping = new GetMapping(methodType.getTypeVariables(), types);
@@ -310,7 +310,7 @@ public class InferenceUtils {
     public static AbstractType glb(AbstractType a, AbstractType b, Context context) {
         Type aJavaType = (Type) getJavaType(a);
         Type bJavaType = (Type) getJavaType(b);
-        TypeMirror glb = InternalUtils.greatestLowerBound(context.env, aJavaType, bJavaType);
+        TypeMirror glb = TypesUtils.greatestLowerBound(aJavaType, bJavaType, context.env);
         if (context.env.getTypeUtils().isSameType(glb, bJavaType)) {
             return b;
         } else if (context.env.getTypeUtils().isSameType(glb, aJavaType)) {

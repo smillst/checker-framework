@@ -14,7 +14,6 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -43,12 +42,12 @@ public class Context {
         this.types = Types.instance(javacEnv.getContext());
         TypeMirror objecTypeMirror =
                 TypesUtils.typeFromClass(
+                        Object.class,
                         factory.getContext().getTypeUtils(),
-                        factory.getElementUtils(),
-                        Object.class);
+                        factory.getElementUtils());
         this.object = new ProperType(objecTypeMirror, this);
         ClassTree clazz = TreeUtils.enclosingClass(treePath);
-        this.enclosingType = (DeclaredType) InternalUtils.typeOf(clazz);
+        this.enclosingType = (DeclaredType) TreeUtils.typeOf(clazz);
         this.maps = new HashMap<>();
     }
 

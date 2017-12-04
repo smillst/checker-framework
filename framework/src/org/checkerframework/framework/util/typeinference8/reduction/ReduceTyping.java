@@ -18,7 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
-import org.checkerframework.javacutil.InternalUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
@@ -138,7 +138,7 @@ public class ReduceTyping {
     private static boolean isWildcardOrCapturedWildcard(TypeMirror subType) {
         return subType.getKind() == TypeKind.WILDCARD
                 || subType.getKind() == TypeKind.TYPEVAR
-                        && InternalUtils.isCaptured((TypeVariable) subType);
+                        && TypesUtils.isCaptured((TypeVariable) subType);
     }
 
     private static ConstraintSet reduceSubtypeClass(Typing c) {

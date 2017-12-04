@@ -35,7 +35,6 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
-import org.checkerframework.javacutil.InternalUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypeAnnotationUtils;
@@ -169,7 +168,7 @@ public class InternalInferenceUtils {
      * @return
      */
     public static List<? extends TypeMirror> getParametersOfPAMethod(MemberReferenceTree ref) {
-        ExecutableElement ele = (ExecutableElement) InternalUtils.symbol(ref);
+        ExecutableElement ele = (ExecutableElement) TreeUtils.elementFromTree(ref);
         List<TypeMirror> params = new ArrayList<>();
         for (VariableElement var : ele.getParameters()) {
             params.add(var.asType());
@@ -272,7 +271,7 @@ public class InternalInferenceUtils {
         if (receiverTree == null) {
             return null;
         }
-        TypeMirror type = InternalUtils.typeOf(receiverTree);
+        TypeMirror type = TreeUtils.typeOf(receiverTree);
         // TODO: this must exist else where.....
         return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
     }
