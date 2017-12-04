@@ -11,7 +11,6 @@ import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -28,6 +27,7 @@ import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class ReduceExpression {
     /** See JLS 18.2.1 */
@@ -65,10 +65,13 @@ public class ReduceExpression {
     private static ReductionResult reduceMethodRef(
             AbstractType t, MemberReferenceTree memRef, Context context) {
         if (InternalInferenceUtils.isExact(memRef)) {
+            ExecutableType typeOfPoAppMethod =
+                    TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
+
             ConstraintSet constraintSet = new ConstraintSet();
             List<AbstractType> ps = t.getFunctionTypeParameters();
             List<AbstractType> fs = new ArrayList<>();
-            for (TypeMirror param : InternalInferenceUtils.getParametersOfPAMethod(memRef)) {
+            for (TypeMirror param : typeOfPoAppMethod.getParameterTypes()) {
                 fs.add(new ProperType(param, context));
             }
 
@@ -84,11 +87,7 @@ public class ReduceExpression {
             }
             AbstractType r = t.getFunctionTypeReturn();
             if (r.getTypeKind() != TypeKind.VOID) {
-                AbstractType rPrime =
-                        new ProperType(
-                                ((ExecutableElement) TreeUtils.elementFromTree(memRef))
-                                        .getReturnType(),
-                                context);
+                AbstractType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
                 constraintSet.add(new Typing(rPrime, r, Constraint.Kind.TYPE_COMPATIBILITY));
             }
             return constraintSet;

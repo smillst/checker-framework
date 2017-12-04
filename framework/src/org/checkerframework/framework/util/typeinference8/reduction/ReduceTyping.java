@@ -52,6 +52,11 @@ public class ReduceTyping {
     }
 
     private static ReductionResult reduceTypingOneStep(Typing constraint, Context context) {
+        ReductionResult r = wrap(constraint, context);
+        return r;
+    }
+
+    private static ReductionResult wrap(Typing constraint, Context context) {
         switch (constraint.getKind()) {
             case TYPE_COMPATIBILITY:
                 return ReduceTyping.reduceCompatible(constraint, context);

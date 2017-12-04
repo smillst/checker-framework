@@ -89,7 +89,7 @@ public abstract class Constraint implements ReductionResult {
 
     public abstract List<Variable> getOutputVariables();
 
-    protected void applyInstantiations(List<Instantiation> instantiations) {
+    public void applyInstantiations(List<Instantiation> instantiations) {
         T = T.applyInstantiations(instantiations);
     }
 
@@ -132,7 +132,7 @@ public abstract class Constraint implements ReductionResult {
         }
 
         @Override
-        protected void applyInstantiations(List<Instantiation> instantiations) {
+        public void applyInstantiations(List<Instantiation> instantiations) {
             super.applyInstantiations(instantiations);
             S = S.applyInstantiations(instantiations);
         }
