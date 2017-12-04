@@ -200,8 +200,12 @@ public class BoundSet implements ReductionResult {
                     dependencies.putOrAdd(beta, alpha);
                 }
             } else {
-                // Otherwise, alpha depends on the resolution of beta.
-                dependencies.putOrAddAll(alpha, alphaDependencies);
+                for (Variable beta : alphaDependencies) {
+                    if (!beta.isCaptureVariable()) {
+                        // Otherwise, alpha depends on the resolution of beta.
+                        dependencies.putOrAdd(alpha, beta);
+                    }
+                }
             }
         }
 

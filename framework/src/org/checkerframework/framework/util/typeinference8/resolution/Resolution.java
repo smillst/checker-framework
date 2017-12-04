@@ -1,11 +1,13 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
+import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.bound.Throws;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
@@ -110,6 +112,18 @@ public class Resolution {
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
         assert !boundSet.containsFalse();
+        LinkedHashSet<Variable> nonCaputures = new LinkedHashSet<>();
+        for (Variable ai : as) {
+            if (!ai.isCaptureVariable()) {
+                nonCaputures.add(ai);
+            }
+        }
+
+        if (nonCaputures.size() != as.size()) {
+            boundSet = resolve(nonCaputures, boundSet);
+            as.removeAll(nonCaputures);
+        }
+
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
             resolvedBounds = resolve2(as, boundSet, context);
@@ -178,6 +192,7 @@ public class Resolution {
         assert !boundSet.containsFalse();
         boundSet.removeCaptures(as);
         BoundSet resolvedBoundSet = new BoundSet(context);
+        List<Instantiation> instantiations = new ArrayList<>();
         for (Variable ai : as) {
             if (ai.hasInstantiation()) {
                 // If ai is equal to a variable that was resolved in the last loop,
