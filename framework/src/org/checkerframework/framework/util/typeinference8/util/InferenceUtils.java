@@ -186,13 +186,14 @@ public class InferenceUtils {
             }
         }
 
-        assert treeIndex != -1
-                : "Could not find path in MethodInvocationTree.\n"
-                        + "methodInvocation="
-                        + methodInvocation;
-
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
+
+        if (treeIndex == -1) {
+            // The tree wasn't found as an argument, so it has to be the receiver.
+            // This can happen for inner class constructors that take an outer class argument.
+            return methodType.getReceiverType();
+        }
 
         if (treeIndex >= methodType.getParameterTypes().size()
                 && InternalInferenceUtils.isVarArgMethodCall(methodInvocation)) {
