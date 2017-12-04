@@ -296,7 +296,7 @@ public class Variable extends AbstractType {
             LinkedHashSet<AbstractType> newBounds = new LinkedHashSet<>(boundList.size());
             for (AbstractType bound : boundList) {
                 AbstractType newBound = bound.applyInstantiations(instantiations);
-                if (newBound != bound) {
+                if (newBound != bound && !boundList.contains(newBound)) {
                     changed = true;
                 }
                 newBounds.add(newBound);

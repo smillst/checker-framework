@@ -288,6 +288,9 @@ public class InferenceType extends AbstractType {
                 arguments.add(instantiation.getT().getProperType());
             }
         }
+        if (typeVariables.isEmpty()) {
+            return this;
+        }
 
         TypeMirror newType =
                 InternalInferenceUtils.subs(context.env, type, typeVariables, arguments);

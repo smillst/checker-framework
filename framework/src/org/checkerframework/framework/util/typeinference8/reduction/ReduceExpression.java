@@ -231,7 +231,8 @@ public class ReduceExpression {
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
         if (InternalInferenceUtils.isImplicitlyType(lambda)) {
             // TODO: call 18.5.3: Functional Interface Parameterization Inference
-            throw new RuntimeException("Not implemented");
+            throw new RuntimeException(
+                    "Not implemented: Functional Interface Parameterization Inference");
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
             // is implicitly typed, then the ground target type is the non-wildcard parameterization (§9.9) of T.
