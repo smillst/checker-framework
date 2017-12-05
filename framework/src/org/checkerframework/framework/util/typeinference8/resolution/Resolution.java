@@ -208,17 +208,17 @@ public class Resolution {
                     }
                 }
             }
-            //            if(ai.isCaptureVariable()) {
-            // TODO: This won't square with the capture that javac produces.
-            TypeMirror freshTypeVar =
-                    InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
-            // TODO: This might contain other inference varibles.
-            ai.addBound(InferBound.EQUAL, new ProperType(freshTypeVar, context));
-            //            } else if(lowerBound != null) {
-            //                ai.addBound(InferBound.EQUAL, new ProperType(lowerBound, context));
-            //            } else {
-            //                ai.addBound(InferBound.EQUAL, new ProperType(upperBound, context));
-            //            }
+            if (ai.isCaptureVariable()) {
+                // TODO: This won't square with the capture that javac produces.
+                TypeMirror freshTypeVar =
+                        InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
+                // TODO: This might contain other inference varibles.
+                ai.addBound(InferBound.EQUAL, new ProperType(freshTypeVar, context));
+            } else if (lowerBound != null) {
+                ai.addBound(InferBound.EQUAL, new ProperType(lowerBound, context));
+            } else {
+                ai.addBound(InferBound.EQUAL, new ProperType(upperBound, context));
+            }
         }
         boundSet.incorporateToFixedPoint(resolvedBoundSet);
 

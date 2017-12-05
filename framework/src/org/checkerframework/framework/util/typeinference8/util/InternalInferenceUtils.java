@@ -324,6 +324,7 @@ public class InternalInferenceUtils {
                 upperBound = null;
             }
         }
+
         assert lowerBound == null || upperBound == null;
         WildcardType wildcardType =
                 context.env.getTypeUtils().getWildcardType(upperBound, lowerBound);
