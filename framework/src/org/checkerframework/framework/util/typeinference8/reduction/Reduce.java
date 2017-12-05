@@ -8,6 +8,7 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
 
 public class Reduce {
@@ -23,11 +24,10 @@ public class Reduce {
             } else if (result instanceof BoundSet) {
                 boundSet.add((BoundSet) result);
                 if (boundSet.containsFalse()) {
-                    return boundSet;
+                    throw new FalseBoundException(constraint);
                 }
             } else if (result == null) {
-                boundSet.addFalse();
-                return boundSet;
+                throw new FalseBoundException(constraint);
             } else {
                 throw new RuntimeException("Not found " + result);
             }
