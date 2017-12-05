@@ -1,18 +1,15 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.bound.Throws;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
@@ -94,29 +91,8 @@ public class Resolution {
         return boundSet;
     }
 
-    private LinkedHashSet<Variable> getNonCaputres(LinkedHashSet<Variable> as) {
-        LinkedHashSet<Variable> nonCaptures = new LinkedHashSet<>();
-        for (Variable a : as) {
-            if (!(a instanceof CaptureVariable)) {
-                nonCaptures.add(a);
-            }
-        }
-        return nonCaptures;
-    }
-
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
         assert !boundSet.containsFalse();
-        LinkedHashSet<Variable> nonCaputures = new LinkedHashSet<>();
-        for (Variable ai : as) {
-            if (!ai.isCaptureVariable()) {
-                nonCaputures.add(ai);
-            }
-        }
-
-        if (nonCaputures.size() != as.size()) {
-            boundSet = resolve(nonCaputures, boundSet);
-            as.removeAll(nonCaputures);
-        }
 
         BoundSet resolvedBounds;
         if (boundSet.containsCapture(as)) {
@@ -190,8 +166,18 @@ public class Resolution {
         assert !boundSet.containsFalse();
         boundSet.removeCaptures(as);
         BoundSet resolvedBoundSet = new BoundSet(context);
-        List<Instantiation> instantiations = new ArrayList<>();
+
+        LinkedList<Variable> queque = new LinkedList<>();
         for (Variable ai : as) {
+            if (ai.isCaptureVariable()) {
+                queque.add(ai);
+            } else {
+                queque.addFirst(ai);
+            }
+        }
+
+        for (Variable ai : queque) {
+            ai.applyInstantiationsToBounds(boundSet.getInstantiationsAll());
             if (ai.hasInstantiation()) {
                 // If ai is equal to a variable that was resolved in the last loop,
                 // ai would now have an instantiation.
@@ -222,11 +208,17 @@ public class Resolution {
                     }
                 }
             }
+            //            if(ai.isCaptureVariable()) {
             // TODO: This won't square with the capture that javac produces.
             TypeMirror freshTypeVar =
                     InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
             // TODO: This might contain other inference varibles.
             ai.addBound(InferBound.EQUAL, new ProperType(freshTypeVar, context));
+            //            } else if(lowerBound != null) {
+            //                ai.addBound(InferBound.EQUAL, new ProperType(lowerBound, context));
+            //            } else {
+            //                ai.addBound(InferBound.EQUAL, new ProperType(upperBound, context));
+            //            }
         }
         boundSet.incorporateToFixedPoint(resolvedBoundSet);
 
