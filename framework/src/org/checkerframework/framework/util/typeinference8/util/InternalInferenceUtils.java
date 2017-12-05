@@ -6,7 +6,6 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.source.tree.MemberReferenceTree;
-import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
@@ -282,31 +281,21 @@ public class InternalInferenceUtils {
      */
     public static ExecutableType getTypeOfMethodAdaptedToUse(
             ExpressionTree expressionTree, Context context) {
-        if (expressionTree.getKind() != Kind.METHOD_INVOCATION
-                && expressionTree.getKind() != Kind.NEW_CLASS) {
+        if (expressionTree.getKind() == Kind.NEW_CLASS) {
+            return (ExecutableType) ((JCNewClass) expressionTree).constructorType;
+        } else if (expressionTree.getKind() != Kind.METHOD_INVOCATION) {
             return null;
         }
-        ExecutableElement ele;
-        if (expressionTree.getKind() == Kind.NEW_CLASS) {
-            ele = TreeUtils.constructor((NewClassTree) expressionTree);
-        } else {
-            ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
-        }
 
-        DeclaredType receiverType = getReceiverType(expressionTree);
-        if (ElementUtils.isStatic(ele)
-                || (receiverType == null && expressionTree.getKind() == Kind.NEW_CLASS)) {
+        ExecutableElement ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
+        if (ElementUtils.isStatic(ele)) {
             return (ExecutableType) ele.asType();
         }
-
+        DeclaredType receiverType = getReceiverType(expressionTree);
         if (receiverType == null) {
             receiverType = context.enclosingType;
         }
 
-        javax.lang.model.util.Types types = context.env.getTypeUtils();
-        //  Type site = (Type)containing;
-        // Symbol sym = (Symbol)element;
-        //   if (types.asSuper(site, sym.getEnclosingElement()) == null)
         while (context.types.asSuper((Type) receiverType, (Symbol) ele.getEnclosingElement())
                 == null) {
             receiverType = (DeclaredType) receiverType.getEnclosingType();
@@ -314,6 +303,7 @@ public class InternalInferenceUtils {
                 ErrorReporter.errorAbort("Method not found");
             }
         }
+        javax.lang.model.util.Types types = context.env.getTypeUtils();
         return (ExecutableType) types.asMemberOf(receiverType, ele);
     }
 
