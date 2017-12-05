@@ -28,7 +28,7 @@ public class ReduceTyping {
         Stack<Typing> constraints = new Stack<>();
         while (result != null) {
             if (result == ConstraintSet.TRUE) {
-                return true;
+                // Do nothing
             } else if (result instanceof Typing) {
                 constraints.push((Typing) result);
             } else if (result instanceof ConstraintSet) {

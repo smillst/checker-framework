@@ -19,15 +19,22 @@ import org.checkerframework.framework.util.typeinference8.util.InternalInference
 
 public class Resolution {
     public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
-        if (as.isEmpty() || boundSet.getInstantiations(as).size() == as.size()) {
-            // If all variables have an instantiation, resolution is complete.
+        List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
+
+        if (as.isEmpty()) {
             return boundSet;
         }
         Dependencies dependencies = boundSet.getDependencies();
-
-        List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
-        as.removeAll(resolvedVars);
         Queue<Variable> unresolvedVars = new LinkedList<>(as);
+        for (Variable var : as) {
+            unresolvedVars.addAll(dependencies.get(var));
+        }
+
+        unresolvedVars.removeAll(resolvedVars);
+        if (unresolvedVars.isEmpty()) {
+            return boundSet;
+        }
+
         Resolution resolution = new Resolution(context, dependencies, resolvedVars);
         boundSet = resolution.resolve(boundSet, unresolvedVars);
         assert !boundSet.containsFalse();
@@ -58,6 +65,7 @@ public class Resolution {
     }
 
     public BoundSet resolve(BoundSet boundSet, Queue<Variable> unresolvedVars) {
+
         while (!unresolvedVars.isEmpty()) {
             LinkedHashSet<Variable> smallestDependencySet = null;
             // This loop is looking for the smallest set of dependencies that have not been resolved.
@@ -77,27 +85,12 @@ public class Resolution {
                 }
             }
 
-            //            smallestDependencySet = lookForSmallerSubSet(smallestDependencySet);
-
             // Resolve the smallest unresolved dependency set.
             boundSet = resolve(smallestDependencySet, boundSet);
             resolvedVars = boundSet.getInstantiatedVariables();
             unresolvedVars.removeAll(resolvedVars);
         }
         return boundSet;
-    }
-
-    private LinkedHashSet<Variable> lookForSmallerSubSet(
-            LinkedHashSet<Variable> smallestDependencySet) {
-        LinkedHashSet<Variable> smallest = smallestDependencySet;
-        for (Variable alpha : smallestDependencySet) {
-            LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
-            alphasDependencySet.removeAll(resolvedVars);
-            if (alphasDependencySet.size() < smallest.size()) {
-                smallest = alphasDependencySet;
-            }
-        }
-        return smallest;
     }
 
     private LinkedHashSet<Variable> getNonCaputres(LinkedHashSet<Variable> as) {
