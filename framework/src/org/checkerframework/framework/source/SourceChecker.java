@@ -1301,6 +1301,9 @@ public abstract class SourceChecker extends AbstractTypeProcessor
         }
 
         Collection<String> checkerSwKeys = this.getSuppressWarningsKeys();
+        if (errKey.equals("type.inference.not.same")) {
+            return Arrays.asList(userSwKeys).contains("type.inference.not.same");
+        }
 
         // Check each value of the user-written @SuppressWarnings annotation.
         for (String suppressWarningValue : userSwKeys) {
