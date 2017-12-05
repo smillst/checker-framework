@@ -103,7 +103,7 @@ public class InternalInferenceUtils {
 
     public static boolean isGenericMethod(MemberReferenceTree ref) {
         // TODO: implement
-        throw new RuntimeException("Not implemented");
+        throw new RuntimeException("Not implemented: Is member ref generic?");
     }
 
     /**
