@@ -301,7 +301,11 @@ public class InferenceType extends AbstractType {
     public AbstractType getFunctionTypeReturn() {
         if (TypesUtils.isFunctionalInterface(type, context.env)) {
             ExecutableType element = TypesUtils.findFunctionType(type, context.env);
-            return InferenceType.create(element.getReturnType(), map, context);
+            TypeMirror returnType = element.getReturnType();
+            if (returnType.getKind() == TypeKind.VOID) {
+                return null;
+            }
+            return InferenceType.create(returnType, map, context);
         } else {
             return null;
         }

@@ -86,7 +86,7 @@ public class ReduceExpression {
                 constraintSet.add(new Typing(ps.get(i), fs.get(i), Constraint.Kind.SUBTYPE));
             }
             AbstractType r = t.getFunctionTypeReturn();
-            if (r.getTypeKind() != TypeKind.VOID) {
+            if (r != null && r.getTypeKind() != TypeKind.VOID) {
                 AbstractType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
                 constraintSet.add(new Typing(rPrime, r, Constraint.Kind.TYPE_COMPATIBILITY));
             }

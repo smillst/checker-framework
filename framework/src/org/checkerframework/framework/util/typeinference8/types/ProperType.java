@@ -165,7 +165,11 @@ public class ProperType extends AbstractType {
     public AbstractType getFunctionTypeReturn() {
         if (TypesUtils.isFunctionalInterface(properType, context.env)) {
             ExecutableType element = TypesUtils.findFunctionType(properType, context.env);
-            return new ProperType(element.getReturnType(), context);
+            TypeMirror returnType = element.getReturnType();
+            if (returnType.getKind() == TypeKind.VOID) {
+                return null;
+            }
+            return new ProperType(returnType, context);
         } else {
             return null;
         }
