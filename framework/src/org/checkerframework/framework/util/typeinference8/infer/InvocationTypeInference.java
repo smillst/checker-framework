@@ -213,7 +213,12 @@ public class InvocationTypeInference {
             ExpressionTree invocation,
             AbstractType target,
             Theta map) {
-        AbstractType r = InferenceType.create(methodType.getReturnType(), map, context);
+        AbstractType r;
+        if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION) {
+            r = InferenceType.create(methodType.getReturnType(), map, context);
+        } else {
+            r = InferenceType.create(TreeUtils.typeOf(invocation), map, context);
+        }
         // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-100-C.1-A
         // If unchecked conversion was necessary for the method to be applicable during
         // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and

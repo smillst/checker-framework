@@ -15,6 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
 public class Resolution {
@@ -122,8 +123,12 @@ public class Resolution {
             resolvedBounds = resolve2(as, boundSet, context);
         } else {
             BoundSet copy = new BoundSet(boundSet);
-            resolvedBounds = resolve1(as, boundSet);
-            if (resolvedBounds.containsFalse()) {
+            try {
+                resolvedBounds = resolve1(as, boundSet);
+            } catch (FalseBoundException ex) {
+                resolvedBounds = null;
+            }
+            if (resolvedBounds == null || resolvedBounds.containsFalse()) {
                 boundSet = copy;
                 boundSet.restore();
                 resolvedBounds = resolve2(as, boundSet, context);

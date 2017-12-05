@@ -26,7 +26,7 @@ public class ProperType extends AbstractType {
     private final Context context;
 
     public ProperType(TypeMirror properType, Context context) {
-        assert properType != null && context != null;
+        assert properType != null && context != null && properType.getKind() != TypeKind.VOID;
         this.properType = properType;
         this.context = context;
     }

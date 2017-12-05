@@ -17,6 +17,7 @@ import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -53,6 +54,9 @@ public class ReduceTyping {
 
     private static ReductionResult reduceTypingOneStep(Typing constraint, Context context) {
         ReductionResult r = wrap(constraint, context);
+        if (r == null) {
+            throw new FalseBoundException(constraint);
+        }
         return r;
     }
 

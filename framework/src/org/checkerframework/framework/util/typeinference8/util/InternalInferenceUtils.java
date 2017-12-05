@@ -6,6 +6,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
@@ -285,16 +286,21 @@ public class InternalInferenceUtils {
                 && expressionTree.getKind() != Kind.NEW_CLASS) {
             return null;
         }
+        ExecutableElement ele;
+        if (expressionTree.getKind() == Kind.NEW_CLASS) {
+            ele = TreeUtils.constructor((NewClassTree) expressionTree);
+        } else {
+            ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
+        }
+
         DeclaredType receiverType = getReceiverType(expressionTree);
+        if (ElementUtils.isStatic(ele)
+                || (receiverType == null && expressionTree.getKind() == Kind.NEW_CLASS)) {
+            return (ExecutableType) ele.asType();
+        }
+
         if (receiverType == null) {
             receiverType = context.enclosingType;
-        }
-        ExecutableElement ele = (ExecutableElement) TreeUtils.elementFromUse(expressionTree);
-
-        if (ElementUtils.isStatic(ele)
-                || receiverType == null
-                || expressionTree.getKind() == Kind.NEW_CLASS) {
-            return (ExecutableType) ele.asType();
         }
 
         javax.lang.model.util.Types types = context.env.getTypeUtils();
