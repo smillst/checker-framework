@@ -415,7 +415,7 @@ public class Variable extends AbstractType {
             }
         }
 
-        for (AbstractType type : bounds.get(InferBound.UPPER)) {
+        for (AbstractType type : bounds.get(InferBound.EQUAL)) {
             if (type.isVariable()) {
                 continue;
             }
