@@ -59,13 +59,15 @@ public class InvocationTypeInference {
         if (!shouldTryInference(assignmentContext, pathToExpression)) {
             return null;
         }
-        TypeMirror targetType =
-                context.env
-                        .getTypeUtils()
-                        .capture(InferenceUtils.assignedTo(pathToExpression, context));
+        ProperType targetType = null;
+        TypeMirror assignmentType = InferenceUtils.assignedTo(pathToExpression, context);
 
-        ProperType t = targetType != null ? new ProperType(targetType, context) : null;
-        List<Instantiation> result = infer(methodInvocation, t);
+        if (assignmentType != null) {
+            TypeMirror targetTypeMirror = context.env.getTypeUtils().capture(assignmentType);
+            targetType = new ProperType(targetTypeMirror, context);
+        }
+
+        List<Instantiation> result = infer(methodInvocation, targetType);
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         checkResult(result, methodInvocation, methodType);
