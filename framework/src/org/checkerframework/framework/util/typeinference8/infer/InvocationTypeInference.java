@@ -55,14 +55,17 @@ public class InvocationTypeInference {
     }
 
     public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
-        Tree t = TreeUtils.getAssignmentContext(pathToExpression);
-        if (!shouldTryInference(t, pathToExpression)) {
+        Tree assignmentContext = TreeUtils.getAssignmentContext(pathToExpression);
+        if (!shouldTryInference(assignmentContext, pathToExpression)) {
             return null;
         }
-        TypeMirror returnType = InferenceUtils.assignedTo(pathToExpression, context);
+        TypeMirror targetType =
+                context.env
+                        .getTypeUtils()
+                        .capture(InferenceUtils.assignedTo(pathToExpression, context));
 
-        ProperType r = returnType != null ? new ProperType(returnType, context) : null;
-        List<Instantiation> result = infer(methodInvocation, r);
+        ProperType t = targetType != null ? new ProperType(targetType, context) : null;
+        List<Instantiation> result = infer(methodInvocation, t);
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         checkResult(result, methodInvocation, methodType);
@@ -262,12 +265,14 @@ public class InvocationTypeInference {
                     // have supertypes that are two different parameterizations of the same generic class or interface.
                     compatiblity = alpha.hasLowerBoundDifferentParam();
                 }
-            } else if (target.isParameterizedType()) {
+            }
+            if (target.isParameterizedType()) {
                 // T is a parameterization of a generic class or interface, G, and B2 contains a
                 // bound of one of the forms α = S or S <: α, where there exists no type of the form
                 // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
                 compatiblity = alpha.hasRawTypeLowerOrEqualBound(target);
-            } else if (target.getTypeKind().isPrimitive()) {
+            }
+            if (target.getTypeKind().isPrimitive()) {
                 // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
                 compatiblity = alpha.hasPrimitiveWrapperBound();
             }
