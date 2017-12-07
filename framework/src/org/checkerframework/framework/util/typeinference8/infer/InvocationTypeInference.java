@@ -63,8 +63,7 @@ public class InvocationTypeInference {
         TypeMirror assignmentType = InferenceUtils.assignedTo(pathToExpression, context);
 
         if (assignmentType != null) {
-            TypeMirror targetTypeMirror = context.env.getTypeUtils().capture(assignmentType);
-            targetType = new ProperType(targetTypeMirror, context);
+            targetType = new ProperType(assignmentType, context);
         }
 
         List<Instantiation> result = infer(methodInvocation, targetType);
@@ -280,12 +279,19 @@ public class InvocationTypeInference {
             }
             if (compatiblity) {
                 BoundSet resolve = Resolution.resolve(alpha, b2, context);
-                ProperType u = alpha.getInstantiation();
+                ProperType u = alpha.getInstantiation().capture();
                 ConstraintSet constraintSet =
                         new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
                 BoundSet newBounds = constraintSet.reduce(context);
                 resolve.incorporateToFixedPoint(newBounds);
                 return resolve;
+            }
+            if (target.isProper()) {
+                // TODO: this isn't in the JLS, but it is the only way to match javac output in some cases.
+                // Stream<? extends MyClass> s;
+                // Iterable<? extends MyClass> i = s.collect(toMyList1313());
+                // <F> Collector<F, Object, MyList1313<F>> toMyList1313() {...}
+                target = ((ProperType) target).capture();
             }
         }
         ConstraintSet constraintSet =

@@ -25,7 +25,11 @@ public class Resolution {
         Dependencies dependencies = boundSet.getDependencies();
         Queue<Variable> unresolvedVars = new LinkedList<>(as);
         for (Variable var : as) {
-            unresolvedVars.addAll(dependencies.get(var));
+            for (Variable dep : dependencies.get(var)) {
+                if (!unresolvedVars.contains(dep)) {
+                    unresolvedVars.add(dep);
+                }
+            }
         }
 
         unresolvedVars.removeAll(resolvedVars);
