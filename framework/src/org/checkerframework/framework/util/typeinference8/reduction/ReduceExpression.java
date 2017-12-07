@@ -11,17 +11,23 @@ import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
+import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
@@ -228,33 +234,104 @@ public class ReduceExpression {
         // 15.27.3:
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
-        if (!InternalInferenceUtils.isImplicitlyType(lambda)) {
-            // TODO: call 18.5.3: Functional Interface Parameterization Inference
-            throw new RuntimeException(
-                    "Not implemented: Functional Interface Parameterization Inference");
+        if (InternalInferenceUtils.isExplicitlyType(lambda)) {
+            return explicitlyTypeLambdasWithWildcard(t, lambda, context);
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
             // is implicitly typed, then the ground target type is the non-wildcard parameterization (§9.9) of T.
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C
-            List<AbstractType> As = t.getTypeArguments();
-            Iterator<ProperType> Bs = t.getTypeParameterBounds();
-            List<AbstractType> Ts = new ArrayList<>();
-            for (AbstractType Ai : As) {
-                ProperType bi = Bs.next();
-                if (Ai.getTypeKind() != TypeKind.WILDCARD) {
-                    Ts.add(Ai);
-                } else if (Ai.isUnboundWildcard()) {
-                    Ts.add(bi);
-                } else if (Ai.isUpperBoundedWildcard()) {
-                    AbstractType Ui = Ai.getWildcardUpperBound();
-                    AbstractType glb = InferenceUtils.glb(Ui, bi, context);
-                    Ts.add(glb);
-                } else {
-                    // Lower bounded wildcard
-                    Ts.add(Ai.getWildcardLowerBound());
-                }
-            }
-            return t.replaceTypeArgs(Ts);
+            return nonWildcardParameterization(t, context);
         }
+    }
+
+    private static AbstractType nonWildcardParameterization(AbstractType t, Context context) {
+        List<AbstractType> As = t.getTypeArguments();
+        Iterator<ProperType> Bs = t.getTypeParameterBounds();
+        List<AbstractType> Ts = new ArrayList<>();
+        for (AbstractType Ai : As) {
+            ProperType bi = Bs.next();
+            if (Ai.getTypeKind() != TypeKind.WILDCARD) {
+                Ts.add(Ai);
+            } else if (Ai.isUnboundWildcard()) {
+                Ts.add(bi);
+            } else if (Ai.isUpperBoundedWildcard()) {
+                AbstractType Ui = Ai.getWildcardUpperBound();
+                AbstractType glb = InferenceUtils.glb(Ui, bi, context);
+                Ts.add(glb);
+            } else {
+                // Lower bounded wildcard
+                Ts.add(Ai.getWildcardLowerBound());
+            }
+        }
+        return t.replaceTypeArgs(Ts);
+    }
+
+    /** 18.5.3: Functional Interface Parameterization Inference */
+    private static AbstractType explicitlyTypeLambdasWithWildcard(
+            AbstractType t, LambdaExpressionTree lambda, Context context) {
+        // Where a lambda expression with explicit parameter types P1, ..., Pn targets a functional
+        // interface type F<A1, ..., Am> with at least one wildcard type argument, then a parameterization
+        // of F may be derived as the ground target type of the lambda expression as follows.
+        List<ProperType> ps = new ArrayList<>();
+        for (VariableTree paramTree : lambda.getParameters()) {
+            ps.add(new ProperType(TreeUtils.typeOf(paramTree), context));
+        }
+
+        TypeElement typeEle =
+                (TypeElement) ((DeclaredType) InferenceUtils.getJavaType(t)).asElement();
+        // Let Q1, ..., Qk be the parameter types of the function type of the type F<α1, ..., αm>,
+        // where α1, ..., αm are fresh inference variables.
+        List<Variable> alphas = new ArrayList<>();
+        Theta map = new Theta();
+        for (TypeParameterElement param : typeEle.getTypeParameters()) {
+            TypeVariable typeVar = (TypeVariable) param.asType();
+            Variable ai = new Variable(typeVar, lambda, context);
+            map.put(typeVar, ai);
+            alphas.add(ai);
+        }
+
+        ExecutableType funcType = TypesUtils.findFunctionType(typeEle.asType(), context.env);
+        List<AbstractType> qs = new ArrayList<>();
+        for (TypeMirror param : funcType.getParameterTypes()) {
+            qs.add(InferenceType.create(param, map, context));
+        }
+
+        // A set of constraint formulas is formed with, for all i (1 ≤ i ≤ n), ‹Pi = Qi›.
+        ConstraintSet constraintSet = new ConstraintSet();
+        for (int i = 0; i < ps.size(); i++) {
+            ProperType pi = ps.get(i);
+            AbstractType qi = qs.get(i);
+            constraintSet.add(new Typing(pi, qi, Constraint.Kind.TYPE_EQUALITY));
+        }
+        // This constraint formula set is reduced to form the bound set B.
+        BoundSet b = constraintSet.reduce(context);
+        assert !b.containsFalse()
+                : "Bound set contains false during Functional Interface Parameterization Inference";
+
+        // A new parameterization of the functional interface type, F<A'1, ..., A'm>, is constructed as follows, for 1 ≤ i ≤ m:
+        List<AbstractType> APrimes = new ArrayList<>();
+        Iterator<Variable> alphaIter = alphas.iterator();
+        boolean hasWildcard = false;
+        for (AbstractType Ai : t.getTypeArguments()) {
+            Variable alphaI = alphaIter.next();
+            // If B contains an instantiation (§18.1.3) for αi, T, then A'i = T.
+            AbstractType AiPrime = alphaI.getInstantiation();
+            if (AiPrime == null) {
+                AiPrime = Ai;
+            }
+            APrimes.add(AiPrime);
+            if (AiPrime.getTypeKind() == TypeKind.WILDCARD) {
+                hasWildcard = true;
+            }
+        }
+
+        // The inferred parameterization is either F<A'1, ..., A'm>, if all the type arguments
+        // are types, or the non-wildcard parameterization (§9.9) of F<A'1, ..., A'm>, if one or more type arguments are still wildcards.
+
+        AbstractType target = t.replaceTypeArgs(APrimes);
+        if (hasWildcard) {
+            return nonWildcardParameterization(target, context);
+        }
+        return target;
     }
 }
