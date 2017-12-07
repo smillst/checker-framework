@@ -136,7 +136,8 @@ public class ProperType extends AbstractType {
         List<ProperType> bounds = new ArrayList<>();
         TypeElement typeelem = (TypeElement) ((DeclaredType) properType).asElement();
         for (TypeParameterElement ele : typeelem.getTypeParameters()) {
-            bounds.add(new ProperType(ele.asType(), context));
+            TypeVariable typeVariable = (TypeVariable) ele.asType();
+            bounds.add(new ProperType(typeVariable.getUpperBound(), context));
         }
         return bounds.iterator();
     }

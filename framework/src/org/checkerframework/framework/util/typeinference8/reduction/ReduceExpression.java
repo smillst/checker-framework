@@ -234,7 +234,7 @@ public class ReduceExpression {
         // 15.27.3:
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
-        if (InternalInferenceUtils.isExplicitlyType(lambda)) {
+        if (InternalInferenceUtils.isExplicitlyType(lambda) && !lambda.getParameters().isEmpty()) {
             return explicitlyTypeLambdasWithWildcard(t, lambda, context);
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
@@ -295,6 +295,7 @@ public class ReduceExpression {
         for (TypeMirror param : funcType.getParameterTypes()) {
             qs.add(InferenceType.create(param, map, context));
         }
+        assert qs.size() == ps.size();
 
         // A set of constraint formulas is formed with, for all i (1 ≤ i ≤ n), ‹Pi = Qi›.
         ConstraintSet constraintSet = new ConstraintSet();
