@@ -20,6 +20,7 @@ import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.OverloadKind;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
+import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,8 +103,7 @@ public class InternalInferenceUtils {
     }
 
     public static boolean isGenericMethod(MemberReferenceTree ref) {
-        // TODO: implement
-        throw new RuntimeException("Not implemented: Is member ref generic?");
+        return ((JCMemberReference) ref).refPolyKind == PolyKind.POLY;
     }
 
     /**

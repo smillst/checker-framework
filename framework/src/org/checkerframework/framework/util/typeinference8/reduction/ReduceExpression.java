@@ -100,30 +100,43 @@ public class ReduceExpression {
         }
         // else
 
+        ExecutableType functionType =
+                TypesUtils.findFunctionType(InferenceUtils.getJavaType(t), context.env);
+        TypeMirror resultType = functionType.getReturnType();
+        if (resultType.getKind() == TypeKind.VOID) {
+            return new ConstraintSet();
+        }
+
         if (memRef.getTypeArguments() == null && InternalInferenceUtils.isGenericMethod(memRef)) {
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
             // Otherwise, if the method reference expression elides TypeArguments, and the
-            // compile-time declaration is a generic method, and the return type of the
+            // compile-time declaration is a generic method, and
+            // the return type of the
             // compile-time declaration mentions at least one of the method's type parameters,
+
+            Theta map = Theta.theta(memRef, functionType, context);
+            AbstractType r = InferenceType.create(resultType, map, context);
+            if (r.isInferenceType()) {
+                // the constraint reduces to the bound set B3 which would be used to determine the
+                // method reference's invocation type when targeting the return type of the function
+                // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
+                // dependencies between these new variables and the inference variables in T.
+
+            }
+
             // then
-            // the constraint reduces to the bound set B3 which would be used to determine the
-            // method reference's invocation type when targeting the return type of the function
-            // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
-            // dependencies between these new variables and the inference variables in T.
 
             // compile-time declaration and invocation: ((JCMemberReference)memRef).sym
             // function type =     type(InternalUtils.findFunction());
-
+            throw new RuntimeException("Not implemented: Reduce member reference");
         } else {
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
             // Otherwise, let R be the return type of the function type, and let R' be the result
             // of applying capture conversion (§5.1.10) to the return type of the invocation type
             // (§15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
             // to false; otherwise, the constraint reduces to ‹R' → R›.
+            throw new RuntimeException("Not implemented: Reduce member reference");
         }
-
-        // TODO: implement
-        throw new RuntimeException("Not implemented");
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
