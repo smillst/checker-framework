@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
@@ -103,13 +102,8 @@ public class ReduceExpression {
         // else
         // Otherwise, the method reference is inexact,
 
-        ExecutableType functionType =
-                TypesUtils.findFunctionType(InferenceUtils.getJavaType(t), context.env);
-        ExecutableElement function =
-                TypesUtils.findFunction(InferenceUtils.getJavaType(t), context.env);
-
-        TypeMirror resultType = functionType.getReturnType();
-        if (resultType.getKind() == TypeKind.VOID) {
+        AbstractType r = t.getFunctionTypeReturn();
+        if (r == null || r.getTypeKind() == TypeKind.VOID) {
             return new ConstraintSet();
         }
 
@@ -120,8 +114,6 @@ public class ReduceExpression {
             // the return type of the
             // compile-time declaration mentions at least one of the method's type parameters,
 
-            Theta map = Theta.theta(memRef, functionType, context);
-            AbstractType r = InferenceType.create(resultType, map, context);
             if (!r.isProper()) {
                 // TODO: Remove this.
                 ErrorReporter.errorAbort(
@@ -130,6 +122,9 @@ public class ReduceExpression {
                 // method reference's invocation type when targeting the return type of the function
                 // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
                 // dependencies between these new variables and the inference variables in T.
+                ExecutableType functionType =
+                        TypesUtils.findFunctionType(InferenceUtils.getJavaType(t), context.env);
+                Theta map = Theta.theta(memRef, functionType, context);
                 BoundSet b2 =
                         context.inference.createB2(
                                 memRef, functionType, Collections.emptyList(), map);
@@ -142,8 +137,10 @@ public class ReduceExpression {
         // of applying capture conversion (§5.1.10) to the return type of the invocation type
         // (§15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
         // to false; otherwise, the constraint reduces to ‹R' → R›.
-        ProperType r = new ProperType(resultType, context);
-        return new Typing(r.capture(), r, Constraint.Kind.TYPE_COMPATIBILITY);
+        ExecutableType typeOfPoAppMethod =
+                TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
+        ProperType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
+        return new Typing(rPrime.capture(), r, Constraint.Kind.TYPE_COMPATIBILITY);
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
