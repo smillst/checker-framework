@@ -4,7 +4,6 @@ import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
-import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,33 +31,9 @@ public class Expression extends Constraint {
 
     private final ExpressionTree expression;
 
-    private final ExpressionKind expressionKind;
-
     public Expression(ExpressionTree expressionTree, AbstractType t) {
         super(t);
         this.expression = expressionTree;
-
-        if (t.isProper()) {
-            this.expressionKind = ExpressionKind.PROPER_TYPE;
-        } else if (InternalInferenceUtils.isStandaloneExpression(expressionTree)) {
-            this.expressionKind = ExpressionKind.STANDALONE;
-        } else if (expressionTree.getKind() == Tree.Kind.PARENTHESIZED) {
-            this.expressionKind = ExpressionKind.PARENTHESIZED;
-        } else if (expressionTree.getKind() == Tree.Kind.NEW_CLASS
-                || expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
-            this.expressionKind = ExpressionKind.METHOD_INVOCATION;
-        } else if (expressionTree.getKind() == Tree.Kind.CONDITIONAL_EXPRESSION) {
-            this.expressionKind = ExpressionKind.CONDITIONAL;
-        } else if (expressionTree.getKind() == Tree.Kind.LAMBDA_EXPRESSION) {
-            this.expressionKind = ExpressionKind.LAMBDA;
-        } else if (expressionTree.getKind() == Tree.Kind.MEMBER_REFERENCE) {
-            this.expressionKind = ExpressionKind.METHOD_REF;
-        } else {
-            ErrorReporter.errorAbort(
-                    "Unexpected expression kind: %s, Expression: %s",
-                    expressionTree.getKind(), expressionTree);
-            throw new RuntimeException();
-        }
     }
 
     @Override
@@ -79,7 +54,30 @@ public class Expression extends Constraint {
     }
 
     public ExpressionKind getExpressionKind() {
-        return expressionKind;
+        // Compute each time because T might become a proper type when instantiations are applied.
+        if (getT().isProper()) {
+            return ExpressionKind.PROPER_TYPE;
+        } else if (InternalInferenceUtils.isStandaloneExpression(expression)) {
+            return ExpressionKind.STANDALONE;
+        }
+        switch (expression.getKind()) {
+            case PARENTHESIZED:
+                return ExpressionKind.PARENTHESIZED;
+            case NEW_CLASS:
+            case METHOD_INVOCATION:
+                return ExpressionKind.METHOD_INVOCATION;
+            case CONDITIONAL_EXPRESSION:
+                return ExpressionKind.CONDITIONAL;
+            case LAMBDA_EXPRESSION:
+                return ExpressionKind.LAMBDA;
+            case MEMBER_REFERENCE:
+                return ExpressionKind.METHOD_REF;
+            default:
+                ErrorReporter.errorAbort(
+                        "Unexpected expression kind: %s, Expression: %s",
+                        expression.getKind(), expression);
+                throw new RuntimeException();
+        }
     }
 
     public ExpressionTree getExpression() {
@@ -166,17 +164,13 @@ public class Expression extends Constraint {
 
         Expression that = (Expression) o;
 
-        if (!expression.equals(that.expression)) {
-            return false;
-        }
-        return expressionKind == that.expressionKind;
+        return expression.equals(that.expression);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + expression.hashCode();
-        result = 31 * result + expressionKind.hashCode();
         return result;
     }
 }
