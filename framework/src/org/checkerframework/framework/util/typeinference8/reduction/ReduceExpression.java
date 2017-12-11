@@ -123,6 +123,9 @@ public class ReduceExpression {
             Theta map = Theta.theta(memRef, functionType, context);
             AbstractType r = InferenceType.create(resultType, map, context);
             if (!r.isProper()) {
+                // TODO: Remove this.
+                ErrorReporter.errorAbort(
+                        "Found a memeber reference whose type arguments must be inferred");
                 // the constraint reduces to the bound set B3 which would be used to determine the
                 // method reference's invocation type when targeting the return type of the function
                 // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
