@@ -246,7 +246,7 @@ public class ReduceExpression {
         return new ConstraintSet();
     }
 
-    private static AbstractType getGroundTargetType(
+    public static AbstractType getGroundTargetType(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         if (!t.isWildcardParameterizedType()) {
             return t;

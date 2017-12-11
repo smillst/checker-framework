@@ -28,6 +28,7 @@ public class Context {
     public final Map<ExpressionTree, Theta> maps;
     public int variableCount = 1;
     public int captureVariableCount = 1;
+    public TypeMirror runtimeEx;
 
     public Context(
             ProcessingEnvironment env,
@@ -49,6 +50,9 @@ public class Context {
         ClassTree clazz = TreeUtils.enclosingClass(treePath);
         this.enclosingType = (DeclaredType) TreeUtils.typeOf(clazz);
         this.maps = new HashMap<>();
+        this.runtimeEx =
+                TypesUtils.typeFromClass(
+                        RuntimeException.class, env.getTypeUtils(), env.getElementUtils());
     }
 
     public int getNextVariableId() {

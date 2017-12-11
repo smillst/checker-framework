@@ -1,15 +1,26 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.LambdaExpression;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.MemberReferenceExpression;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Exception;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
+import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
+import org.checkerframework.framework.util.typeinference8.types.ProperType;
+import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.CheckedExceptions;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
+import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class Reduce {
     public BoundSet reduce(ConstraintSet constraintSet, Context context) {
@@ -28,6 +39,8 @@ public class Reduce {
                 }
             } else if (result == null) {
                 throw new FalseBoundException(constraint);
+            } else if (result == ReductionResult.TRUE) {
+                // loop
             } else {
                 throw new RuntimeException("Not found " + result);
             }
@@ -48,22 +61,53 @@ public class Reduce {
             case TYPE_EQUALITY:
                 return ReduceTyping.reduceEquality((Typing) constraint);
             case LAMBDA_EXCEPTION:
-                return reduceLambdaExpression((LambdaExpression) constraint);
             case METHOD_REF_EXCEPTION:
-                return reduceMemberReferenceExpression((MemberReferenceExpression) constraint);
+                return reduceException((Exception) constraint, context);
             default:
                 ErrorReporter.errorAbort("Unexpected constraint kind: " + constraint.getKind());
                 throw new RuntimeException(""); // dead code
         }
     }
 
-    public ReductionResult reduceLambdaExpression(LambdaExpression c) {
-        // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.5-100
-        throw new RuntimeException("Not Implemented");
-    }
+    public ReductionResult reduceException(Exception c, Context context) {
+        ConstraintSet constraintSet = new ConstraintSet();
+        ExecutableElement ele =
+                (ExecutableElement) TreeUtils.findFunction(c.getExpression(), context.env);
+        List<Variable> es = new ArrayList<>();
+        List<ProperType> properTypes = new ArrayList<>();
+        for (TypeMirror thrownType : ele.getThrownTypes()) {
+            AbstractType ei = InferenceType.create(thrownType, c.getMap(), context);
+            if (ei.isProper()) {
+                properTypes.add((ProperType) ei);
+            } else {
+                es.add((Variable) ei);
+            }
+        }
+        if (es.isEmpty()) {
+            return ReductionResult.TRUE;
+        }
 
-    public ReductionResult reduceMemberReferenceExpression(MemberReferenceExpression c) {
-        // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.5-200
-        throw new RuntimeException("Not Implemented");
+        List<? extends TypeMirror> thrownTypes;
+        if (c.getKind() == Kind.LAMBDA_EXCEPTION) {
+            thrownTypes = CheckedExceptions.thrownCheckedExceptions(c.getExpression(), context);
+        } else {
+            thrownTypes =
+                    TypesUtils.findFunctionType(TreeUtils.typeOf(c.getExpression()), context.env)
+                            .getThrownTypes();
+        }
+
+        for (TypeMirror xi : thrownTypes) {
+            for (ProperType properType : properTypes) {
+                if (context.env.getTypeUtils().isSubtype(xi, properType.getProperType())) {
+                    continue;
+                }
+            }
+            for (Variable ei : es) {
+                constraintSet.add(new Typing(new ProperType(xi, context), ei, Kind.SUBTYPE));
+                ei.setHasThrowsBound(true);
+            }
+        }
+
+        return constraintSet;
     }
 }

@@ -1,17 +1,25 @@
 package org.checkerframework.framework.util.typeinference8.constraint;
 
+import com.sun.source.tree.ConditionalExpressionTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.TreeUtils;
 
 /**
  * Created by smillst on 12/7/16.
@@ -58,6 +66,67 @@ public abstract class Constraint implements ReductionResult {
 
     public AbstractType getT() {
         return T;
+    }
+
+    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-200 */
+    protected List<Variable> getInputVariablesForExpression(ExpressionTree tree, AbstractType t) {
+
+        switch (tree.getKind()) {
+            case LAMBDA_EXPRESSION:
+                if (t.isVariable()) {
+                    return Collections.singletonList((Variable) t);
+                } else {
+                    LambdaExpressionTree lambdaTree = (LambdaExpressionTree) tree;
+                    List<Variable> inputs = new ArrayList<>();
+                    if (InternalInferenceUtils.isImplicitlyType(lambdaTree)) {
+                        List<AbstractType> params = T.getFunctionTypeParameters();
+                        if (params == null) {
+                            // T is not a function type.
+                            return Collections.emptyList();
+                        }
+                        for (AbstractType param : params) {
+                            inputs.addAll(param.getInferenceVariables());
+                        }
+                    }
+                    AbstractType R = T.getFunctionTypeReturn();
+                    if (R == null || R.getTypeKind() == TypeKind.NONE) {
+                        return inputs;
+                    }
+                    for (ExpressionTree e :
+                            InternalInferenceUtils.getReturnedExpressions(lambdaTree)) {
+                        Constraint c = new Expression(e, R);
+                        inputs.addAll(c.getInputVariables());
+                    }
+                    return inputs;
+                }
+            case MEMBER_REFERENCE:
+                if (t.isVariable()) {
+                    return Collections.singletonList((Variable) t);
+                } else if (InternalInferenceUtils.isExact((MemberReferenceTree) tree)) {
+                    return Collections.emptyList();
+                } else {
+                    List<AbstractType> params = T.getFunctionTypeParameters();
+                    if (params == null) {
+                        // T is not a function type.
+                        return Collections.emptyList();
+                    }
+                    List<Variable> inputs = new ArrayList<>();
+                    for (AbstractType param : params) {
+                        inputs.addAll(param.getInferenceVariables());
+                    }
+                    return inputs;
+                }
+            case PARENTHESIZED:
+                return getInputVariablesForExpression(TreeUtils.skipParens(tree), t);
+            case CONDITIONAL_EXPRESSION:
+                ConditionalExpressionTree conditional = (ConditionalExpressionTree) tree;
+                List<Variable> inputs = new ArrayList<>();
+                inputs.addAll(getInputVariablesForExpression(conditional.getTrueExpression(), t));
+                inputs.addAll(getInputVariablesForExpression(conditional.getFalseExpression(), t));
+                return inputs;
+            default:
+                return Collections.emptyList();
+        }
     }
 
     @Override
@@ -186,60 +255,48 @@ public abstract class Constraint implements ReductionResult {
     /**
      * &lt;LambdaExpression &rarr;throws T&gt;: The checked exceptions thrown by the body of the
      * LambdaExpression are declared by the throws clause of the function type derived from T.
-     */
-    public abstract static class LambdaExpression extends Constraint {
-        LambdaExpressionTree lambda;
-
-        public LambdaExpression(LambdaExpressionTree lambda, AbstractType fi) {
-            super(fi);
-            this.lambda = lambda;
-        }
-
-        @Override
-        public Kind getKind() {
-            return Kind.LAMBDA_EXCEPTION;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            if (!super.equals(o)) {
-                return false;
-            }
-
-            LambdaExpression that = (LambdaExpression) o;
-
-            return lambda != null ? lambda.equals(that.lambda) : that.lambda == null;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + (lambda != null ? lambda.hashCode() : 0);
-            return result;
-        }
-    }
-
-    /**
-     * &lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
+     *
+     * <p>&lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
      * method are declared by the throws clause of the function type derived from T.
      */
-    public abstract static class MemberReferenceExpression extends Constraint {
-        MemberReferenceTree memberRef;
+    public static class Exception extends Constraint {
+        ExpressionTree expression;
+        Theta map;
 
-        public MemberReferenceExpression(MemberReferenceTree memberRef, AbstractType fi) {
-            super(fi);
-            this.memberRef = memberRef;
+        public Exception(ExpressionTree expression, AbstractType t, Theta map) {
+            super(t);
+            assert expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
+                    || expression.getKind() == Tree.Kind.MEMBER_REFERENCE;
+            this.expression = expression;
+            this.map = map;
+        }
+
+        public Theta getMap() {
+            return map;
+        }
+
+        public ExpressionTree getExpression() {
+            return expression;
         }
 
         @Override
         public Kind getKind() {
-            return Kind.METHOD_REF_EXCEPTION;
+            return expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
+                    ? Kind.LAMBDA_EXCEPTION
+                    : Kind.METHOD_REF_EXCEPTION;
+        }
+
+        @Override
+        public List<Variable> getInputVariables() {
+            return getInputVariablesForExpression(expression, getT());
+        }
+
+        @Override
+        public List<Variable> getOutputVariables() {
+            List<Variable> input = getInputVariables();
+            List<Variable> output = new ArrayList<>(getT().getInferenceVariables());
+            output.removeAll(input);
+            return output;
         }
 
         @Override
@@ -254,15 +311,17 @@ public abstract class Constraint implements ReductionResult {
                 return false;
             }
 
-            MemberReferenceExpression that = (MemberReferenceExpression) o;
+            Exception that = (Exception) o;
 
-            return memberRef.equals(that.memberRef);
+            return expression != null
+                    ? expression.equals(that.expression)
+                    : that.expression == null;
         }
 
         @Override
         public int hashCode() {
             int result = super.hashCode();
-            result = 31 * result + memberRef.hashCode();
+            result = 31 * result + (expression != null ? expression.hashCode() : 0);
             return result;
         }
     }

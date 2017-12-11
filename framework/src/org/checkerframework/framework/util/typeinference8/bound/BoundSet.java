@@ -26,7 +26,6 @@ public class BoundSet implements ReductionResult {
 
     private final LinkedHashSet<Variable> variables;
     private final LinkedHashSet<Capture> captures;
-    private final LinkedHashSet<Throws> throwsList;
 
     private final Context context;
 
@@ -41,7 +40,6 @@ public class BoundSet implements ReductionResult {
         assert context != null;
         this.variables = new LinkedHashSet<>();
         this.captures = new LinkedHashSet<>();
-        this.throwsList = new LinkedHashSet<>();
         this.context = context;
         this.isFalse = false;
     }
@@ -50,7 +48,6 @@ public class BoundSet implements ReductionResult {
         this(toCopy.context);
         this.isFalse = toCopy.isFalse;
         this.captures.addAll(toCopy.captures);
-        this.throwsList.addAll(toCopy.throwsList);
         this.variables.addAll(toCopy.variables);
         for (Variable v : variables) {
             v.save();
@@ -91,7 +88,6 @@ public class BoundSet implements ReductionResult {
 
     private boolean add(BoundSet newSet, boolean isIncorp) {
         boolean changed = captures.addAll(newSet.captures);
-        changed |= throwsList.addAll(newSet.throwsList);
         changed |= variables.addAll(newSet.variables);
         isFalse |= newSet.isFalse;
         return changed;
@@ -217,11 +213,6 @@ public class BoundSet implements ReductionResult {
 
     private List<Variable> getAllInferenceVariables() {
         return new ArrayList<>(variables);
-    }
-
-    public List<Throws> findThrowsBounds(Variable ai) {
-        // TODO: Implement
-        return Collections.emptyList();
     }
 
     /**

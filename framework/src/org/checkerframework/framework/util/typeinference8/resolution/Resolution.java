@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
-import org.checkerframework.framework.util.typeinference8.bound.Throws;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
@@ -140,20 +139,24 @@ public class Resolution {
             LinkedHashSet<ProperType> upperBounds = ai.findProperUpperBounds();
             if (!upperBounds.isEmpty()) {
                 TypeMirror ti = null;
+                boolean useRuntimeEx = false;
                 for (ProperType liProperType : upperBounds) {
                     TypeMirror li = liProperType.getProperType();
+                    if (ai.hasThrowsBound()
+                            && context.env.getTypeUtils().isSubtype(context.runtimeEx, li)) {
+                        useRuntimeEx = true;
+                    }
                     if (ti == null) {
                         ti = li;
                     } else {
                         ti = InternalInferenceUtils.glb(context.env, ti, li);
                     }
                 }
-                List<Throws> throwsBounds = boundSet.findThrowsBounds(ai);
-                if (!throwsBounds.isEmpty()) {
-                    // TODO: if ti is Exception or Throwable ti = RuntimeException
-                    throw new RuntimeException("Not implemented.");
+                if (useRuntimeEx) {
+                    ai.addBound(InferBound.EQUAL, new ProperType(context.runtimeEx, context));
+                } else {
+                    ai.addBound(InferBound.EQUAL, new ProperType(ti, context));
                 }
-                ai.addBound(InferBound.EQUAL, new ProperType(ti, context));
                 continue;
             }
             resolvedBoundSet.addFalse();

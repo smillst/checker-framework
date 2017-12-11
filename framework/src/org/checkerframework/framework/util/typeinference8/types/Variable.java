@@ -39,6 +39,8 @@ public class Variable extends AbstractType {
     /** Constraints implied by complementary pairs of bounds. */
     public Queue<Typing> constraints = new LinkedList<>();
 
+    private boolean hasThrowsBound = false;
+
     public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
         this(typeVariable, invocation, context, context.getNextVariableId());
     }
@@ -170,6 +172,14 @@ public class Variable extends AbstractType {
         LOWER,
         UPPER,
         EQUAL;
+    }
+
+    public boolean hasThrowsBound() {
+        return hasThrowsBound;
+    }
+
+    public void setHasThrowsBound(boolean hasThrowsBound) {
+        this.hasThrowsBound = hasThrowsBound;
     }
 
     public boolean addBound(InferBound kind, AbstractType type) {

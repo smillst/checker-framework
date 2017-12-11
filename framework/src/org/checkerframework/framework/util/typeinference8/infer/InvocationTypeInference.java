@@ -26,6 +26,7 @@ import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Exception;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -159,9 +160,16 @@ public class InvocationTypeInference {
             List<? extends ExpressionTree> args,
             Theta map) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
-        // TODO:
+
         // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
+        for (TypeMirror type : methodType.getThrownTypes()) {
+            AbstractType thrownType = InferenceType.create(type, map, context);
+            if (thrownType.isVariable()) {
+                ((Variable) thrownType).setHasThrowsBound(true);
+            }
+        }
+
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
         List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
@@ -313,6 +321,11 @@ public class InvocationTypeInference {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
             if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+                if (ei.getKind() == Tree.Kind.LAMBDA_EXPRESSION
+                        || ei.getKind() == Tree.Kind.MEMBER_REFERENCE) {
+                    // Only add exception constraints from the top level.
+                    c.add(new Exception(ei, fi, map));
+                }
                 c.add(new Expression(ei, fi));
             }
             c.add(getConstraint(ei, fi));
@@ -327,14 +340,10 @@ public class InvocationTypeInference {
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
-                // TODO: ‹LambdaExpression →throws Fi θ›
                 for (ExpressionTree expression :
                         InternalInferenceUtils.getReturnedExpressions(lambda)) {
                     c.add(getConstraint(expression, fi));
                 }
-                break;
-            case MEMBER_REFERENCE:
-                // TODO: ‹MethodReference →throws Fi θ›
                 break;
             case METHOD_INVOCATION:
                 if (InternalInferenceUtils.isPolyExpression(ei)) {
