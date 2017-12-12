@@ -17,7 +17,6 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
-import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
 public class Resolution {
@@ -153,7 +152,7 @@ public class Resolution {
         if (!lowerBounds.isEmpty()) {
             TypeMirror ti = null;
             for (ProperType liProperType : lowerBounds) {
-                TypeMirror li = liProperType.getProperType();
+                TypeMirror li = liProperType.getJavaType();
                 if (ti == null) {
                     ti = li;
                 } else {
@@ -169,7 +168,7 @@ public class Resolution {
             TypeMirror ti = null;
             boolean useRuntimeEx = false;
             for (ProperType liProperType : upperBounds) {
-                TypeMirror li = liProperType.getProperType();
+                TypeMirror li = liProperType.getJavaType();
                 if (ai.hasThrowsBound()
                         && context.env.getTypeUtils().isSubtype(context.runtimeEx, li)) {
                     useRuntimeEx = true;
@@ -209,7 +208,7 @@ public class Resolution {
             LinkedHashSet<ProperType> lowerBounds = ai.findProperLowerBounds();
             TypeMirror lowerBound = null;
             for (ProperType liProperType : lowerBounds) {
-                TypeMirror li = liProperType.getProperType();
+                TypeMirror li = liProperType.getJavaType();
                 if (lowerBound == null) {
                     lowerBound = li;
                 } else {
@@ -220,7 +219,7 @@ public class Resolution {
             LinkedHashSet<AbstractType> upperBounds = ai.upperBounds();
             TypeMirror upperBound = null;
             for (AbstractType liAb : upperBounds) {
-                TypeMirror li = InferenceUtils.getJavaType(liAb);
+                TypeMirror li = liAb.getJavaType();
                 if (upperBound == null) {
                     upperBound = li;
                 } else {
@@ -228,7 +227,7 @@ public class Resolution {
                 }
             }
 
-            typeVar.add(ai.getTypeVariable());
+            typeVar.add(ai.getJavaType());
             // TODO: This won't square with the capture that javac produces.
             TypeMirror freshTypeVar =
                     InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
@@ -239,7 +238,7 @@ public class Resolution {
         for (int i = 0; i < typeArg.size(); i++) {
             Variable ai = asList.get(i);
             TypeMirror inst = typeArg.get(i);
-            TypeVariable typeVariableI = ai.getTypeVariable();
+            TypeVariable typeVariableI = ai.getJavaType();
             if (ContainsInferenceVariable.hasAnyInferenceVar(
                     Collections.singleton(typeVariableI), inst)) {
                 // If the instantiation of ai includes a reference to ai,
@@ -262,7 +261,7 @@ public class Resolution {
         for (int i = 0; i < asList.size(); i++) {
             Variable ai = asList.get(i);
             ContainsInferenceVariable.getInferenceVar(
-                    Collections.singleton(ai.getTypeVariable()), typeArg.get(i));
+                    Collections.singleton(ai.getJavaType()), typeArg.get(i));
             ai.addBound(InferBound.EQUAL, new ProperType(typeArg.get(i), context).capture());
         }
 

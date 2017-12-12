@@ -106,10 +106,10 @@ public class InvocationTypeInference {
             if (!inst.getA().getInvocation().equals(methodInvocation)) {
                 continue;
             }
-            TypeVariable typeVariable = inst.getA().getTypeVariable();
+            TypeVariable typeVariable = inst.getA().getJavaType();
             if (fromReturn.containsKey(typeVariable)) {
                 TypeMirror correctType = fromReturn.get(typeVariable);
-                TypeMirror inferredType = inst.getT().getProperType();
+                TypeMirror inferredType = inst.getT().getJavaType();
                 if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
                     // type.inference.not.same=type variable: %s\ninferred: %s\njava type: %s
                     context.factory

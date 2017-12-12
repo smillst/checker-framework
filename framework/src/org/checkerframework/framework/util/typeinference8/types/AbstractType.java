@@ -46,6 +46,8 @@ public abstract class AbstractType {
         return getKind() == Kind.INFERENCE_TYPE;
     }
 
+    public abstract TypeMirror getJavaType();
+
     public abstract boolean isParameterizedType();
 
     public abstract AbstractType getMostSpecificArrayType();

@@ -14,7 +14,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
-import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
@@ -47,13 +46,7 @@ public class Capture extends Bound {
 
     public Capture(AbstractType capturedType, ExpressionTree tree, Context context) {
         this.capturedType = capturedType;
-        if (capturedType.isInferenceType()) {
-            InferenceType inferenceTypeG = (InferenceType) capturedType;
-            underlying = (DeclaredType) inferenceTypeG.getType();
-        } else {
-            ProperType properTypeG = (ProperType) capturedType;
-            underlying = (DeclaredType) properTypeG.getProperType();
-        }
+        this.underlying = (DeclaredType) capturedType.getJavaType();
         TypeElement ele = TypesUtils.getTypeElement(underlying);
         map = new Theta();
         List<Pair<CaptureVariable, TypeMirror>> pairs = new ArrayList<>();

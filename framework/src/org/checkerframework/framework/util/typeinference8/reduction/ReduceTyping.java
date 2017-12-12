@@ -13,13 +13,11 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint.
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
-import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -85,8 +83,8 @@ public class ReduceTyping {
         AbstractType t = c.getT();
 
         if (s.isProper() && t.isProper()) {
-            TypeMirror subType = ((ProperType) s).getProperType();
-            TypeMirror superType = ((ProperType) t).getProperType();
+            TypeMirror subType = s.getJavaType();
+            TypeMirror superType = t.getJavaType();
             if (subType == superType) {
                 return ConstraintSet.TRUE;
             }
@@ -106,7 +104,7 @@ public class ReduceTyping {
             } else if (subType.getKind() == TypeKind.WILDCARD) {
                 TypeMirror subUpper = ((WildcardType) subType).getExtendsBound();
                 if (subUpper == null) {
-                    subUpper = context.object.getProperType();
+                    subUpper = context.object.getJavaType();
                 }
                 if (context.env.getTypeUtils().isSubtype(subUpper, superType)) {
                     return ConstraintSet.TRUE;
@@ -167,8 +165,7 @@ public class ReduceTyping {
             AbstractType t = c.getT();
             AbstractType s = c.getS();
 
-            TypeMirror tTypeMirror =
-                    t.isProper() ? ((ProperType) t).getProperType() : ((InferenceType) t).getType();
+            TypeMirror tTypeMirror = t.getJavaType();
             AbstractType sAsSuper = s.asSuper(tTypeMirror);
             if (sAsSuper == null) {
                 return null;
@@ -270,7 +267,7 @@ public class ReduceTyping {
         if (t != null && s != null) {
             // the constraint reduces to true if S is compatible in a loose invocation context
             // with T (§5.3), and false otherwise.
-            if (contex.types.isAssignable((Type) s.getProperType(), (Type) t.getProperType())) {
+            if (contex.types.isAssignable((Type) s.getJavaType(), (Type) t.getJavaType())) {
                 return ConstraintSet.TRUE;
             } else {
                 return null;
@@ -283,13 +280,13 @@ public class ReduceTyping {
             // Otherwise, if T is a parameterized type of the form G<T1, ..., Tn>,
             // and there exists no type of the form G<...> that is a supertype of S,
             // but the raw type G is a supertype of S, then the constraint reduces to true.
-            AbstractType superS = c.getS().asSuper(InferenceUtils.getJavaType(c.getT()));
+            AbstractType superS = c.getS().asSuper(c.getT().getJavaType());
             if (superS != null && superS.isRaw()) {
                 return ReductionResult.UNCHECKED_CONVERSION;
             }
         } else if (c.getT().getTypeKind() == TypeKind.ARRAY
                 && c.getT().getComponentType().isParameterizedType()) {
-            AbstractType superS = c.getS().asSuper(InferenceUtils.getJavaType(c.getT()));
+            AbstractType superS = c.getS().asSuper((c.getT()).getJavaType());
             if (superS != null && superS.getComponentType().isRaw()) {
                 return ReductionResult.UNCHECKED_CONVERSION;
             }

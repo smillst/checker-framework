@@ -41,7 +41,6 @@ import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
-import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -291,19 +290,9 @@ public class InferenceUtils {
         return mapping.subs;
     }
 
-    public static TypeMirror getJavaType(AbstractType t) {
-        if (t.isProper()) {
-            return ((ProperType) t).getProperType();
-        } else if (t.isVariable()) {
-            return ((Variable) t).getTypeVariable();
-        } else {
-            return ((InferenceType) t).getType();
-        }
-    }
-
     public static AbstractType glb(AbstractType a, AbstractType b, Context context) {
-        Type aJavaType = (Type) getJavaType(a);
-        Type bJavaType = (Type) getJavaType(b);
+        Type aJavaType = (Type) a.getJavaType();
+        Type bJavaType = (Type) b.getJavaType();
         TypeMirror glb = TypesUtils.greatestLowerBound(aJavaType, bJavaType, context.env);
         if (context.env.getTypeUtils().isSameType(glb, bJavaType)) {
             return b;

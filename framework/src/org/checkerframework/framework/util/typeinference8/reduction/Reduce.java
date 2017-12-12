@@ -100,7 +100,7 @@ public class Reduce {
 
         for (TypeMirror xi : thrownTypes) {
             for (ProperType properType : properTypes) {
-                if (context.env.getTypeUtils().isSubtype(xi, properType.getProperType())) {
+                if (context.env.getTypeUtils().isSubtype(xi, properType.getJavaType())) {
                     continue;
                 }
             }

@@ -16,7 +16,6 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
@@ -115,20 +114,18 @@ public class BoundsForVar {
         // then for all i (1 <= i <= n), if Si and Ti are types (not wildcards),
         // the constraint formula <Si = Ti> is implied.
         if (t.isInferenceType() || t.isProper()) {
-            TypeMirror tType =
-                    t.isInferenceType()
-                            ? ((InferenceType) t).getType()
-                            : ((ProperType) t).getProperType();
+            TypeMirror tType = t.getJavaType();
             for (ProperType s : upperBounds.properTypes) {
                 Pair<TypeMirror, TypeMirror> pair =
                         InternalInferenceUtils.getParameterizedSupers(
-                                context, s.getProperType(), tType);
+                                context, s.getJavaType(), tType);
                 toIncorporate.addAll(getConstraintsFromParameterized(pair, s, t));
             }
 
             for (InferenceType s : upperBounds.inferenceTypes) {
                 Pair<TypeMirror, TypeMirror> pair =
-                        InternalInferenceUtils.getParameterizedSupers(context, s.getType(), tType);
+                        InternalInferenceUtils.getParameterizedSupers(
+                                context, s.getJavaType(), tType);
                 toIncorporate.addAll(getConstraintsFromParameterized(pair, s, t));
             }
         }
@@ -345,18 +342,18 @@ public class BoundsForVar {
 
     public boolean hasPrimitiveWrapperBound() {
         if (hasInstantiation()) {
-            if (TypesUtils.isBoxedPrimitive(getInstantiation().getProperType())) {
+            if (TypesUtils.isBoxedPrimitive(getInstantiation().getJavaType())) {
                 return true;
             }
         }
         for (ProperType type : getProperLowerBounds()) {
-            if (TypesUtils.isBoxedPrimitive(type.getProperType())) {
+            if (TypesUtils.isBoxedPrimitive(type.getJavaType())) {
                 return true;
             }
         }
 
         for (ProperType type : getProperUpperBounds()) {
-            if (TypesUtils.isBoxedPrimitive(type.getProperType())) {
+            if (TypesUtils.isBoxedPrimitive(type.getJavaType())) {
                 return true;
             }
         }
@@ -392,10 +389,10 @@ public class BoundsForVar {
         }
         for (int i = 0; i < parameteredTypes.size(); i++) {
             AbstractType s1 = parameteredTypes.get(i);
-            TypeMirror s1Java = InferenceUtils.getJavaType(s1);
+            TypeMirror s1Java = s1.getJavaType();
             for (int j = i + 1; j < parameteredTypes.size(); j++) {
                 AbstractType s2 = parameteredTypes.get(j);
-                TypeMirror s2Java = InferenceUtils.getJavaType(s2);
+                TypeMirror s2Java = s2.getJavaType();
                 Pair<TypeMirror, TypeMirror> supers =
                         InternalInferenceUtils.getParameterizedSupers(context, s1Java, s2Java);
                 if (supers == null) {
@@ -418,10 +415,7 @@ public class BoundsForVar {
      * type {@code |G<...>|} is a supertype of S?
      */
     public boolean hasRawTypeLowerOrEqualBound(AbstractType g) {
-        TypeMirror gTypeMirror =
-                g.isInferenceType()
-                        ? ((InferenceType) g).getType()
-                        : ((ProperType) g).getProperType();
+        TypeMirror gTypeMirror = g.getJavaType();
         for (AbstractType type : lowerBounds.getAll()) {
             if (type.isVariable()) {
                 continue;

@@ -87,7 +87,7 @@ public class InferenceType extends AbstractType {
         return result;
     }
 
-    public TypeMirror getType() {
+    public TypeMirror getJavaType() {
         return type;
     }
 
@@ -257,13 +257,7 @@ public class InferenceType extends AbstractType {
         TypeMirror[] newArgs = new TypeMirror[args.size()];
         int i = 0;
         for (AbstractType t : args) {
-            if (t.isProper()) {
-                newArgs[i++] = ((ProperType) t).getProperType();
-            } else if (t.isVariable()) {
-                newArgs[i++] = ((Variable) t).getTypeVariable();
-            } else {
-                newArgs[i++] = ((InferenceType) t).getType();
-            }
+            newArgs[i++] = t.getJavaType();
         }
         TypeMirror newType =
                 context.env
@@ -285,8 +279,8 @@ public class InferenceType extends AbstractType {
         for (Instantiation instantiation : instantiations) {
             Variable alpha = instantiation.getA();
             if (map.containsValue(alpha)) {
-                typeVariables.add(instantiation.getA().getTypeVariable());
-                arguments.add(instantiation.getT().getProperType());
+                typeVariables.add(instantiation.getA().getJavaType());
+                arguments.add(instantiation.getT().getJavaType());
             }
         }
         if (typeVariables.isEmpty()) {

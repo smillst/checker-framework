@@ -32,7 +32,7 @@ public class ProperType extends AbstractType {
     }
 
     public ProperType capture() {
-        TypeMirror capture = context.env.getTypeUtils().capture(getProperType());
+        TypeMirror capture = context.env.getTypeUtils().capture(getJavaType());
         return new ProperType(capture, context);
     }
 
@@ -60,7 +60,7 @@ public class ProperType extends AbstractType {
         return result;
     }
 
-    public TypeMirror getProperType() {
+    public TypeMirror getJavaType() {
         return properType;
     }
 

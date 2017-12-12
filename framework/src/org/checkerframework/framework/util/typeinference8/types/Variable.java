@@ -20,7 +20,6 @@ import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TypesUtils;
@@ -100,7 +99,7 @@ public class Variable extends AbstractType {
         }
     }
 
-    public TypeVariable getTypeVariable() {
+    public TypeVariable getJavaType() {
         return typeVariable;
     }
 
@@ -237,16 +236,11 @@ public class Variable extends AbstractType {
             // then for all i (1 <= i <= n), if Si and Ti are types (not wildcards),
             // the constraint formula <Si = Ti> is implied.
             if (s.isInferenceType() || s.isProper()) {
-                TypeMirror tType =
-                        s.isInferenceType()
-                                ? ((InferenceType) s).getType()
-                                : ((ProperType) s).getProperType();
+                TypeMirror tType = s.getJavaType();
                 for (AbstractType t : bounds.get(InferBound.LOWER)) {
                     TypeMirror typeMirror;
-                    if (t.isProper()) {
-                        typeMirror = ((ProperType) t).getProperType();
-                    } else if (t.isInferenceType()) {
-                        typeMirror = ((InferenceType) t).getType();
+                    if (t.isProper() || t.isInferenceType()) {
+                        typeMirror = t.getJavaType();
                     } else {
                         continue;
                     }
@@ -358,8 +352,7 @@ public class Variable extends AbstractType {
     public boolean hasPrimitiveWrapperBound() {
         for (Set<AbstractType> boundList : bounds.values()) {
             for (AbstractType bound : boundList) {
-                if (bound.isProper()
-                        && TypesUtils.isBoxedPrimitive(((ProperType) bound).getProperType())) {
+                if (bound.isProper() && TypesUtils.isBoxedPrimitive(bound.getJavaType())) {
                     return true;
                 }
             }
@@ -395,10 +388,10 @@ public class Variable extends AbstractType {
         }
         for (int i = 0; i < parameteredTypes.size(); i++) {
             AbstractType s1 = parameteredTypes.get(i);
-            TypeMirror s1Java = InferenceUtils.getJavaType(s1);
+            TypeMirror s1Java = s1.getJavaType();
             for (int j = i + 1; j < parameteredTypes.size(); j++) {
                 AbstractType s2 = parameteredTypes.get(j);
-                TypeMirror s2Java = InferenceUtils.getJavaType(s2);
+                TypeMirror s2Java = s2.getJavaType();
                 Pair<TypeMirror, TypeMirror> supers =
                         InternalInferenceUtils.getParameterizedSupers(context, s1Java, s2Java);
                 if (supers == null) {
@@ -421,10 +414,7 @@ public class Variable extends AbstractType {
      * type {@code |G<...>|} is a supertype of S?
      */
     public boolean hasRawTypeLowerOrEqualBound(AbstractType g) {
-        TypeMirror gTypeMirror =
-                g.isInferenceType()
-                        ? ((InferenceType) g).getType()
-                        : ((ProperType) g).getProperType();
+        TypeMirror gTypeMirror = g.getJavaType();
         for (AbstractType type : bounds.get(InferBound.LOWER)) {
             if (type.isVariable()) {
                 continue;

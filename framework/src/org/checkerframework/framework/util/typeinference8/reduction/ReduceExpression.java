@@ -123,7 +123,7 @@ public class ReduceExpression {
                 // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
                 // dependencies between these new variables and the inference variables in T.
                 ExecutableType functionType =
-                        TypesUtils.findFunctionType(InferenceUtils.getJavaType(t), context.env);
+                        TypesUtils.findFunctionType(t.getJavaType(), context.env);
                 Theta map = Theta.theta(memRef, functionType, context);
                 BoundSet b2 =
                         context.inference.createB2(
@@ -170,7 +170,7 @@ public class ReduceExpression {
                 if (R.isProper()) {
                     if (!context.env
                             .getTypeUtils()
-                            .isAssignable(TreeUtils.typeOf(e), ((ProperType) R).getProperType())) {
+                            .isAssignable(TreeUtils.typeOf(e), R.getJavaType())) {
                         BoundSet boundSet = new BoundSet(context);
                         boundSet.addFalse();
                         return boundSet;
@@ -294,8 +294,7 @@ public class ReduceExpression {
             ps.add(new ProperType(TreeUtils.typeOf(paramTree), context));
         }
 
-        TypeElement typeEle =
-                (TypeElement) ((DeclaredType) InferenceUtils.getJavaType(t)).asElement();
+        TypeElement typeEle = (TypeElement) ((DeclaredType) t.getJavaType()).asElement();
         // Let Q1, ..., Qk be the parameter types of the function type of the type F<α1, ..., αm>,
         // where α1, ..., αm are fresh inference variables.
         List<Variable> alphas = new ArrayList<>();
