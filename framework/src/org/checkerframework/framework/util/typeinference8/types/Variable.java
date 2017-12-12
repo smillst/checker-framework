@@ -300,6 +300,16 @@ public class Variable extends AbstractType {
         return set;
     }
 
+    public LinkedHashSet<AbstractType> upperBounds() {
+        LinkedHashSet<AbstractType> set = new LinkedHashSet<>();
+        for (AbstractType bound : bounds.get(InferBound.UPPER)) {
+            if (!bound.isVariable()) {
+                set.add(bound);
+            }
+        }
+        return set;
+    }
+
     public boolean applyInstantiationsToBounds(List<Instantiation> instantiations) {
         boolean changed = false;
         for (Set<AbstractType> boundList : bounds.values()) {
@@ -447,7 +457,7 @@ public class Variable extends AbstractType {
 
     @Override
     public AbstractType asSuper(TypeMirror superType) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -549,6 +559,12 @@ public class Variable extends AbstractType {
     public boolean isLowerBoundedWildcard() {
         return false;
     }
+
+    @Override
+    public AbstractType getErased() {
+        return null;
+    }
+
     // </editor-fold>
 
     /**

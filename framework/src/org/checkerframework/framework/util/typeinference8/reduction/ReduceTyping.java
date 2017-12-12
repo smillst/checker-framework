@@ -8,6 +8,7 @@ import java.util.Stack;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -18,13 +19,14 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
+import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
 
-    public static boolean reduceTyping(Typing constraint, Context context) {
+    public static boolean reduceTyping(BoundSet boundSet, Typing constraint, Context context) {
         ReductionResult result = reduceTypingOneStep(constraint, context);
         Stack<Typing> constraints = new Stack<>();
         while (result != null) {
@@ -37,6 +39,8 @@ public class ReduceTyping {
                 while (!newSet.isEmpty()) {
                     constraints.push((Typing) newSet.pop());
                 }
+            } else if (result == ReductionResult.UNCHECKED_CONVERSION) {
+                boundSet.setUncheckedConversion(true);
             } else {
                 ErrorReporter.errorAbort("Unexpected result");
                 throw new RuntimeException("Error");
@@ -273,12 +277,23 @@ public class ReduceTyping {
             return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
         } else if (t != null && t.getTypeKind().isPrimitive()) {
             return new Typing(c.getS(), t.boxType(), Kind.TYPE_EQUALITY);
-
-        } else {
-            // TODO: handle unchecked conversions
-            // See points 4 & 5 in https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.2
-            return new Typing(c.getS(), c.getT(), Kind.SUBTYPE);
+        } else if (c.getT().isParameterizedType()) {
+            // Otherwise, if T is a parameterized type of the form G<T1, ..., Tn>,
+            // and there exists no type of the form G<...> that is a supertype of S,
+            // but the raw type G is a supertype of S, then the constraint reduces to true.
+            AbstractType superS = c.getS().asSuper(InferenceUtils.getJavaType(c.getT()));
+            if (superS != null && superS.isRaw()) {
+                return ReductionResult.UNCHECKED_CONVERSION;
+            }
+        } else if (c.getT().getTypeKind() == TypeKind.ARRAY
+                && c.getT().getComponentType().isParameterizedType()) {
+            AbstractType superS = c.getS().asSuper(InferenceUtils.getJavaType(c.getT()));
+            if (superS != null && superS.getComponentType().isRaw()) {
+                return ReductionResult.UNCHECKED_CONVERSION;
+            }
         }
+
+        return new Typing(c.getS(), c.getT(), Kind.SUBTYPE);
     }
 
     public static ReductionResult reduceEquality(Typing constraint) {

@@ -277,4 +277,9 @@ public class ProperType extends AbstractType {
     public boolean isRaw() {
         return InternalInferenceUtils.isRaw(properType);
     }
+
+    @Override
+    public AbstractType getErased() {
+        return new ProperType(context.env.getTypeUtils().erasure(properType), context);
+    }
 }

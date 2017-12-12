@@ -30,6 +30,7 @@ public class BoundSet implements ReductionResult {
     private final Context context;
 
     private boolean isFalse = false;
+    private boolean uncheckedConversion = false;
 
     private BoundSet(Bound false1, Context context) {
         this(context);
@@ -49,6 +50,7 @@ public class BoundSet implements ReductionResult {
         this.isFalse = toCopy.isFalse;
         this.captures.addAll(toCopy.captures);
         this.variables.addAll(toCopy.variables);
+        this.uncheckedConversion = toCopy.uncheckedConversion;
         for (Variable v : variables) {
             v.save();
         }
@@ -90,11 +92,20 @@ public class BoundSet implements ReductionResult {
         boolean changed = captures.addAll(newSet.captures);
         changed |= variables.addAll(newSet.variables);
         isFalse |= newSet.isFalse;
+        uncheckedConversion |= newSet.uncheckedConversion;
         return changed;
     }
 
     public void addFalse() {
         isFalse = true;
+    }
+
+    public boolean isUncheckedConversion() {
+        return uncheckedConversion;
+    }
+
+    public void setUncheckedConversion(boolean uncheckedConversion) {
+        this.uncheckedConversion = uncheckedConversion;
     }
 
     public void addCapture(Capture capture) {
@@ -227,7 +238,7 @@ public class BoundSet implements ReductionResult {
      * @param newBounds bounds to incorporate
      */
     public void incorporateToFixedPoint(BoundSet newBounds) {
-        this.isFalse &= newBounds.isFalse;
+        this.isFalse |= newBounds.isFalse;
         if (this.containsFalse()) {
             return;
         }
@@ -246,11 +257,14 @@ public class BoundSet implements ReductionResult {
             for (Variable alpha : variables) {
                 while (!alpha.constraints.isEmpty()) {
                     boundsChangeInst = true;
-                    if (!ReduceTyping.reduceTyping(alpha.constraints.remove(), context)) {
+                    if (!ReduceTyping.reduceTyping(this, alpha.constraints.remove(), context)) {
                         this.isFalse = true;
                         return;
                     }
                 }
+            }
+            if (newBounds.isUncheckedConversion()) {
+                this.setUncheckedConversion(true);
             }
 
             if (!boundsChangeInst) {

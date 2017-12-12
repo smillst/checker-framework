@@ -15,4 +15,11 @@ public interface ReductionResult {
                     return "FALSE";
                 }
             };
+    ReductionResult UNCHECKED_CONVERSION =
+            new ReductionResult() {
+                @Override
+                public String toString() {
+                    return "UNCHECKED_CONVERSION";
+                }
+            };
 }

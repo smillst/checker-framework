@@ -24,6 +24,8 @@ public abstract class AbstractType {
 
     public abstract AbstractType replaceTypeArgs(List<AbstractType> ts);
 
+    public abstract AbstractType getErased();
+
     public enum Kind {
         PROPER,
         VARIABLE,

@@ -318,6 +318,11 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
+    public AbstractType getErased() {
+        return create(context.env.getTypeUtils().erasure(type), map, context);
+    }
+
+    @Override
     public List<AbstractType> getFunctionTypeParameters() {
         if (TypesUtils.isFunctionalInterface(type, context.env)) {
             ExecutableType element = TypesUtils.findFunctionType(type, context.env);

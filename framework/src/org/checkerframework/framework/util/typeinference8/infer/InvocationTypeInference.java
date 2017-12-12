@@ -148,9 +148,14 @@ public class InvocationTypeInference {
 
         BoundSet b4 = getB4(b3, c);
         List<Instantiation> thetaPrime = b4.resolve();
-        // TODO: implement
-        boolean uncheckedConversion = false;
-        if (uncheckedConversion) {}
+
+        if (b4.isUncheckedConversion()) {
+            // If unchecked conversion was necessary for the method to be applicable during
+            // constraint set reduction in §18.5.1, then the parameter types of the invocation type
+            // of m are obtained by applying θ' to the parameter types of m's type, and the return
+            // type and thrown types of the invocation type of m are given by the erasure of the
+            // return type and thrown types of m's type.
+        }
         return thetaPrime;
     }
 
@@ -231,12 +236,18 @@ public class InvocationTypeInference {
         } else {
             r = InferenceType.create(TreeUtils.typeOf(invocation), map, context);
         }
-        // TODO: https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-100-C.1-A
-        // If unchecked conversion was necessary for the method to be applicable during
-        // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
-        // incorporated with B2.
-        // else
-        if (r.isWildcardParameterizedType()) {
+
+        if (b2.isUncheckedConversion()) {
+            // If unchecked conversion was necessary for the method to be applicable during
+            // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
+            // incorporated with B2.
+            BoundSet b =
+                    new ConstraintSet(new Typing(r.getErased(), target, Kind.TYPE_COMPATIBILITY))
+                            .reduce(context);
+            b2.incorporateToFixedPoint(b);
+            return b2;
+
+        } else if (r.isWildcardParameterizedType()) {
             // Otherwise, if R θ is a parameterized type, G<A1, ..., An>, and one of A1, ...,
             // An is a wildcard, then, for fresh inference variables β1, ..., βn, the constraint
             // formula ‹G<β1, ..., βn> → T› is reduced and incorporated, along with the bound

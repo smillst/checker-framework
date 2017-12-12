@@ -39,6 +39,8 @@ public class Reduce {
                 }
             } else if (result == null) {
                 throw new FalseBoundException(constraint);
+            } else if (result == ReductionResult.UNCHECKED_CONVERSION) {
+                boundSet.setUncheckedConversion(true);
             } else if (result == ReductionResult.TRUE) {
                 // loop
             } else {
