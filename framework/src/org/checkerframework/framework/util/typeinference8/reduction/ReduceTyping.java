@@ -116,7 +116,9 @@ public class ReduceTyping {
             } else if (context.env.getTypeUtils().isAssignable(subType, superType)) {
                 return ConstraintSet.TRUE;
             } else {
-                return null;
+                // TODO: This should be false, but wildcards that are captured too soon,
+                // make some types that would otherwise be
+                return ConstraintSet.TRUE;
             }
         } else if (s.getTypeKind() == TypeKind.NULL) {
             return ConstraintSet.TRUE;
