@@ -33,8 +33,6 @@ public class Variable extends AbstractType {
     protected ProperType instantiation = null;
     protected final EnumMap<InferBound, Set<AbstractType>> bounds = new EnumMap<>(InferBound.class);
 
-    protected final Context context;
-
     /** Constraints implied by complementary pairs of bounds. */
     public Queue<Typing> constraints = new LinkedList<>();
 
@@ -46,14 +44,19 @@ public class Variable extends AbstractType {
 
     private Variable(
             TypeVariable typeVariable, ExpressionTree invocation, Context context, int id) {
+        super(context);
         assert typeVariable != null;
         this.typeVariable = typeVariable;
         this.invocation = invocation;
-        this.context = context;
         this.id = id;
         bounds.put(InferBound.EQUAL, new LinkedHashSet<>());
         bounds.put(InferBound.UPPER, new LinkedHashSet<>());
         bounds.put(InferBound.LOWER, new LinkedHashSet<>());
+    }
+
+    @Override
+    public AbstractType create(TypeMirror type) {
+        throw new UnsupportedOperationException();
     }
 
     protected EnumMap<InferBound, LinkedHashSet<AbstractType>> savedBounds = null;
@@ -440,15 +443,6 @@ public class Variable extends AbstractType {
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Unsupported opps">
-    @Override
-    public TypeKind getTypeKind() {
-        return TypeKind.TYPEVAR;
-    }
-
-    @Override
-    public AbstractType asSuper(TypeMirror superType) {
-        return null;
-    }
 
     @Override
     public boolean isObject() {
@@ -456,102 +450,7 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public boolean isParameterizedType() {
-        return false;
-    }
-
-    @Override
-    public AbstractType getMostSpecificArrayType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isPrimitiveArray() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isUpperBoundedWildcard() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<AbstractType> getIntersectionBounds() {
-        return null;
-    }
-
-    @Override
-    public AbstractType getTypeVarLowerBound() {
-        return null;
-    }
-
-    @Override
-    public boolean hasLowerBound() {
-        return false;
-    }
-
-    @Override
     public Iterator<ProperType> getTypeParameterBounds() {
-        return null;
-    }
-
-    @Override
-    public AbstractType replaceTypeArgs(List<AbstractType> ts) {
-        return null;
-    }
-
-    @Override
-    public boolean isWildcardParameterizedType() {
-        return false;
-    }
-
-    @Override
-    public AbstractType getFunctionTypeReturn() {
-        return null;
-    }
-
-    @Override
-    public boolean isRaw() {
-        return false;
-    }
-
-    @Override
-    public List<AbstractType> getFunctionTypeParameters() {
-        return null;
-    }
-
-    @Override
-    public List<AbstractType> getTypeArguments() {
-        return null;
-    }
-
-    @Override
-    public AbstractType getComponentType() {
-        return null;
-    }
-
-    @Override
-    public AbstractType getWildcardUpperBound() {
-        return null;
-    }
-
-    @Override
-    public AbstractType getWildcardLowerBound() {
-        return null;
-    }
-
-    @Override
-    public boolean isUnboundWildcard() {
-        return false;
-    }
-
-    @Override
-    public boolean isLowerBoundedWildcard() {
-        return false;
-    }
-
-    @Override
-    public AbstractType getErased() {
         return null;
     }
 
