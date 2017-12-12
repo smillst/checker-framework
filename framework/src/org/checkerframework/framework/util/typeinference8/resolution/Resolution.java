@@ -49,7 +49,9 @@ public class Resolution {
     }
 
     public static BoundSet resolve(Variable a, BoundSet boundSet, Context context) {
-
+        if (a.hasInstantiation()) {
+            return boundSet;
+        }
         Dependencies dependencies = boundSet.getDependencies();
 
         List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
