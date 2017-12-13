@@ -272,6 +272,9 @@ public class InternalInferenceUtils {
             return null;
         }
         TypeMirror type = TreeUtils.typeOf(receiverTree);
+        if (type.getKind() == TypeKind.TYPEVAR) {
+            return (DeclaredType) ((TypeVariable) type).getUpperBound();
+        }
         // TODO: this must exist else where.....
         return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
     }
@@ -298,10 +301,11 @@ public class InternalInferenceUtils {
 
         while (context.types.asSuper((Type) receiverType, (Symbol) ele.getEnclosingElement())
                 == null) {
-            receiverType = (DeclaredType) receiverType.getEnclosingType();
-            if (receiverType == null) {
+            TypeMirror enclosing = receiverType.getEnclosingType();
+            if (enclosing == null || enclosing.getKind() != TypeKind.DECLARED) {
                 ErrorReporter.errorAbort("Method not found");
             }
+            receiverType = (DeclaredType) enclosing;
         }
         javax.lang.model.util.Types types = context.env.getTypeUtils();
         return (ExecutableType) types.asMemberOf(receiverType, ele);

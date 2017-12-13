@@ -83,7 +83,8 @@ public class InvocationTypeInference {
 
     private void logException(MethodInvocationTree methodInvocation, java.lang.Exception ex) {
         SourceChecker checker = context.factory.getContext().getChecker();
-        StringBuffer message = new StringBuffer(ex.getLocalizedMessage());
+        StringBuffer message = new StringBuffer();
+        message.append(ex.getLocalizedMessage());
         if (checker.hasOption("printErrorStack")) {
             message.append("\n").append(formatStackTrace(ex.getStackTrace()));
         }
