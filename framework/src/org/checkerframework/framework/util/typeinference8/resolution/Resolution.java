@@ -261,8 +261,8 @@ public class Resolution {
         for (int i = 0; i < asList.size(); i++) {
             Variable ai = asList.get(i);
             ContainsInferenceVariable.getInferenceVar(
-                    Collections.singleton(ai.getJavaType()), typeArg.get(i));
-            ai.addBound(InferBound.EQUAL, new ProperType(typeArg.get(i), context).capture());
+                    Collections.singleton(ai.getJavaType()), subsTypeArg.get(i));
+            ai.addBound(InferBound.EQUAL, new ProperType(subsTypeArg.get(i), context).capture());
         }
 
         boundSet.incorporateToFixedPoint(resolvedBoundSet);

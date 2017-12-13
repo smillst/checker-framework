@@ -223,11 +223,11 @@ public class ReduceTyping {
         AbstractType s = contained.getS();
         AbstractType t = contained.getT();
         if (t.getTypeKind() != TypeKind.WILDCARD) {
-            if (s.getTypeKind() != TypeKind.WILDCARD) {
-                return new Typing(s, t, Kind.TYPE_EQUALITY);
-            } else {
-                return null;
-            }
+            //            if (s.getTypeKind() != TypeKind.WILDCARD) {
+            return new Typing(s, t, Kind.TYPE_EQUALITY);
+            //            } else {
+            //                return null;
+            //            }
         } else if (t.isUnboundWildcard()) {
             return ConstraintSet.TRUE;
         } else if (t.isUpperBoundedWildcard()) {

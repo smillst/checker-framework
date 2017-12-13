@@ -65,8 +65,11 @@ public abstract class AbstractType {
      * @return
      */
     public final AbstractType asSuper(TypeMirror superType) {
-        TypeMirror asSuper =
-                context.types.asSuper((Type) getJavaType(), ((Type) superType).asElement());
+        TypeMirror type = getJavaType();
+        if (type.getKind() == TypeKind.WILDCARD) {
+            type = ((WildcardType) type).getExtendsBound();
+        }
+        TypeMirror asSuper = context.types.asSuper((Type) type, ((Type) superType).asElement());
         if (asSuper == null) {
             return null;
         }
