@@ -21,6 +21,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.source.Result;
+import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
@@ -67,11 +68,46 @@ public class InvocationTypeInference {
             targetType = new ProperType(assignmentType, context);
         }
 
-        List<Instantiation> result = infer(methodInvocation, targetType);
+        List<Instantiation> result;
+        try {
+            result = infer(methodInvocation, targetType);
+        } catch (java.lang.Exception ex) {
+            logException(methodInvocation, ex);
+            return null;
+        }
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         checkResult(result, methodInvocation, methodType);
         return result;
+    }
+
+    private void logException(MethodInvocationTree methodInvocation, java.lang.Exception ex) {
+        SourceChecker checker = context.factory.getContext().getChecker();
+        StringBuffer message = new StringBuffer(ex.getLocalizedMessage());
+        if (checker.hasOption("printErrorStack")) {
+            message.append("\n").append(formatStackTrace(ex.getStackTrace()));
+        }
+        checker.report(
+                Result.failure("type.inference.crash", message.toString()), methodInvocation);
+    }
+
+    /** Format a list of {@link StackTraceElement}s to be printed out as an error message. */
+    protected String formatStackTrace(StackTraceElement[] stackTrace) {
+        boolean first = true;
+        StringBuilder sb = new StringBuilder();
+        if (stackTrace.length == 0) {
+            sb.append("no stack trace available.");
+        } else {
+            sb.append("Stack trace: ");
+        }
+        for (StackTraceElement ste : stackTrace) {
+            if (!first) {
+                sb.append("\n");
+            }
+            first = false;
+            sb.append(ste.toString());
+        }
+        return sb.toString();
     }
 
     private boolean shouldTryInference(Tree assignedTo, TreePath path) {
