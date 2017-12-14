@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 interface MyList1313<E> extends Iterable<E> {}
 
-@SuppressWarnings("") // check for crashes
+@SuppressWarnings({"", "type.inference.not.same"}) // check for crashes
 class Issue1313 {
     Stream<?> s;
     Iterable<?> i = s.collect(toMyList1313());

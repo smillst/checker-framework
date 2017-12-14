@@ -59,6 +59,11 @@ public class Variable extends AbstractType {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public AbstractType capture() {
+        return this;
+    }
+
     protected EnumMap<InferBound, LinkedHashSet<AbstractType>> savedBounds = null;
 
     public void save() {

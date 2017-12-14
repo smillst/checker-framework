@@ -1301,7 +1301,7 @@ public abstract class SourceChecker extends AbstractTypeProcessor
         }
 
         Collection<String> checkerSwKeys = this.getSuppressWarningsKeys();
-        if (errKey.equals("type.inference.not.same")) {
+        if (errKey.startsWith("type.inference")) {
             return Arrays.asList(userSwKeys).contains("type.inference.not.same");
         }
 

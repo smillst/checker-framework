@@ -29,11 +29,6 @@ public class ProperType extends AbstractType {
         this.properType = properType;
     }
 
-    public ProperType capture() {
-        TypeMirror capture = context.env.getTypeUtils().capture(getJavaType());
-        return new ProperType(capture, context);
-    }
-
     @Override
     public boolean equals(Object o) {
 

@@ -28,6 +28,11 @@ public abstract class AbstractType {
 
     public abstract AbstractType create(TypeMirror type);
 
+    public AbstractType capture() {
+        TypeMirror capture = context.env.getTypeUtils().capture(getJavaType());
+        return create(capture);
+    }
+
     public enum Kind {
         PROPER,
         VARIABLE,

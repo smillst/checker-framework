@@ -9,7 +9,6 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
@@ -102,34 +101,35 @@ public class ReduceExpression {
         // else
         // Otherwise, the method reference is inexact,
 
+        // Compile-time declaration of the member reference expression
+        ExecutableType compileTimeDecl =
+                TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
+        if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
+            return ReductionResult.TRUE;
+        }
         AbstractType r = t.getFunctionTypeReturn();
-        if (r == null || r.getTypeKind() == TypeKind.VOID) {
-            return new ConstraintSet();
+        if (r.getTypeKind() == TypeKind.VOID) {
+            return ReductionResult.TRUE;
         }
 
-        if (memRef.getTypeArguments() == null && InternalInferenceUtils.isGenericMethod(memRef)) {
-            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
-            // Otherwise, if the method reference expression elides TypeArguments, and the
-            // compile-time declaration is a generic method, and
-            // the return type of the
-            // compile-time declaration mentions at least one of the method's type parameters,
-
-            if (!r.isProper()) {
-                // TODO: Remove this.
-                ErrorReporter.errorAbort(
-                        "Found a memeber reference whose type arguments must be inferred");
-                // the constraint reduces to the bound set B3 which would be used to determine the
-                // method reference's invocation type when targeting the return type of the function
-                // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
-                // dependencies between these new variables and the inference variables in T.
-                ExecutableType functionType =
-                        TypesUtils.findFunctionType(t.getJavaType(), context.env);
-                Theta map = Theta.theta(memRef, functionType, context);
-                BoundSet b2 =
-                        context.inference.createB2(
-                                memRef, functionType, Collections.emptyList(), map);
-                return context.inference.createB3(b2, functionType, memRef, t, map);
-            }
+        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
+        // Otherwise, if the method reference expression elides TypeArguments, and the
+        // compile-time declaration is a generic method, and
+        // the return type of the
+        // compile-time declaration mentions at least one of the method's type parameters,
+        Theta map = Theta.theta(memRef, compileTimeDecl, context);
+        AbstractType compileTimeReturn =
+                InferenceType.create(compileTimeDecl.getReturnType(), map, context);
+        if (memRef.getTypeArguments() == null
+                && !compileTimeDecl.getParameterTypes().isEmpty()
+                && !compileTimeReturn.isProper()) {
+            // the constraint reduces to the bound set B3 which would be used to determine the
+            // method reference's invocation type when targeting the return type of the function
+            // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
+            // dependencies between these new variables and the inference variables in T.
+            throw new RuntimeException("Found method ref that needs inference.");
+            //            BoundSet b2 = context.inference.createB2(memRef, compileTimeDecl, Collections.emptyList(), map);
+            //            return context.inference.createB3(b2, compileTimeDecl, memRef, r, map);
         }
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
@@ -137,10 +137,8 @@ public class ReduceExpression {
         // of applying capture conversion (§5.1.10) to the return type of the invocation type
         // (§15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
         // to false; otherwise, the constraint reduces to ‹R' → R›.
-        ExecutableType typeOfPoAppMethod =
-                TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
-        ProperType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
-        return new Typing(rPrime.capture(), r, Constraint.Kind.TYPE_COMPATIBILITY);
+
+        return new Typing(compileTimeReturn.capture(), r, Constraint.Kind.TYPE_COMPATIBILITY);
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
