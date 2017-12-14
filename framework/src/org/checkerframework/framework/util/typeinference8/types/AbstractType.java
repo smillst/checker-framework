@@ -231,7 +231,7 @@ public abstract class AbstractType {
         }
     }
 
-    public final AbstractType getErased() {
+    public AbstractType getErased() {
         return create(context.env.getTypeUtils().erasure(getJavaType()));
     }
 

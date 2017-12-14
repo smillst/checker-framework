@@ -64,6 +64,11 @@ public class Variable extends AbstractType {
         return this;
     }
 
+    @Override
+    public AbstractType getErased() {
+        return this;
+    }
+
     protected EnumMap<InferBound, LinkedHashSet<AbstractType>> savedBounds = null;
 
     public void save() {
