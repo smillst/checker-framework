@@ -268,7 +268,8 @@ public class InvocationTypeInference {
             AbstractType target,
             Theta map) {
         AbstractType r;
-        if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION) {
+        if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION
+                || invocation.getKind() == Tree.Kind.MEMBER_REFERENCE) {
             r = InferenceType.create(methodType.getReturnType(), map, context);
         } else {
             r = InferenceType.create(TreeUtils.typeOf(invocation), map, context);

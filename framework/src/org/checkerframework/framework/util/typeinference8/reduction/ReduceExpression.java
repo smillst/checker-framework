@@ -102,8 +102,7 @@ public class ReduceExpression {
         // Otherwise, the method reference is inexact,
 
         // Compile-time declaration of the member reference expression
-        ExecutableType compileTimeDecl =
-                TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
+        ExecutableType compileTimeDecl = InternalInferenceUtils.compileTimeDeclaration(memRef);
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
             return ReductionResult.TRUE;
         }
@@ -121,15 +120,14 @@ public class ReduceExpression {
         AbstractType compileTimeReturn =
                 InferenceType.create(compileTimeDecl.getReturnType(), map, context);
         if (memRef.getTypeArguments() == null
-                && !compileTimeDecl.getParameterTypes().isEmpty()
+                && !compileTimeDecl.getTypeVariables().isEmpty()
                 && !compileTimeReturn.isProper()) {
             // the constraint reduces to the bound set B3 which would be used to determine the
             // method reference's invocation type when targeting the return type of the function
             // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
             // dependencies between these new variables and the inference variables in T.
-            throw new RuntimeException("Found method ref that needs inference.");
-            //            BoundSet b2 = context.inference.createB2(memRef, compileTimeDecl, Collections.emptyList(), map);
-            //            return context.inference.createB3(b2, compileTimeDecl, memRef, r, map);
+            BoundSet b0 = BoundSet.initialBounds(map, context);
+            return context.inference.createB3(b0, compileTimeDecl, memRef, r, map);
         }
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C

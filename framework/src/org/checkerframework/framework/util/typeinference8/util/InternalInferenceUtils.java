@@ -353,4 +353,8 @@ public class InternalInferenceUtils {
         Type asSuperOfS = context.types.asSuper((Type) s, ((Type) lubResult).asElement());
         return Pair.of(asSuperOfT, asSuperOfS);
     }
+
+    public static ExecutableType compileTimeDeclaration(MemberReferenceTree memberReferenceTree) {
+        return (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
+    }
 }
