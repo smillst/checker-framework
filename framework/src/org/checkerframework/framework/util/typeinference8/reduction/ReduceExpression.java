@@ -32,6 +32,7 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
+import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -119,6 +120,7 @@ public class ReduceExpression {
         Theta map = Theta.theta(memRef, compileTimeDecl, context);
         AbstractType compileTimeReturn =
                 InferenceType.create(compileTimeDecl.getReturnType(), map, context);
+        BoundSet b0 = BoundSet.initialBounds(map, context);
         if (memRef.getTypeArguments() == null
                 && !compileTimeDecl.getTypeVariables().isEmpty()
                 && !compileTimeReturn.isProper()) {
@@ -126,7 +128,6 @@ public class ReduceExpression {
             // method reference's invocation type when targeting the return type of the function
             // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
             // dependencies between these new variables and the inference variables in T.
-            BoundSet b0 = BoundSet.initialBounds(map, context);
             return context.inference.createB3(b0, compileTimeDecl, memRef, r, map);
         }
 
@@ -136,13 +137,22 @@ public class ReduceExpression {
         // (§15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
         // to false; otherwise, the constraint reduces to ‹R' → R›.
 
-        return new Typing(compileTimeReturn.capture(), r, Constraint.Kind.TYPE_COMPATIBILITY);
+        return ReductionResultPair.of(
+                new ConstraintSet(
+                        new Typing(
+                                compileTimeReturn.capture(),
+                                r,
+                                Constraint.Kind.TYPE_COMPATIBILITY)),
+                b0);
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
-    private static ReductionResult reduceLambda(
+    private static ReductionResultPair reduceLambda(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
-        AbstractType tPrime = getGroundTargetType(t, lambda, context);
+        Pair<AbstractType, BoundSet> pair = getGroundTargetType(t, lambda, context);
+        AbstractType tPrime = pair.first;
+        BoundSet boundSet = pair.second == null ? new BoundSet(context) : pair.second;
+
         ConstraintSet constraintSet = new ConstraintSet();
 
         if (!InternalInferenceUtils.isImplicitlyType(lambda)) {
@@ -167,16 +177,15 @@ public class ReduceExpression {
                     if (!context.env
                             .getTypeUtils()
                             .isAssignable(TreeUtils.typeOf(e), R.getJavaType())) {
-                        BoundSet boundSet = new BoundSet(context);
                         boundSet.addFalse();
-                        return boundSet;
+                        return ReductionResultPair.of(constraintSet, boundSet);
                     }
                 } else {
                     constraintSet.add(new Expression(e, R));
                 }
             }
         }
-        return constraintSet;
+        return ReductionResultPair.of(constraintSet, boundSet);
     }
 
     private static ConstraintSet reduceConditional(Expression constraint) {
@@ -239,10 +248,10 @@ public class ReduceExpression {
         return new ConstraintSet();
     }
 
-    public static AbstractType getGroundTargetType(
+    public static Pair<AbstractType, BoundSet> getGroundTargetType(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         if (!t.isWildcardParameterizedType()) {
-            return t;
+            return Pair.of(t, null);
         }
         // 15.27.3:
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
@@ -253,7 +262,7 @@ public class ReduceExpression {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
             // is implicitly typed, then the ground target type is the non-wildcard parameterization (§9.9) of T.
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C
-            return nonWildcardParameterization(t, context);
+            return Pair.of(nonWildcardParameterization(t, context), null);
         }
     }
 
@@ -280,7 +289,7 @@ public class ReduceExpression {
     }
 
     /** 18.5.3: Functional Interface Parameterization Inference */
-    private static AbstractType explicitlyTypeLambdasWithWildcard(
+    private static Pair<AbstractType, BoundSet> explicitlyTypeLambdasWithWildcard(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         // Where a lambda expression with explicit parameter types P1, ..., Pn targets a functional
         // interface type F<A1, ..., Am> with at least one wildcard type argument, then a parameterization
@@ -343,8 +352,8 @@ public class ReduceExpression {
 
         AbstractType target = t.replaceTypeArgs(APrimes);
         if (hasWildcard) {
-            return nonWildcardParameterization(target, context);
+            return Pair.of(nonWildcardParameterization(target, context), b);
         }
-        return target;
+        return Pair.of(target, b);
     }
 }

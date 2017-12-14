@@ -85,7 +85,8 @@ public class BoundSet implements ReductionResult {
     }
 
     public boolean add(BoundSet newSet) {
-        return add(newSet, false);
+        boolean result = variables.addAll(newSet.variables);
+        return result || add(newSet, false);
     }
 
     private boolean add(BoundSet newSet, boolean isIncorp) {

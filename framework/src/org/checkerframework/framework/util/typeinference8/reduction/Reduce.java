@@ -28,7 +28,13 @@ public class Reduce {
         while (!constraintSet.isEmpty()) {
             Constraint constraint = constraintSet.pop();
             ReductionResult result = reduce(constraint, context);
-            if (result instanceof Constraint) {
+            if (result instanceof ReductionResultPair) {
+                boundSet.add(((ReductionResultPair) result).second);
+                if (boundSet.containsFalse()) {
+                    throw new FalseBoundException(constraint);
+                }
+                constraintSet.add(((ReductionResultPair) result).first);
+            } else if (result instanceof Constraint) {
                 constraintSet.add((Constraint) result);
             } else if (result instanceof ConstraintSet) {
                 constraintSet.add((ConstraintSet) result);
