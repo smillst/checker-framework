@@ -3,6 +3,7 @@ package org.checkerframework.framework.util.typeinference8.infer;
 import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
+import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
@@ -226,6 +227,39 @@ public class InvocationTypeInference {
             if (!InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
+        }
+
+        BoundSet newBounds = c.reduce(context);
+        assert !newBounds.containsFalse();
+        b1.incorporateToFixedPoint(newBounds);
+
+        return b1;
+    }
+
+    public BoundSet createB2MethodRef(
+            MemberReferenceTree expression,
+            ExecutableType methodType,
+            List<AbstractType> args,
+            Theta map) {
+        BoundSet b0 = BoundSet.initialBounds(map, context);
+
+        // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
+        // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
+        for (TypeMirror type : methodType.getThrownTypes()) {
+            AbstractType thrownType = InferenceType.create(type, map, context);
+            if (thrownType.isVariable()) {
+                ((Variable) thrownType).setHasThrowsBound(true);
+            }
+        }
+
+        BoundSet b1 = b0;
+        ConstraintSet c = new ConstraintSet();
+        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
+
+        for (int i = 0; i < formals.size(); i++) {
+            AbstractType ei = args.get(i);
+            AbstractType fi = formals.get(i);
+            c.add(new Typing(ei, fi, Kind.TYPE_COMPATIBILITY));
         }
 
         BoundSet newBounds = c.reduce(context);

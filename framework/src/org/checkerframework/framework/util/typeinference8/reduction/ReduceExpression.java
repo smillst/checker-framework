@@ -108,6 +108,7 @@ public class ReduceExpression {
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
             return ReductionResult.TRUE;
         }
+        ExecutableType funcType = TypesUtils.findFunctionType(t.getJavaType(), context.env);
         AbstractType r = t.getFunctionTypeReturn();
         if (r.getTypeKind() == TypeKind.VOID) {
             return ReductionResult.TRUE;
@@ -121,7 +122,6 @@ public class ReduceExpression {
         Theta map = Theta.theta(memRef, compileTimeDecl, context);
         AbstractType compileTimeReturn =
                 InferenceType.create(compileTimeDecl.getReturnType(), map, context);
-        BoundSet b0 = BoundSet.initialBounds(map, context);
         if (memRef.getTypeArguments() == null
                 && !compileTimeDecl.getTypeVariables().isEmpty()
                 && !compileTimeReturn.isProper()) {
@@ -129,7 +129,10 @@ public class ReduceExpression {
             // method reference's invocation type when targeting the return type of the function
             // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
             // dependencies between these new variables and the inference variables in T.
-            return context.inference.createB3(b0, compileTimeDecl, memRef, r, map);
+            BoundSet b2 =
+                    context.inference.createB2MethodRef(
+                            memRef, compileTimeDecl, t.getFunctionTypeParameters(), map);
+            return context.inference.createB3(b2, compileTimeDecl, memRef, r, map);
         }
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
@@ -144,7 +147,7 @@ public class ReduceExpression {
                                 compileTimeReturn.capture(),
                                 r,
                                 Constraint.Kind.TYPE_COMPATIBILITY)),
-                b0);
+                new BoundSet(context));
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
