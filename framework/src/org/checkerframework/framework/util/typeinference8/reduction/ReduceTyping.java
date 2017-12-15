@@ -143,6 +143,7 @@ public class ReduceTyping {
                 return reduceSubtypeClass(t, s);
             case ARRAY:
                 return reduceSubtypeArray(t, s);
+            case WILDCARD:
             case TYPEVAR:
                 return reduceSubtypeTypeVariable(t, s);
             case INTERSECTION:
