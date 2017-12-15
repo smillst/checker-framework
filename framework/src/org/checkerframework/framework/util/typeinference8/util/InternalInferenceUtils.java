@@ -49,7 +49,10 @@ public class InternalInferenceUtils {
     }
 
     public static TypeMirror subs(
-            ProcessingEnvironment env, TypeMirror type, List<TypeVariable> p, List<TypeMirror> t) {
+            ProcessingEnvironment env,
+            TypeMirror type,
+            List<? extends TypeVariable> p,
+            List<? extends TypeMirror> t) {
 
         List<Type> newP = new ArrayList<>();
         for (TypeVariable typeVariable : p) {
@@ -354,7 +357,19 @@ public class InternalInferenceUtils {
         return Pair.of(asSuperOfT, asSuperOfS);
     }
 
-    public static ExecutableType compileTimeDeclaration(MemberReferenceTree memberReferenceTree) {
-        return (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
+    public static ExecutableType compileTimeDeclaration(
+            MemberReferenceTree memberReferenceTree, Context context) {
+        ExecutableType type =
+                (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
+        ;
+        if (memberReferenceTree.getTypeArguments() == null
+                || memberReferenceTree.getTypeArguments().isEmpty()) {
+            return type;
+        }
+        List<TypeMirror> args = new ArrayList<>();
+        for (ExpressionTree tree : memberReferenceTree.getTypeArguments()) {
+            args.add(TreeUtils.typeOf(tree));
+        }
+        return (ExecutableType) subs(context.env, type, type.getTypeVariables(), args);
     }
 }
