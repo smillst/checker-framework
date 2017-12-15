@@ -18,6 +18,7 @@ import com.sun.tools.javac.tree.JCTree.JCLambda;
 import com.sun.tools.javac.tree.JCTree.JCLambda.ParameterKind;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference.OverloadKind;
+import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import com.sun.tools.javac.tree.JCTree.JCPolyExpression.PolyKind;
@@ -359,9 +360,18 @@ public class InternalInferenceUtils {
 
     public static ExecutableType compileTimeDeclaration(
             MemberReferenceTree memberReferenceTree, Context context) {
-        ExecutableType type =
-                (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
-        ;
+        ExecutableType type;
+        if (((JCMemberReference) memberReferenceTree).kind == ReferenceKind.UNBOUND) {
+            TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
+            ExecutableType functionType = TypesUtils.findFunctionType(functionalType, context.env);
+            DeclaredType receiver = (DeclaredType) functionType.getParameterTypes().get(0);
+            ExecutableElement compileTimeD =
+                    (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
+            type = (ExecutableType) context.env.getTypeUtils().asMemberOf(receiver, compileTimeD);
+
+        } else {
+            type = (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
+        }
         if (memberReferenceTree.getTypeArguments() == null
                 || memberReferenceTree.getTypeArguments().isEmpty()) {
             return type;
