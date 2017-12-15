@@ -112,6 +112,9 @@ public class InvocationTypeInference {
     }
 
     private boolean shouldTryInference(Tree assignedTo, TreePath path) {
+        if (path.getParentPath().getLeaf().getKind() == Tree.Kind.LAMBDA_EXPRESSION) {
+            return false;
+        }
         if (assignedTo == null) {
             return true;
         }
