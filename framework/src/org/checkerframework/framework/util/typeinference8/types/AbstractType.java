@@ -1,6 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.CapturedType;
 import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,15 @@ public abstract class AbstractType {
     public AbstractType capture() {
         TypeMirror capture = context.env.getTypeUtils().capture(getJavaType());
         return create(capture);
+    }
+
+    public AbstractType unCapture() {
+        if (InternalInferenceUtils.isCaptured(getJavaType())) {
+            TypeMirror wildcard = ((CapturedType) getJavaType()).wildcard;
+            return create(wildcard);
+        } else {
+            return null;
+        }
     }
 
     public enum Kind {

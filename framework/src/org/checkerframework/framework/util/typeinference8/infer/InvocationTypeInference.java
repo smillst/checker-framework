@@ -179,12 +179,10 @@ public class InvocationTypeInference {
                 return ((TypeVariable) type).getUpperBound();
             }
         } else if (type.getKind() == TypeKind.WILDCARD) {
-            if (InternalInferenceUtils.isCaptured(type)) {
-                if (((WildcardType) type).getSuperBound().getKind() != TypeKind.NULL) {
-                    return ((WildcardType) type).getSuperBound();
-                } else {
-                    return ((WildcardType) type).getExtendsBound();
-                }
+            if (((WildcardType) type).getSuperBound().getKind() != TypeKind.NULL) {
+                return ((WildcardType) type).getSuperBound();
+            } else {
+                return ((WildcardType) type).getExtendsBound();
             }
         }
         return type;

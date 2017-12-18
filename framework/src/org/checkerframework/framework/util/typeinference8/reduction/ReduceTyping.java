@@ -18,6 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -222,6 +223,12 @@ public class ReduceTyping {
     public static ReductionResult reduceContained(Typing contained) {
         AbstractType s = contained.getS();
         AbstractType t = contained.getT();
+        if (InternalInferenceUtils.isCaptured(t.getJavaType())) {
+            t = t.unCapture();
+        }
+        if (InternalInferenceUtils.isCaptured(s.getJavaType())) {
+            s = s.unCapture();
+        }
         if (t.getTypeKind() != TypeKind.WILDCARD) {
             //            if (s.getTypeKind() != TypeKind.WILDCARD) {
             return new Typing(s, t, Kind.TYPE_EQUALITY);
