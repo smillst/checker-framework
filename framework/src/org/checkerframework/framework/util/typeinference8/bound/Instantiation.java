@@ -25,4 +25,9 @@ public class Instantiation extends Bound {
     public ProperType getT() {
         return t;
     }
+
+    @Override
+    public String toString() {
+        return a + " := " + t;
+    }
 }
