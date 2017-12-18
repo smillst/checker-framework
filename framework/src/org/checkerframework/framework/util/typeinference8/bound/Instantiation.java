@@ -28,6 +28,6 @@ public class Instantiation extends Bound {
 
     @Override
     public String toString() {
-        return a + " := " + t;
+        return a.toString();
     }
 }
