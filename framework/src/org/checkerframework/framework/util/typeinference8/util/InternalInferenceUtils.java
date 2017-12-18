@@ -6,6 +6,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
@@ -361,7 +362,10 @@ public class InternalInferenceUtils {
     public static ExecutableType compileTimeDeclaration(
             MemberReferenceTree memberReferenceTree, Context context) {
         ExecutableType type;
-        if (((JCMemberReference) memberReferenceTree).kind == ReferenceKind.UNBOUND) {
+        if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
+            TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
+            return TypesUtils.findFunctionType(functionalType, context.env);
+        } else if (((JCMemberReference) memberReferenceTree).kind == ReferenceKind.UNBOUND) {
             TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
             ExecutableType functionType = TypesUtils.findFunctionType(functionalType, context.env);
             DeclaredType receiver = (DeclaredType) functionType.getParameterTypes().get(0);
