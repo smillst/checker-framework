@@ -9,6 +9,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -151,14 +152,8 @@ public class InvocationTypeInference {
             if (fromReturn.containsKey(typeVariable)) {
                 TypeMirror correctType = fromReturn.get(typeVariable);
                 TypeMirror inferredType = inst.getT().getJavaType();
-                if (InternalInferenceUtils.isCaptured(inferredType)
-                        && !InternalInferenceUtils.isCaptured(correctType)) {
-                    if (((TypeVariable) inferredType).getLowerBound().getKind() != TypeKind.NULL) {
-                        inferredType = ((TypeVariable) inferredType).getLowerBound();
-                    } else {
-                        inferredType = ((TypeVariable) inferredType).getUpperBound();
-                    }
-                }
+                correctType = upperBound(correctType);
+                inferredType = upperBound(inferredType);
                 if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
                     // type.inference.not.same=type variable: %s\ninferred: %s\njava type: %s
                     context.factory
@@ -174,6 +169,25 @@ public class InvocationTypeInference {
                 }
             }
         }
+    }
+
+    private TypeMirror upperBound(TypeMirror type) {
+        if (InternalInferenceUtils.isCaptured(type)) {
+            if (((TypeVariable) type).getLowerBound().getKind() != TypeKind.NULL) {
+                return ((TypeVariable) type).getLowerBound();
+            } else {
+                return ((TypeVariable) type).getUpperBound();
+            }
+        } else if (type.getKind() == TypeKind.WILDCARD) {
+            if (InternalInferenceUtils.isCaptured(type)) {
+                if (((WildcardType) type).getSuperBound().getKind() != TypeKind.NULL) {
+                    return ((WildcardType) type).getSuperBound();
+                } else {
+                    return ((WildcardType) type).getExtendsBound();
+                }
+            }
+        }
+        return type;
     }
 
     /**
