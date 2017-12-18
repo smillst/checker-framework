@@ -70,15 +70,15 @@ public class InvocationTypeInference {
         }
 
         List<Instantiation> result;
-        try {
-            result = infer(methodInvocation, targetType);
-        } catch (java.lang.Exception ex) {
-            logException(methodInvocation, ex);
-            return null;
-        }
+        //        try {
+        result = infer(methodInvocation, targetType);
+        //        } catch (java.lang.Exception ex) {
+        //            logException(methodInvocation, ex);
+        //            return null;
+        //        }
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
-        checkResult(result, methodInvocation, methodType);
+        //        checkResult(result, methodInvocation, methodType);
         return result;
     }
 
