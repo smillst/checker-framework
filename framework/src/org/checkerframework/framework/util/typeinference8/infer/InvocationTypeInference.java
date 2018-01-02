@@ -179,9 +179,9 @@ public class InvocationTypeInference {
                 return ((TypeVariable) type).getUpperBound();
             }
         } else if (type.getKind() == TypeKind.WILDCARD) {
-            if (((WildcardType) type).getSuperBound().getKind() != TypeKind.NULL) {
+            if (((WildcardType) type).getSuperBound() != null) {
                 return ((WildcardType) type).getSuperBound();
-            } else {
+            } else if (((WildcardType) type).getExtendsBound() != null) {
                 return ((WildcardType) type).getExtendsBound();
             }
         }
