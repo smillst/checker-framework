@@ -10,6 +10,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
+import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.code.Type;
@@ -126,6 +127,9 @@ public class InferenceUtils {
         }
 
         switch (assignmentContext.getKind()) {
+            case TYPE_CAST:
+                TypeCastTree typeCastTree = (TypeCastTree) assignmentContext;
+                return TreeUtils.typeOf(typeCastTree.getType());
             case ASSIGNMENT:
                 ExpressionTree variable = ((AssignmentTree) assignmentContext).getVariable();
                 return TreeUtils.typeOf(variable);
