@@ -5,7 +5,6 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -259,11 +258,11 @@ public abstract class Constraint implements ReductionResult {
      * <p>&lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
      * method are declared by the throws clause of the function type derived from T.
      */
-    public static class Exception extends Constraint {
+    public static class ThrowsConstraint extends Constraint {
         ExpressionTree expression;
         Theta map;
 
-        public Exception(ExpressionTree expression, AbstractType t, Theta map) {
+        public ThrowsConstraint(ExpressionTree expression, AbstractType t, Theta map) {
             super(t);
             assert expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
                     || expression.getKind() == Tree.Kind.MEMBER_REFERENCE;
@@ -311,7 +310,7 @@ public abstract class Constraint implements ReductionResult {
                 return false;
             }
 
-            Exception that = (Exception) o;
+            ThrowsConstraint that = (ThrowsConstraint) o;
 
             return expression != null
                     ? expression.equals(that.expression)

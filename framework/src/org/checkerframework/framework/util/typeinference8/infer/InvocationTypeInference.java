@@ -29,8 +29,8 @@ import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Exception;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
@@ -432,7 +432,7 @@ public class InvocationTypeInference {
                 if (ei.getKind() == Tree.Kind.LAMBDA_EXPRESSION
                         || ei.getKind() == Tree.Kind.MEMBER_REFERENCE) {
                     // Only add exception constraints from the top level.
-                    c.add(new Exception(ei, fi, map));
+                    c.add(new ThrowsConstraint(ei, fi, map));
                 }
                 c.add(new Expression(ei, fi));
             }

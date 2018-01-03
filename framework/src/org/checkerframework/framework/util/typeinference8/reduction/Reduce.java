@@ -6,8 +6,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
-import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Exception;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
@@ -70,14 +70,14 @@ public class Reduce {
                 return ReduceTyping.reduceEquality((Typing) constraint);
             case LAMBDA_EXCEPTION:
             case METHOD_REF_EXCEPTION:
-                return reduceException((Exception) constraint, context);
+                return reduceException((ThrowsConstraint) constraint, context);
             default:
                 ErrorReporter.errorAbort("Unexpected constraint kind: " + constraint.getKind());
                 throw new RuntimeException(""); // dead code
         }
     }
 
-    public ReductionResult reduceException(Exception c, Context context) {
+    public ReductionResult reduceException(ThrowsConstraint c, Context context) {
         ConstraintSet constraintSet = new ConstraintSet();
         ExecutableElement ele =
                 (ExecutableElement) TreeUtils.findFunction(c.getExpression(), context.env);
