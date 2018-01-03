@@ -85,11 +85,6 @@ public class BoundSet implements ReductionResult {
     }
 
     public boolean add(BoundSet newSet) {
-        boolean result = variables.addAll(newSet.variables);
-        return result || add(newSet, false);
-    }
-
-    private boolean add(BoundSet newSet, boolean isIncorp) {
         boolean changed = captures.addAll(newSet.captures);
         changed |= variables.addAll(newSet.variables);
         isFalse |= newSet.isFalse;
@@ -238,15 +233,15 @@ public class BoundSet implements ReductionResult {
      *
      * @param newBounds bounds to incorporate
      */
-    public void incorporateToFixedPoint(BoundSet newBounds) {
+    public void incorporateToFixedPoint(final BoundSet newBounds) {
         this.isFalse |= newBounds.isFalse;
         if (this.containsFalse()) {
             return;
         }
+        add(newBounds);
         int count = 0;
         do {
             count++;
-            variables.addAll(newBounds.variables);
             List<Instantiation> instantiations = getInstantiationsAll();
             boolean boundsChangeInst = false;
             if (!instantiations.isEmpty()) {

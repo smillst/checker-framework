@@ -94,13 +94,7 @@ public class Capture extends Bound {
     }
 
     public LinkedHashSet<Variable> getAllIVOnRHS() {
-        LinkedHashSet<Variable> set = new LinkedHashSet<>();
-        for (CaptureTuple tuple : tuples) {
-            if (tuple.capturedTypeArg.getKind() == AbstractType.Kind.VARIABLE) {
-                set.add((Variable) tuple.capturedTypeArg);
-            }
-        }
-        return set;
+        return new LinkedHashSet<>(capturedType.getInferenceVariables());
     }
 
     public Theta getMap() {
