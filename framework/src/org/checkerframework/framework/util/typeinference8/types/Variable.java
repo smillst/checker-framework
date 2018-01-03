@@ -196,7 +196,6 @@ public class Variable extends AbstractType {
 
     public boolean addBound(InferBound kind, AbstractType type) {
         if (kind == InferBound.EQUAL && type.isProper()) {
-            assert instantiation == null;
             instantiation = (ProperType) type;
         }
         if (bounds.get(kind).add(type)) {

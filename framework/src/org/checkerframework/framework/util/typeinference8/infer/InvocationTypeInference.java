@@ -183,6 +183,8 @@ public class InvocationTypeInference {
                 return ((WildcardType) type).getSuperBound();
             } else if (((WildcardType) type).getExtendsBound() != null) {
                 return ((WildcardType) type).getExtendsBound();
+            } else {
+                return context.object.getJavaType();
             }
         }
         return type;
