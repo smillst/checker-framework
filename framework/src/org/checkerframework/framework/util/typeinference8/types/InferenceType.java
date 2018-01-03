@@ -50,6 +50,7 @@ public class InferenceType extends AbstractType {
         return abstractTypes;
     }
 
+    @Override
     public AbstractType create(TypeMirror type) {
         return create(type, map, context);
     }
@@ -82,6 +83,7 @@ public class InferenceType extends AbstractType {
         return result;
     }
 
+    @Override
     public TypeMirror getJavaType() {
         return type;
     }

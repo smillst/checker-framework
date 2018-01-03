@@ -40,6 +40,7 @@ public class Expression extends Constraint {
         return getInputVariablesForExpression(expression, getT());
     }
 
+    @Override
     public List<Variable> getOutputVariables() {
         List<Variable> input = getInputVariables();
         List<Variable> output = new ArrayList<>(getT().getInferenceVariables());

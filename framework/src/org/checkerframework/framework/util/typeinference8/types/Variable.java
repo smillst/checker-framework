@@ -1,13 +1,13 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.source.tree.ExpressionTree;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -34,7 +34,7 @@ public class Variable extends AbstractType {
     protected final EnumMap<InferBound, Set<AbstractType>> bounds = new EnumMap<>(InferBound.class);
 
     /** Constraints implied by complementary pairs of bounds. */
-    public Queue<Typing> constraints = new LinkedList<>();
+    public Queue<Typing> constraints = new ArrayDeque<>();
 
     private boolean hasThrowsBound = false;
 
@@ -112,6 +112,7 @@ public class Variable extends AbstractType {
         }
     }
 
+    @Override
     public TypeVariable getJavaType() {
         return typeVariable;
     }

@@ -2,9 +2,9 @@ package org.checkerframework.framework.util.typeinference8.reduction;
 
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Type.WildcardType;
+import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Stack;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -27,7 +27,7 @@ public class ReduceTyping {
 
     public static boolean reduceTyping(BoundSet boundSet, Typing constraint, Context context) {
         ReductionResult result = reduceTypingOneStep(constraint, context);
-        Stack<Typing> constraints = new Stack<>();
+        ArrayDeque<Typing> constraints = new ArrayDeque<>();
         while (result != null) {
             if (result == ConstraintSet.TRUE) {
                 // Do nothing
@@ -149,14 +149,15 @@ public class ReduceTyping {
                 return reduceSubtypeTypeVariable(t, s);
             case INTERSECTION:
                 return reduceSubtypingIntersection(t, s);
+            default:
+                return null;
         }
-        return null;
     }
 
     private static boolean isWildcardOrCapturedWildcard(TypeMirror subType) {
         return subType.getKind() == TypeKind.WILDCARD
-                || subType.getKind() == TypeKind.TYPEVAR
-                        && TypesUtils.isCaptured((TypeVariable) subType);
+                || (subType.getKind() == TypeKind.TYPEVAR
+                        && TypesUtils.isCaptured((TypeVariable) subType));
     }
 
     private static ConstraintSet reduceSubtypeClass(AbstractType t, AbstractType s) {

@@ -19,6 +19,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class ProperType extends AbstractType {
     private final TypeMirror properType;
 
+    @Override
     public ProperType create(TypeMirror properType) {
         return new ProperType(properType, context);
     }
@@ -53,6 +54,7 @@ public class ProperType extends AbstractType {
         return result;
     }
 
+    @Override
     public TypeMirror getJavaType() {
         return properType;
     }

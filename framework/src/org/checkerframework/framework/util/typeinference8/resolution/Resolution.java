@@ -1,9 +1,9 @@
 package org.checkerframework.framework.util.typeinference8.resolution;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import javax.lang.model.type.TypeMirror;
@@ -27,7 +27,7 @@ public class Resolution {
             return boundSet;
         }
         Dependencies dependencies = boundSet.getDependencies();
-        Queue<Variable> unresolvedVars = new LinkedList<>(as);
+        Queue<Variable> unresolvedVars = new ArrayDeque<>(as);
         for (Variable var : as) {
             for (Variable dep : dependencies.get(var)) {
                 if (!unresolvedVars.contains(dep)) {

@@ -151,7 +151,7 @@ public class InternalInferenceUtils {
                 // A conditional expression whose second or third operand is not pertinent to
                 // applicability.
                 return notPertinentToApplicability(conditional.getTrueExpression(), b)
-                        || notPertinentToApplicability(conditional.getTrueExpression(), b);
+                        || notPertinentToApplicability(conditional.getFalseExpression(), b);
             default:
                 return false;
         }

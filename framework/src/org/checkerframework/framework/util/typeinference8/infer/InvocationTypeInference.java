@@ -85,7 +85,7 @@ public class InvocationTypeInference {
 
     private void logException(MethodInvocationTree methodInvocation, java.lang.Exception ex) {
         SourceChecker checker = context.factory.getContext().getChecker();
-        StringBuffer message = new StringBuffer();
+        StringBuilder message = new StringBuilder();
         message.append(ex.getLocalizedMessage());
         if (checker.hasOption("printErrorStack")) {
             message.append("\n").append(formatStackTrace(ex.getStackTrace()));
@@ -132,10 +132,11 @@ public class InvocationTypeInference {
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocationTree);
                     return ele.getTypeParameters().isEmpty();
                 }
+                return false;
+            default:
+                return !(assignedTo instanceof ExpressionTree
+                        && InternalInferenceUtils.isPolyExpression((ExpressionTree) assignedTo));
         }
-
-        return !(assignedTo instanceof ExpressionTree
-                && InternalInferenceUtils.isPolyExpression((ExpressionTree) assignedTo));
     }
 
     private void checkResult(
