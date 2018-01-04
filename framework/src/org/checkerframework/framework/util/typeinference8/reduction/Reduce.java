@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
+import com.sun.source.tree.LambdaExpressionTree;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.ExecutableElement;
@@ -23,7 +24,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class Reduce {
-    public BoundSet reduce(ConstraintSet constraintSet, Context context) {
+    public static BoundSet reduce(ConstraintSet constraintSet, Context context) {
         BoundSet boundSet = new BoundSet(context);
         while (!constraintSet.isEmpty()) {
             Constraint constraint = constraintSet.pop();
@@ -56,7 +57,7 @@ public class Reduce {
         return boundSet;
     }
 
-    public ReductionResult reduce(Constraint constraint, Context context) {
+    private static ReductionResult reduce(Constraint constraint, Context context) {
         switch (constraint.getKind()) {
             case EXPRESSION:
                 return ReduceExpression.reduce((Expression) constraint, context);
@@ -77,7 +78,7 @@ public class Reduce {
         }
     }
 
-    public ReductionResult reduceException(ThrowsConstraint c, Context context) {
+    private static ReductionResult reduceException(ThrowsConstraint c, Context context) {
         ConstraintSet constraintSet = new ConstraintSet();
         ExecutableElement ele =
                 (ExecutableElement) TreeUtils.findFunction(c.getExpression(), context.env);
@@ -97,7 +98,9 @@ public class Reduce {
 
         List<? extends TypeMirror> thrownTypes;
         if (c.getKind() == Kind.LAMBDA_EXCEPTION) {
-            thrownTypes = CheckedExceptionsUtil.thrownCheckedExceptions(c.getExpression(), context);
+            thrownTypes =
+                    CheckedExceptionsUtil.thrownCheckedExceptions(
+                            (LambdaExpressionTree) c.getExpression(), context);
         } else {
             thrownTypes =
                     TypesUtils.findFunctionType(TreeUtils.typeOf(c.getExpression()), context.env)

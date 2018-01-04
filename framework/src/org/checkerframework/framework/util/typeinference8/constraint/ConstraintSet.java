@@ -53,7 +53,7 @@ public class ConstraintSet implements ReductionResult {
     }
 
     public BoundSet reduce(Context context) {
-        return new Reduce().reduce(this, context);
+        return Reduce.reduce(this, context);
     }
 
     /**

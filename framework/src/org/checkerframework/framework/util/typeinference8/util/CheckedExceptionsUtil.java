@@ -1,10 +1,10 @@
 package org.checkerframework.framework.util.typeinference8.util;
 
 import com.sun.source.tree.CatchTree;
+import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ThrowTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.TryTree;
 import com.sun.source.util.TreeScanner;
 import java.util.ArrayList;
@@ -16,15 +16,27 @@ import org.checkerframework.javacutil.TreeUtils;
 
 public class CheckedExceptionsUtil {
 
-    public static List<TypeMirror> thrownCheckedExceptions(Tree tree, Context context) {
-        return new CheckedExceptionVisitor(context).scan(tree, null);
+    /**
+     * Returns a list of checked exception types that can be thrown by the lambda.
+     *
+     * @param lambda an expression
+     * @param context inference context
+     * @return a list of types of checked exceptions that can be thrown by the lambda.
+     */
+    public static List<TypeMirror> thrownCheckedExceptions(
+            LambdaExpressionTree lambda, Context context) {
+        return new CheckedExceptionVisitor(context).scan(lambda, null);
     }
 
+    /**
+     * Helper class for gathering the types of checked exceptions in a lambda. See
+     * https://docs.oracle.com/javase/specs/jls/se9/html/jls-11.html#jls-11.2.2
+     */
     private static class CheckedExceptionVisitor extends TreeScanner<List<TypeMirror>, Void> {
 
         private Context context;
 
-        protected CheckedExceptionVisitor(Context context) {
+        private CheckedExceptionVisitor(Context context) {
             this.context = context;
         }
 
@@ -90,7 +102,8 @@ public class CheckedExceptionsUtil {
 
             if (!results.isEmpty()) {
                 for (CatchTree catchTree : node.getCatches()) {
-                    removeSame(TreeUtils.typeOf(catchTree.getParameter()), results);
+                    // Remove any type that would be caught.
+                    removeAssignable(TreeUtils.typeOf(catchTree.getParameter()), results);
                 }
             }
             results.addAll(scan(node.getResources(), aVoid));
@@ -100,17 +113,21 @@ public class CheckedExceptionsUtil {
             return results;
         }
 
-        private void removeSame(TypeMirror type, List<TypeMirror> thrownExceptionTypes) {
+        /**
+         * If any type in {@code thrownExceptionTypes} is assignable to {@code type}, then remove it
+         * from the list.
+         */
+        private void removeAssignable(TypeMirror type, List<TypeMirror> thrownExceptionTypes) {
             if (thrownExceptionTypes.isEmpty()) {
                 return;
             }
             if (type.getKind() == TypeKind.UNION) {
                 for (TypeMirror altern : ((UnionType) type).getAlternatives()) {
-                    removeSame(altern, thrownExceptionTypes);
+                    removeAssignable(altern, thrownExceptionTypes);
                 }
             } else {
                 for (TypeMirror thrownType : new ArrayList<>(thrownExceptionTypes)) {
-                    if (context.env.getTypeUtils().isSameType(thrownType, type)) {
+                    if (context.env.getTypeUtils().isAssignable(thrownType, type)) {
                         thrownExceptionTypes.remove(thrownType);
                     }
                 }
@@ -118,8 +135,9 @@ public class CheckedExceptionsUtil {
         }
     }
 
-    public static boolean isCheckedException(TypeMirror t, Context context) {
+    /** Returns true iff {@code type} is a checked exception. */
+    private static boolean isCheckedException(TypeMirror type, Context context) {
         TypeMirror runtimeEx = context.runtimeEx;
-        return context.env.getTypeUtils().isSubtype(t, runtimeEx);
+        return context.env.getTypeUtils().isSubtype(type, runtimeEx);
     }
 }
