@@ -355,7 +355,6 @@ public class InvocationTypeInference {
                             new Typing(capture.getLHS(), target, Kind.TYPE_COMPATIBILITY));
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2
             // Let R be a type that is not an inference variable (but is not necessarily a proper type).
-            ConstraintSet constraintSet = new ConstraintSet();
             for (CaptureTuple c : capture.getTuples()) {
                 if (c.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
                     ConstraintSet newCon =
@@ -363,7 +362,7 @@ public class InvocationTypeInference {
                     if (newCon == null) {
                         b2.addFalse();
                     }
-                    constraintSet.add(newCon);
+                    set.add(newCon);
                 }
             }
             BoundSet b = set.reduce(context);
