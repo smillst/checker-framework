@@ -32,9 +32,9 @@ public class BoundSet implements ReductionResult {
     private boolean isFalse = false;
     private boolean uncheckedConversion = false;
 
-    private BoundSet(Bound false1, Context context) {
+    private BoundSet(Context context, boolean isFalse) {
         this(context);
-        isFalse = true;
+        this.isFalse = isFalse;
     }
 
     public BoundSet(Context context) {
@@ -130,21 +130,21 @@ public class BoundSet implements ReductionResult {
     }
 
     /** Gets the instantiations for all alphas that currently have one. */
-    public List<Instantiation> getInstantiations(List<Variable> alphas) {
-        List<Instantiation> list = new ArrayList<>();
+    public List<Variable> getInstantiations(List<Variable> alphas) {
+        List<Variable> list = new ArrayList<>();
         for (Variable var : alphas) {
             if (var.hasInstantiation()) {
-                list.add(new Instantiation(var, var.getInstantiation()));
+                list.add(var);
             }
         }
         return list;
     }
 
-    public List<Instantiation> getInstantiationsAll() {
-        List<Instantiation> list = new ArrayList<>();
+    public List<Variable> getInstantiationsAll() {
+        List<Variable> list = new ArrayList<>();
         for (Variable var : variables) {
             if (var.hasInstantiation()) {
-                list.add(new Instantiation(var, var.getInstantiation()));
+                list.add(var);
             }
         }
         return list;
@@ -161,7 +161,7 @@ public class BoundSet implements ReductionResult {
     }
 
     /** Resolve all inference variables mentioned in any bound. */
-    public List<Instantiation> resolve() {
+    public List<Variable> resolve() {
         BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, context);
         return b.getInstantiations(getAllInferenceVariables());
     }
@@ -242,7 +242,7 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
-            List<Instantiation> instantiations = getInstantiationsAll();
+            List<Variable> instantiations = getInstantiationsAll();
             boolean boundsChangeInst = false;
             if (!instantiations.isEmpty()) {
                 for (Variable var : variables) {

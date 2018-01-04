@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.type.TypeKind;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
@@ -157,7 +156,7 @@ public abstract class Constraint implements ReductionResult {
 
     public abstract List<Variable> getOutputVariables();
 
-    public void applyInstantiations(List<Instantiation> instantiations) {
+    public void applyInstantiations(List<Variable> instantiations) {
         T = T.applyInstantiations(instantiations);
     }
 
@@ -200,7 +199,7 @@ public abstract class Constraint implements ReductionResult {
         }
 
         @Override
-        public void applyInstantiations(List<Instantiation> instantiations) {
+        public void applyInstantiations(List<Variable> instantiations) {
             super.applyInstantiations(instantiations);
             S = S.applyInstantiations(instantiations);
         }

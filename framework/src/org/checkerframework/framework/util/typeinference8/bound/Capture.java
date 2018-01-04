@@ -27,7 +27,7 @@ import org.checkerframework.javacutil.TypesUtils;
  * of capture conversion applied to {@code G<A1, ..., An>} (where A1, ..., An may be types or
  * wildcards and may mention inference variables).
  */
-public class Capture extends Bound {
+public class Capture {
     /** {@code G<A1, ..., An>} */
     private final AbstractType capturedType;
     /** G */
@@ -84,11 +84,6 @@ public class Capture extends Bound {
         return capturedType;
     }
 
-    @Override
-    public Kind getKind() {
-        return Kind.CAPTURE;
-    }
-
     public List<? extends CaptureVariable> getAllIVOnLHS() {
         return captureVariables;
     }
@@ -109,7 +104,6 @@ public class Capture extends Bound {
         return lhs;
     }
 
-    @Override
     public boolean isCaptureMentionsAny(Collection<Variable> as) {
         for (Variable a : as) {
             if (map.containsValue(a)) {

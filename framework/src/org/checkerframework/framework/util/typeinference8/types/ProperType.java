@@ -12,7 +12,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -86,7 +85,7 @@ public class ProperType extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+    public AbstractType applyInstantiations(List<Variable> instantiations) {
         return this;
     }
 

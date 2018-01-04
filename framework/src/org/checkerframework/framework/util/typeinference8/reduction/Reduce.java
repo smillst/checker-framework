@@ -15,7 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.util.CheckedExceptions;
+import org.checkerframework.framework.util.typeinference8.util.CheckedExceptionsUtil;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
@@ -97,7 +97,7 @@ public class Reduce {
 
         List<? extends TypeMirror> thrownTypes;
         if (c.getKind() == Kind.LAMBDA_EXCEPTION) {
-            thrownTypes = CheckedExceptions.thrownCheckedExceptions(c.getExpression(), context);
+            thrownTypes = CheckedExceptionsUtil.thrownCheckedExceptions(c.getExpression(), context);
         } else {
             thrownTypes =
                     TypesUtils.findFunctionType(TreeUtils.typeOf(c.getExpression()), context.env)

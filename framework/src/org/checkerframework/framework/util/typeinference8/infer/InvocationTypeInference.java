@@ -28,7 +28,6 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
 import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
@@ -58,7 +57,7 @@ public class InvocationTypeInference {
         this.context = new Context(env, factory, pathToExpression, this);
     }
 
-    public List<Instantiation> infer(MethodInvocationTree methodInvocation) {
+    public List<Variable> infer(MethodInvocationTree methodInvocation) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(pathToExpression);
         if (!shouldTryInference(assignmentContext, pathToExpression)) {
             return null;
@@ -70,7 +69,7 @@ public class InvocationTypeInference {
             targetType = new ProperType(assignmentType, context);
         }
 
-        List<Instantiation> result;
+        List<Variable> result;
         try {
             result = infer(methodInvocation, targetType);
         } catch (java.lang.Exception ex) {
@@ -140,19 +139,19 @@ public class InvocationTypeInference {
     }
 
     private void checkResult(
-            List<Instantiation> result,
+            List<Variable> result,
             MethodInvocationTree methodInvocation,
             ExecutableType methodType) {
         Map<TypeVariable, TypeMirror> fromReturn =
                 InferenceUtils.getMappingFromReturnType(methodInvocation, methodType, context.env);
-        for (Instantiation inst : result) {
-            if (!inst.getA().getInvocation().equals(methodInvocation)) {
+        for (Variable variable : result) {
+            if (!variable.getInvocation().equals(methodInvocation)) {
                 continue;
             }
-            TypeVariable typeVariable = inst.getA().getJavaType();
+            TypeVariable typeVariable = variable.getJavaType();
             if (fromReturn.containsKey(typeVariable)) {
                 TypeMirror correctType = fromReturn.get(typeVariable);
-                TypeMirror inferredType = inst.getT().getJavaType();
+                TypeMirror inferredType = variable.getInstantiation().getJavaType();
                 correctType = upperBound(correctType);
                 inferredType = upperBound(inferredType);
                 if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
@@ -163,7 +162,7 @@ public class InvocationTypeInference {
                             .report(
                                     Result.failure(
                                             "type.inference.not.same",
-                                            typeVariable + "(" + inst.getA() + ")",
+                                            typeVariable + "(" + variable + ")",
                                             inferredType,
                                             correctType),
                                     methodInvocation);
@@ -196,7 +195,7 @@ public class InvocationTypeInference {
      * @param target Nullable if methodInvocation isn't assigned.
      * @return
      */
-    public List<Instantiation> infer(MethodInvocationTree methodInvocation, ProperType target) {
+    public List<Variable> infer(MethodInvocationTree methodInvocation, ProperType target) {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         Theta map = Theta.theta(methodInvocation, methodType, context);
@@ -211,7 +210,7 @@ public class InvocationTypeInference {
                 createC(methodInvocation, methodType, methodInvocation.getArguments(), map);
 
         BoundSet b4 = getB4(b3, c);
-        List<Instantiation> thetaPrime = b4.resolve();
+        List<Variable> thetaPrime = b4.resolve();
 
         if (b4.isUncheckedConversion()) {
             // If unchecked conversion was necessary for the method to be applicable during

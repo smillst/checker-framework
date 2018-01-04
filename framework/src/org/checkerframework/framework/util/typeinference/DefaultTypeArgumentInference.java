@@ -53,8 +53,8 @@ import org.checkerframework.framework.util.typeinference.solver.InferredValue;
 import org.checkerframework.framework.util.typeinference.solver.InferredValue.InferredType;
 import org.checkerframework.framework.util.typeinference.solver.SubtypesSolver;
 import org.checkerframework.framework.util.typeinference.solver.SupertypesSolver;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.infer.InvocationTypeInference;
+import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
@@ -130,8 +130,7 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
         if (expressionTree.getKind() == Tree.Kind.METHOD_INVOCATION) {
             InvocationTypeInference java8inference =
                     new InvocationTypeInference(typeFactory, pathToExpression);
-            List<Instantiation> result =
-                    java8inference.infer((MethodInvocationTree) expressionTree);
+            List<Variable> result = java8inference.infer((MethodInvocationTree) expressionTree);
             //            System.out.println("Inferred the following for: "+expressionTree);
             //            System.out.println("\t"+PluginUtil.join("\n\t", result));
         }

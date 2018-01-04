@@ -15,7 +15,6 @@ import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -69,7 +68,7 @@ public abstract class AbstractType {
 
     public abstract Iterator<ProperType> getTypeParameterBounds();
 
-    public abstract AbstractType applyInstantiations(List<Instantiation> instantiations);
+    public abstract AbstractType applyInstantiations(List<Variable> instantiations);
 
     public abstract boolean isObject();
 

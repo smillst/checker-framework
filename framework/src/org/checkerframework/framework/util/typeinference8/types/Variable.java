@@ -15,7 +15,6 @@ import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -159,10 +158,10 @@ public class Variable extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
-        for (Instantiation inst : instantiations) {
-            if (inst.getA().equals(this)) {
-                return inst.getT();
+    public AbstractType applyInstantiations(List<Variable> instantiations) {
+        for (Variable inst : instantiations) {
+            if (inst.equals(this)) {
+                return inst.instantiation;
             }
         }
         return this;
@@ -318,7 +317,7 @@ public class Variable extends AbstractType {
         return set;
     }
 
-    public boolean applyInstantiationsToBounds(List<Instantiation> instantiations) {
+    public boolean applyInstantiationsToBounds(List<Variable> instantiations) {
         boolean changed = false;
         for (Set<AbstractType> boundList : bounds.values()) {
             LinkedHashSet<AbstractType> newBounds = new LinkedHashSet<>(boundList.size());

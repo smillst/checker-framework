@@ -14,7 +14,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.UnionType;
 import org.checkerframework.javacutil.TreeUtils;
 
-public class CheckedExceptions {
+public class CheckedExceptionsUtil {
 
     public static List<TypeMirror> thrownCheckedExceptions(Tree tree, Context context) {
         return new CheckedExceptionVisitor(context).scan(tree, null);

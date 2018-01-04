@@ -8,7 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.reduction.Reduce;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
@@ -151,7 +150,7 @@ public class ConstraintSet implements ReductionResult {
         return new ArrayList<>(vars);
     }
 
-    public void applyInstantiations(List<Instantiation> instantiations, Context context) {
+    public void applyInstantiations(List<Variable> instantiations, Context context) {
         for (Constraint constraint : list) {
             constraint.applyInstantiations(instantiations);
         }

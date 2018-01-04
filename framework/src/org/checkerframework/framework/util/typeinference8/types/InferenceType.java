@@ -11,7 +11,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import org.checkerframework.framework.util.typeinference8.bound.Instantiation;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
@@ -120,15 +119,14 @@ public class InferenceType extends AbstractType {
     }
 
     @Override
-    public AbstractType applyInstantiations(List<Instantiation> instantiations) {
+    public AbstractType applyInstantiations(List<Variable> instantiations) {
         List<TypeVariable> typeVariables = new ArrayList<>(instantiations.size());
         List<TypeMirror> arguments = new ArrayList<>(instantiations.size());
 
-        for (Instantiation instantiation : instantiations) {
-            Variable alpha = instantiation.getA();
+        for (Variable alpha : instantiations) {
             if (map.containsValue(alpha)) {
-                typeVariables.add(instantiation.getA().getJavaType());
-                arguments.add(instantiation.getT().getJavaType());
+                typeVariables.add(alpha.getJavaType());
+                arguments.add(alpha.getInstantiation().getJavaType());
             }
         }
         if (typeVariables.isEmpty()) {
