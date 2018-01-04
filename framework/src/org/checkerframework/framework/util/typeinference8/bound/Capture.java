@@ -113,6 +113,10 @@ public class Capture {
         return false;
     }
 
+    /**
+     * For a capture of the form: {@code G<a1, ..., an> = capture(G<A1, ..., An>)}, a capture tuple
+     * groups ai, Ai, and the upper bound of the corresponding type variable.
+     */
     public static class CaptureTuple {
 
         /**
