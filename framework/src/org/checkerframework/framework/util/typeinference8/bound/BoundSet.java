@@ -32,11 +32,6 @@ public class BoundSet implements ReductionResult {
     private boolean isFalse = false;
     private boolean uncheckedConversion = false;
 
-    private BoundSet(Context context, boolean isFalse) {
-        this(context);
-        this.isFalse = isFalse;
-    }
-
     public BoundSet(Context context) {
         assert context != null;
         this.variables = new LinkedHashSet<>();
@@ -63,7 +58,12 @@ public class BoundSet implements ReductionResult {
     }
 
     /**
-     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.3-410:
+     * Creates the initial bounds for variables in {@code theta} and returns a new bound set.
+     *
+     * <p>These bounds are defined in
+     * https://docs.oracle.com/javase/specs/jls/se9/html/jls-18.html#jls-18.1.3-410:
+     *
+     * <blockquote>
      *
      * <p>When inference begins, a bound set is typically generated from a list of type parameter
      * declarations P1, ..., Pp and associated inference variables a1, ..., ap.
@@ -77,14 +77,26 @@ public class BoundSet implements ReductionResult {
      * <p>Otherwise, for each type T delimited by & in the TypeBound, the bound {@literal al <:
      * T[P1:=a1,..., Pp:=ap]} appears in the set; if this results in no proper upper bounds for al
      * (only dependencies), then the bound {@literal al <: Object} also appears in the set.
+     *
+     * </blockquote>
+     *
+     * @param theta Map from type variable to inference variable
+     * @param context inference context
+     * @return initial bounds
      */
-    public static BoundSet initialBounds(Theta map, Context context) {
+    public static BoundSet initialBounds(Theta theta, Context context) {
         BoundSet boundSet = new BoundSet(context);
-        boundSet.variables.addAll(map.values());
+        boundSet.variables.addAll(theta.values());
         return boundSet;
     }
 
-    public boolean add(BoundSet newSet) {
+    /**
+     * Merges {@code newSet} into this bound set.
+     *
+     * @param newSet bound set to merge
+     * @return whether or not the merge changed this bound set
+     */
+    public boolean merge(BoundSet newSet) {
         boolean changed = captures.addAll(newSet.captures);
         changed |= variables.addAll(newSet.variables);
         isFalse |= newSet.isFalse;
@@ -92,14 +104,22 @@ public class BoundSet implements ReductionResult {
         return changed;
     }
 
+    /** Adds the false bound to this bound set. */
     public void addFalse() {
         isFalse = true;
     }
 
+    /** @return whether or not this bound set contains false. */
+    public boolean containsFalse() {
+        return isFalse;
+    }
+
+    /** @return whether or not unchecked conversion is required. */
     public boolean isUncheckedConversion() {
         return uncheckedConversion;
     }
 
+    /** Sets whether or not uncheck conversion is required. */
     public void setUncheckedConversion(boolean uncheckedConversion) {
         this.uncheckedConversion = uncheckedConversion;
     }
@@ -123,10 +143,6 @@ public class BoundSet implements ReductionResult {
             }
         }
         return false;
-    }
-
-    public boolean containsFalse() {
-        return isFalse;
     }
 
     /** Gets the instantiations for all alphas that currently have one. */
@@ -171,6 +187,7 @@ public class BoundSet implements ReductionResult {
         return getDependencies(null);
     }
 
+    /** JLS 18.4. Guides order of resolution. */
     public Dependencies getDependencies(ConstraintSet c) {
         Dependencies dependencies = new Dependencies();
 
@@ -238,7 +255,7 @@ public class BoundSet implements ReductionResult {
         if (this.containsFalse()) {
             return;
         }
-        add(newBounds);
+        merge(newBounds);
         int count = 0;
         do {
             count++;

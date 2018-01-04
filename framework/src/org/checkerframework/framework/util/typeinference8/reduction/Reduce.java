@@ -29,7 +29,7 @@ public class Reduce {
             Constraint constraint = constraintSet.pop();
             ReductionResult result = reduce(constraint, context);
             if (result instanceof ReductionResultPair) {
-                boundSet.add(((ReductionResultPair) result).second);
+                boundSet.merge(((ReductionResultPair) result).second);
                 if (boundSet.containsFalse()) {
                     throw new FalseBoundException(constraint);
                 }
@@ -39,7 +39,7 @@ public class Reduce {
             } else if (result instanceof ConstraintSet) {
                 constraintSet.add((ConstraintSet) result);
             } else if (result instanceof BoundSet) {
-                boundSet.add((BoundSet) result);
+                boundSet.merge((BoundSet) result);
                 if (boundSet.containsFalse()) {
                     throw new FalseBoundException(constraint);
                 }
