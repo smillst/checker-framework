@@ -235,8 +235,7 @@ public class InternalInferenceUtils {
             TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
             return TypesUtils.findFunctionType(functionalType, env);
         }
-        // else Member reference refers to a method rather than a constructor.
-        // In this case, the compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
+        // The compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
         // However, to get the correct type, the declaration has to be modified based on the use.
         ExecutableElement ctDecl =
                 (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
@@ -252,8 +251,11 @@ public class InternalInferenceUtils {
                 TypeMirror expr = TreeUtils.typeOf(((JCMemberReference) memberReferenceTree).expr);
                 type = (ExecutableType) getTypes(env).memberType((Type) expr, (Symbol) ctDecl);
                 break;
-            default: // ref is of form: Type :: static method
+            case STATIC: // ref is of form: Type :: static method
                 type = (ExecutableType) ctDecl.asType();
+                break;
+            default:
+                throw new RuntimeException();
         }
 
         if (memberReferenceTree.getTypeArguments() == null
