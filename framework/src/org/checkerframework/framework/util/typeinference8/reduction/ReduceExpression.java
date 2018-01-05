@@ -71,7 +71,7 @@ public class ReduceExpression {
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300 */
     private static ReductionResult reduceMethodRef(
             AbstractType t, MemberReferenceTree memRef, Context context) {
-        if (InternalInferenceUtils.isExact(memRef)) {
+        if (TreeUtils.isExactMethodReference(memRef)) {
             ExecutableType typeOfPoAppMethod =
                     TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
 
@@ -104,7 +104,7 @@ public class ReduceExpression {
 
         // Compile-time declaration of the member reference expression
         ExecutableType compileTimeDecl =
-                InternalInferenceUtils.compileTimeDeclaration(memRef, context);
+                InternalInferenceUtils.compileTimeDeclaration(memRef, context.env);
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
             return ReductionResult.TRUE;
         }
@@ -159,7 +159,7 @@ public class ReduceExpression {
 
         ConstraintSet constraintSet = new ConstraintSet();
 
-        if (!InternalInferenceUtils.isImplicitlyType(lambda)) {
+        if (!TreeUtils.isImplicitlyTypeLambda(lambda)) {
             // Explicitly typed lambda
             List<? extends VariableTree> parameters = lambda.getParameters();
             List<AbstractType> gs = t.getFunctionTypeParameters();
@@ -176,7 +176,7 @@ public class ReduceExpression {
 
         AbstractType R = t.getFunctionTypeReturn();
         if (R != null && R.getTypeKind() != TypeKind.VOID) {
-            for (ExpressionTree e : InternalInferenceUtils.getReturnedExpressions(lambda)) {
+            for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambda)) {
                 if (R.isProper()) {
                     if (!context.env
                             .getTypeUtils()
@@ -260,7 +260,7 @@ public class ReduceExpression {
         // 15.27.3:
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
-        if (InternalInferenceUtils.isExplicitlyType(lambda) && !lambda.getParameters().isEmpty()) {
+        if (TreeUtils.isExplicitlyTypeLambda(lambda) && !lambda.getParameters().isEmpty()) {
             return explicitlyTypeLambdasWithWildcard(t, lambda, context);
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression

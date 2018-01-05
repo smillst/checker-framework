@@ -16,7 +16,6 @@ import org.checkerframework.framework.util.typeinference8.reduction.ReductionRes
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -76,7 +75,7 @@ public abstract class Constraint implements ReductionResult {
                 } else {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) tree;
                     List<Variable> inputs = new ArrayList<>();
-                    if (InternalInferenceUtils.isImplicitlyType(lambdaTree)) {
+                    if (TreeUtils.isImplicitlyTypeLambda(lambdaTree)) {
                         List<AbstractType> params = T.getFunctionTypeParameters();
                         if (params == null) {
                             // T is not a function type.
@@ -90,8 +89,7 @@ public abstract class Constraint implements ReductionResult {
                     if (R == null || R.getTypeKind() == TypeKind.NONE) {
                         return inputs;
                     }
-                    for (ExpressionTree e :
-                            InternalInferenceUtils.getReturnedExpressions(lambdaTree)) {
+                    for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambdaTree)) {
                         Constraint c = new Expression(e, R);
                         inputs.addAll(c.getInputVariables());
                     }
@@ -100,7 +98,7 @@ public abstract class Constraint implements ReductionResult {
             case MEMBER_REFERENCE:
                 if (t.isVariable()) {
                     return Collections.singletonList((Variable) t);
-                } else if (InternalInferenceUtils.isExact((MemberReferenceTree) tree)) {
+                } else if (TreeUtils.isExactMethodReference((MemberReferenceTree) tree)) {
                     return Collections.emptyList();
                 } else {
                     List<AbstractType> params = T.getFunctionTypeParameters();

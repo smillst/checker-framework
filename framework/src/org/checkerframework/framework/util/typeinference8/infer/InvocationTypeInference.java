@@ -57,6 +57,52 @@ public class InvocationTypeInference {
         this.context = new Context(env, factory, pathToExpression, this);
     }
 
+    /**
+     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.2 (Assuming the
+     * method is a generic method and the method invocation does not provide explicit type
+     * arguments)
+     *
+     * @param expressionTree
+     * @param b whether the corresponding target type (as derived from the signature of m) is a type
+     *     parameter of m
+     * @return
+     */
+    public static boolean notPertinentToApplicability(ExpressionTree expressionTree, boolean b) {
+        switch (expressionTree.getKind()) {
+            case LAMBDA_EXPRESSION:
+                LambdaExpressionTree lambda = (LambdaExpressionTree) expressionTree;
+                if (TreeUtils.isImplicitlyTypeLambda(lambda) || b) {
+                    // An implicitly typed lambda expression.
+                    return true;
+                } else {
+                    // An explicitly typed lambda expression whose body is a block,
+                    // where at least one result expression is not pertinent to applicability.
+                    // An explicitly typed lambda expression whose body is an expression that is not pertinent to applicability.
+                    for (ExpressionTree result : TreeUtils.getReturnedExpressions(lambda)) {
+                        if (notPertinentToApplicability(result, b)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            case MEMBER_REFERENCE:
+                // An inexact method reference expression.
+                return b || !TreeUtils.isExactMethodReference((MemberReferenceTree) expressionTree);
+            case PARENTHESIZED:
+                // A parenthesized expression whose contained expression is not pertinent to
+                // applicability.
+                return notPertinentToApplicability(TreeUtils.skipParens(expressionTree), b);
+            case CONDITIONAL_EXPRESSION:
+                ConditionalExpressionTree conditional = (ConditionalExpressionTree) expressionTree;
+                // A conditional expression whose second or third operand is not pertinent to
+                // applicability.
+                return notPertinentToApplicability(conditional.getTrueExpression(), b)
+                        || notPertinentToApplicability(conditional.getFalseExpression(), b);
+            default:
+                return false;
+        }
+    }
+
     public List<Variable> infer(MethodInvocationTree methodInvocation) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(pathToExpression);
         if (!shouldTryInference(assignmentContext, pathToExpression)) {
@@ -246,7 +292,7 @@ public class InvocationTypeInference {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
 
-            if (!InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+            if (!notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
         }
@@ -427,7 +473,7 @@ public class InvocationTypeInference {
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
-            if (InternalInferenceUtils.notPertinentToApplicability(ei, fi.isVariable())) {
+            if (notPertinentToApplicability(ei, fi.isVariable())) {
                 if (ei.getKind() == Tree.Kind.LAMBDA_EXPRESSION
                         || ei.getKind() == Tree.Kind.MEMBER_REFERENCE) {
                     // Only add exception constraints from the top level.
@@ -447,8 +493,7 @@ public class InvocationTypeInference {
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
-                for (ExpressionTree expression :
-                        InternalInferenceUtils.getReturnedExpressions(lambda)) {
+                for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
                     c.add(getConstraint(expression, fi));
                 }
                 break;

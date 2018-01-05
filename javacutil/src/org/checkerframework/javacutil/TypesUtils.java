@@ -700,4 +700,15 @@ public final class TypesUtils {
         com.sun.tools.javac.code.Types javacTypes = com.sun.tools.javac.code.Types.instance(ctx);
         return (ExecutableType) javacTypes.findDescriptorType((Type) functionalInterfaceType);
     }
+
+    /** @return whether or not {@code type} is raw */
+    public static boolean isRaw(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            TypeElement typeelem = (TypeElement) ((DeclaredType) type).asElement();
+            DeclaredType declty = (DeclaredType) typeelem.asType();
+            return !declty.getTypeArguments().isEmpty()
+                    && ((DeclaredType) type).getTypeArguments().isEmpty();
+        }
+        return false;
+    }
 }

@@ -117,7 +117,7 @@ public abstract class AbstractType {
     }
 
     public final boolean isRaw() {
-        return InternalInferenceUtils.isRaw(getJavaType());
+        return TypesUtils.isRaw(getJavaType());
     }
 
     public final AbstractType replaceTypeArgs(List<AbstractType> args) {

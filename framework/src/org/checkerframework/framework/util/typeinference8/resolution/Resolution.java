@@ -245,18 +245,18 @@ public class Resolution {
                 // then substitute ai with an unbound wildcard.
                 TypeMirror unbound = context.env.getTypeUtils().getWildcardType(null, null);
                 inst =
-                        InternalInferenceUtils.subs(
-                                context.env,
+                        InternalInferenceUtils.substitute(
                                 inst,
                                 Collections.singletonList(typeVariableI),
-                                Collections.singletonList(unbound));
+                                Collections.singletonList(unbound),
+                                context.env);
                 typeArg.remove(i);
                 typeArg.add(i, inst);
             }
         }
         List<TypeMirror> subsTypeArg = new ArrayList<>();
         for (TypeMirror type : typeArg) {
-            subsTypeArg.add(InternalInferenceUtils.subs(context.env, type, typeVar, typeArg));
+            subsTypeArg.add(InternalInferenceUtils.substitute(type, typeVar, typeArg, context.env));
         }
         for (int i = 0; i < asList.size(); i++) {
             Variable ai = asList.get(i);
