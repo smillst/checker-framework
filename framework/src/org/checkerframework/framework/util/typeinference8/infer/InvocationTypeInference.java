@@ -63,7 +63,7 @@ public class InvocationTypeInference {
             return null;
         }
         ProperType targetType = null;
-        TypeMirror assignmentType = InferenceUtils.assignedTo(pathToExpression, context);
+        TypeMirror assignmentType = InferenceUtils.getTargetType(pathToExpression, context);
 
         if (assignmentType != null) {
             targetType = new ProperType(assignmentType, context);
