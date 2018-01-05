@@ -1,7 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.reduction;
 
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.List;
@@ -18,7 +17,6 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
-import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -31,6 +29,8 @@ public class ReduceTyping {
         while (result != null) {
             if (result == ConstraintSet.TRUE) {
                 // Do nothing
+            } else if (result == ConstraintSet.FALSE) {
+                boundSet.addFalse();
             } else if (result instanceof Typing) {
                 constraints.push((Typing) result);
             } else if (result instanceof ConstraintSet) {
@@ -90,34 +90,10 @@ public class ReduceTyping {
                 return ConstraintSet.TRUE;
             }
 
-            // TODO:
-            // The JLS "is imprecise about the handling of wildcards when reducing subtyping constraints"
-            // See comment just before 18.3.1 of JLS.
-            if (superType.getKind() == TypeKind.WILDCARD
-                    && !((WildcardType) superType).isExtendsBound()) {
-                if (context.env
-                        .getTypeUtils()
-                        .isSubtype(subType, ((WildcardType) superType).getSuperBound())) {
-                    return ConstraintSet.TRUE;
-                } else {
-                    return ConstraintSet.TRUE;
-                }
-            } else if (subType.getKind() == TypeKind.WILDCARD) {
-                TypeMirror subUpper = ((WildcardType) subType).getExtendsBound();
-                if (subUpper == null) {
-                    subUpper = context.object.getJavaType();
-                }
-                if (context.env.getTypeUtils().isSubtype(subUpper, superType)) {
-                    return ConstraintSet.TRUE;
-                } else {
-                    return ConstraintSet.TRUE;
-                }
-            } else if (context.env.getTypeUtils().isAssignable(subType, superType)) {
+            if (context.env.getTypeUtils().isAssignable(subType, superType)) {
                 return ConstraintSet.TRUE;
             } else {
-                // TODO: This should be false, but wildcards that are captured too soon,
-                // make some types that would otherwise be
-                return ConstraintSet.TRUE;
+                return ConstraintSet.FALSE;
             }
         } else if (s.getTypeKind() == TypeKind.NULL) {
             return ConstraintSet.TRUE;
@@ -127,7 +103,12 @@ public class ReduceTyping {
 
         if (c.getS().isVariable() || c.getT().isVariable()) {
             if (c.getS().isVariable()) {
-                ((Variable) c.getS()).addBound(InferBound.UPPER, c.getT());
+                if (c.getT().getTypeKind() == TypeKind.TYPEVAR && c.getT().hasLowerBound()) {
+                    ((Variable) c.getS())
+                            .addBound(InferBound.UPPER, c.getT().getTypeVarLowerBound());
+                } else {
+                    ((Variable) c.getS()).addBound(InferBound.UPPER, c.getT());
+                }
             }
             if (c.getT().isVariable()) {
                 ((Variable) c.getT()).addBound(InferBound.LOWER, c.getS());
@@ -224,18 +205,17 @@ public class ReduceTyping {
     public static ReductionResult reduceContained(Typing contained) {
         AbstractType s = contained.getS();
         AbstractType t = contained.getT();
-        if (InternalInferenceUtils.isCaptured(t.getJavaType())) {
-            t = t.unCapture();
-        }
-        if (InternalInferenceUtils.isCaptured(s.getJavaType())) {
-            s = s.unCapture();
-        }
+
         if (t.getTypeKind() != TypeKind.WILDCARD) {
-            //            if (s.getTypeKind() != TypeKind.WILDCARD) {
-            return new Typing(s, t, Kind.TYPE_EQUALITY);
-            //            } else {
-            //                return null;
-            //            }
+            if (s.getTypeKind() != TypeKind.WILDCARD) {
+                return new Typing(s, t, Kind.TYPE_EQUALITY);
+            } else if (s.isLowerBoundedWildcard()) {
+                return new Typing(s.getWildcardLowerBound(), t, Kind.TYPE_EQUALITY);
+            } else if (s.isUpperBoundedWildcard()) {
+                return new Typing(s.getWildcardUpperBound(), t, Kind.TYPE_EQUALITY);
+            } else {
+                return ConstraintSet.TRUE;
+            }
         } else if (t.isUnboundWildcard()) {
             return ConstraintSet.TRUE;
         } else if (t.isUpperBoundedWildcard()) {
