@@ -10,7 +10,6 @@ import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.code.Types;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.tree.JCTree.JCMemberReference;
-import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
 import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
 import com.sun.tools.javac.tree.JCTree.JCNewClass;
 import java.util.ArrayList;
@@ -229,7 +228,7 @@ public class InternalInferenceUtils {
      * @param env processing environment
      * @return method to which the expression refers
      */
-    public static ExecutableType compileTimeDeclaration(
+    public static ExecutableType compileTimeDeclarationType(
             MemberReferenceTree memberReferenceTree, ProcessingEnvironment env) {
         ExecutableType type;
         if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
@@ -237,19 +236,26 @@ public class InternalInferenceUtils {
             return TypesUtils.findFunctionType(functionalType, env);
         }
         // else Member reference refers to a method rather than a constructor.
-        // In this case, the compile-time declaration
-        if (((JCMemberReference) memberReferenceTree).kind == ReferenceKind.UNBOUND) {
-            // ref is of form: Type :: method
-            TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
-            ExecutableType functionType = TypesUtils.findFunctionType(functionalType, env);
-            DeclaredType receiver = (DeclaredType) functionType.getParameterTypes().get(0);
-            ExecutableElement compileTimeD =
-                    (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
-            type = (ExecutableType) env.getTypeUtils().asMemberOf(receiver, compileTimeD);
-
-        } else {
-            type = (ExecutableType) ((JCMemberReference) memberReferenceTree).sym.asType();
+        // In this case, the compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
+        // However, to get the correct type, the declaration has to be modified based on the use.
+        ExecutableElement ctDecl =
+                (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
+        switch (((JCMemberReference) memberReferenceTree).kind) {
+            case UNBOUND: // ref is of form: Type :: instance method
+                TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
+                ExecutableType functionType = TypesUtils.findFunctionType(functionalType, env);
+                DeclaredType receiver = (DeclaredType) functionType.getParameterTypes().get(0);
+                type = (ExecutableType) env.getTypeUtils().asMemberOf(receiver, ctDecl);
+                break;
+            case BOUND: // ref is of form: expression :: method
+            case SUPER: // ref is of form: super :: method
+                TypeMirror expr = TreeUtils.typeOf(((JCMemberReference) memberReferenceTree).expr);
+                type = (ExecutableType) getTypes(env).memberType((Type) expr, (Symbol) ctDecl);
+                break;
+            default: // ref is of form: Type :: static method
+                type = (ExecutableType) ctDecl.asType();
         }
+
         if (memberReferenceTree.getTypeArguments() == null
                 || memberReferenceTree.getTypeArguments().isEmpty()) {
             return type;

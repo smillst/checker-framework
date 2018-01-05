@@ -104,7 +104,7 @@ public class ReduceExpression {
 
         // Compile-time declaration of the member reference expression
         ExecutableType compileTimeDecl =
-                InternalInferenceUtils.compileTimeDeclaration(memRef, context.env);
+                InternalInferenceUtils.compileTimeDeclarationType(memRef, context.env);
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
             return ReductionResult.TRUE;
         }
