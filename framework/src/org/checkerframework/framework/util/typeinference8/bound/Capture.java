@@ -69,12 +69,12 @@ public class Capture {
             tuples.add(CaptureTuple.of(alaphi, Ai, Bi));
         }
 
-        // 18.3.2  In addition, for all i (1 ≤ i ≤ n):
+        // 18.3.2  In addition, for all i (1 <= i <= n):
         for (CaptureTuple t : tuples) {
             Variable alphaI = t.alpha;
             AbstractType Ai = t.capturedTypeArg;
             if (Ai.getTypeKind() != TypeKind.WILDCARD) {
-                // If Ai is not a wildcard, then the bound αi = Ai is implied.
+                // If Ai is not a wildcard, then the bound alphai = Ai is implied.
                 alphaI.addBound(InferBound.EQUAL, Ai);
             }
         }

@@ -304,8 +304,8 @@ public class ReduceExpression {
         }
 
         TypeElement typeEle = (TypeElement) ((DeclaredType) t.getJavaType()).asElement();
-        // Let Q1, ..., Qk be the parameter types of the function type of the type F<α1, ..., αm>,
-        // where α1, ..., αm are fresh inference variables.
+        // Let Q1, ..., Qk be the parameter types of the function type of the type F<alpha1, ..., alpham>,
+        // where alpha1, ..., alpham are fresh inference variables.
         List<Variable> alphas = new ArrayList<>();
         Theta map = new Theta();
         for (TypeParameterElement param : typeEle.getTypeParameters()) {
@@ -322,7 +322,7 @@ public class ReduceExpression {
         }
         assert qs.size() == ps.size();
 
-        // A set of constraint formulas is formed with, for all i (1 ≤ i ≤ n), <Pi = Qi>.
+        // A set of constraint formulas is formed with, for all i (1 <= i <= n), <Pi = Qi>.
         ConstraintSet constraintSet = new ConstraintSet();
         for (int i = 0; i < ps.size(); i++) {
             ProperType pi = ps.get(i);
@@ -334,13 +334,13 @@ public class ReduceExpression {
         assert !b.containsFalse()
                 : "Bound set contains false during Functional Interface Parameterization Inference";
 
-        // A new parameterization of the functional interface type, F<A'1, ..., A'm>, is constructed as follows, for 1 ≤ i ≤ m:
+        // A new parameterization of the functional interface type, F<A'1, ..., A'm>, is constructed as follows, for 1 <= i <= m:
         List<AbstractType> APrimes = new ArrayList<>();
         Iterator<Variable> alphaIter = alphas.iterator();
         boolean hasWildcard = false;
         for (AbstractType Ai : t.getTypeArguments()) {
             Variable alphaI = alphaIter.next();
-            // If B contains an instantiation (18.1.3) for αi, T, then A'i = T.
+            // If B contains an instantiation (18.1.3) for alphai, T, then A'i = T.
             AbstractType AiPrime = alphaI.getInstantiation();
             if (AiPrime == null) {
                 AiPrime = Ai;

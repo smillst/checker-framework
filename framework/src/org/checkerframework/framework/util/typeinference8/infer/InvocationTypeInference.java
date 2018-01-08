@@ -285,7 +285,7 @@ public class InvocationTypeInference {
         BoundSet b0 = BoundSet.initialBounds(map, context);
 
         // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
-        // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
+        // alphai is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         for (TypeMirror type : methodType.getThrownTypes()) {
             AbstractType thrownType = InferenceType.create(type, map, context);
             if (thrownType.isVariable()) {
@@ -320,8 +320,8 @@ public class InvocationTypeInference {
             Theta map) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
 
-        // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
-        // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
+        // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
+        // alphai is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         for (TypeMirror type : methodType.getThrownTypes()) {
             AbstractType thrownType = InferenceType.create(type, map, context);
             if (thrownType.isVariable()) {
@@ -440,22 +440,23 @@ public class InvocationTypeInference {
             boolean compatiblity = false;
             // T is a reference type, but is not a wildcard-parameterized type, and either
             if (!target.isWildcardParameterizedType()) {
-                // i) B2 contains a bound of one of the forms α = S or S <: α, where S is a wildcard-parameterized type, or
+                // i) B2 contains a bound of one of the forms alpha = S or S <: alpha, where S is a wildcard-parameterized type, or
                 compatiblity = alpha.hasWildcardParameterizedLowerOrEqualBound();
                 if (!compatiblity) {
-                    // ii) B2 contains two bounds of the forms S1 <: α and S2 <: α, where S1 and S2
+                    // ii) B2 contains two bounds of the forms S1 <: alpha and S2 <: alpha, where S1 and S2
                     // have supertypes that are two different parameterizations of the same generic class or interface.
                     compatiblity = alpha.hasLowerBoundDifferentParam();
                 }
             }
             if (target.isParameterizedType()) {
                 // T is a parameterization of a generic class or interface, G, and B2 contains a
-                // bound of one of the forms α = S or S <: α, where there exists no type of the form
+                // bound of one of the forms alpha = S or S <: alpha, where there exists no type of the form
                 // G<...> that is a supertype of S, but the raw type |G<...>| is a supertype of S.
                 compatiblity = alpha.hasRawTypeLowerOrEqualBound(target);
             }
             if (target.getTypeKind().isPrimitive()) {
-                // T is a primitive type, and one of the primitive wrapper classes mentioned in 5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
+                // T is a primitive type, and one of the primitive wrapper classes mentioned in 5.1.7
+                // is an instantiation, upper bound, or lower bound for alpha in B2.
                 compatiblity = alpha.hasPrimitiveWrapperBound();
             }
             if (compatiblity) {
@@ -482,13 +483,24 @@ public class InvocationTypeInference {
         return b2;
     }
 
+    /**
+     * Creates the constraints between the formal parameters and arguments that are not pertinent to
+     * applicability. (See 18.5.2.2)
+     *
+     * @param invocation method or constructor invocation
+     * @param methodType type of method invoked by {@code invocation}
+     * @param args argument expression trees
+     * @param map map from type variable to inference variable
+     * @return the constraints between the formal parameters and arguments that are not pertinent to
+     *     applicability
+     */
     private ConstraintSet createC(
-            ExpressionTree expression,
+            ExpressionTree invocation,
             ExecutableType methodType,
             List<? extends ExpressionTree> args,
             Theta map) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
+        List<AbstractType> formals = getFormals(invocation, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -501,20 +513,20 @@ public class InvocationTypeInference {
                 }
                 c.add(new Expression(ei, fi));
             }
-            c.add(getConstraint(ei, fi));
+            c.add(createArgumentConstraint(ei, fi));
         }
 
         return c;
     }
 
-    private ConstraintSet getConstraint(ExpressionTree ei, AbstractType fi) {
+    private ConstraintSet createArgumentConstraint(ExpressionTree ei, AbstractType fi) {
         ConstraintSet c = new ConstraintSet();
 
         switch (ei.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
-                    c.add(getConstraint(expression, fi));
+                    c.add(createArgumentConstraint(expression, fi));
                 }
                 break;
             case METHOD_INVOCATION:
@@ -543,12 +555,12 @@ public class InvocationTypeInference {
                 }
                 break;
             case PARENTHESIZED:
-                c.add(getConstraint(TreeUtils.skipParens(ei), fi));
+                c.add(createArgumentConstraint(TreeUtils.skipParens(ei), fi));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.add(getConstraint(conditional.getTrueExpression(), fi));
-                c.add(getConstraint(conditional.getFalseExpression(), fi));
+                c.add(createArgumentConstraint(conditional.getTrueExpression(), fi));
+                c.add(createArgumentConstraint(conditional.getFalseExpression(), fi));
                 break;
             default:
                 // no constraints
