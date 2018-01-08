@@ -251,8 +251,8 @@ public class InvocationTypeInference {
 
         if (b4.isUncheckedConversion()) {
             // If unchecked conversion was necessary for the method to be applicable during
-            // constraint set reduction in §18.5.1, then the parameter types of the invocation type
-            // of m are obtained by applying θ' to the parameter types of m's type, and the return
+            // constraint set reduction in 18.5.1, then the parameter types of the invocation type
+            // of m are obtained by applying theta' to the parameter types of m's type, and the return
             // type and thrown types of the invocation type of m are given by the erasure of the
             // return type and thrown types of m's type.
         }
@@ -375,6 +375,17 @@ public class InvocationTypeInference {
         return current;
     }
 
+    /**
+     * Creates constraints against the targets type of {@code invocation} and then reduces and
+     * incorporates those constraints. (See JLS 18.5.2.1)
+     *
+     * @param b2
+     * @param invocation
+     * @param methodType
+     * @param target
+     * @param map
+     * @return
+     */
     public BoundSet createB3(
             BoundSet b2,
             ExpressionTree invocation,
@@ -391,7 +402,7 @@ public class InvocationTypeInference {
 
         if (b2.isUncheckedConversion()) {
             // If unchecked conversion was necessary for the method to be applicable during
-            // constraint set reduction in §18.5.1, the constraint formula ‹|R| → T› is reduced and
+            // constraint set reduction in 18.5.1, the constraint formula <|R| -> T> is reduced and
             // incorporated with B2.
             BoundSet b =
                     new ConstraintSet(new Typing(r.getErased(), target, Kind.TYPE_COMPATIBILITY))
@@ -400,10 +411,10 @@ public class InvocationTypeInference {
             return b2;
 
         } else if (r.isWildcardParameterizedType()) {
-            // Otherwise, if R θ is a parameterized type, G<A1, ..., An>, and one of A1, ...,
-            // An is a wildcard, then, for fresh inference variables β1, ..., βn, the constraint
-            // formula ‹G<β1, ..., βn> → T› is reduced and incorporated, along with the bound
-            // G<β1, ..., βn> = capture(G<A1, ..., An>), with B2.
+            // Otherwise, if R theta is a parameterized type, G<A1, ..., An>, and one of A1, ...,
+            // An is a wildcard, then, for fresh inference variables B1, ..., Bn, the constraint
+            // formula <G<B1, ..., Bn> -> T> is reduced and incorporated, along with the bound
+            // G<B1, ..., Bn> = capture(G<A1, ..., An>), with B2.
             Capture capture = new Capture(r, invocation, context);
             ConstraintSet set =
                     new ConstraintSet(
@@ -444,7 +455,7 @@ public class InvocationTypeInference {
                 compatiblity = alpha.hasRawTypeLowerOrEqualBound(target);
             }
             if (target.getTypeKind().isPrimitive()) {
-                // T is a primitive type, and one of the primitive wrapper classes mentioned in §5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
+                // T is a primitive type, and one of the primitive wrapper classes mentioned in 5.1.7 is an instantiation, upper bound, or lower bound for α in B2.
                 compatiblity = alpha.hasPrimitiveWrapperBound();
             }
             if (compatiblity) {

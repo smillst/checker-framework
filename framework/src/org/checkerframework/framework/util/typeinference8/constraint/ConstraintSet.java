@@ -114,11 +114,11 @@ public class ConstraintSet implements ReductionResult {
 
         // A single constraint is selected from the considered constraints, as follows:
 
-        // If any of the considered constraints have the form ‹Expression → T›, then the selected
+        // If any of the considered constraints have the form <Expression -> T>, then the selected
         // constraint is the considered constraint of this form that contains the expression to the
-        // left (§3.5) of the expression of every other considered constraint of this form.
+        // left (3.5) of the expression of every other considered constraint of this form.
 
-        // If no considered constraint has the form ‹Expression → T›, then the selected constraint
+        // If no considered constraint has the form <Expression -> T>, then the selected constraint
         // is the considered constraint that contains the expression to the left of the expression
         // of every other considered constraint.
 

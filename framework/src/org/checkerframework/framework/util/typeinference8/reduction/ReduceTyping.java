@@ -149,7 +149,7 @@ public class ReduceTyping {
             // corresponding class or interface type is identified, with type arguments B1, ...,
             // Bn. If no such type exists, the constraint reduces to false. Otherwise, the
             // constraint reduces to the following new constraints:
-            // for all i (1 <= i <= n), ‹Bi <= Ai›.
+            // for all i (1 <= i <= n), <Bi <= Ai>.
 
             TypeMirror tTypeMirror = t.getJavaType();
             AbstractType sAsSuper = s.asSuper(tTypeMirror);
@@ -256,7 +256,7 @@ public class ReduceTyping {
 
         if (t != null && s != null) {
             // the constraint reduces to true if S is compatible in a loose invocation context
-            // with T (§5.3), and false otherwise.
+            // with T (5.3), and false otherwise.
             if (contex.types.isAssignable((Type) s.getJavaType(), (Type) t.getJavaType())) {
                 return ConstraintSet.TRUE;
             } else {

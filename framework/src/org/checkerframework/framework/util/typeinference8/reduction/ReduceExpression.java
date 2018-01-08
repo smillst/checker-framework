@@ -137,9 +137,9 @@ public class ReduceExpression {
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
         // Otherwise, let R be the return type of the function type, and let R' be the result
-        // of applying capture conversion (§5.1.10) to the return type of the invocation type
-        // (§15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
-        // to false; otherwise, the constraint reduces to ‹R' → R›.
+        // of applying capture conversion (5.1.10) to the return type of the invocation type
+        // (15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
+        // to false; otherwise, the constraint reduces to <R' -> R>.
 
         return ReductionResultPair.of(
                 new ConstraintSet(
@@ -264,7 +264,7 @@ public class ReduceExpression {
             return explicitlyTypeLambdasWithWildcard(t, lambda, context);
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
-            // is implicitly typed, then the ground target type is the non-wildcard parameterization (§9.9) of T.
+            // is implicitly typed, then the ground target type is the non-wildcard parameterization (9.9) of T.
             // https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C
             return Pair.of(nonWildcardParameterization(t, context), null);
         }
@@ -322,7 +322,7 @@ public class ReduceExpression {
         }
         assert qs.size() == ps.size();
 
-        // A set of constraint formulas is formed with, for all i (1 ≤ i ≤ n), ‹Pi = Qi›.
+        // A set of constraint formulas is formed with, for all i (1 ≤ i ≤ n), <Pi = Qi>.
         ConstraintSet constraintSet = new ConstraintSet();
         for (int i = 0; i < ps.size(); i++) {
             ProperType pi = ps.get(i);
@@ -340,7 +340,7 @@ public class ReduceExpression {
         boolean hasWildcard = false;
         for (AbstractType Ai : t.getTypeArguments()) {
             Variable alphaI = alphaIter.next();
-            // If B contains an instantiation (§18.1.3) for αi, T, then A'i = T.
+            // If B contains an instantiation (18.1.3) for αi, T, then A'i = T.
             AbstractType AiPrime = alphaI.getInstantiation();
             if (AiPrime == null) {
                 AiPrime = Ai;
@@ -352,7 +352,7 @@ public class ReduceExpression {
         }
 
         // The inferred parameterization is either F<A'1, ..., A'm>, if all the type arguments
-        // are types, or the non-wildcard parameterization (§9.9) of F<A'1, ..., A'm>, if one or more type arguments are still wildcards.
+        // are types, or the non-wildcard parameterization (9.9) of F<A'1, ..., A'm>, if one or more type arguments are still wildcards.
 
         AbstractType target = t.replaceTypeArgs(APrimes);
         if (hasWildcard) {

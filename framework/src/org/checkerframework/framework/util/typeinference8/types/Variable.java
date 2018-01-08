@@ -510,7 +510,7 @@ public class Variable extends AbstractType {
                 if (!lowerBoundsNonVar.isEmpty()) {
                     return null;
                 }
-                // var <: R implies the constraint formula ‹Bi θ <: R›
+                // var <: R implies the constraint formula <Bi theta <: R>
             } else if (Ai.isUpperBoundedWildcard()) {
                 // R <: var implies the bound false
                 if (!lowerBoundsNonVar.isEmpty()) {
@@ -518,12 +518,12 @@ public class Variable extends AbstractType {
                 }
                 AbstractType T = Ai.getWildcardUpperBound();
                 if (Bi.isObject()) {
-                    // If Bi is Object, then var <: R implies the constraint formula ‹T <: R›
+                    // If Bi is Object, then var <: R implies the constraint formula <T <: R>
                     for (AbstractType r : upperBoundsNonVar) {
                         constraintSet.add(new Typing(T, r, Constraint.Kind.SUBTYPE));
                     }
                 } else if (T.isObject()) {
-                    // If T is Object, then var <: R implies the constraint formula ‹Bi θ <: R›
+                    // If T is Object, then var <: R implies the constraint formula <Bi theta <: R>
                     for (AbstractType r : upperBoundsNonVar) {
                         constraintSet.add(new Typing(Bi, r, Constraint.Kind.SUBTYPE));
                     }
@@ -531,12 +531,12 @@ public class Variable extends AbstractType {
                 // else no constraint
             } else {
                 // Super bounded wildcard
-                // var <: R implies the constraint formula ‹Bi θ <: R›
+                // var <: R implies the constraint formula <Bi theta <: R>
                 for (AbstractType r : upperBoundsNonVar) {
                     constraintSet.add(new Typing(Bi, r, Constraint.Kind.SUBTYPE));
                 }
 
-                // R <: var implies the constraint formula ‹R <: T›
+                // R <: var implies the constraint formula <R <: T>
                 AbstractType T = Ai.getWildcardLowerBound();
                 for (AbstractType r : lowerBoundsNonVar) {
                     constraintSet.add(new Typing(r, T, Constraint.Kind.SUBTYPE));
