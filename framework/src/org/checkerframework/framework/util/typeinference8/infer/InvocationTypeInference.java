@@ -468,13 +468,6 @@ public class InvocationTypeInference {
                 resolve.incorporateToFixedPoint(newBounds);
                 return resolve;
             }
-            if (target.isProper()) {
-                // TODO: this isn't in the JLS, but it is the only way to match javac output in some cases.
-                // Stream<? extends MyClass> s;
-                // Iterable<? extends MyClass> i = s.collect(toMyList1313());
-                // <F> Collector<F, Object, MyList1313<F>> toMyList1313() {...}
-                target = ((ProperType) target).capture();
-            }
         }
         ConstraintSet constraintSet =
                 new ConstraintSet(new Typing(r, target, Kind.TYPE_COMPATIBILITY));
