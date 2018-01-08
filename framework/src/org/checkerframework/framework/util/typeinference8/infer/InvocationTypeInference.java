@@ -568,15 +568,16 @@ public class InvocationTypeInference {
      * arguments)
      *
      * @param expressionTree expression tree
-     * @param b whether the corresponding target type (as derived from the signature of m) is a type
-     *     parameter of m
+     * @param isTargetVariable whether the corresponding target type (as derived from the signature
+     *     of m) is a type parameter of m
      * @return whether or not {@code expressionTree} is pertinent to applicability
      */
-    private static boolean notPertinentToApplicability(ExpressionTree expressionTree, boolean b) {
+    private boolean notPertinentToApplicability(
+            ExpressionTree expressionTree, boolean isTargetVariable) {
         switch (expressionTree.getKind()) {
             case LAMBDA_EXPRESSION:
                 LambdaExpressionTree lambda = (LambdaExpressionTree) expressionTree;
-                if (TreeUtils.isImplicitlyTypeLambda(lambda) || b) {
+                if (TreeUtils.isImplicitlyTypeLambda(lambda) || isTargetVariable) {
                     // An implicitly typed lambda expression.
                     return true;
                 } else {
@@ -584,7 +585,7 @@ public class InvocationTypeInference {
                     // where at least one result expression is not pertinent to applicability.
                     // An explicitly typed lambda expression whose body is an expression that is not pertinent to applicability.
                     for (ExpressionTree result : TreeUtils.getReturnedExpressions(lambda)) {
-                        if (notPertinentToApplicability(result, b)) {
+                        if (notPertinentToApplicability(result, isTargetVariable)) {
                             return true;
                         }
                     }
@@ -592,17 +593,21 @@ public class InvocationTypeInference {
                 }
             case MEMBER_REFERENCE:
                 // An inexact method reference expression.
-                return b || !TreeUtils.isExactMethodReference((MemberReferenceTree) expressionTree);
+                return isTargetVariable
+                        || !TreeUtils.isExactMethodReference((MemberReferenceTree) expressionTree);
             case PARENTHESIZED:
                 // A parenthesized expression whose contained expression is not pertinent to
                 // applicability.
-                return notPertinentToApplicability(TreeUtils.skipParens(expressionTree), b);
+                return notPertinentToApplicability(
+                        TreeUtils.skipParens(expressionTree), isTargetVariable);
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) expressionTree;
                 // A conditional expression whose second or third operand is not pertinent to
                 // applicability.
-                return notPertinentToApplicability(conditional.getTrueExpression(), b)
-                        || notPertinentToApplicability(conditional.getFalseExpression(), b);
+                return notPertinentToApplicability(
+                                conditional.getTrueExpression(), isTargetVariable)
+                        || notPertinentToApplicability(
+                                conditional.getFalseExpression(), isTargetVariable);
             default:
                 return false;
         }
