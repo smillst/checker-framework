@@ -42,7 +42,7 @@ public abstract class AbstractType {
     }
 
     public AbstractType unCapture() {
-        if (InternalInferenceUtils.isCaptured(getJavaType())) {
+        if (TypesUtils.isCaptured(getJavaType())) {
             TypeMirror wildcard = ((CapturedType) getJavaType()).wildcard;
             return create(wildcard);
         } else {

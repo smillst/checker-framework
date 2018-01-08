@@ -266,11 +266,4 @@ public class InternalInferenceUtils {
         }
         return (ExecutableType) substitute(type, type.getTypeVariables(), args, env);
     }
-
-    public static boolean isCaptured(TypeMirror type) {
-        if (type.getKind() != TypeKind.TYPEVAR) {
-            return false;
-        }
-        return TypesUtils.isCaptured((TypeVariable) type);
-    }
 }

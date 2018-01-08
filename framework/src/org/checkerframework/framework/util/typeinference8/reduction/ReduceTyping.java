@@ -17,7 +17,6 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
-import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -111,7 +110,7 @@ public class ReduceTyping {
                 }
             }
             if (t.isVariable()) {
-                if (InternalInferenceUtils.isCaptured(s.getJavaType())) {
+                if (TypesUtils.isCaptured(s.getJavaType())) {
                     ((Variable) t).addBound(InferBound.LOWER, s.getTypeVarUpperBound());
                 }
                 ((Variable) t).addBound(InferBound.LOWER, c.getS());

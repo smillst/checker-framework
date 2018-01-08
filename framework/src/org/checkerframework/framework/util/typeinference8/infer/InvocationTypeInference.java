@@ -247,15 +247,13 @@ public class InvocationTypeInference {
     }
 
     private boolean sameSame(TypeMirror actual, TypeMirror inferred) {
-        if (InternalInferenceUtils.isCaptured(actual)
-                && InternalInferenceUtils.isCaptured(inferred)) {
+        if (TypesUtils.isCaptured(actual) && TypesUtils.isCaptured(inferred)) {
             if (context.types.isSameWildcard(
                     (WildcardType) TypesUtils.getCapturedWildcard((TypeVariable) actual),
                     (Type) TypesUtils.getCapturedWildcard((TypeVariable) inferred))) {
                 return true;
             }
-        } else if (InternalInferenceUtils.isCaptured(actual)
-                && inferred.getKind() == TypeKind.WILDCARD) {
+        } else if (TypesUtils.isCaptured(actual) && inferred.getKind() == TypeKind.WILDCARD) {
             if (context.types.isSameWildcard(
                     (WildcardType) TypesUtils.getCapturedWildcard((TypeVariable) actual),
                     (Type) inferred)) {
