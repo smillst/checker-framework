@@ -59,52 +59,6 @@ public class InvocationTypeInference {
         this.context = new Context(env, factory, pathToExpression, this);
     }
 
-    /**
-     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.2 (Assuming the
-     * method is a generic method and the method invocation does not provide explicit type
-     * arguments)
-     *
-     * @param expressionTree expression tree
-     * @param b whether the corresponding target type (as derived from the signature of m) is a type
-     *     parameter of m
-     * @return whether or not {@code expressionTree} is pertinent to applicability
-     */
-    public static boolean notPertinentToApplicability(ExpressionTree expressionTree, boolean b) {
-        switch (expressionTree.getKind()) {
-            case LAMBDA_EXPRESSION:
-                LambdaExpressionTree lambda = (LambdaExpressionTree) expressionTree;
-                if (TreeUtils.isImplicitlyTypeLambda(lambda) || b) {
-                    // An implicitly typed lambda expression.
-                    return true;
-                } else {
-                    // An explicitly typed lambda expression whose body is a block,
-                    // where at least one result expression is not pertinent to applicability.
-                    // An explicitly typed lambda expression whose body is an expression that is not pertinent to applicability.
-                    for (ExpressionTree result : TreeUtils.getReturnedExpressions(lambda)) {
-                        if (notPertinentToApplicability(result, b)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            case MEMBER_REFERENCE:
-                // An inexact method reference expression.
-                return b || !TreeUtils.isExactMethodReference((MemberReferenceTree) expressionTree);
-            case PARENTHESIZED:
-                // A parenthesized expression whose contained expression is not pertinent to
-                // applicability.
-                return notPertinentToApplicability(TreeUtils.skipParens(expressionTree), b);
-            case CONDITIONAL_EXPRESSION:
-                ConditionalExpressionTree conditional = (ConditionalExpressionTree) expressionTree;
-                // A conditional expression whose second or third operand is not pertinent to
-                // applicability.
-                return notPertinentToApplicability(conditional.getTrueExpression(), b)
-                        || notPertinentToApplicability(conditional.getFalseExpression(), b);
-            default:
-                return false;
-        }
-    }
-
     public List<Variable> infer(MethodInvocationTree methodInvocation) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(pathToExpression);
         if (!shouldTryInference(assignmentContext, pathToExpression)) {
@@ -285,7 +239,7 @@ public class InvocationTypeInference {
         BoundSet b2 = createB2(methodInvocation, methodType, methodInvocation.getArguments(), map);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
-            b3 = createB3(b2, methodType, methodInvocation, target, map);
+            b3 = createB3(b2, methodInvocation, methodType, target, map);
         } else {
             b3 = b2;
         }
@@ -305,14 +259,32 @@ public class InvocationTypeInference {
         return thetaPrime;
     }
 
+    /**
+     * Creates the bound set used to determine whether a method is applicable. (See JLS 18.5.1) It
+     * does this by: 1. Creates the variables to be solved and add bounds from the type parameter
+     * declaration. 2. Adds any bounds implied by the throws clause of {@code methodType}. 3.
+     * Constructs constraints between formal parameters and arguments that are pertinent to
+     * applicable in {@code invocation}. 4. Reduces and incorporates those constraints which
+     * produces B2
+     *
+     * <p>Generally, all arguments are applicable except: inexact method reference, implicitly typed
+     * lambdas, or explicitly type lambda whose return expression(s) are not pertinent. See
+     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.2
+     *
+     * @param invocation method or constructor invocation
+     * @param methodType the type of the method or constructor invoked by expression
+     * @param args argument expression tress
+     * @param map map of type variables to (inference) variables
+     * @return bound set used to determine whether a method is applicable.
+     */
     public BoundSet createB2(
-            ExpressionTree expression,
+            ExpressionTree invocation,
             ExecutableType methodType,
             List<? extends ExpressionTree> args,
             Theta map) {
         BoundSet b0 = BoundSet.initialBounds(map, context);
 
-        // For all i (1 ≤ i ≤ p), if Pi appears in the throws clause of m, then the bound throws
+        // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
         // αi is implied. These bounds, if any, are incorporated with B0 to produce a new bound set, B1.
         for (TypeMirror type : methodType.getThrownTypes()) {
             AbstractType thrownType = InferenceType.create(type, map, context);
@@ -323,7 +295,7 @@ public class InvocationTypeInference {
 
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
+        List<AbstractType> formals = getFormals(invocation, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -374,7 +346,7 @@ public class InvocationTypeInference {
         return b1;
     }
 
-    public List<AbstractType> getFormals(
+    private List<AbstractType> getFormals(
             ExpressionTree expression, ExecutableType executableType, Theta map, int size) {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
 
@@ -405,8 +377,8 @@ public class InvocationTypeInference {
 
     public BoundSet createB3(
             BoundSet b2,
-            ExecutableType methodType,
             ExpressionTree invocation,
+            ExecutableType methodType,
             AbstractType target,
             Theta map) {
         AbstractType r;
@@ -572,5 +544,51 @@ public class InvocationTypeInference {
         }
 
         return c;
+    }
+
+    /**
+     * https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.2.2 (Assuming the
+     * method is a generic method and the method invocation does not provide explicit type
+     * arguments)
+     *
+     * @param expressionTree expression tree
+     * @param b whether the corresponding target type (as derived from the signature of m) is a type
+     *     parameter of m
+     * @return whether or not {@code expressionTree} is pertinent to applicability
+     */
+    private static boolean notPertinentToApplicability(ExpressionTree expressionTree, boolean b) {
+        switch (expressionTree.getKind()) {
+            case LAMBDA_EXPRESSION:
+                LambdaExpressionTree lambda = (LambdaExpressionTree) expressionTree;
+                if (TreeUtils.isImplicitlyTypeLambda(lambda) || b) {
+                    // An implicitly typed lambda expression.
+                    return true;
+                } else {
+                    // An explicitly typed lambda expression whose body is a block,
+                    // where at least one result expression is not pertinent to applicability.
+                    // An explicitly typed lambda expression whose body is an expression that is not pertinent to applicability.
+                    for (ExpressionTree result : TreeUtils.getReturnedExpressions(lambda)) {
+                        if (notPertinentToApplicability(result, b)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            case MEMBER_REFERENCE:
+                // An inexact method reference expression.
+                return b || !TreeUtils.isExactMethodReference((MemberReferenceTree) expressionTree);
+            case PARENTHESIZED:
+                // A parenthesized expression whose contained expression is not pertinent to
+                // applicability.
+                return notPertinentToApplicability(TreeUtils.skipParens(expressionTree), b);
+            case CONDITIONAL_EXPRESSION:
+                ConditionalExpressionTree conditional = (ConditionalExpressionTree) expressionTree;
+                // A conditional expression whose second or third operand is not pertinent to
+                // applicability.
+                return notPertinentToApplicability(conditional.getTrueExpression(), b)
+                        || notPertinentToApplicability(conditional.getFalseExpression(), b);
+            default:
+                return false;
+        }
     }
 }

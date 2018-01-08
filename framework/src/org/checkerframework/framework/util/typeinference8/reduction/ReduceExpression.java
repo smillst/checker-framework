@@ -132,7 +132,7 @@ public class ReduceExpression {
             BoundSet b2 =
                     context.inference.createB2MethodRef(
                             memRef, compileTimeDecl, t.getFunctionTypeParameters(), map);
-            return context.inference.createB3(b2, compileTimeDecl, memRef, r, map);
+            return context.inference.createB3(b2, memRef, compileTimeDecl, r, map);
         }
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
@@ -227,7 +227,7 @@ public class ReduceExpression {
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(expressionTree, context);
         Theta map = Theta.theta(expressionTree, methodType, context);
         BoundSet b2 = context.inference.createB2(expressionTree, methodType, args, map);
-        return context.inference.createB3(b2, methodType, expressionTree, constraint.getT(), map);
+        return context.inference.createB3(b2, expressionTree, methodType, constraint.getT(), map);
     }
 
     private static Constraint reduceParenthesized(Expression constraint) {
