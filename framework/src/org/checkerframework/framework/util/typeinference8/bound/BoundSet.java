@@ -74,9 +74,9 @@ public class BoundSet implements ReductionResult {
      *
      * <p>If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set.
      *
-     * <p>Otherwise, for each type T delimited by & in the TypeBound, the bound {@literal al <:
-     * T[P1:=a1,..., Pp:=ap]} appears in the set; if this results in no proper upper bounds for al
-     * (only dependencies), then the bound {@literal al <: Object} also appears in the set.
+     * <p>Otherwise, for each type T delimited by {@code &} in the TypeBound, the bound {@literal al
+     * <: T[P1:=a1,..., Pp:=ap]} appears in the set; if this results in no proper upper bounds for
+     * al (only dependencies), then the bound {@literal al <: Object} also appears in the set.
      *
      * </blockquote>
      *

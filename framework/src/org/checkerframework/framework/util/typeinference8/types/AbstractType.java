@@ -80,12 +80,7 @@ public abstract class AbstractType {
 
     public abstract boolean isObject();
 
-    /**
-     * Returns null if superType isn't a super type.
-     *
-     * @param superType
-     * @return
-     */
+    /** Returns null if superType isn't a super type. */
     public final AbstractType asSuper(TypeMirror superType) {
         TypeMirror type = getJavaType();
         if (type.getKind() == TypeKind.WILDCARD) {

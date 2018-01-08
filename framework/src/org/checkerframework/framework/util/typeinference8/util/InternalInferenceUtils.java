@@ -201,9 +201,9 @@ public class InternalInferenceUtils {
     }
 
     /**
-     * @return a supertype of S of the form G<S1, ..., Sn> and a supertype of T of the form
-     *     G<T1,..., Tn> for some generic class or interface, G. If such types exist; otherwise,
-     *     null is returned.
+     * @return a supertype of S of the form {@code G<S1, ..., Sn>} and a supertype of T of the form
+     *     {@code G<T1,..., Tn>} for some generic class or interface, G. If such types exist;
+     *     otherwise, null is returned.
      */
     public static Pair<TypeMirror, TypeMirror> getParameterizedSupers(
             Context context, TypeMirror s, TypeMirror t) {

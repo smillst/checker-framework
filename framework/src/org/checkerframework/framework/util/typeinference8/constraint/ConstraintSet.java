@@ -16,7 +16,13 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
 public class ConstraintSet implements ReductionResult {
-    public static final ConstraintSet TRUE = new ConstraintSet();
+    public static final ConstraintSet TRUE =
+            new ConstraintSet() {
+                @Override
+                public String toString() {
+                    return "TRUE";
+                }
+            };
     /**
      * This needs to be kept in the order created, which should be lexically left to right. This is
      * for {@link #getMagicalSubSet(Dependencies)}.
@@ -59,8 +65,6 @@ public class ConstraintSet implements ReductionResult {
     /**
      * A subset of constraints is selected in C, satisfying the property that, for each constraint,
      * no input variable can influence an output variable of another constraint in C.
-     *
-     * @return
      */
     public ConstraintSet getMagicalSubSet(Dependencies dependencies) {
         ConstraintSet subset = new ConstraintSet();
@@ -154,5 +158,10 @@ public class ConstraintSet implements ReductionResult {
         for (Constraint constraint : list) {
             constraint.applyInstantiations(instantiations);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Size: " + list.size();
     }
 }

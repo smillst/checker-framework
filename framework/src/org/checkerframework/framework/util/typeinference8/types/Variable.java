@@ -466,11 +466,6 @@ public class Variable extends AbstractType {
 
     // </editor-fold>
 
-    /**
-     * @link com.sun.tools.javac.code.Type.CapturedUndetVar}: The only difference between these
-     *     inference variables and ordinary ones is that captured inference variables cannot get new
-     *     bounds through incorporation.
-     */
     public static class CaptureVariable extends Variable {
 
         public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {

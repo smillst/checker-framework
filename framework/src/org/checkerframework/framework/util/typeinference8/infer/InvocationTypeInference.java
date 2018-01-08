@@ -64,10 +64,10 @@ public class InvocationTypeInference {
      * method is a generic method and the method invocation does not provide explicit type
      * arguments)
      *
-     * @param expressionTree
+     * @param expressionTree expression tree
      * @param b whether the corresponding target type (as derived from the signature of m) is a type
      *     parameter of m
-     * @return
+     * @return whether or not {@code expressionTree} is pertinent to applicability
      */
     public static boolean notPertinentToApplicability(ExpressionTree expressionTree, boolean b) {
         switch (expressionTree.getKind()) {
@@ -279,11 +279,7 @@ public class InvocationTypeInference {
         return false;
     }
 
-    /**
-     * @param methodInvocation
-     * @param target Nullable if methodInvocation isn't assigned.
-     * @return
-     */
+    /** @param target Nullable if methodInvocation isn't assigned. */
     public List<Variable> infer(MethodInvocationTree methodInvocation, ProperType target) {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);

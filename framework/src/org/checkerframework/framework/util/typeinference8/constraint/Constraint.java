@@ -27,29 +27,29 @@ public abstract class Constraint implements ReductionResult {
 
     public enum Kind {
         /**
-         * &lt;Expression &rarr; T&gt; An expression is compatible in a loose invocation context
+         * {@code < Expression -> T >}: An expression is compatible in a loose invocation context
          * with type T
          */
         EXPRESSION,
-        /** &lt;S &rarr; T&gt;: A type S is compatible in a loose invocation context with type T */
+        /** {@code < S -> T >}: A type S is compatible in a loose invocation context with type T */
         TYPE_COMPATIBILITY,
-        /** &lt;S <: T&gt;: A reference type S is a subtype of a reference type T */
+        /** {@code < S <: T >}: A reference type S is a subtype of a reference type T */
         SUBTYPE,
-        /** &lt;S <= T&gt;: A type argument S is contained by a type argument T. */
+        /** {@code < S <= T >}: A type argument S is contained by a type argument T. */
         CONTAINED,
         /**
-         * &lt;S = T&gt;: A type S is the same as a type T, or a type argument S is the same as type
-         * argument T.
+         * {@code < S = T >}: A type S is the same as a type T, or a type argument S is the same as
+         * type argument T.
          */
         TYPE_EQUALITY,
         /**
-         * &lt;LambdaExpression &rarr;throws T&gt;: The checked exceptions thrown by the body of the
+         * {@code < LambdaExpression -> throws T>}: The checked exceptions thrown by the body of the
          * LambdaExpression are declared by the throws clause of the function type derived from T.
          */
         LAMBDA_EXCEPTION,
         /**
-         * &lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
-         * method are declared by the throws clause of the function type derived from T.
+         * {@code < MethodReferenceExpression -> throws T>}: The checked exceptions thrown by the
+         * referenced method are declared by the throws clause of the function type derived from T.
          */
         METHOD_REF_EXCEPTION,
     }
