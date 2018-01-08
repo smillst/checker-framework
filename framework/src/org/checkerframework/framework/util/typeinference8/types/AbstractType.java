@@ -29,7 +29,15 @@ public abstract class AbstractType {
     public abstract AbstractType create(TypeMirror type);
 
     public AbstractType capture() {
-        TypeMirror capture = context.env.getTypeUtils().capture(getJavaType());
+        TypeMirror capture;
+        if (getJavaType().getKind() == TypeKind.WILDCARD) {
+            capture =
+                    context.types.freshTypeVariables(
+                                    com.sun.tools.javac.util.List.of((Type) getJavaType()))
+                            .head;
+        } else {
+            capture = context.env.getTypeUtils().capture(getJavaType());
+        }
         return create(capture);
     }
 
@@ -166,6 +174,10 @@ public abstract class AbstractType {
             bounds.add(create(bound));
         }
         return bounds;
+    }
+
+    public final AbstractType getTypeVarUpperBound() {
+        return create(((TypeVariable) getJavaType()).getUpperBound());
     }
 
     public final AbstractType getTypeVarLowerBound() {

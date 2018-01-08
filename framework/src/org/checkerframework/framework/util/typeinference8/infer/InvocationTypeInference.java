@@ -18,6 +18,7 @@ import java.util.Map;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -43,6 +44,7 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class InvocationTypeInference {
 
@@ -200,6 +202,14 @@ public class InvocationTypeInference {
                 TypeMirror inferredType = variable.getInstantiation().getJavaType();
                 correctType = upperBound(correctType);
                 inferredType = upperBound(inferredType);
+                if (context.types.isSameType(
+                        context.types.erasure((Type) correctType),
+                        context.types.erasure((Type) inferredType),
+                        false)) {
+                    if (sameSame(correctType, inferredType)) {
+                        continue;
+                    }
+                }
                 if (!context.types.isSameType((Type) correctType, (Type) inferredType, false)) {
                     // type.inference.not.same=type variable: %s\ninferred: %s\njava type: %s
                     context.factory
@@ -218,22 +228,55 @@ public class InvocationTypeInference {
     }
 
     private TypeMirror upperBound(TypeMirror type) {
-        if (InternalInferenceUtils.isCaptured(type)) {
-            if (((TypeVariable) type).getLowerBound().getKind() != TypeKind.NULL) {
-                return ((TypeVariable) type).getLowerBound();
-            } else {
-                return ((TypeVariable) type).getUpperBound();
+        //        if (InternalInferenceUtils.isCaptured(type)) {
+        //            if (((TypeVariable) type).getLowerBound().getKind() != TypeKind.NULL) {
+        //                return ((TypeVariable) type).getLowerBound();
+        //            } else {
+        //                return ((TypeVariable) type).getUpperBound();
+        //            }
+        //        } else if (type.getKind() == TypeKind.WILDCARD) {
+        //            if (((WildcardType) type).getSuperBound() != null) {
+        //                return ((WildcardType) type).getSuperBound();
+        //            } else if (((WildcardType) type).getExtendsBound() != null) {
+        //                return ((WildcardType) type).getExtendsBound();
+        //            } else {
+        //                return context.object.getJavaType();
+        //            }
+        //        }
+        return type;
+    }
+
+    private boolean sameSame(TypeMirror actual, TypeMirror inferred) {
+        if (InternalInferenceUtils.isCaptured(actual)
+                && InternalInferenceUtils.isCaptured(inferred)) {
+            if (context.types.isSameWildcard(
+                    (WildcardType) TypesUtils.getCapturedWildcard((TypeVariable) actual),
+                    (Type) TypesUtils.getCapturedWildcard((TypeVariable) inferred))) {
+                return true;
             }
-        } else if (type.getKind() == TypeKind.WILDCARD) {
-            if (((WildcardType) type).getSuperBound() != null) {
-                return ((WildcardType) type).getSuperBound();
-            } else if (((WildcardType) type).getExtendsBound() != null) {
-                return ((WildcardType) type).getExtendsBound();
-            } else {
-                return context.object.getJavaType();
+        } else if (InternalInferenceUtils.isCaptured(actual)
+                && inferred.getKind() == TypeKind.WILDCARD) {
+            if (context.types.isSameWildcard(
+                    (WildcardType) TypesUtils.getCapturedWildcard((TypeVariable) actual),
+                    (Type) inferred)) {
+                return true;
+            }
+        } else if (actual.getKind() == TypeKind.DECLARED
+                && inferred.getKind() == TypeKind.DECLARED) {
+            DeclaredType actualDT = (DeclaredType) actual;
+            DeclaredType inferredDT = (DeclaredType) inferred;
+            if (actualDT.getTypeArguments().size() == inferredDT.getTypeArguments().size()) {
+                for (int i = 0; i < actualDT.getTypeArguments().size(); i++) {
+                    if (!sameSame(
+                            actualDT.getTypeArguments().get(i),
+                            inferredDT.getTypeArguments().get(i))) {
+                        return false;
+                    }
+                }
+                return true;
             }
         }
-        return type;
+        return false;
     }
 
     /**

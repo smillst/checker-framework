@@ -17,6 +17,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
+import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -101,17 +102,19 @@ public class ReduceTyping {
             return null;
         }
 
-        if (c.getS().isVariable() || c.getT().isVariable()) {
-            if (c.getS().isVariable()) {
-                if (c.getT().getTypeKind() == TypeKind.TYPEVAR && c.getT().hasLowerBound()) {
-                    ((Variable) c.getS())
-                            .addBound(InferBound.UPPER, c.getT().getTypeVarLowerBound());
+        if (s.isVariable() || t.isVariable()) {
+            if (s.isVariable()) {
+                if (t.getTypeKind() == TypeKind.TYPEVAR && t.hasLowerBound()) {
+                    ((Variable) s).addBound(InferBound.UPPER, c.getT().getTypeVarLowerBound());
                 } else {
-                    ((Variable) c.getS()).addBound(InferBound.UPPER, c.getT());
+                    ((Variable) s).addBound(InferBound.UPPER, c.getT());
                 }
             }
-            if (c.getT().isVariable()) {
-                ((Variable) c.getT()).addBound(InferBound.LOWER, c.getS());
+            if (t.isVariable()) {
+                if (InternalInferenceUtils.isCaptured(s.getJavaType())) {
+                    ((Variable) t).addBound(InferBound.LOWER, s.getTypeVarUpperBound());
+                }
+                ((Variable) t).addBound(InferBound.LOWER, c.getS());
             }
             return ConstraintSet.TRUE;
         }

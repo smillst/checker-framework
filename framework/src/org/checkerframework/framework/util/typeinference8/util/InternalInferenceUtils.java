@@ -189,10 +189,8 @@ public class InternalInferenceUtils {
 
     public static TypeMirror getFreshTypeVar(
             Context context, TypeMirror lowerBound, TypeMirror upperBound) {
-        if (lowerBound != null) {
-            if (TypesUtils.isObject(upperBound)) {
-                upperBound = null;
-            }
+        if (TypesUtils.isObject(upperBound)) {
+            upperBound = null;
         }
 
         assert lowerBound == null || upperBound == null;
