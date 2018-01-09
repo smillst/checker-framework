@@ -34,9 +34,6 @@ public class Capture {
     /** {@code G<A1, ..., An>} sometimes called the right hand side */
     private final AbstractType capturedType;
 
-    /** The underlying type of the captured type. "G" in {@code G<A1,...,An>}. */
-    private final DeclaredType underlying;
-
     /**
      * The substitution [P1 := alpha1, ..., Pn := alphan] where P1, ..., Pn are the type parameters
      * of the underlying type, G.
@@ -57,9 +54,9 @@ public class Capture {
 
     public Capture(AbstractType capturedType, ExpressionTree tree, Context context) {
         this.capturedType = capturedType;
-        this.underlying = (DeclaredType) capturedType.getJavaType();
+        DeclaredType underlying = (DeclaredType) capturedType.getJavaType();
         TypeElement ele = TypesUtils.getTypeElement(underlying);
-        map = new Theta();
+        this.map = new Theta();
         List<Pair<CaptureVariable, TypeMirror>> pairs = new ArrayList<>();
         for (TypeParameterElement pEle : ele.getTypeParameters()) {
             TypeVariable pl = (TypeVariable) pEle.asType();
@@ -125,14 +122,6 @@ public class Capture {
         return new LinkedHashSet<>(capturedType.getInferenceVariables());
     }
 
-    public Theta getMap() {
-        return map;
-    }
-
-    public InferenceType getLHS() {
-        return lhs;
-    }
-
     public boolean isCaptureMentionsAny(Collection<Variable> as) {
         for (Variable a : as) {
             if (map.containsValue(a)) {
@@ -154,6 +143,7 @@ public class Capture {
          * capture(G<A1, ..., An>)}.
          */
         public final CaptureVariable alpha;
+
         /**
          * Type argument in the right hand side for the capture. For example {@code A1} in {@code
          * G<a1, ..., an> = capture(G<A1, ..., An>)}.
