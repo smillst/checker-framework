@@ -2,7 +2,6 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -124,14 +123,13 @@ public class BoundSet implements ReductionResult {
         this.uncheckedConversion = uncheckedConversion;
     }
 
+    /** Adds {@code capture} to this bound set. */
     public void addCapture(Capture capture) {
         captures.add(capture);
         variables.addAll(capture.getAllIVOnLHS());
     }
 
-    /**
-     * Does the bound set contain a bound of the form {@code G<..., ai, ...> = capture(G<...>) }?
-     */
+    /** Does the bound set contain a bound of the form {@code G<..., ai, ...> = capture(G<...>)}? */
     public boolean containsCapture(Collection<Variable> as) {
         List<Variable> list = new ArrayList<>();
         for (Capture c : captures) {
@@ -291,10 +289,6 @@ public class BoundSet implements ReductionResult {
 
     public void removeCaptures(LinkedHashSet<Variable> as) {
         captures.removeIf((Capture c) -> c.isCaptureMentionsAny(as));
-    }
-
-    public void removeCapture(Variable a) {
-        captures.removeIf((Capture c) -> c.isCaptureMentionsAny(Collections.singleton(a)));
     }
 
     @Override

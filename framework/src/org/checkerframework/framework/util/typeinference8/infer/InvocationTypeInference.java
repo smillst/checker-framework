@@ -28,7 +28,6 @@ import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
-import org.checkerframework.framework.util.typeinference8.bound.Capture.CaptureTuple;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
@@ -416,23 +415,7 @@ public class InvocationTypeInference {
             // formula <G<B1, ..., Bn> -> T> is reduced and incorporated, along with the bound
             // G<B1, ..., Bn> = capture(G<A1, ..., An>), with B2.
             Capture capture = new Capture(r, invocation, context);
-            ConstraintSet set =
-                    new ConstraintSet(
-                            new Typing(capture.getLHS(), target, Kind.TYPE_COMPATIBILITY));
-            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.3.2
-            // Let R be a type that is not an inference variable (but is not necessarily a proper type).
-            for (CaptureTuple c : capture.getTuples()) {
-                if (c.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
-                    ConstraintSet newCon =
-                            c.alpha.getWildcardConstraints(c.capturedTypeArg, c.bound);
-                    if (newCon == null) {
-                        b2.addFalse();
-                    }
-                    set.add(newCon);
-                }
-            }
-            BoundSet b = set.reduce(context);
-            b.addCapture(capture);
+            BoundSet b = capture.incorporate(target, context);
             b2.incorporateToFixedPoint(b);
             return b2;
         } else if (r.isVariable()) {
@@ -501,13 +484,14 @@ public class InvocationTypeInference {
             if (notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
-            c.add(createArgumentConstraint(ei, fi, map));
+            c.add(createAddtionalArgConstraints(ei, fi, map));
         }
 
         return c;
     }
 
-    private ConstraintSet createArgumentConstraint(ExpressionTree ei, AbstractType fi, Theta map) {
+    private ConstraintSet createAddtionalArgConstraints(
+            ExpressionTree ei, AbstractType fi, Theta map) {
         ConstraintSet c = new ConstraintSet();
 
         switch (ei.getKind()) {
@@ -518,7 +502,7 @@ public class InvocationTypeInference {
                 c.add(new ThrowsConstraint(ei, fi, map));
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
-                    c.add(createArgumentConstraint(expression, fi, map));
+                    c.add(createAddtionalArgConstraints(expression, fi, map));
                 }
                 break;
             case METHOD_INVOCATION:
@@ -547,12 +531,12 @@ public class InvocationTypeInference {
                 }
                 break;
             case PARENTHESIZED:
-                c.add(createArgumentConstraint(TreeUtils.skipParens(ei), fi, map));
+                c.add(createAddtionalArgConstraints(TreeUtils.skipParens(ei), fi, map));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.add(createArgumentConstraint(conditional.getTrueExpression(), fi, map));
-                c.add(createArgumentConstraint(conditional.getFalseExpression(), fi, map));
+                c.add(createAddtionalArgConstraints(conditional.getTrueExpression(), fi, map));
+                c.add(createAddtionalArgConstraints(conditional.getFalseExpression(), fi, map));
                 break;
             default:
                 // no constraints

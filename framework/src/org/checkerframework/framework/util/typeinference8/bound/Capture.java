@@ -12,6 +12,9 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
+import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
@@ -23,25 +26,33 @@ import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * {@code G<a1, ..., an> = capture(G<A1, ..., An>)}: The variables a1, ..., an represent the result
- * of capture conversion applied to {@code G<A1, ..., An>} (where A1, ..., An may be types or
- * wildcards and may mention inference variables).
+ * A bound of the form: {@code G<a1, ..., an> = capture(G<A1, ..., An>)}. The variables a1, ..., an
+ * represent the result of capture conversion applied to {@code G<A1, ..., An>} (where A1, ..., An
+ * may be types or wildcards and may mention inference variables).
  */
 public class Capture {
-    /** {@code G<A1, ..., An>} */
+    /** {@code G<A1, ..., An>} sometimes called the right hand side */
     private final AbstractType capturedType;
-    /** G */
+
+    /** The underlying type of the captured type. "G" in {@code G<A1,...,An>}. */
     private final DeclaredType underlying;
+
     /**
      * The substitution [P1 := alpha1, ..., Pn := alphan] where P1, ..., Pn are the type parameters
-     * of the underlying type G
+     * of the underlying type, G.
      */
     private final Theta map;
+
     /** {@code G<a1, ..., an>} */
     private final InferenceType lhs;
 
+    /** A list of {@link CaptureTuple}s. */
     private final List<CaptureTuple> tuples = new ArrayList<>();
 
+    /**
+     * All capture variables in this capture. For example, a1 in {@code G<a1, ..., an> =
+     * capture(G<A1, ..., An>)}.
+     */
     private final List<CaptureVariable> captureVariables = new ArrayList<>();
 
     public Capture(AbstractType capturedType, ExpressionTree tree, Context context) {
@@ -68,20 +79,42 @@ public class Capture {
             AbstractType Bi = InferenceType.create(pair.second, map, context);
             tuples.add(CaptureTuple.of(alaphi, Ai, Bi));
         }
-
-        // 18.3.2  In addition, for all i (1 <= i <= n):
-        for (CaptureTuple t : tuples) {
-            Variable alphaI = t.alpha;
-            AbstractType Ai = t.capturedTypeArg;
-            if (Ai.getTypeKind() != TypeKind.WILDCARD) {
-                // If Ai is not a wildcard, then the bound alphai = Ai is implied.
-                alphaI.addBound(InferBound.EQUAL, Ai);
-            }
-        }
     }
 
-    public AbstractType getCapturedType() {
-        return capturedType;
+    public BoundSet incorporate(AbstractType target, Context context) {
+        // First add the non-wildcard bounds.
+        for (CaptureTuple t : tuples) {
+            if (t.capturedTypeArg.getTypeKind() != TypeKind.WILDCARD) {
+                // If Ai is not a wildcard, then the bound alphai = Ai is implied.
+                t.alpha.addBound(InferBound.EQUAL, t.capturedTypeArg);
+            }
+        }
+
+        ConstraintSet set = new ConstraintSet(new Typing(lhs, target, Kind.TYPE_COMPATIBILITY));
+        // Reduce and incorporate so that the caputure variables bounds are set.
+        BoundSet b1 = set.reduce(context);
+        b1.incorporateToFixedPoint(new BoundSet(context));
+
+        // Then create constraints implied by captured type args that are wildcards.
+        boolean containsFalse = false;
+        for (CaptureTuple t : tuples) {
+            if (t.capturedTypeArg.getTypeKind() == TypeKind.WILDCARD) {
+                ConstraintSet newCon = t.alpha.getWildcardConstraints(t.capturedTypeArg, t.bound);
+                if (newCon == null) {
+                    containsFalse = true;
+                }
+                set.add(newCon);
+            }
+        }
+
+        // Reduce and incorporate again.
+        BoundSet b2 = set.reduce(context);
+        b2.addCapture(this);
+        if (containsFalse) {
+            b2.addFalse();
+        }
+        b1.incorporateToFixedPoint(b2);
+        return b1;
     }
 
     public List<? extends CaptureVariable> getAllIVOnLHS() {
@@ -94,10 +127,6 @@ public class Capture {
 
     public Theta getMap() {
         return map;
-    }
-
-    public List<CaptureTuple> getTuples() {
-        return tuples;
     }
 
     public InferenceType getLHS() {

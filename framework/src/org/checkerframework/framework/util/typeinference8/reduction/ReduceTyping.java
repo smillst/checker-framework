@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
@@ -104,9 +103,9 @@ public class ReduceTyping {
         if (s.isVariable() || t.isVariable()) {
             if (s.isVariable()) {
                 if (t.getTypeKind() == TypeKind.TYPEVAR && t.hasLowerBound()) {
-                    ((Variable) s).addBound(InferBound.UPPER, c.getT().getTypeVarLowerBound());
+                    ((Variable) s).addBound(InferBound.UPPER, t.getTypeVarLowerBound());
                 } else {
-                    ((Variable) s).addBound(InferBound.UPPER, c.getT());
+                    ((Variable) s).addBound(InferBound.UPPER, t);
                 }
             }
             if (t.isVariable()) {
@@ -116,10 +115,6 @@ public class ReduceTyping {
                 ((Variable) t).addBound(InferBound.LOWER, c.getS());
             }
             return ConstraintSet.TRUE;
-        }
-
-        if (t.getTypeKind() == TypeKind.WILDCARD && t.isUpperBoundedWildcard()) {
-            t = t.getWildcardUpperBound();
         }
 
         switch (t.getTypeKind()) {
@@ -135,12 +130,6 @@ public class ReduceTyping {
             default:
                 return null;
         }
-    }
-
-    private static boolean isWildcardOrCapturedWildcard(TypeMirror subType) {
-        return subType.getKind() == TypeKind.WILDCARD
-                || (subType.getKind() == TypeKind.TYPEVAR
-                        && TypesUtils.isCaptured((TypeVariable) subType));
     }
 
     private static ConstraintSet reduceSubtypeClass(AbstractType t, AbstractType s) {
@@ -174,7 +163,7 @@ public class ReduceTyping {
 
     private static ReductionResult reduceSubtypeArray(AbstractType t, AbstractType s) {
         AbstractType msArrayType = s.getMostSpecificArrayType();
-        if (s == null) {
+        if (msArrayType == null) {
             return null;
         }
         if (msArrayType.isPrimitiveArray() && t.isPrimitiveArray()) {
@@ -211,12 +200,8 @@ public class ReduceTyping {
         if (t.getTypeKind() != TypeKind.WILDCARD) {
             if (s.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(s, t, Kind.TYPE_EQUALITY);
-            } else if (s.isLowerBoundedWildcard()) {
-                return new Typing(s.getWildcardLowerBound(), t, Kind.TYPE_EQUALITY);
-            } else if (s.isUpperBoundedWildcard()) {
-                return new Typing(s.getWildcardUpperBound(), t, Kind.TYPE_EQUALITY);
             } else {
-                return ConstraintSet.TRUE;
+                return null;
             }
         } else if (t.isUnboundWildcard()) {
             return ConstraintSet.TRUE;
@@ -231,7 +216,7 @@ public class ReduceTyping {
             } else {
                 return new Typing(s, bound, Kind.SUBTYPE);
             }
-        } else {
+        } else { // t is lower bounded wildcard
             AbstractType tPrime = t.getWildcardLowerBound();
             if (s.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(tPrime, s, Kind.SUBTYPE);
