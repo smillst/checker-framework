@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
-import org.checkerframework.framework.util.typeinference8.constraint.Typing;
-import org.checkerframework.framework.util.typeinference8.reduction.ReduceTyping;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
@@ -267,13 +265,9 @@ public class BoundSet implements ReductionResult {
             }
             boundsChangeInst |= captures.addAll(newBounds.captures);
             for (Variable alpha : variables) {
-                while (!alpha.constraints.isEmpty()) {
+                if (!alpha.constraints.isEmpty()) {
                     boundsChangeInst = true;
-                    if (!ReduceTyping.reduceTyping(
-                            this, (Typing) alpha.constraints.pop(), context)) {
-                        this.isFalse = true;
-                        return;
-                    }
+                    merge(alpha.constraints.reduce(context));
                 }
             }
             if (newBounds.isUncheckedConversion()) {
@@ -284,7 +278,7 @@ public class BoundSet implements ReductionResult {
                 return;
             }
 
-            isFalse &= newBounds.isFalse;
+            isFalse |= newBounds.isFalse;
             assert count < MAX_INCORPORATION_STEPS : "Max incorporation steps reached.";
         } while (!isFalse && count < MAX_INCORPORATION_STEPS);
     }
