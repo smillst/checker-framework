@@ -7,7 +7,7 @@ public class ReductionResultPair implements ReductionResult {
     public ConstraintSet first;
     public BoundSet second;
 
-    static ReductionResultPair of(ConstraintSet first, BoundSet second) {
+    public static ReductionResultPair of(ConstraintSet first, BoundSet second) {
         ReductionResultPair pair = new ReductionResultPair();
         pair.first = first;
         pair.second = second;

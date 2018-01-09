@@ -1,12 +1,39 @@
 package org.checkerframework.framework.util.typeinference8.constraint;
 
+import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.LambdaExpressionTree;
+import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
+import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
+import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
+import org.checkerframework.framework.util.typeinference8.reduction.ReductionResultPair;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.InferenceType;
+import org.checkerframework.framework.util.typeinference8.types.ProperType;
+import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.framework.util.typeinference8.util.InferenceUtils;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.ErrorReporter;
+import org.checkerframework.javacutil.Pair;
+import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * &lt;Expression &rarr; T&gt; An expression is compatible in a loose invocation context with type T
@@ -77,6 +104,320 @@ public class Expression extends Constraint {
 
     public ExpressionTree getExpression() {
         return expression;
+    }
+
+    public ReductionResult reduce(Context context) {
+        switch (getExpressionKind()) {
+            case PROPER_TYPE:
+                return reduceProperType();
+            case STANDALONE:
+                return reduceStandalone(context);
+            case PARENTHESIZED:
+                return reduceParenthesized();
+            case METHOD_INVOCATION:
+                return reduceMethodInvocation(context);
+            case CONDITIONAL:
+                return reduceConditional();
+            case LAMBDA:
+                return reduceLambda(context);
+            case METHOD_REF:
+                return reduceMethodRef(context);
+            default:
+                ErrorReporter.errorAbort("Unexpected ExpressionKind: %s", this.getKind());
+                BoundSet boundSet = new BoundSet(context);
+                boundSet.addFalse();
+                return boundSet;
+        }
+    }
+
+    private Constraint reduceParenthesized() {
+        return new Expression(TreeUtils.skipParens(expression), T);
+    }
+
+    private Constraint reduceStandalone(Context context) {
+        ProperType s = new ProperType(TreeUtils.typeOf(expression), context);
+        return new Typing(s, T, Constraint.Kind.TYPE_COMPATIBILITY);
+    }
+
+    private ConstraintSet reduceConditional() {
+        ConditionalExpressionTree conditional = (ConditionalExpressionTree) expression;
+        Constraint trueConstraint = new Expression(conditional.getTrueExpression(), T);
+        Constraint falseConstraint = new Expression(conditional.getFalseExpression(), T);
+        return new ConstraintSet(trueConstraint, falseConstraint);
+    }
+
+    /**
+     * JSL 18.2.1: "If T is a proper type, the constraint reduces to true if the expression is
+     * compatible in a loose invocation context with T (5.3), and false otherwise."
+     */
+    private ReductionResult reduceProperType() {
+        // Assume the constraint reduces to TRUE, if it did not the code wouldn't compile with
+        // javac.
+
+        // TODO: This should return false in some cases.
+        // com.sun.tools.javac.code.Types.isConvertible(com.sun.tools.javac.code.Type, com.sun.tools.javac.code.Type)
+        return new ConstraintSet();
+    }
+
+    /**
+     * Text from JLS 18.2.1: If the expression is a class instance creation expression or a method
+     * invocation expression, the constraint reduces to the bound set B3 which would be used to
+     * determine the expression's invocation type when targeting T, as defined in 18.5.2. (For a
+     * class instance creation expression, the corresponding "method" used for inference is defined
+     * in 15.9.3).
+     *
+     * <p>This bound set may contain new inference variables, as well as dependencies between these
+     * new variables and the inference variables in T.
+     */
+    private BoundSet reduceMethodInvocation(Context context) {
+        ExpressionTree expressionTree = expression;
+        List<? extends ExpressionTree> args;
+        if (expressionTree.getKind() == Tree.Kind.NEW_CLASS) {
+            NewClassTree newClassTree = (NewClassTree) expressionTree;
+            args = newClassTree.getArguments();
+        } else {
+            MethodInvocationTree methodInvocationTree = (MethodInvocationTree) expressionTree;
+            args = methodInvocationTree.getArguments();
+        }
+
+        ExecutableType methodType =
+                InternalInferenceUtils.getTypeOfMethodAdaptedToUse(expressionTree, context);
+        Theta map = Theta.theta(expressionTree, methodType, context);
+        BoundSet b2 = context.inference.createB2(expressionTree, methodType, args, map);
+        return context.inference.createB3(b2, expressionTree, methodType, T, map);
+    }
+
+    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300 */
+    private ReductionResult reduceMethodRef(Context context) {
+        MemberReferenceTree memRef = (MemberReferenceTree) expression;
+        if (TreeUtils.isExactMethodReference(memRef)) {
+            ExecutableType typeOfPoAppMethod =
+                    TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
+
+            ConstraintSet constraintSet = new ConstraintSet();
+            List<AbstractType> ps = T.getFunctionTypeParameters();
+            List<AbstractType> fs = new ArrayList<>();
+            for (TypeMirror param : typeOfPoAppMethod.getParameterTypes()) {
+                fs.add(new ProperType(param, context));
+            }
+
+            if (ps.size() == fs.size() + 1) {
+                AbstractType targetReference = ps.remove(0);
+                ProperType referenceType =
+                        new ProperType(TreeUtils.typeOf(memRef.getQualifierExpression()), context);
+                constraintSet.add(
+                        new Typing(targetReference, referenceType, Constraint.Kind.SUBTYPE));
+            }
+            for (int i = 0; i < ps.size(); i++) {
+                constraintSet.add(new Typing(ps.get(i), fs.get(i), Constraint.Kind.SUBTYPE));
+            }
+            AbstractType r = T.getFunctionTypeReturn();
+            if (r != null && r.getTypeKind() != TypeKind.VOID) {
+                AbstractType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
+                constraintSet.add(new Typing(rPrime, r, Constraint.Kind.TYPE_COMPATIBILITY));
+            }
+            return constraintSet;
+        }
+        // else
+        // Otherwise, the method reference is inexact,
+
+        // Compile-time declaration of the member reference expression
+        ExecutableType compileTimeDecl =
+                InternalInferenceUtils.compileTimeDeclarationType(memRef, context.env);
+        if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
+            return ReductionResult.TRUE;
+        }
+        ExecutableType funcType = TypesUtils.findFunctionType(T.getJavaType(), context.env);
+        AbstractType r = T.getFunctionTypeReturn();
+        if (r.getTypeKind() == TypeKind.VOID) {
+            return ReductionResult.TRUE;
+        }
+
+        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC
+        // Otherwise, if the method reference expression elides TypeArguments, and the
+        // compile-time declaration is a generic method, and
+        // the return type of the
+        // compile-time declaration mentions at least one of the method's type parameters,
+        Theta map = Theta.theta(memRef, compileTimeDecl, context);
+        AbstractType compileTimeReturn =
+                InferenceType.create(compileTimeDecl.getReturnType(), map, context);
+        if (memRef.getTypeArguments() == null
+                && !compileTimeDecl.getTypeVariables().isEmpty()
+                && !compileTimeReturn.isProper()) {
+            // the constraint reduces to the bound set B3 which would be used to determine the
+            // method reference's invocation type when targeting the return type of the function
+            // type, as defined in 18.5.2. B3 may contain new inference variables, as well as
+            // dependencies between these new variables and the inference variables in T.
+            BoundSet b2 =
+                    context.inference.createB2MethodRef(
+                            memRef, compileTimeDecl, T.getFunctionTypeParameters(), map);
+            return context.inference.createB3(b2, memRef, compileTimeDecl, r, map);
+        }
+
+        // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C
+        // Otherwise, let R be the return type of the function type, and let R' be the result
+        // of applying capture conversion (5.1.10) to the return type of the invocation type
+        // (15.12.2.6) of the compile-time declaration. If R' is void, the constraint reduces
+        // to false; otherwise, the constraint reduces to <R' -> R>.
+
+        return ReductionResultPair.of(
+                new ConstraintSet(
+                        new Typing(
+                                compileTimeReturn.capture(),
+                                r,
+                                Constraint.Kind.TYPE_COMPATIBILITY)),
+                new BoundSet(context));
+    }
+
+    /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-200 */
+    private ReductionResultPair reduceLambda(Context context) {
+        LambdaExpressionTree lambda = (LambdaExpressionTree) expression;
+        Pair<AbstractType, BoundSet> pair = getGroundTargetType(T, lambda, context);
+        AbstractType tPrime = pair.first;
+        BoundSet boundSet = pair.second == null ? new BoundSet(context) : pair.second;
+
+        ConstraintSet constraintSet = new ConstraintSet();
+
+        if (!TreeUtils.isImplicitlyTypeLambda(lambda)) {
+            // Explicitly typed lambda
+            List<? extends VariableTree> parameters = lambda.getParameters();
+            List<AbstractType> gs = T.getFunctionTypeParameters();
+            assert parameters.size() == gs.size();
+
+            for (int i = 0; i < gs.size(); i++) {
+                VariableTree parameter = parameters.get(i);
+                AbstractType fi = new ProperType(TreeUtils.typeOf(parameter), context);
+                AbstractType gi = gs.get(i);
+                constraintSet.add(new Typing(fi, gi, Constraint.Kind.TYPE_EQUALITY));
+            }
+            constraintSet.add(new Typing(tPrime, T, Constraint.Kind.SUBTYPE));
+        }
+
+        AbstractType R = T.getFunctionTypeReturn();
+        if (R != null && R.getTypeKind() != TypeKind.VOID) {
+            for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambda)) {
+                if (R.isProper()) {
+                    if (!context.env
+                            .getTypeUtils()
+                            .isAssignable(TreeUtils.typeOf(e), R.getJavaType())) {
+                        boundSet.addFalse();
+                        return ReductionResultPair.of(constraintSet, boundSet);
+                    }
+                } else {
+                    constraintSet.add(new Expression(e, R));
+                }
+            }
+        }
+        return ReductionResultPair.of(constraintSet, boundSet);
+    }
+
+    public Pair<AbstractType, BoundSet> getGroundTargetType(
+            AbstractType t, LambdaExpressionTree lambda, Context context) {
+        if (!t.isWildcardParameterizedType()) {
+            return Pair.of(t, null);
+        }
+        // 15.27.3:
+        // If T is a wildcard-parameterized functional interface type and the lambda expression is
+        // explicitly typed, then the ground target type is inferred as described in 18.5.3.
+        if (TreeUtils.isExplicitlyTypeLambda(lambda) && !lambda.getParameters().isEmpty()) {
+            return explicitlyTypeLambdasWithWildcard(t, lambda, context);
+        } else {
+            // If T is a wildcard-parameterized functional interface type and the lambda expression
+            // is implicitly typed, then the ground target type is the non-wildcard parameterization (9.9) of T.
+            // https://docs.oracle.com/javase/specs/jls/se8/html/jls-9.html#jls-9.9-200-C
+            return Pair.of(nonWildcardParameterization(t, context), null);
+        }
+    }
+
+    private AbstractType nonWildcardParameterization(AbstractType t, Context context) {
+        List<AbstractType> As = t.getTypeArguments();
+        Iterator<ProperType> Bs = t.getTypeParameterBounds();
+        List<AbstractType> Ts = new ArrayList<>();
+        for (AbstractType Ai : As) {
+            ProperType bi = Bs.next();
+            if (Ai.getTypeKind() != TypeKind.WILDCARD) {
+                Ts.add(Ai);
+            } else if (Ai.isUnboundWildcard()) {
+                Ts.add(bi);
+            } else if (Ai.isUpperBoundedWildcard()) {
+                AbstractType Ui = Ai.getWildcardUpperBound();
+                AbstractType glb = InferenceUtils.glb(Ui, bi, context);
+                Ts.add(glb);
+            } else {
+                // Lower bounded wildcard
+                Ts.add(Ai.getWildcardLowerBound());
+            }
+        }
+        return t.replaceTypeArgs(Ts);
+    }
+
+    /** 18.5.3: Functional Interface Parameterization Inference */
+    private Pair<AbstractType, BoundSet> explicitlyTypeLambdasWithWildcard(
+            AbstractType t, LambdaExpressionTree lambda, Context context) {
+        // Where a lambda expression with explicit parameter types P1, ..., Pn targets a functional
+        // interface type F<A1, ..., Am> with at least one wildcard type argument, then a parameterization
+        // of F may be derived as the ground target type of the lambda expression as follows.
+        List<ProperType> ps = new ArrayList<>();
+        for (VariableTree paramTree : lambda.getParameters()) {
+            ps.add(new ProperType(TreeUtils.typeOf(paramTree), context));
+        }
+
+        TypeElement typeEle = (TypeElement) ((DeclaredType) t.getJavaType()).asElement();
+        // Let Q1, ..., Qk be the parameter types of the function type of the type F<alpha1, ..., alpham>,
+        // where alpha1, ..., alpham are fresh inference variables.
+        List<Variable> alphas = new ArrayList<>();
+        Theta map = new Theta();
+        for (TypeParameterElement param : typeEle.getTypeParameters()) {
+            TypeVariable typeVar = (TypeVariable) param.asType();
+            Variable ai = new Variable(typeVar, lambda, context);
+            map.put(typeVar, ai);
+            alphas.add(ai);
+        }
+
+        ExecutableType funcType = TypesUtils.findFunctionType(typeEle.asType(), context.env);
+        List<AbstractType> qs = new ArrayList<>();
+        for (TypeMirror param : funcType.getParameterTypes()) {
+            qs.add(InferenceType.create(param, map, context));
+        }
+        assert qs.size() == ps.size();
+
+        // A set of constraint formulas is formed with, for all i (1 <= i <= n), <Pi = Qi>.
+        ConstraintSet constraintSet = new ConstraintSet();
+        for (int i = 0; i < ps.size(); i++) {
+            ProperType pi = ps.get(i);
+            AbstractType qi = qs.get(i);
+            constraintSet.add(new Typing(pi, qi, Constraint.Kind.TYPE_EQUALITY));
+        }
+        // This constraint formula set is reduced to form the bound set B.
+        BoundSet b = constraintSet.reduce(context);
+        assert !b.containsFalse()
+                : "Bound set contains false during Functional Interface Parameterization Inference";
+
+        // A new parameterization of the functional interface type, F<A'1, ..., A'm>, is constructed as follows, for 1 <= i <= m:
+        List<AbstractType> APrimes = new ArrayList<>();
+        Iterator<Variable> alphaIter = alphas.iterator();
+        boolean hasWildcard = false;
+        for (AbstractType Ai : t.getTypeArguments()) {
+            Variable alphaI = alphaIter.next();
+            // If B contains an instantiation (18.1.3) for alphai, T, then A'i = T.
+            AbstractType AiPrime = alphaI.getInstantiation();
+            if (AiPrime == null) {
+                AiPrime = Ai;
+            }
+            APrimes.add(AiPrime);
+            if (AiPrime.getTypeKind() == TypeKind.WILDCARD) {
+                hasWildcard = true;
+            }
+        }
+
+        // The inferred parameterization is either F<A'1, ..., A'm>, if all the type arguments
+        // are types, or the non-wildcard parameterization (9.9) of F<A'1, ..., A'm>, if one or more type arguments are still wildcards.
+
+        AbstractType target = t.replaceTypeArgs(APrimes);
+        if (hasWildcard) {
+            return Pair.of(nonWildcardParameterization(target, context), b);
+        }
+        return Pair.of(target, b);
     }
 
     @Override

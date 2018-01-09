@@ -14,7 +14,6 @@ import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Typing;
-import org.checkerframework.framework.util.typeinference8.reduction.ReduceExpression;
 import org.checkerframework.framework.util.typeinference8.reduction.ReduceTyping;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResultPair;
@@ -234,7 +233,7 @@ public class ConstraintSet implements ReductionResult {
     private ReductionResult reduce(Constraint constraint, Context context) {
         switch (constraint.getKind()) {
             case EXPRESSION:
-                return ReduceExpression.reduce((Expression) constraint, context);
+                return ((Expression) constraint).reduce(context);
             case TYPE_COMPATIBILITY:
                 return ReduceTyping.reduceCompatible((Typing) constraint, context);
             case SUBTYPE:
