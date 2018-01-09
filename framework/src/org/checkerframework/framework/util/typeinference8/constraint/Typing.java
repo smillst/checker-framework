@@ -1,5 +1,6 @@
 package org.checkerframework.framework.util.typeinference8.constraint;
 
+import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -8,9 +9,9 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.framework.util.typeinference8.reduction.ReduceTyping;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
@@ -65,13 +66,13 @@ public class Typing extends Constraint {
     public ReductionResult reduce(Context context) {
         switch (getKind()) {
             case TYPE_COMPATIBILITY:
-                return ReduceTyping.reduceCompatible(this, context);
+                return reduceCompatible(this, context);
             case SUBTYPE:
                 return reduceSubtyping(context);
             case CONTAINED:
-                return ReduceTyping.reduceContained(this);
+                return reduceContained();
             case TYPE_EQUALITY:
-                return ReduceTyping.reduceEquality(this);
+                return reduceEquality();
             default:
                 ErrorReporter.errorAbort("Unexpected kind: " + getKind());
                 throw new RuntimeException();
@@ -188,6 +189,143 @@ public class Typing extends Constraint {
             constraintSet.add(new Typing(S, bound, Kind.SUBTYPE));
         }
         return constraintSet;
+    }
+
+    private ReductionResult reduceContained() {
+        if (T.getTypeKind() != TypeKind.WILDCARD) {
+            if (S.getTypeKind() != TypeKind.WILDCARD) {
+                return new Typing(S, T, Kind.TYPE_EQUALITY);
+            } else {
+                return null;
+            }
+        } else if (T.isUnboundWildcard()) {
+            return ConstraintSet.TRUE;
+        } else if (T.isUpperBoundedWildcard()) {
+            AbstractType bound = T.getWildcardUpperBound();
+            if (S.getTypeKind() == TypeKind.WILDCARD) {
+                if (S.isUnboundWildcard() || S.isUpperBoundedWildcard()) {
+                    return new Typing(S.getWildcardUpperBound(), bound, Kind.SUBTYPE);
+                } else {
+                    return new Typing(S.getWildcardLowerBound(), bound, Kind.TYPE_EQUALITY);
+                }
+            } else {
+                return new Typing(S, bound, Kind.SUBTYPE);
+            }
+        } else { // T is lower bounded wildcard
+            AbstractType tPrime = T.getWildcardLowerBound();
+            if (S.getTypeKind() != TypeKind.WILDCARD) {
+                return new Typing(tPrime, S, Kind.SUBTYPE);
+            } else if (S.isLowerBoundedWildcard()) {
+                return new Typing(tPrime, S.getWildcardLowerBound(), Kind.SUBTYPE);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    private ReductionResult reduceCompatible(Typing c, Context contex) {
+        ProperType t = null;
+        ProperType s = null;
+        if (c.getT().isProper()) {
+            t = (ProperType) c.getT();
+        }
+
+        if (c.getS().isProper()) {
+            s = (ProperType) c.getS();
+        }
+
+        if (t != null && s != null) {
+            // the constraint reduces to true if S is compatible in a loose invocation context
+            // with T (5.3), and false otherwise.
+            if (contex.types.isAssignable((Type) s.getJavaType(), (Type) t.getJavaType())) {
+                return ConstraintSet.TRUE;
+            } else {
+                return null;
+            }
+        } else if (s != null && s.getTypeKind().isPrimitive()) {
+            return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
+        } else if (t != null && t.getTypeKind().isPrimitive()) {
+            return new Typing(c.getS(), t.boxType(), Kind.TYPE_EQUALITY);
+        } else if (c.getT().isParameterizedType()) {
+            // Otherwise, if T is a parameterized type of the form G<T1, ..., Tn>,
+            // and there exists no type of the form G<...> that is a supertype of S,
+            // but the raw type G is a supertype of S, then the constraint reduces to true.
+            AbstractType superS = c.getS().asSuper(c.getT().getJavaType());
+            if (superS != null && superS.isRaw()) {
+                return ReductionResult.UNCHECKED_CONVERSION;
+            }
+        } else if (c.getT().getTypeKind() == TypeKind.ARRAY
+                && c.getT().getComponentType().isParameterizedType()) {
+            AbstractType superS = c.getS().asSuper((c.getT()).getJavaType());
+            if (superS != null && superS.getComponentType().isRaw()) {
+                return ReductionResult.UNCHECKED_CONVERSION;
+            }
+        }
+
+        return new Typing(c.getS(), c.getT(), Kind.SUBTYPE);
+    }
+
+    private ReductionResult reduceEquality() {
+        if (S.isProper()) {
+            if (T.isProper()) {
+                // If S and T are proper types, the constraint reduces to true if S is the same
+                // as T (4.3.4), and false otherwise.
+                return ConstraintSet.TRUE;
+            }
+            ProperType sProper = (ProperType) S;
+            if (sProper.getTypeKind() == TypeKind.NULL || sProper.getTypeKind().isPrimitive()) {
+                // if S or T is the null type, the constraint reduces to false.
+                return null;
+            }
+        } else if (T.isProper()) {
+            ProperType tProper = (ProperType) T;
+            if (tProper.getTypeKind() == TypeKind.NULL || tProper.getTypeKind().isPrimitive()) {
+                // if S or T is the null type, the constraint reduces to false.
+                return null;
+            }
+        }
+
+        if (S.isVariable() || T.isVariable()) {
+            if (S.isVariable()) {
+                ((Variable) S).addBound(InferBound.EQUAL, T);
+            }
+            if (T.isVariable()) {
+                ((Variable) T).addBound(InferBound.EQUAL, S);
+            }
+            return ConstraintSet.TRUE;
+        }
+
+        List<AbstractType> sTypeArgs = S.getTypeArguments();
+        List<AbstractType> tTypeArgs = T.getTypeArguments();
+        if (sTypeArgs != null && tTypeArgs != null && sTypeArgs.size() == tTypeArgs.size()) {
+            // Assume if both have type arguments, then S and T are class or interface types with
+            // the same erasure
+            ConstraintSet constraintSet = new ConstraintSet();
+            for (int i = 0; i < tTypeArgs.size(); i++) {
+                constraintSet.add(
+                        new Typing(tTypeArgs.get(i), sTypeArgs.get(i), Kind.TYPE_EQUALITY));
+            }
+            return constraintSet;
+        }
+
+        AbstractType sComponentType = S.getComponentType();
+        AbstractType tComponentType = T.getComponentType();
+        if (sComponentType != null && tComponentType != null) {
+            return new Typing(sComponentType, tComponentType, Kind.TYPE_EQUALITY);
+        }
+
+        if (T.getTypeKind() == TypeKind.WILDCARD && S.getTypeKind() == TypeKind.WILDCARD) {
+            if (T.isUnboundWildcard() && S.isUnboundWildcard()) {
+                return ConstraintSet.TRUE;
+            } else if (!S.isLowerBoundedWildcard() && !T.isLowerBoundedWildcard()) {
+                return new Typing(
+                        S.getWildcardUpperBound(), T.getWildcardUpperBound(), Kind.TYPE_EQUALITY);
+            } else if (T.isLowerBoundedWildcard() && S.isLowerBoundedWildcard()) {
+                return new Typing(
+                        T.getWildcardLowerBound(), S.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
+            }
+        }
+        return null;
     }
 
     @Override
