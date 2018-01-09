@@ -4,18 +4,15 @@ import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
-import com.sun.source.tree.Tree;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -64,6 +61,8 @@ public abstract class Constraint implements ReductionResult {
     public AbstractType getT() {
         return T;
     }
+
+    public abstract ReductionResult reduce(Context context);
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.5.2-200 */
     protected List<Variable> getInputVariablesForExpression(ExpressionTree tree, AbstractType t) {
@@ -156,169 +155,5 @@ public abstract class Constraint implements ReductionResult {
 
     public void applyInstantiations(List<Variable> instantiations) {
         T = T.applyInstantiations(instantiations);
-    }
-
-    public static class Typing extends Constraint {
-        AbstractType S;
-        final Kind kind;
-
-        public Typing(AbstractType s, AbstractType t, Kind kind) {
-            super(t);
-            assert s != null;
-            this.S = s;
-            this.kind = kind;
-        }
-
-        public AbstractType getS() {
-            return S;
-        }
-
-        @Override
-        public Kind getKind() {
-            return kind;
-        }
-
-        @Override
-        public List<Variable> getInputVariables() {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<Variable> getOutputVariables() {
-            return Collections.emptyList();
-        }
-
-        @Override
-        public List<Variable> getInferenceVariables() {
-            Set<Variable> vars = new HashSet<>();
-            vars.addAll(T.getInferenceVariables());
-            vars.addAll(S.getInferenceVariables());
-            return new ArrayList<>(vars);
-        }
-
-        @Override
-        public void applyInstantiations(List<Variable> instantiations) {
-            super.applyInstantiations(instantiations);
-            S = S.applyInstantiations(instantiations);
-        }
-
-        @Override
-        public String toString() {
-            switch (kind) {
-                case TYPE_COMPATIBILITY:
-                    return S + " -> " + T;
-                case SUBTYPE:
-                    return S + " <: " + T;
-                case CONTAINED:
-                    return S + " <= " + T;
-                case TYPE_EQUALITY:
-                    return S + " = " + T;
-                default:
-                    assert false;
-                    return super.toString();
-            }
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            if (!super.equals(o)) {
-                return false;
-            }
-
-            Typing typing = (Typing) o;
-
-            if (!S.equals(typing.S)) {
-                return false;
-            }
-            return kind == typing.kind;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + S.hashCode();
-            result = 31 * result + kind.hashCode();
-            return result;
-        }
-    }
-
-    /**
-     * &lt;LambdaExpression &rarr;throws T&gt;: The checked exceptions thrown by the body of the
-     * LambdaExpression are declared by the throws clause of the function type derived from T.
-     *
-     * <p>&lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced
-     * method are declared by the throws clause of the function type derived from T.
-     */
-    public static class ThrowsConstraint extends Constraint {
-        ExpressionTree expression;
-        Theta map;
-
-        public ThrowsConstraint(ExpressionTree expression, AbstractType t, Theta map) {
-            super(t);
-            assert expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
-                    || expression.getKind() == Tree.Kind.MEMBER_REFERENCE;
-            this.expression = expression;
-            this.map = map;
-        }
-
-        public Theta getMap() {
-            return map;
-        }
-
-        public ExpressionTree getExpression() {
-            return expression;
-        }
-
-        @Override
-        public Kind getKind() {
-            return expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
-                    ? Kind.LAMBDA_EXCEPTION
-                    : Kind.METHOD_REF_EXCEPTION;
-        }
-
-        @Override
-        public List<Variable> getInputVariables() {
-            return getInputVariablesForExpression(expression, getT());
-        }
-
-        @Override
-        public List<Variable> getOutputVariables() {
-            List<Variable> input = getInputVariables();
-            List<Variable> output = new ArrayList<>(getT().getInferenceVariables());
-            output.removeAll(input);
-            return output;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            if (!super.equals(o)) {
-                return false;
-            }
-
-            ThrowsConstraint that = (ThrowsConstraint) o;
-
-            return expression != null
-                    ? expression.equals(that.expression)
-                    : that.expression == null;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + (expression != null ? expression.hashCode() : 0);
-            return result;
-        }
     }
 }
