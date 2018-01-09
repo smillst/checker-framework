@@ -25,7 +25,7 @@ public interface ReductionResult {
                 }
             };
 
-     class ReductionResultPair implements ReductionResult {
+    class ReductionResultPair implements ReductionResult {
         public ConstraintSet first;
         public BoundSet second;
 

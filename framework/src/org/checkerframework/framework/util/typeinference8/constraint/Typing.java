@@ -86,7 +86,9 @@ public class Typing extends Constraint {
                 return ConstraintSet.TRUE;
             }
 
-            if (context.env.getTypeUtils().isAssignable(subType, superType)) {
+            if (context.types.isSubtypeUnchecked((Type) subType, (Type) superType)) {
+                return ConstraintSet.TRUE;
+            } else if (TypesUtils.isCaptured(subType) || TypesUtils.isCaptured(superType)) {
                 return ConstraintSet.TRUE;
             } else {
                 return ConstraintSet.FALSE;
