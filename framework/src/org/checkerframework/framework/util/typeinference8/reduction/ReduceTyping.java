@@ -2,10 +2,8 @@ package org.checkerframework.framework.util.typeinference8.reduction;
 
 import com.sun.tools.javac.code.Type;
 import java.util.ArrayDeque;
-import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -17,7 +15,6 @@ import org.checkerframework.framework.util.typeinference8.types.Variable.InferBo
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
-import org.checkerframework.javacutil.TypesUtils;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
@@ -67,7 +64,7 @@ public class ReduceTyping {
             case TYPE_COMPATIBILITY:
                 return ReduceTyping.reduceCompatible(constraint, context);
             case SUBTYPE:
-                return ReduceTyping.reduceSubtyping(constraint, context);
+                return constraint.reduce(context);
             case CONTAINED:
                 return ReduceTyping.reduceContained(constraint);
             case TYPE_EQUALITY:
@@ -76,121 +73,6 @@ public class ReduceTyping {
                 assert false;
                 return null;
         }
-    }
-
-    public static ReductionResult reduceSubtyping(Typing c, Context context) {
-        AbstractType s = c.getS();
-        AbstractType t = c.getT();
-
-        if (s.isProper() && t.isProper()) {
-            TypeMirror subType = s.getJavaType();
-            TypeMirror superType = t.getJavaType();
-            if (subType == superType) {
-                return ConstraintSet.TRUE;
-            }
-
-            if (context.env.getTypeUtils().isAssignable(subType, superType)) {
-                return ConstraintSet.TRUE;
-            } else {
-                return ConstraintSet.FALSE;
-            }
-        } else if (s.getTypeKind() == TypeKind.NULL) {
-            return ConstraintSet.TRUE;
-        } else if (t.getTypeKind() == TypeKind.NULL) {
-            return null;
-        }
-
-        if (s.isVariable() || t.isVariable()) {
-            if (s.isVariable()) {
-                if (t.getTypeKind() == TypeKind.TYPEVAR && t.hasLowerBound()) {
-                    ((Variable) s).addBound(InferBound.UPPER, t.getTypeVarLowerBound());
-                } else {
-                    ((Variable) s).addBound(InferBound.UPPER, t);
-                }
-            }
-            if (t.isVariable()) {
-                if (TypesUtils.isCaptured(s.getJavaType())) {
-                    ((Variable) t).addBound(InferBound.LOWER, s.getTypeVarUpperBound());
-                }
-                ((Variable) t).addBound(InferBound.LOWER, c.getS());
-            }
-            return ConstraintSet.TRUE;
-        }
-
-        switch (t.getTypeKind()) {
-            case DECLARED:
-                return reduceSubtypeClass(t, s);
-            case ARRAY:
-                return reduceSubtypeArray(t, s);
-            case WILDCARD:
-            case TYPEVAR:
-                return reduceSubtypeTypeVariable(t, s);
-            case INTERSECTION:
-                return reduceSubtypingIntersection(t, s);
-            default:
-                return null;
-        }
-    }
-
-    private static ConstraintSet reduceSubtypeClass(AbstractType t, AbstractType s) {
-        if (t.isParameterizedType()) {
-            // let A1, ..., An be the type arguments of T. Among the supertypes of S, a
-            // corresponding class or interface type is identified, with type arguments B1, ...,
-            // Bn. If no such type exists, the constraint reduces to false. Otherwise, the
-            // constraint reduces to the following new constraints:
-            // for all i (1 <= i <= n), <Bi <= Ai>.
-
-            TypeMirror tTypeMirror = t.getJavaType();
-            AbstractType sAsSuper = s.asSuper(tTypeMirror);
-            if (sAsSuper == null) {
-                return null;
-            }
-
-            List<AbstractType> Bs = sAsSuper.getTypeArguments();
-            Iterator<AbstractType> As = t.getTypeArguments().iterator();
-            ConstraintSet set = new ConstraintSet();
-            for (AbstractType b : Bs) {
-                AbstractType a = As.next();
-                set.add(new Typing(b, a, Kind.CONTAINED));
-            }
-
-            return set;
-        } else {
-            //the constraint reduces to true if T is among the supertypes of S, and false otherwise.
-            return ConstraintSet.TRUE;
-        }
-    }
-
-    private static ReductionResult reduceSubtypeArray(AbstractType t, AbstractType s) {
-        AbstractType msArrayType = s.getMostSpecificArrayType();
-        if (msArrayType == null) {
-            return null;
-        }
-        if (msArrayType.isPrimitiveArray() && t.isPrimitiveArray()) {
-            return ConstraintSet.TRUE;
-        } else {
-            return new Typing(msArrayType.getComponentType(), t.getComponentType(), Kind.SUBTYPE);
-        }
-    }
-
-    private static ReductionResult reduceSubtypeTypeVariable(AbstractType t, AbstractType s) {
-        if (s.getTypeKind() == TypeKind.INTERSECTION) {
-            return ConstraintSet.TRUE;
-        } else if (t.getTypeKind() == TypeKind.TYPEVAR && t.hasLowerBound()) {
-            return new Typing(s, t.getTypeVarLowerBound(), Kind.SUBTYPE);
-        } else if (t.getTypeKind() == TypeKind.WILDCARD && t.isLowerBoundedWildcard()) {
-            return new Typing(s, t.getWildcardLowerBound(), Kind.SUBTYPE);
-        } else {
-            return null;
-        }
-    }
-
-    private static ReductionResult reduceSubtypingIntersection(AbstractType t, AbstractType s) {
-        ConstraintSet constraintSet = new ConstraintSet();
-        for (AbstractType bound : t.getIntersectionBounds()) {
-            constraintSet.add(new Typing(s, bound, Kind.SUBTYPE));
-        }
-        return constraintSet;
     }
 
     public static ReductionResult reduceContained(Typing contained) {
