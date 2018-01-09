@@ -66,7 +66,7 @@ public class Typing extends Constraint {
     public ReductionResult reduce(Context context) {
         switch (getKind()) {
             case TYPE_COMPATIBILITY:
-                return reduceCompatible(this, context);
+                return reduceCompatible(context);
             case SUBTYPE:
                 return reduceSubtyping(context);
             case CONTAINED:
@@ -223,46 +223,36 @@ public class Typing extends Constraint {
         }
     }
 
-    private ReductionResult reduceCompatible(Typing c, Context contex) {
-        ProperType t = null;
-        ProperType s = null;
-        if (c.getT().isProper()) {
-            t = (ProperType) c.getT();
-        }
-
-        if (c.getS().isProper()) {
-            s = (ProperType) c.getS();
-        }
-
-        if (t != null && s != null) {
+    private ReductionResult reduceCompatible(Context context) {
+        if (T.isProper() && S.isProper()) {
             // the constraint reduces to true if S is compatible in a loose invocation context
             // with T (5.3), and false otherwise.
-            if (contex.types.isAssignable((Type) s.getJavaType(), (Type) t.getJavaType())) {
+            if (context.types.isAssignable((Type) S.getJavaType(), (Type) T.getJavaType())) {
                 return ConstraintSet.TRUE;
             } else {
                 return null;
             }
-        } else if (s != null && s.getTypeKind().isPrimitive()) {
-            return new Typing(s.boxType(), c.getT(), Kind.TYPE_COMPATIBILITY);
-        } else if (t != null && t.getTypeKind().isPrimitive()) {
-            return new Typing(c.getS(), t.boxType(), Kind.TYPE_EQUALITY);
-        } else if (c.getT().isParameterizedType()) {
+        } else if (S.isProper() && S.getTypeKind().isPrimitive()) {
+            return new Typing(((ProperType) S).boxType(), T, Kind.TYPE_COMPATIBILITY);
+        } else if (T.isProper() && T.getTypeKind().isPrimitive()) {
+            return new Typing(S, ((ProperType) T).boxType(), Kind.TYPE_EQUALITY);
+        } else if (T.isParameterizedType()) {
             // Otherwise, if T is a parameterized type of the form G<T1, ..., Tn>,
             // and there exists no type of the form G<...> that is a supertype of S,
             // but the raw type G is a supertype of S, then the constraint reduces to true.
-            AbstractType superS = c.getS().asSuper(c.getT().getJavaType());
+            AbstractType superS = S.asSuper(T.getJavaType());
             if (superS != null && superS.isRaw()) {
                 return ReductionResult.UNCHECKED_CONVERSION;
             }
-        } else if (c.getT().getTypeKind() == TypeKind.ARRAY
-                && c.getT().getComponentType().isParameterizedType()) {
-            AbstractType superS = c.getS().asSuper((c.getT()).getJavaType());
+        } else if (T.getTypeKind() == TypeKind.ARRAY
+                && T.getComponentType().isParameterizedType()) {
+            AbstractType superS = S.asSuper(T.getJavaType());
             if (superS != null && superS.getComponentType().isRaw()) {
                 return ReductionResult.UNCHECKED_CONVERSION;
             }
         }
 
-        return new Typing(c.getS(), c.getT(), Kind.SUBTYPE);
+        return new Typing(S, T, Kind.SUBTYPE);
     }
 
     private ReductionResult reduceEquality() {
