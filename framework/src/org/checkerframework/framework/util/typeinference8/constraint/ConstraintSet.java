@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.constraint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -48,6 +49,11 @@ public class ConstraintSet implements ReductionResult {
     /** Adds all constraints in {@code constraintSet} to this constraint set. */
     public void addAll(ConstraintSet constraintSet) {
         list.addAll(constraintSet.list);
+    }
+
+    /** Adds all constraints in {@code constraintSet} to this constraint set. */
+    public void addAll(Collection<? extends Constraint> constraintSet) {
+        list.addAll(constraintSet);
     }
 
     /** @return whether or not this constraint set is empty. */
@@ -197,7 +203,7 @@ public class ConstraintSet implements ReductionResult {
                 if (boundSet.containsFalse()) {
                     throw new FalseBoundException(constraint);
                 }
-            } else if (result == null) {
+            } else if (result == null || result == ReductionResult.FALSE) {
                 throw new FalseBoundException(constraint);
             } else if (result == ReductionResult.UNCHECKED_CONVERSION) {
                 boundSet.setUncheckedConversion(true);

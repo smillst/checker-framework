@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
+import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.reduction.ReduceTyping;
 import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
@@ -268,7 +269,8 @@ public class BoundSet implements ReductionResult {
             for (Variable alpha : variables) {
                 while (!alpha.constraints.isEmpty()) {
                     boundsChangeInst = true;
-                    if (!ReduceTyping.reduceTyping(this, alpha.constraints.remove(), context)) {
+                    if (!ReduceTyping.reduceTyping(
+                            this, (Typing) alpha.constraints.pop(), context)) {
                         this.isFalse = true;
                         return;
                     }

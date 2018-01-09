@@ -5,14 +5,13 @@ import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.javacutil.ErrorReporter;
 
 /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.3-100 */
 public class ReduceTyping {
 
     public static boolean reduceTyping(BoundSet boundSet, Typing constraint, Context context) {
-        ReductionResult result = reduceTypingOneStep(constraint, context);
+        ReductionResult result = constraint.reduce(context);
         ArrayDeque<Typing> constraints = new ArrayDeque<>();
         while (result != null) {
             if (result == ConstraintSet.TRUE) {
@@ -37,17 +36,9 @@ public class ReduceTyping {
                 return true;
             }
 
-            result = reduceTypingOneStep(constraints.pop(), context);
+            result = constraints.pop().reduce(context);
         }
 
         return false;
-    }
-
-    private static ReductionResult reduceTypingOneStep(Typing constraint, Context context) {
-        ReductionResult r = constraint.reduce(context);
-        if (r == null) {
-            throw new FalseBoundException(constraint);
-        }
-        return r;
     }
 }

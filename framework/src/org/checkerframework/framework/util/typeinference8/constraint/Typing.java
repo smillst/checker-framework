@@ -95,7 +95,7 @@ public class Typing extends Constraint {
         } else if (S.getTypeKind() == TypeKind.NULL) {
             return ConstraintSet.TRUE;
         } else if (T.getTypeKind() == TypeKind.NULL) {
-            return null;
+            return ConstraintSet.FALSE;
         }
 
         if (S.isVariable() || T.isVariable()) {
@@ -126,11 +126,11 @@ public class Typing extends Constraint {
             case INTERSECTION:
                 return reduceSubtypingIntersection();
             default:
-                return null;
+                return ConstraintSet.FALSE;
         }
     }
 
-    private ConstraintSet reduceSubtypeClass() {
+    private ReductionResult reduceSubtypeClass() {
         if (T.isParameterizedType()) {
             // let A1, ..., An be the type arguments of T. Among the supertypes of S, a
             // corresponding class or interface type is identified, with type arguments B1, ...,
@@ -141,7 +141,7 @@ public class Typing extends Constraint {
             TypeMirror tTypeMirror = T.getJavaType();
             AbstractType sAsSuper = S.asSuper(tTypeMirror);
             if (sAsSuper == null) {
-                return null;
+                return ConstraintSet.FALSE;
             }
 
             List<AbstractType> Bs = sAsSuper.getTypeArguments();
@@ -162,7 +162,7 @@ public class Typing extends Constraint {
     private ReductionResult reduceSubtypeArray() {
         AbstractType msArrayType = S.getMostSpecificArrayType();
         if (msArrayType == null) {
-            return null;
+            return ConstraintSet.FALSE;
         }
         if (msArrayType.isPrimitiveArray() && T.isPrimitiveArray()) {
             return ConstraintSet.TRUE;
@@ -179,7 +179,7 @@ public class Typing extends Constraint {
         } else if (T.getTypeKind() == TypeKind.WILDCARD && T.isLowerBoundedWildcard()) {
             return new Typing(S, T.getWildcardLowerBound(), Kind.SUBTYPE);
         } else {
-            return null;
+            return ConstraintSet.FALSE;
         }
     }
 
@@ -196,7 +196,7 @@ public class Typing extends Constraint {
             if (S.getTypeKind() != TypeKind.WILDCARD) {
                 return new Typing(S, T, Kind.TYPE_EQUALITY);
             } else {
-                return null;
+                return ConstraintSet.FALSE;
             }
         } else if (T.isUnboundWildcard()) {
             return ConstraintSet.TRUE;
@@ -218,7 +218,7 @@ public class Typing extends Constraint {
             } else if (S.isLowerBoundedWildcard()) {
                 return new Typing(tPrime, S.getWildcardLowerBound(), Kind.SUBTYPE);
             } else {
-                return null;
+                return ConstraintSet.FALSE;
             }
         }
     }
@@ -230,7 +230,7 @@ public class Typing extends Constraint {
             if (context.types.isAssignable((Type) S.getJavaType(), (Type) T.getJavaType())) {
                 return ConstraintSet.TRUE;
             } else {
-                return null;
+                return ConstraintSet.FALSE;
             }
         } else if (S.isProper() && S.getTypeKind().isPrimitive()) {
             return new Typing(((ProperType) S).boxType(), T, Kind.TYPE_COMPATIBILITY);
@@ -265,13 +265,13 @@ public class Typing extends Constraint {
             ProperType sProper = (ProperType) S;
             if (sProper.getTypeKind() == TypeKind.NULL || sProper.getTypeKind().isPrimitive()) {
                 // if S or T is the null type, the constraint reduces to false.
-                return null;
+                return ConstraintSet.FALSE;
             }
         } else if (T.isProper()) {
             ProperType tProper = (ProperType) T;
             if (tProper.getTypeKind() == TypeKind.NULL || tProper.getTypeKind().isPrimitive()) {
                 // if S or T is the null type, the constraint reduces to false.
-                return null;
+                return ConstraintSet.FALSE;
             }
         }
 
@@ -315,7 +315,7 @@ public class Typing extends Constraint {
                         T.getWildcardLowerBound(), S.getWildcardLowerBound(), Kind.TYPE_EQUALITY);
             }
         }
-        return null;
+        return ConstraintSet.FALSE;
     }
 
     @Override
