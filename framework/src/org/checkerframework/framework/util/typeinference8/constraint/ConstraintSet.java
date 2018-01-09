@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
-import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
-import org.checkerframework.framework.util.typeinference8.reduction.ReductionResultPair;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;

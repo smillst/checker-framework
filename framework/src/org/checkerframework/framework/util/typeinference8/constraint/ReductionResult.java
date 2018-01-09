@@ -1,4 +1,6 @@
-package org.checkerframework.framework.util.typeinference8.reduction;
+package org.checkerframework.framework.util.typeinference8.constraint;
+
+import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 
 public interface ReductionResult {
     ReductionResult TRUE =
@@ -22,4 +24,16 @@ public interface ReductionResult {
                     return "UNCHECKED_CONVERSION";
                 }
             };
+
+     class ReductionResultPair implements ReductionResult {
+        public ConstraintSet first;
+        public BoundSet second;
+
+        public static ReductionResultPair of(ConstraintSet first, BoundSet second) {
+            ReductionResultPair pair = new ReductionResultPair();
+            pair.first = first;
+            pair.second = second;
+            return pair;
+        }
+    }
 }

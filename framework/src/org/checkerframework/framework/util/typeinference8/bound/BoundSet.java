@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
-import org.checkerframework.framework.util.typeinference8.reduction.ReductionResult;
+import org.checkerframework.framework.util.typeinference8.constraint.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
