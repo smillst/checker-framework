@@ -365,7 +365,7 @@ public class InvocationTypeInference {
             List<Variable> alphas = subset.getAllInputVariables();
             if (!alphas.isEmpty()) {
                 BoundSet resolved = Resolution.resolve(alphas, current, context);
-                c.applyInstantiations(resolved.getInstantiations(alphas), context);
+                c.applyInstantiations(resolved.getInstantiations(alphas));
             }
             c.remove(subset);
             BoundSet newBounds = subset.reduce(context);
@@ -484,7 +484,7 @@ public class InvocationTypeInference {
             if (notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
-            c.add(createAddtionalArgConstraints(ei, fi, map));
+            c.addAll(createAddtionalArgConstraints(ei, fi, map));
         }
 
         return c;
@@ -502,7 +502,7 @@ public class InvocationTypeInference {
                 c.add(new ThrowsConstraint(ei, fi, map));
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
-                    c.add(createAddtionalArgConstraints(expression, fi, map));
+                    c.addAll(createAddtionalArgConstraints(expression, fi, map));
                 }
                 break;
             case METHOD_INVOCATION:
@@ -512,7 +512,7 @@ public class InvocationTypeInference {
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     methodInvocation, context);
                     Theta newMap = Theta.theta(methodInvocation, methodType, context);
-                    c.add(
+                    c.addAll(
                             createC(
                                     methodInvocation,
                                     methodType,
@@ -527,16 +527,17 @@ public class InvocationTypeInference {
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     newClassTree, context);
                     Theta newMap = Theta.theta(newClassTree, methodType, context);
-                    c.add(createC(newClassTree, methodType, newClassTree.getArguments(), newMap));
+                    c.addAll(
+                            createC(newClassTree, methodType, newClassTree.getArguments(), newMap));
                 }
                 break;
             case PARENTHESIZED:
-                c.add(createAddtionalArgConstraints(TreeUtils.skipParens(ei), fi, map));
+                c.addAll(createAddtionalArgConstraints(TreeUtils.skipParens(ei), fi, map));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.add(createAddtionalArgConstraints(conditional.getTrueExpression(), fi, map));
-                c.add(createAddtionalArgConstraints(conditional.getFalseExpression(), fi, map));
+                c.addAll(createAddtionalArgConstraints(conditional.getTrueExpression(), fi, map));
+                c.addAll(createAddtionalArgConstraints(conditional.getFalseExpression(), fi, map));
                 break;
             default:
                 // no constraints

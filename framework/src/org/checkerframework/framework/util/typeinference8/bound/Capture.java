@@ -100,7 +100,7 @@ public class Capture {
                 if (newCon == null) {
                     containsFalse = true;
                 }
-                set.add(newCon);
+                set.addAll(newCon);
             }
         }
 
