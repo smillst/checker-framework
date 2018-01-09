@@ -377,14 +377,14 @@ public class InvocationTypeInference {
 
     /**
      * Creates constraints against the targets type of {@code invocation} and then reduces and
-     * incorporates those constraints. (See JLS 18.5.2.1)
+     * incorporates those constraints with {@code b2}. (See JLS 18.5.2.1)
      *
-     * @param b2
-     * @param invocation
-     * @param methodType
-     * @param target
-     * @param map
-     * @return
+     * @param b2 BoundSet created by {@link #createB2(ExpressionTree, ExecutableType, List, Theta)}
+     * @param invocation method or constructor invocation
+     * @param methodType the type of the method or constructor invoked by expression
+     * @param target target type of the invocation
+     * @param map map of type variables to (inference) variables
+     * @return bound set created by constraints against the target type of the invocation
      */
     public BoundSet createB3(
             BoundSet b2,
@@ -583,7 +583,8 @@ public class InvocationTypeInference {
                 } else {
                     // An explicitly typed lambda expression whose body is a block,
                     // where at least one result expression is not pertinent to applicability.
-                    // An explicitly typed lambda expression whose body is an expression that is not pertinent to applicability.
+                    // An explicitly typed lambda expression whose body is an expression that is
+                    // not pertinent to applicability.
                     for (ExpressionTree result : TreeUtils.getReturnedExpressions(lambda)) {
                         if (notPertinentToApplicability(result, isTargetVariable)) {
                             return true;
