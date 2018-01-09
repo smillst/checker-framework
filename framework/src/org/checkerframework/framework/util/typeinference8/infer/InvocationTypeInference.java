@@ -499,27 +499,26 @@ public class InvocationTypeInference {
             ExpressionTree ei = args.get(i);
             AbstractType fi = formals.get(i);
             if (notPertinentToApplicability(ei, fi.isVariable())) {
-                if (ei.getKind() == Tree.Kind.LAMBDA_EXPRESSION
-                        || ei.getKind() == Tree.Kind.MEMBER_REFERENCE) {
-                    // Only add exception constraints from the top level.
-                    c.add(new ThrowsConstraint(ei, fi, map));
-                }
                 c.add(new Expression(ei, fi));
             }
-            c.add(createArgumentConstraint(ei, fi));
+            c.add(createArgumentConstraint(ei, fi, map));
         }
 
         return c;
     }
 
-    private ConstraintSet createArgumentConstraint(ExpressionTree ei, AbstractType fi) {
+    private ConstraintSet createArgumentConstraint(ExpressionTree ei, AbstractType fi, Theta map) {
         ConstraintSet c = new ConstraintSet();
 
         switch (ei.getKind()) {
+            case MEMBER_REFERENCE:
+                c.add(new ThrowsConstraint(ei, fi, map));
+                break;
             case LAMBDA_EXPRESSION:
+                c.add(new ThrowsConstraint(ei, fi, map));
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
-                    c.add(createArgumentConstraint(expression, fi));
+                    c.add(createArgumentConstraint(expression, fi, map));
                 }
                 break;
             case METHOD_INVOCATION:
@@ -548,12 +547,12 @@ public class InvocationTypeInference {
                 }
                 break;
             case PARENTHESIZED:
-                c.add(createArgumentConstraint(TreeUtils.skipParens(ei), fi));
+                c.add(createArgumentConstraint(TreeUtils.skipParens(ei), fi, map));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.add(createArgumentConstraint(conditional.getTrueExpression(), fi));
-                c.add(createArgumentConstraint(conditional.getFalseExpression(), fi));
+                c.add(createArgumentConstraint(conditional.getTrueExpression(), fi, map));
+                c.add(createArgumentConstraint(conditional.getFalseExpression(), fi, map));
                 break;
             default:
                 // no constraints
