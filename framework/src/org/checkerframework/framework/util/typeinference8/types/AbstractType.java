@@ -1,13 +1,13 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
-import com.sun.tools.javac.code.Type.CapturedType;
 import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
@@ -19,15 +19,83 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+/**
+ * The JLS references "types", explained in 18.1.1, that are "type-like syntax that contain
+ * inference variables". This class represents these "types" separated into three kinds: {@link
+ * ProperType}, a type that contains no inference variables; {@link InferenceType}, a type that
+ * contains inference variables, but is not an inference variable; and {@link Variable}, an
+ * inference variable.
+ */
 public abstract class AbstractType {
     protected final Context context;
+
+    public enum Kind {
+        /** @link ProperType},a type that contains no inference variables* */
+        PROPER,
+        /**
+         * {@link InferenceType}, a type that contains inference variables, but is not an inference
+         * variable.
+         */
+        VARIABLE,
+        /** {@link Variable}, an inference variable. */
+        INFERENCE_TYPE
+    }
 
     public AbstractType(Context context) {
         this.context = context;
     }
 
-    public abstract AbstractType create(TypeMirror type);
+    /** Creates an {@link AbstractType} with underlying type {@code type}. */
+    protected abstract AbstractType create(TypeMirror type);
 
+    /** Returns the kind of {@link AbstractType}. */
+    public abstract Kind getKind();
+
+    /** @return true if this type is a proper type. */
+    public final boolean isProper() {
+        return getKind() == Kind.PROPER;
+    }
+
+    /** @return true if this type is an inference variable. */
+    public final boolean isVariable() {
+        return getKind() == Kind.VARIABLE;
+    }
+
+    /** @return true if this type contains inference variables, but is not an inference variable */
+    public final boolean isInferenceType() {
+        return getKind() == Kind.INFERENCE_TYPE;
+    }
+
+    /** @return the underlying Java type without inference variables. */
+    public abstract TypeMirror getJavaType();
+
+    /** @return a collection of all inference variables referenced by this type. */
+    public abstract Collection<Variable> getInferenceVariables();
+
+    /**
+     * @return a new type that is the same as this one except the variables in {@code
+     *     instantiations} have been replaced by their instantiation.
+     */
+    public abstract AbstractType applyInstantiations(List<Variable> instantiations);
+
+    /** @return true if this type is java.lang.Object. */
+    public abstract boolean isObject();
+
+    /**
+     * Assuming the type is a declared type, this method returns the upper bounds of its type
+     * parameters.
+     */
+    public Iterator<ProperType> getTypeParameterBounds() {
+        List<ProperType> bounds = new ArrayList<>();
+        TypeElement typeelem = (TypeElement) ((DeclaredType) getJavaType()).asElement();
+        for (TypeParameterElement ele : typeelem.getTypeParameters()) {
+            TypeVariable typeVariable = (TypeVariable) ele.asType();
+            bounds.add(new ProperType(typeVariable.getUpperBound(), context));
+        }
+        return bounds.iterator();
+    }
+
+    /** @return a new type that is the capture of this type. */
     public AbstractType capture() {
         TypeMirror capture;
         if (getJavaType().getKind() == TypeKind.WILDCARD) {
@@ -41,46 +109,14 @@ public abstract class AbstractType {
         return create(capture);
     }
 
-    public AbstractType unCapture() {
-        if (TypesUtils.isCaptured(getJavaType())) {
-            TypeMirror wildcard = ((CapturedType) getJavaType()).wildcard;
-            return create(wildcard);
-        } else {
-            return null;
-        }
-    }
-
-    public enum Kind {
-        PROPER,
-        VARIABLE,
-        INFERENCE_TYPE
-    }
-
-    public abstract Kind getKind();
-
-    public final boolean isProper() {
-        return getKind() == Kind.PROPER;
-    }
-
-    public final boolean isVariable() {
-        return getKind() == Kind.VARIABLE;
-    }
-
-    public final boolean isInferenceType() {
-        return getKind() == Kind.INFERENCE_TYPE;
-    }
-
-    public abstract TypeMirror getJavaType();
-
-    public abstract Collection<Variable> getInferenceVariables();
-
-    public abstract Iterator<ProperType> getTypeParameterBounds();
-
-    public abstract AbstractType applyInstantiations(List<Variable> instantiations);
-
-    public abstract boolean isObject();
-
-    /** Returns null if superType isn't a super type. */
+    /**
+     * If {@code superType} is a super type of this type, then this method returns super type of
+     * this type that is that same class as {@code superType}. Otherwise, it returns null
+     *
+     * @param superType a type, need not be a super type of this type
+     * @return per type of this type that is that same class as {@code superType} or null if one
+     *     doesn't exist
+     */
     public final AbstractType asSuper(TypeMirror superType) {
         TypeMirror type = getJavaType();
         if (type.getKind() == TypeKind.WILDCARD) {
@@ -93,7 +129,13 @@ public abstract class AbstractType {
         return create(asSuper);
     }
 
-    public final AbstractType getFunctionTypeReturn() {
+    /**
+     * If this type is a functional interface, then this method returns the return type of the
+     * function type of that functional interface. Otherwise, returns null.
+     *
+     * @return the return type of the function type of this type or null if one doesn't exist
+     */
+    public final AbstractType getFunctionTypeReturnType() {
         if (TypesUtils.isFunctionalInterface(getJavaType(), context.env)) {
             ExecutableType element = TypesUtils.findFunctionType(getJavaType(), context.env);
             TypeMirror returnType = element.getReturnType();
@@ -106,7 +148,14 @@ public abstract class AbstractType {
         }
     }
 
-    public final List<AbstractType> getFunctionTypeParameters() {
+    /**
+     * If this type is a functional interface, then this method returns the parameter types of the
+     * function type of that functional interface. Otherwise, it returns null.
+     *
+     * @return the paramter types of the function type of this type or null if no function type
+     *     exists.
+     */
+    public final List<AbstractType> getFunctionTypeParameterTypes() {
         if (TypesUtils.isFunctionalInterface(getJavaType(), context.env)) {
             ExecutableType element = TypesUtils.findFunctionType(getJavaType(), context.env);
             List<AbstractType> params = new ArrayList<>();
@@ -119,10 +168,15 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return true if the type is a raw type */
     public final boolean isRaw() {
         return TypesUtils.isRaw(getJavaType());
     }
 
+    /**
+     * @return a new type that is the same type as this one, but whose type arguments are {@code
+     *     args}
+     */
     public final AbstractType replaceTypeArgs(List<AbstractType> args) {
         DeclaredType declaredType = (DeclaredType) getJavaType();
         TypeMirror[] newArgs = new TypeMirror[args.size()];

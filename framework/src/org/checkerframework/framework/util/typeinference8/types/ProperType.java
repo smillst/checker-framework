@@ -1,17 +1,11 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.tools.javac.code.Type;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -71,17 +65,6 @@ public class ProperType extends AbstractType {
     @Override
     public Collection<Variable> getInferenceVariables() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public Iterator<ProperType> getTypeParameterBounds() {
-        List<ProperType> bounds = new ArrayList<>();
-        TypeElement typeelem = (TypeElement) ((DeclaredType) properType).asElement();
-        for (TypeParameterElement ele : typeelem.getTypeParameters()) {
-            TypeVariable typeVariable = (TypeVariable) ele.asType();
-            bounds.add(new ProperType(typeVariable.getUpperBound(), context));
-        }
-        return bounds.iterator();
     }
 
     @Override

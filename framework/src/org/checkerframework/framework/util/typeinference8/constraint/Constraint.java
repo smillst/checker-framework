@@ -14,11 +14,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TreeUtils;
 
-/**
- * Created by smillst on 12/7/16.
- *
- * <p>https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.2
- */
+/** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.1.2 */
 public abstract class Constraint implements ReductionResult {
 
     public enum Kind {
@@ -74,7 +70,7 @@ public abstract class Constraint implements ReductionResult {
                     LambdaExpressionTree lambdaTree = (LambdaExpressionTree) tree;
                     List<Variable> inputs = new ArrayList<>();
                     if (TreeUtils.isImplicitlyTypeLambda(lambdaTree)) {
-                        List<AbstractType> params = T.getFunctionTypeParameters();
+                        List<AbstractType> params = T.getFunctionTypeParameterTypes();
                         if (params == null) {
                             // T is not a function type.
                             return Collections.emptyList();
@@ -83,7 +79,7 @@ public abstract class Constraint implements ReductionResult {
                             inputs.addAll(param.getInferenceVariables());
                         }
                     }
-                    AbstractType R = T.getFunctionTypeReturn();
+                    AbstractType R = T.getFunctionTypeReturnType();
                     if (R == null || R.getTypeKind() == TypeKind.NONE) {
                         return inputs;
                     }
@@ -99,7 +95,7 @@ public abstract class Constraint implements ReductionResult {
                 } else if (TreeUtils.isExactMethodReference((MemberReferenceTree) tree)) {
                     return Collections.emptyList();
                 } else {
-                    List<AbstractType> params = T.getFunctionTypeParameters();
+                    List<AbstractType> params = T.getFunctionTypeParameterTypes();
                     if (params == null) {
                         // T is not a function type.
                         return Collections.emptyList();

@@ -2,12 +2,8 @@ package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -105,17 +101,6 @@ public class InferenceType extends AbstractType {
             variables.add(map.get(typeVar));
         }
         return variables;
-    }
-
-    @Override
-    public Iterator<ProperType> getTypeParameterBounds() {
-        List<ProperType> bounds = new ArrayList<>();
-        TypeElement typeelem = (TypeElement) ((DeclaredType) type).asElement();
-        for (TypeParameterElement ele : typeelem.getTypeParameters()) {
-            TypeVariable typeVariable = (TypeVariable) ele.asType();
-            bounds.add(new ProperType(typeVariable.getUpperBound(), context));
-        }
-        return bounds.iterator();
     }
 
     @Override

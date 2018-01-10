@@ -135,7 +135,7 @@ public class Capture {
      * For a capture of the form: {@code G<a1, ..., an> = capture(G<A1, ..., An>)}, a capture tuple
      * groups ai, Ai, and the upper bound of the corresponding type variable.
      */
-    public static class CaptureTuple {
+    private static class CaptureTuple {
 
         /**
          * Fresh inference variable (in the left hand side of the capture). (Also referred to as

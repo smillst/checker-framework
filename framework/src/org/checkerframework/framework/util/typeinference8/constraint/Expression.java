@@ -160,7 +160,7 @@ public class Expression extends Constraint {
                     TypesUtils.findFunctionType(TreeUtils.typeOf(memRef), context.env);
 
             ConstraintSet constraintSet = new ConstraintSet();
-            List<AbstractType> ps = T.getFunctionTypeParameters();
+            List<AbstractType> ps = T.getFunctionTypeParameterTypes();
             List<AbstractType> fs = new ArrayList<>();
             for (TypeMirror param : typeOfPoAppMethod.getParameterTypes()) {
                 fs.add(new ProperType(param, context));
@@ -176,7 +176,7 @@ public class Expression extends Constraint {
             for (int i = 0; i < ps.size(); i++) {
                 constraintSet.add(new Typing(ps.get(i), fs.get(i), Constraint.Kind.SUBTYPE));
             }
-            AbstractType r = T.getFunctionTypeReturn();
+            AbstractType r = T.getFunctionTypeReturnType();
             if (r != null && r.getTypeKind() != TypeKind.VOID) {
                 AbstractType rPrime = new ProperType(typeOfPoAppMethod.getReturnType(), context);
                 constraintSet.add(new Typing(rPrime, r, Constraint.Kind.TYPE_COMPATIBILITY));
@@ -193,7 +193,7 @@ public class Expression extends Constraint {
             return ConstraintSet.TRUE;
         }
         ExecutableType funcType = TypesUtils.findFunctionType(T.getJavaType(), context.env);
-        AbstractType r = T.getFunctionTypeReturn();
+        AbstractType r = T.getFunctionTypeReturnType();
         if (r.getTypeKind() == TypeKind.VOID) {
             return ConstraintSet.TRUE;
         }
@@ -215,7 +215,7 @@ public class Expression extends Constraint {
             // dependencies between these new variables and the inference variables in T.
             BoundSet b2 =
                     context.inference.createB2MethodRef(
-                            memRef, compileTimeDecl, T.getFunctionTypeParameters(), map);
+                            memRef, compileTimeDecl, T.getFunctionTypeParameterTypes(), map);
             return context.inference.createB3(b2, memRef, compileTimeDecl, r, map);
         }
 
@@ -246,7 +246,7 @@ public class Expression extends Constraint {
         if (!TreeUtils.isImplicitlyTypeLambda(lambda)) {
             // Explicitly typed lambda
             List<? extends VariableTree> parameters = lambda.getParameters();
-            List<AbstractType> gs = T.getFunctionTypeParameters();
+            List<AbstractType> gs = T.getFunctionTypeParameterTypes();
             assert parameters.size() == gs.size();
 
             for (int i = 0; i < gs.size(); i++) {
@@ -258,7 +258,7 @@ public class Expression extends Constraint {
             constraintSet.add(new Typing(tPrime, T, Constraint.Kind.SUBTYPE));
         }
 
-        AbstractType R = T.getFunctionTypeReturn();
+        AbstractType R = T.getFunctionTypeReturnType();
         if (R != null && R.getTypeKind() != TypeKind.VOID) {
             for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambda)) {
                 if (R.isProper()) {
