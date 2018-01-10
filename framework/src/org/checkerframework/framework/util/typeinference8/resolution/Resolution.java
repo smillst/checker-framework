@@ -228,7 +228,6 @@ public class Resolution {
             }
 
             typeVar.add(ai.getJavaType());
-            // TODO: This won't square with the capture that javac produces.
             TypeMirror freshTypeVar =
                     InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
             typeArg.add(freshTypeVar);
@@ -242,7 +241,9 @@ public class Resolution {
             if (ContainsInferenceVariable.hasAnyInferenceVar(
                     Collections.singleton(typeVariableI), inst)) {
                 // If the instantiation of ai includes a reference to ai,
-                // then substitute ai with an unbound wildcard.
+                // then substitute ai with an unbound wildcard.  This isn't quite right but I'm not
+                // sure how to make recursive types Java types.
+                // TODO: This causes problems when incorporating the bounds.
                 TypeMirror unbound = context.env.getTypeUtils().getWildcardType(null, null);
                 inst =
                         InternalInferenceUtils.substitute(
@@ -254,10 +255,14 @@ public class Resolution {
                 typeArg.add(i, inst);
             }
         }
+
+        // Instantiations that refer to another variable
         List<TypeMirror> subsTypeArg = new ArrayList<>();
         for (TypeMirror type : typeArg) {
             subsTypeArg.add(InternalInferenceUtils.substitute(type, typeVar, typeArg, context.env));
         }
+
+        // Create the new bounds.
         for (int i = 0; i < asList.size(); i++) {
             Variable ai = asList.get(i);
             ContainsInferenceVariable.getInferenceVar(

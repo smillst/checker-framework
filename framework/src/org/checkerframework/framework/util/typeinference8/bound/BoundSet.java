@@ -6,14 +6,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.PluginUtil;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.ReductionResult;
+import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class BoundSet implements ReductionResult {
     /**
@@ -265,6 +268,9 @@ public class BoundSet implements ReductionResult {
             }
             boundsChangeInst |= captures.addAll(newBounds.captures);
             for (Variable alpha : variables) {
+                if (alpha.hasInstantiation()) {
+                    removeProblematicConstraints(alpha);
+                }
                 if (!alpha.constraints.isEmpty()) {
                     boundsChangeInst = true;
                     merge(alpha.constraints.reduce(context));
@@ -281,6 +287,37 @@ public class BoundSet implements ReductionResult {
             isFalse |= newBounds.isFalse;
             assert count < MAX_INCORPORATION_STEPS : "Max incorporation steps reached.";
         } while (!isFalse && count < MAX_INCORPORATION_STEPS);
+    }
+
+    /**
+     * Remove constraints between proper types introduced adding an instantiation against a captured
+     * wildcard. If the captured wildcard should be recursive, then the bounds won't be satisfiable,
+     * because the captured wildcard won't be recursive. (See {@link
+     * Resolution#resolve2(LinkedHashSet, BoundSet, Context)}.
+     */
+    private void removeProblematicConstraints(Variable alpha) {
+        if (!TypesUtils.isCaptured(alpha.getInstantiation().getJavaType())) {
+            return;
+        }
+        List<Constraint> constraints = new ArrayList<>();
+        while (!alpha.constraints.isEmpty()) {
+            Constraint constraint = alpha.constraints.pop();
+            switch (constraint.getKind()) {
+                case TYPE_COMPATIBILITY:
+                case SUBTYPE:
+                case CONTAINED:
+                case TYPE_EQUALITY:
+                    if (!constraint.getT().isProper() || !((Typing) constraint).getS().isProper()) {
+                        constraints.add(constraint);
+                    }
+                    break;
+                case EXPRESSION:
+                case LAMBDA_EXCEPTION:
+                case METHOD_REF_EXCEPTION:
+                    constraints.add(constraint);
+            }
+        }
+        alpha.constraints.addAll(constraints);
     }
 
     public void removeCaptures(LinkedHashSet<Variable> as) {

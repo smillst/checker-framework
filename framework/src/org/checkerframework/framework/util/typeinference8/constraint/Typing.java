@@ -88,8 +88,6 @@ public class Typing extends Constraint {
 
             if (context.types.isSubtypeUnchecked((Type) subType, (Type) superType)) {
                 return ConstraintSet.TRUE;
-            } else if (TypesUtils.isCaptured(subType) || TypesUtils.isCaptured(superType)) {
-                return ConstraintSet.TRUE;
             } else {
                 return ConstraintSet.FALSE;
             }
