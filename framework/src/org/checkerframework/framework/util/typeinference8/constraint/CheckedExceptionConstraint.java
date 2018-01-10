@@ -24,11 +24,11 @@ import org.checkerframework.javacutil.TypesUtils;
  * <p>&lt;MethodReference &rarr;throws T&gt;: The checked exceptions thrown by the referenced method
  * are declared by the throws clause of the function type derived from T.
  */
-public class ThrowsConstraint extends Constraint {
+public class CheckedExceptionConstraint extends Constraint {
     ExpressionTree expression;
     Theta map;
 
-    public ThrowsConstraint(ExpressionTree expression, AbstractType t, Theta map) {
+    public CheckedExceptionConstraint(ExpressionTree expression, AbstractType t, Theta map) {
         super(t);
         assert expression.getKind() == Tree.Kind.LAMBDA_EXPRESSION
                 || expression.getKind() == Tree.Kind.MEMBER_REFERENCE;
@@ -120,8 +120,7 @@ public class ThrowsConstraint extends Constraint {
             return false;
         }
 
-        org.checkerframework.framework.util.typeinference8.constraint.ThrowsConstraint that =
-                (org.checkerframework.framework.util.typeinference8.constraint.ThrowsConstraint) o;
+        CheckedExceptionConstraint that = (CheckedExceptionConstraint) o;
 
         return expression != null ? expression.equals(that.expression) : that.expression == null;
     }

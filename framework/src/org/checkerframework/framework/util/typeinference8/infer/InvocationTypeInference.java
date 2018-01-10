@@ -28,10 +28,10 @@ import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
+import org.checkerframework.framework.util.typeinference8.constraint.CheckedExceptionConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
-import org.checkerframework.framework.util.typeinference8.constraint.ThrowsConstraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
@@ -496,10 +496,10 @@ public class InvocationTypeInference {
 
         switch (ei.getKind()) {
             case MEMBER_REFERENCE:
-                c.add(new ThrowsConstraint(ei, fi, map));
+                c.add(new CheckedExceptionConstraint(ei, fi, map));
                 break;
             case LAMBDA_EXPRESSION:
-                c.add(new ThrowsConstraint(ei, fi, map));
+                c.add(new CheckedExceptionConstraint(ei, fi, map));
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
                     c.addAll(createAddtionalArgConstraints(expression, fi, map));
