@@ -187,7 +187,11 @@ public class InternalInferenceUtils {
         return (ExecutableType) types.asMemberOf(receiverType, ele);
     }
 
-    public static TypeMirror getFreshTypeVar(
+    /**
+     * Creates a wildcard with the given bounds. If upper bound is Object, then the created wildcard
+     * will not have an upper bound.
+     */
+    public static TypeMirror createWildcard(
             Context context, TypeMirror lowerBound, TypeMirror upperBound) {
         if (TypesUtils.isObject(upperBound)) {
             upperBound = null;
@@ -196,7 +200,6 @@ public class InternalInferenceUtils {
         assert lowerBound == null || upperBound == null;
         WildcardType wildcardType =
                 context.env.getTypeUtils().getWildcardType(upperBound, lowerBound);
-        //        return context.types.freshTypeVariables(
         return com.sun.tools.javac.util.List.of((Type) wildcardType).head;
     }
 

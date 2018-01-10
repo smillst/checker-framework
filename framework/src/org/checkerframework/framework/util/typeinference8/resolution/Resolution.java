@@ -229,7 +229,7 @@ public class Resolution {
 
             typeVar.add(ai.getJavaType());
             TypeMirror freshTypeVar =
-                    InternalInferenceUtils.getFreshTypeVar(context, lowerBound, upperBound);
+                    InternalInferenceUtils.createWildcard(context, lowerBound, upperBound);
             typeArg.add(freshTypeVar);
         }
 
