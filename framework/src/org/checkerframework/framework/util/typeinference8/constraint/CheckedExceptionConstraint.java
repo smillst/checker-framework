@@ -64,6 +64,7 @@ public class CheckedExceptionConstraint extends Constraint {
         return output;
     }
 
+    /** See JLS 18.2.5 */
     @Override
     public ReductionResult reduce(Context context) {
         ConstraintSet constraintSet = new ConstraintSet();
@@ -94,14 +95,17 @@ public class CheckedExceptionConstraint extends Constraint {
         }
 
         for (TypeMirror xi : thrownTypes) {
+            boolean isSubtypeOfProper = false;
             for (ProperType properType : properTypes) {
                 if (context.env.getTypeUtils().isSubtype(xi, properType.getJavaType())) {
-                    continue;
+                    isSubtypeOfProper = true;
                 }
             }
-            for (Variable ei : es) {
-                constraintSet.add(new Typing(new ProperType(xi, context), ei, Kind.SUBTYPE));
-                ei.setHasThrowsBound(true);
+            if (!isSubtypeOfProper) {
+                for (Variable ei : es) {
+                    constraintSet.add(new Typing(new ProperType(xi, context), ei, Kind.SUBTYPE));
+                    ei.setHasThrowsBound(true);
+                }
             }
         }
 
