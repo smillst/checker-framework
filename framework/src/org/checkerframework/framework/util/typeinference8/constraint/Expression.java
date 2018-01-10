@@ -37,16 +37,7 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class Expression extends Constraint {
 
-    public enum ExpressionKind {
-        PROPER_TYPE,
-        STANDALONE, // (Not a poly expression https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.2)
-        PARENTHESIZED,
-        METHOD_INVOCATION, // includes class creation expressions
-        CONDITIONAL,
-        LAMBDA,
-        METHOD_REF;
-    }
-
+    /** Expression that is compatible in a loose invocation context with {@link #T}. */
     private final ExpressionTree expression;
 
     public Expression(ExpressionTree expressionTree, AbstractType t) {
@@ -72,58 +63,33 @@ public class Expression extends Constraint {
         return output;
     }
 
-    public ExpressionKind getExpressionKind() {
-        // Compute each time because T might become a proper type when instantiations are applied.
-        if (getT().isProper()) {
-            return ExpressionKind.PROPER_TYPE;
-        } else if (InternalInferenceUtils.isStandaloneExpression(expression)) {
-            return ExpressionKind.STANDALONE;
-        }
-        switch (expression.getKind()) {
-            case PARENTHESIZED:
-                return ExpressionKind.PARENTHESIZED;
-            case NEW_CLASS:
-            case METHOD_INVOCATION:
-                return ExpressionKind.METHOD_INVOCATION;
-            case CONDITIONAL_EXPRESSION:
-                return ExpressionKind.CONDITIONAL;
-            case LAMBDA_EXPRESSION:
-                return ExpressionKind.LAMBDA;
-            case MEMBER_REFERENCE:
-                return ExpressionKind.METHOD_REF;
-            default:
-                ErrorReporter.errorAbort(
-                        "Unexpected expression kind: %s, Expression: %s",
-                        expression.getKind(), expression);
-                throw new RuntimeException();
-        }
-    }
-
     public ExpressionTree getExpression() {
         return expression;
     }
 
     public ReductionResult reduce(Context context) {
-        switch (getExpressionKind()) {
-            case PROPER_TYPE:
-                return reduceProperType();
-            case STANDALONE:
-                return reduceStandalone(context);
+        if (getT().isProper()) {
+            return reduceProperType();
+        } else if (InternalInferenceUtils.isStandaloneExpression(expression)) {
+            return reduceStandalone(context);
+        }
+        switch (expression.getKind()) {
             case PARENTHESIZED:
                 return reduceParenthesized();
+            case NEW_CLASS:
             case METHOD_INVOCATION:
                 return reduceMethodInvocation(context);
-            case CONDITIONAL:
+            case CONDITIONAL_EXPRESSION:
                 return reduceConditional();
-            case LAMBDA:
+            case LAMBDA_EXPRESSION:
                 return reduceLambda(context);
-            case METHOD_REF:
+            case MEMBER_REFERENCE:
                 return reduceMethodRef(context);
             default:
-                ErrorReporter.errorAbort("Unexpected ExpressionKind: %s", this.getKind());
-                BoundSet boundSet = new BoundSet(context);
-                boundSet.addFalse();
-                return boundSet;
+                ErrorReporter.errorAbort(
+                        "Unexpected expression kind: %s, Expression: %s",
+                        expression.getKind(), expression);
+                throw new RuntimeException();
         }
     }
 
@@ -308,7 +274,7 @@ public class Expression extends Constraint {
         return ReductionResultPair.of(constraintSet, boundSet);
     }
 
-    public Pair<AbstractType, BoundSet> getGroundTargetType(
+    private Pair<AbstractType, BoundSet> getGroundTargetType(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         if (!t.isWildcardParameterizedType()) {
             return Pair.of(t, null);
@@ -317,7 +283,7 @@ public class Expression extends Constraint {
         // If T is a wildcard-parameterized functional interface type and the lambda expression is
         // explicitly typed, then the ground target type is inferred as described in 18.5.3.
         if (TreeUtils.isExplicitlyTypeLambda(lambda) && !lambda.getParameters().isEmpty()) {
-            return explicitlyTypeLambdasWithWildcard(t, lambda, context);
+            return explicitlyTypedLambdasWithWildcard(t, lambda, context);
         } else {
             // If T is a wildcard-parameterized functional interface type and the lambda expression
             // is implicitly typed, then the ground target type is the non-wildcard parameterization (9.9) of T.
@@ -349,7 +315,7 @@ public class Expression extends Constraint {
     }
 
     /** 18.5.3: Functional Interface Parameterization Inference */
-    private Pair<AbstractType, BoundSet> explicitlyTypeLambdasWithWildcard(
+    private Pair<AbstractType, BoundSet> explicitlyTypedLambdasWithWildcard(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         // Where a lambda expression with explicit parameter types P1, ..., Pn targets a functional
         // interface type F<A1, ..., Am> with at least one wildcard type argument, then a parameterization
