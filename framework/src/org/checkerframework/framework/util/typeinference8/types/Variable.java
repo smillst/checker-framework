@@ -257,7 +257,7 @@ public class Variable extends AbstractType {
                     }
                     Pair<TypeMirror, TypeMirror> pair =
                             InternalInferenceUtils.getParameterizedSupers(
-                                    context, typeMirror, tType);
+                                    typeMirror, tType, context);
                     constraints.addAll(getConstraintsFromParameterized(pair, s, t));
                 }
             }
@@ -403,7 +403,7 @@ public class Variable extends AbstractType {
                 AbstractType s2 = parameteredTypes.get(j);
                 TypeMirror s2Java = s2.getJavaType();
                 Pair<TypeMirror, TypeMirror> supers =
-                        InternalInferenceUtils.getParameterizedSupers(context, s1Java, s2Java);
+                        InternalInferenceUtils.getParameterizedSupers(s1Java, s2Java, context);
                 if (supers == null) {
                     continue;
                 }

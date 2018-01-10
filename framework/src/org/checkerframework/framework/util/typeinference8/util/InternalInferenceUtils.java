@@ -192,7 +192,7 @@ public class InternalInferenceUtils {
      * will not have an upper bound.
      */
     public static TypeMirror createWildcard(
-            Context context, TypeMirror lowerBound, TypeMirror upperBound) {
+            TypeMirror lowerBound, TypeMirror upperBound, Context context) {
         if (TypesUtils.isObject(upperBound)) {
             upperBound = null;
         }
@@ -209,7 +209,7 @@ public class InternalInferenceUtils {
      *     otherwise, null is returned.
      */
     public static Pair<TypeMirror, TypeMirror> getParameterizedSupers(
-            Context context, TypeMirror s, TypeMirror t) {
+            TypeMirror s, TypeMirror t, Context context) {
         // com.sun.tools.javac.comp.Infer#getParameterizedSupers
         TypeMirror lubResult = lub(context.env, t, s);
         if (!isParameterized(lubResult)) {
