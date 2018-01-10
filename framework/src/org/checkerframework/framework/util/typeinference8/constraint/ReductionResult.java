@@ -20,6 +20,7 @@ public interface ReductionResult {
                 }
             };
 
+    /** A reduction result that contains a bound set and a constraint set. */
     class ReductionResultPair implements ReductionResult {
         public ConstraintSet first;
         public BoundSet second;
