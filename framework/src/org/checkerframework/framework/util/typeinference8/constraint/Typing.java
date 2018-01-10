@@ -17,9 +17,26 @@ import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
+/**
+ * Represents a constraints between two {@link AbstractType}. One of: <ui>
+ * <li>{@link Kind#TYPE_COMPATIBILITY} {@code < S -> T >}: A type S is compatible in a loose
+ *     invocation context with type T
+ * <li>{@link Kind#SUBTYPE} {@code < S <: T >}: A reference type S is a subtype of a reference type
+ *     T
+ * <li>{@link Kind#CONTAINED} {@code < S <= T >}: A type argument S is contained by a type argument
+ *     T.
+ * <li>{@link Kind#TYPE_EQUALITY} {@code < S = T >}: A type S is the same as a type T, or a type
+ *     argument S is the same as type argument T. </ui>
+ */
 public class Typing extends Constraint {
-    AbstractType S;
-    final Kind kind;
+
+    /** One of the abstract types in this constraint. {@link #T} is the other. */
+    private AbstractType S;
+    /**
+     * Kind of constraint. One of: {@link Kind#TYPE_COMPATIBILITY}, {@link Kind#SUBTYPE}, {@link
+     * Kind#CONTAINED}, or {@link Kind#TYPE_EQUALITY}
+     */
+    private final Kind kind;
 
     public Typing(AbstractType s, AbstractType t, Kind kind) {
         super(t);
@@ -28,6 +45,7 @@ public class Typing extends Constraint {
         this.kind = kind;
     }
 
+    /** @return one of the abstract types in this constraint */
     public AbstractType getS() {
         return S;
     }
@@ -78,6 +96,10 @@ public class Typing extends Constraint {
         }
     }
 
+    /**
+     * Returns the result of reducing this constraint, assuming it is a subtyping constraint. See
+     * JLS 18.2.3.
+     */
     private ReductionResult reduceSubtyping(Context context) {
         if (S.isProper() && T.isProper()) {
             TypeMirror subType = S.getJavaType();
@@ -129,6 +151,10 @@ public class Typing extends Constraint {
         }
     }
 
+    /**
+     * Returns the result of reducing this constraint, assuming it is a subtyping constraint where
+     * {@code T} is a class type. See JLS 18.2.3.
+     */
     private ReductionResult reduceSubtypeClass() {
         if (T.isParameterizedType()) {
             // let A1, ..., An be the type arguments of T. Among the supertypes of S, a
@@ -158,6 +184,10 @@ public class Typing extends Constraint {
         }
     }
 
+    /**
+     * Returns the result of reducing this constraint, assuming it is a subtyping constraint where
+     * {@code T} is an array type. See JLS 18.2.3.
+     */
     private ReductionResult reduceSubtypeArray() {
         AbstractType msArrayType = S.getMostSpecificArrayType();
         if (msArrayType == null) {
@@ -170,6 +200,10 @@ public class Typing extends Constraint {
         }
     }
 
+    /**
+     * Returns the result of reducing this constraint, assuming it is a subtyping constraint where
+     * {@code T} is a type variable. See JLS 18.2.3.
+     */
     private ReductionResult reduceSubtypeTypeVariable() {
         if (S.getTypeKind() == TypeKind.INTERSECTION) {
             return ConstraintSet.TRUE;
@@ -181,7 +215,10 @@ public class Typing extends Constraint {
             return ConstraintSet.FALSE;
         }
     }
-
+    /**
+     * Returns the result of reducing this constraint, assuming it is a subtyping constraint where
+     * {@code T} is an intersection type. See JLS 18.2.3.
+     */
     private ReductionResult reduceSubtypingIntersection() {
         ConstraintSet constraintSet = new ConstraintSet();
         for (AbstractType bound : T.getIntersectionBounds()) {
@@ -189,7 +226,10 @@ public class Typing extends Constraint {
         }
         return constraintSet;
     }
-
+    /**
+     * Returns the result of reducing this constraint, assuming it is a containment constraint. See
+     * JLS 18.2.3.
+     */
     private ReductionResult reduceContained() {
         if (T.getTypeKind() != TypeKind.WILDCARD) {
             if (S.getTypeKind() != TypeKind.WILDCARD) {
@@ -221,7 +261,10 @@ public class Typing extends Constraint {
             }
         }
     }
-
+    /**
+     * Returns the result of reducing this constraint, assume it is a type compatibility constraint.
+     * See JLS 18.2.2
+     */
     private ReductionResult reduceCompatible(Context context) {
         if (T.isProper() && S.isProper()) {
             // the constraint reduces to true if S is compatible in a loose invocation context
@@ -254,6 +297,10 @@ public class Typing extends Constraint {
         return new Typing(S, T, Kind.SUBTYPE);
     }
 
+    /**
+     * Returns the result of reducing this constraint, assume it is an equality constraint. See JLS
+     * 18.2.4
+     */
     private ReductionResult reduceEquality() {
         if (S.isProper()) {
             if (T.isProper()) {
