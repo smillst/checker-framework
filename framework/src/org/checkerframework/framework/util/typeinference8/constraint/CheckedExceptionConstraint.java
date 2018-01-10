@@ -80,7 +80,7 @@ public class CheckedExceptionConstraint extends Constraint {
             }
         }
         if (es.isEmpty()) {
-            return ReductionResult.TRUE;
+            return ConstraintSet.TRUE;
         }
 
         List<? extends TypeMirror> thrownTypes;

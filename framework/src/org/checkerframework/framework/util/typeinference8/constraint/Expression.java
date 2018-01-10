@@ -67,6 +67,8 @@ public class Expression extends Constraint {
         return expression;
     }
 
+    /** See JLS 18.2.1 */
+    @Override
     public ReductionResult reduce(Context context) {
         if (getT().isProper()) {
             return reduceProperType();
@@ -188,12 +190,12 @@ public class Expression extends Constraint {
         ExecutableType compileTimeDecl =
                 InternalInferenceUtils.compileTimeDeclarationType(memRef, context.env);
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
-            return ReductionResult.TRUE;
+            return ConstraintSet.TRUE;
         }
         ExecutableType funcType = TypesUtils.findFunctionType(T.getJavaType(), context.env);
         AbstractType r = T.getFunctionTypeReturn();
         if (r.getTypeKind() == TypeKind.VOID) {
-            return ReductionResult.TRUE;
+            return ConstraintSet.TRUE;
         }
 
         // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-BC

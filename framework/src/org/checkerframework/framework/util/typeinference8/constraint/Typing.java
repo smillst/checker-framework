@@ -269,8 +269,10 @@ public class Typing extends Constraint {
         if (T.isProper() && S.isProper()) {
             // the constraint reduces to true if S is compatible in a loose invocation context
             // with T (5.3), and false otherwise.
-            if (context.types.isAssignable((Type) S.getJavaType(), (Type) T.getJavaType())) {
+            if (context.types.isSubtype((Type) S.getJavaType(), (Type) T.getJavaType())) {
                 return ConstraintSet.TRUE;
+            } else if (context.types.isAssignable((Type) S.getJavaType(), (Type) T.getJavaType())) {
+                return ReductionResult.UNCHECKED_CONVERSION;
             } else {
                 return ConstraintSet.FALSE;
             }

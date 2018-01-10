@@ -23,6 +23,13 @@ public class ConstraintSet implements ReductionResult {
                     return "TRUE";
                 }
             };
+    public static final ReductionResult FALSE =
+            new ReductionResult() {
+                @Override
+                public String toString() {
+                    return "FALSE";
+                }
+            };
     /**
      * This needs to be kept in the order created, which should be lexically left to right. This is
      * for {@link #getMagicalSubSet(Dependencies)}.
@@ -201,11 +208,11 @@ public class ConstraintSet implements ReductionResult {
                 if (boundSet.containsFalse()) {
                     throw new FalseBoundException(constraint);
                 }
-            } else if (result == null || result == ReductionResult.FALSE) {
+            } else if (result == null || result == ConstraintSet.FALSE) {
                 throw new FalseBoundException(constraint);
             } else if (result == ReductionResult.UNCHECKED_CONVERSION) {
                 boundSet.setUncheckedConversion(true);
-            } else if (result == ReductionResult.TRUE) {
+            } else if (result == ConstraintSet.TRUE) {
                 // loop
             } else {
                 throw new RuntimeException("Not found " + result);
