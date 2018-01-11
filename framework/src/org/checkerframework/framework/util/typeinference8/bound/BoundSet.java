@@ -18,6 +18,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable.Capture
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TypesUtils;
 
+/** Holds a set of bounds. */
 public class BoundSet implements ReductionResult {
     /**
      * Max number of incorporation loops. Use same constant as {@link
@@ -25,12 +26,18 @@ public class BoundSet implements ReductionResult {
      */
     private static final int MAX_INCORPORATION_STEPS = 100;
 
+    /** All inference variables including capture inference variables. */
     private final LinkedHashSet<Variable> variables;
+    /** All capture inference variables. A subset of {@code variables} */
     private final LinkedHashSet<Capture> captures;
 
     private final Context context;
 
-    private boolean isFalse = false;
+    /** Whether or not this bounds set contains the false bound. */
+    private boolean containsFalse = false;
+    /**
+     * Whether or not unchecked conversion was necessary to reduce and incorporate this bound set.
+     */
     private boolean uncheckedConversion = false;
 
     public BoundSet(Context context) {
@@ -38,12 +45,13 @@ public class BoundSet implements ReductionResult {
         this.variables = new LinkedHashSet<>();
         this.captures = new LinkedHashSet<>();
         this.context = context;
-        this.isFalse = false;
+        this.containsFalse = false;
     }
 
+    /** Copy constructor */
     public BoundSet(BoundSet toCopy) {
         this(toCopy.context);
-        this.isFalse = toCopy.isFalse;
+        this.containsFalse = toCopy.containsFalse;
         this.captures.addAll(toCopy.captures);
         this.variables.addAll(toCopy.variables);
         this.uncheckedConversion = toCopy.uncheckedConversion;
@@ -100,19 +108,19 @@ public class BoundSet implements ReductionResult {
     public boolean merge(BoundSet newSet) {
         boolean changed = captures.addAll(newSet.captures);
         changed |= variables.addAll(newSet.variables);
-        isFalse |= newSet.isFalse;
+        containsFalse |= newSet.containsFalse;
         uncheckedConversion |= newSet.uncheckedConversion;
         return changed;
     }
 
     /** Adds the false bound to this bound set. */
     public void addFalse() {
-        isFalse = true;
+        containsFalse = true;
     }
 
     /** @return whether or not this bound set contains false. */
     public boolean containsFalse() {
-        return isFalse;
+        return containsFalse;
     }
 
     /** @return whether or not unchecked conversion is required. */
@@ -145,8 +153,8 @@ public class BoundSet implements ReductionResult {
         return false;
     }
 
-    /** Gets the instantiations for all alphas that currently have one. */
-    public List<Variable> getInstantiations(List<Variable> alphas) {
+    /** Returns a list of variables in {@code alphas} that are instantiated. */
+    public List<Variable> getInstantiationsInAlphas(Collection<Variable> alphas) {
         List<Variable> list = new ArrayList<>();
         for (Variable var : alphas) {
             if (var.hasInstantiation()) {
@@ -156,16 +164,7 @@ public class BoundSet implements ReductionResult {
         return list;
     }
 
-    public List<Variable> getInstantiationsAll() {
-        List<Variable> list = new ArrayList<>();
-        for (Variable var : variables) {
-            if (var.hasInstantiation()) {
-                list.add(var);
-            }
-        }
-        return list;
-    }
-
+    /** Returns a list of all variables in this bound set that are instantiated. */
     public List<Variable> getInstantiatedVariables() {
         List<Variable> list = new ArrayList<>();
         for (Variable var : variables) {
@@ -178,8 +177,8 @@ public class BoundSet implements ReductionResult {
 
     /** Resolve all inference variables mentioned in any bound. */
     public List<Variable> resolve() {
-        BoundSet b = Resolution.resolve(getAllInferenceVariables(), this, context);
-        return b.getInstantiations(getAllInferenceVariables());
+        BoundSet b = Resolution.resolve(variables, this, context);
+        return b.getInstantiationsInAlphas(variables);
     }
 
     /** JLS 18.4. Guides order of resolution. */
@@ -202,7 +201,7 @@ public class BoundSet implements ReductionResult {
                 dependencies.putOrAddAll(var, lhsVars);
             }
         }
-        Set<Variable> set = new LinkedHashSet<>(getAllInferenceVariables());
+        Set<Variable> set = new LinkedHashSet<>(variables);
         if (c != null) {
             set.addAll(c.getAllInferenceVariables());
         }
@@ -235,10 +234,6 @@ public class BoundSet implements ReductionResult {
         return dependencies;
     }
 
-    private List<Variable> getAllInferenceVariables() {
-        return new ArrayList<>(variables);
-    }
-
     /**
      * Incorporates {@code newBounds} into this bounds set.
      *
@@ -251,7 +246,7 @@ public class BoundSet implements ReductionResult {
      * @param newBounds bounds to incorporate
      */
     public void incorporateToFixedPoint(final BoundSet newBounds) {
-        this.isFalse |= newBounds.isFalse;
+        this.containsFalse |= newBounds.containsFalse;
         if (this.containsFalse()) {
             return;
         }
@@ -259,7 +254,7 @@ public class BoundSet implements ReductionResult {
         int count = 0;
         do {
             count++;
-            List<Variable> instantiations = getInstantiationsAll();
+            List<Variable> instantiations = getInstantiatedVariables();
             boolean boundsChangeInst = false;
             if (!instantiations.isEmpty()) {
                 for (Variable var : variables) {
@@ -284,9 +279,9 @@ public class BoundSet implements ReductionResult {
                 return;
             }
 
-            isFalse |= newBounds.isFalse;
+            containsFalse |= newBounds.containsFalse;
             assert count < MAX_INCORPORATION_STEPS : "Max incorporation steps reached.";
-        } while (!isFalse && count < MAX_INCORPORATION_STEPS);
+        } while (!containsFalse && count < MAX_INCORPORATION_STEPS);
     }
 
     /**
@@ -326,7 +321,7 @@ public class BoundSet implements ReductionResult {
 
     @Override
     public String toString() {
-        if (isFalse) {
+        if (containsFalse) {
             return "FALSE";
         } else if (variables.isEmpty()) {
             return "EMPTY";

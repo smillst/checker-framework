@@ -365,7 +365,7 @@ public class InvocationTypeInference {
             List<Variable> alphas = subset.getAllInputVariables();
             if (!alphas.isEmpty()) {
                 BoundSet resolved = Resolution.resolve(alphas, current, context);
-                c.applyInstantiations(resolved.getInstantiations(alphas));
+                c.applyInstantiations(resolved.getInstantiationsInAlphas(alphas));
             }
             c.remove(subset);
             BoundSet newBounds = subset.reduce(context);

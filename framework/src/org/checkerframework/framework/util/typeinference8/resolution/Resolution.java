@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.resolution;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -20,7 +21,7 @@ import org.checkerframework.framework.util.typeinference8.util.FalseBoundExcepti
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
 public class Resolution {
-    public static BoundSet resolve(List<Variable> as, BoundSet boundSet, Context context) {
+    public static BoundSet resolve(Collection<Variable> as, BoundSet boundSet, Context context) {
         List<Variable> resolvedVars = boundSet.getInstantiatedVariables();
 
         if (as.isEmpty()) {
@@ -198,7 +199,7 @@ public class Resolution {
         List<TypeMirror> typeArg = new ArrayList<>();
 
         for (Variable ai : as) {
-            ai.applyInstantiationsToBounds(boundSet.getInstantiationsAll());
+            ai.applyInstantiationsToBounds(boundSet.getInstantiatedVariables());
             if (ai.hasInstantiation()) {
                 // If ai is equal to a variable that was resolved previously,
                 // ai would now have an instantiation.
