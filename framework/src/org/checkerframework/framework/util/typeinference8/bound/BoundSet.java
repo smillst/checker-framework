@@ -230,7 +230,7 @@ public class BoundSet implements ReductionResult {
         }
 
         // Add transitive dependencies
-        dependencies.addTransitive();
+        dependencies.calculateTransitiveDependencies();
 
         return dependencies;
     }

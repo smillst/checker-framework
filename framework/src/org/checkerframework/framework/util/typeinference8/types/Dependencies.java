@@ -7,9 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/** A data structure to hold the dependencies between variables. */
 public class Dependencies {
+
+    /** A map from a variable to the variables, including itself, on which it depends. */
     private final Map<Variable, LinkedHashSet<Variable>> map = new LinkedHashMap<>();
 
+    /** Add {@code value} as a dependency of {@code key}. */
     public boolean putOrAdd(Variable key, Variable value) {
         LinkedHashSet<Variable> set = map.get(key);
         if (set == null) {
@@ -19,19 +23,24 @@ public class Dependencies {
         return set.add(value);
     }
 
-    public boolean putOrAddAll(Variable key, Collection<? extends Variable> value) {
+    /** Add {@code values} as dependencies of {@code key}. */
+    public boolean putOrAddAll(Variable key, Collection<? extends Variable> values) {
         LinkedHashSet<Variable> set = map.get(key);
         if (set == null) {
             set = new LinkedHashSet<>();
             map.put(key, set);
         }
-        return set.addAll(value);
+        return set.addAll(values);
     }
 
-    public void addTransitive() {
-        // An inference variable alpha depends on the resolution of an inference variable beta if
-        // there exists an inference variable gamma such that alpha depends on the resolution of
-        // gamma and gamma depends on the resolution of beta.
+    /**
+     * Calculate and add transitive dependencies
+     *
+     * <p>JLS 18.4 "An inference variable alpha depends on the resolution of an inference variable
+     * beta if there exists an inference variable gamma such that alpha depends on the resolution of
+     * gamma and gamma depends on the resolution of beta."
+     */
+    public void calculateTransitiveDependencies() {
         boolean changed = true;
         while (changed) {
             changed = false;
@@ -50,10 +59,12 @@ public class Dependencies {
         }
     }
 
+    /** Returns the set of dependencies of {@code alpha}. */
     public LinkedHashSet<Variable> get(Variable alpha) {
         return new LinkedHashSet<>(map.get(alpha));
     }
 
+    /** Returns the set of dependencies of {@code alpha}. */
     public LinkedHashSet<Variable> get(List<Variable> variables) {
         LinkedHashSet<Variable> set = new LinkedHashSet<>();
         for (Variable v : variables) {
