@@ -18,15 +18,18 @@ import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * Represents a constraints between two {@link AbstractType}. One of: <ui>
- * <li>{@link Kind#TYPE_COMPATIBILITY} {@code < S -> T >}: A type S is compatible in a loose
- *     invocation context with type T
- * <li>{@link Kind#SUBTYPE} {@code < S <: T >}: A reference type S is a subtype of a reference type
- *     T
- * <li>{@link Kind#CONTAINED} {@code < S <= T >}: A type argument S is contained by a type argument
- *     T.
- * <li>{@link Kind#TYPE_EQUALITY} {@code < S = T >}: A type S is the same as a type T, or a type
- *     argument S is the same as type argument T. </ui>
+ * Represents a constraints between two {@link AbstractType}. One of:
+ *
+ * <ul>
+ *   <li>{@link Kind#TYPE_COMPATIBILITY} {@code < S -> T >}: A type S is compatible in a loose
+ *       invocation context with type T
+ *   <li>{@link Kind#SUBTYPE} {@code < S <: T >}: A reference type S is a subtype of a reference
+ *       type T
+ *   <li>{@link Kind#CONTAINED} {@code < S <= T >}: A type argument S is contained by a type
+ *       argument T.
+ *   <li>{@link Kind#TYPE_EQUALITY} {@code < S = T >}: A type S is the same as a type T, or a type
+ *       argument S is the same as type argument T.
+ * </ul>
  */
 public class Typing extends Constraint {
 
@@ -121,7 +124,7 @@ public class Typing extends Constraint {
 
         if (S.isVariable() || T.isVariable()) {
             if (S.isVariable()) {
-                if (T.getTypeKind() == TypeKind.TYPEVAR && T.hasLowerBound()) {
+                if (T.getTypeKind() == TypeKind.TYPEVAR && T.isLowerBoundTypeVariable()) {
                     ((Variable) S).addBound(InferBound.UPPER, T.getTypeVarLowerBound());
                 } else {
                     ((Variable) S).addBound(InferBound.UPPER, T);
@@ -207,7 +210,7 @@ public class Typing extends Constraint {
     private ReductionResult reduceSubtypeTypeVariable() {
         if (S.getTypeKind() == TypeKind.INTERSECTION) {
             return ConstraintSet.TRUE;
-        } else if (T.getTypeKind() == TypeKind.TYPEVAR && T.hasLowerBound()) {
+        } else if (T.getTypeKind() == TypeKind.TYPEVAR && T.isLowerBoundTypeVariable()) {
             return new Typing(S, T.getTypeVarLowerBound(), Kind.SUBTYPE);
         } else if (T.getTypeKind() == TypeKind.WILDCARD && T.isLowerBoundedWildcard()) {
             return new Typing(S, T.getWildcardLowerBound(), Kind.SUBTYPE);

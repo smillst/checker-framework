@@ -477,13 +477,7 @@ public class Variable extends AbstractType {
             return "b" + id;
         }
 
-        /**
-         * These are constraints generated when incorporating a capture bound.
-         *
-         * @param Ai
-         * @param Bi
-         * @return
-         */
+        /** These are constraints generated when incorporating a capture bound. */
         public ConstraintSet getWildcardConstraints(AbstractType Ai, AbstractType Bi) {
             ConstraintSet constraintSet = new ConstraintSet();
 

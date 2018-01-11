@@ -103,6 +103,10 @@ public class InternalInferenceUtils {
         return types.glb(t1, t2);
     }
 
+    /**
+     * Returns the most specific super type of {@code type} that is an array or null if {@code type}
+     * is not a subtype of an array.
+     */
     public static TypeMirror getMostSpecificArrayType(TypeMirror type, Types types) {
         if (type.getKind() == TypeKind.ARRAY) {
             return type;
@@ -121,9 +125,13 @@ public class InternalInferenceUtils {
         return ((Type) result).isParameterized();
     }
 
-    public static boolean isWildcardParameterized(TypeMirror result) {
-        if (isParameterized(result) && result.getKind() == TypeKind.DECLARED) {
-            for (TypeMirror t : ((DeclaredType) result).getTypeArguments()) {
+    /**
+     * @return true if {@code typeMirror} is a declared type with at least on wildcard as a type
+     *     argument
+     */
+    public static boolean isWildcardParameterized(TypeMirror typeMirror) {
+        if (isParameterized(typeMirror) && typeMirror.getKind() == TypeKind.DECLARED) {
+            for (TypeMirror t : ((DeclaredType) typeMirror).getTypeArguments()) {
                 if (t.getKind() == TypeKind.WILDCARD) {
                     return true;
                 }

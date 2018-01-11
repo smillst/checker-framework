@@ -30,7 +30,7 @@ public abstract class AbstractType {
     protected final Context context;
 
     public enum Kind {
-        /** @link ProperType},a type that contains no inference variables* */
+        /** {@link ProperType},a type that contains no inference variables* */
         PROPER,
         /**
          * {@link InferenceType}, a type that contains inference variables, but is not an inference
@@ -64,6 +64,11 @@ public abstract class AbstractType {
     /** @return true if this type contains inference variables, but is not an inference variable */
     public final boolean isInferenceType() {
         return getKind() == Kind.INFERENCE_TYPE;
+    }
+
+    /** @return the TypeKind of the underlying Java type */
+    public final TypeKind getTypeKind() {
+        return getJavaType().getKind();
     }
 
     /** @return the underlying Java type without inference variables. */
@@ -202,6 +207,10 @@ public abstract class AbstractType {
         return ((Type) getJavaType()).isParameterized();
     }
 
+    /**
+     * @return the most specific array type that is a super type of this type or null if one doesn't
+     *     exist
+     */
     public final AbstractType getMostSpecificArrayType() {
         TypeMirror mostSpecific =
                 InternalInferenceUtils.getMostSpecificArrayType(getJavaType(), context.types);
@@ -212,11 +221,15 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return true if this type is a primitive array. */
     public final boolean isPrimitiveArray() {
         return getJavaType().getKind() == TypeKind.ARRAY
                 && ((ArrayType) getJavaType()).getComponentType().getKind().isPrimitive();
     }
 
+    /**
+     * @return assuming type is an intersection type, this method returns the bounds in this type
+     */
     public final List<AbstractType> getIntersectionBounds() {
         List<AbstractType> bounds = new ArrayList<>();
         for (TypeMirror bound : ((IntersectionType) getJavaType()).getBounds()) {
@@ -225,26 +238,35 @@ public abstract class AbstractType {
         return bounds;
     }
 
+    /**
+     * @return assuming this type is a type variable, this method returns the upper bound of this
+     *     type.
+     */
     public final AbstractType getTypeVarUpperBound() {
         return create(((TypeVariable) getJavaType()).getUpperBound());
     }
-
+    /**
+     * @return assuming this type is a type variable that has a lower bound, this method returns the
+     *     lower bound of this type.
+     */
     public final AbstractType getTypeVarLowerBound() {
         return create(((TypeVariable) getJavaType()).getLowerBound());
     }
 
-    public final boolean hasLowerBound() {
+    /** @return true if this type is a type variable with a lower bound */
+    public final boolean isLowerBoundTypeVariable() {
         return ((TypeVariable) getJavaType()).getLowerBound().getKind() != TypeKind.NULL;
     }
 
+    /**
+     * @return true if this type is a parameterized type whose has at least one wildcard as a type
+     *     argument.
+     */
     public final boolean isWildcardParameterizedType() {
         return InternalInferenceUtils.isWildcardParameterized(getJavaType());
     }
 
-    public final TypeKind getTypeKind() {
-        return getJavaType().getKind();
-    }
-
+    /** @return this type's type arguments or null this type isn't a declared type */
     public final List<AbstractType> getTypeArguments() {
         if (getJavaType().getKind() != TypeKind.DECLARED) {
             return null;
@@ -256,6 +278,7 @@ public abstract class AbstractType {
         return list;
     }
 
+    /** @return true if the type is an unbound wildcard */
     public final boolean isUnboundWildcard() {
         if (getJavaType().getKind() == TypeKind.WILDCARD) {
             return ((WildcardType) getJavaType()).isUnbound();
@@ -264,6 +287,7 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return true if the type is a wildcard with an upper bound */
     public final boolean isUpperBoundedWildcard() {
         if (getJavaType().getKind() == TypeKind.WILDCARD) {
             return ((WildcardType) getJavaType()).isExtendsBound();
@@ -272,6 +296,7 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return true if the type is a wildcard with an lower bound */
     public final boolean isLowerBoundedWildcard() {
         if (getJavaType().getKind() == TypeKind.WILDCARD) {
             return ((WildcardType) getJavaType()).isSuperBound();
@@ -280,6 +305,7 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return if this type is a wildcard return its lower bound; otherwise, return null. */
     public final AbstractType getWildcardLowerBound() {
         if (getJavaType().getKind() == TypeKind.WILDCARD) {
             return create(TypesUtils.wildLowerBound(getJavaType(), context.env));
@@ -287,6 +313,7 @@ public abstract class AbstractType {
         return null;
     }
 
+    /** @return if this type is a wildcard return its upper bound; otherwise, return null. */
     public final AbstractType getWildcardUpperBound() {
         if (getJavaType().getKind() != TypeKind.WILDCARD) {
             return null;
@@ -301,10 +328,12 @@ public abstract class AbstractType {
         }
     }
 
+    /** @return a new type that whose Java type is the erasure of this type */
     public AbstractType getErased() {
         return create(context.env.getTypeUtils().erasure(getJavaType()));
     }
 
+    /** @return the array componentn type of this type or null if one does not exist. */
     public final AbstractType getComponentType() {
         if (getJavaType().getKind() == TypeKind.ARRAY) {
             return create(((ArrayType) getJavaType()).getComponentType());
