@@ -238,7 +238,7 @@ public class Resolution {
             Variable ai = asList.get(i);
             TypeMirror inst = typeArg.get(i);
             TypeVariable typeVariableI = ai.getJavaType();
-            if (ContainsInferenceVariable.hasAnyInferenceVar(
+            if (ContainsInferenceVariable.hasAnyTypeVariable(
                     Collections.singleton(typeVariableI), inst)) {
                 // If the instantiation of ai includes a reference to ai,
                 // then substitute ai with an unbound wildcard.  This isn't quite right but I'm not
@@ -265,7 +265,7 @@ public class Resolution {
         // Create the new bounds.
         for (int i = 0; i < asList.size(); i++) {
             Variable ai = asList.get(i);
-            ContainsInferenceVariable.getInferenceVar(
+            ContainsInferenceVariable.getMentionedTypeVariables(
                     Collections.singleton(ai.getJavaType()), subsTypeArg.get(i));
             ai.addBound(InferBound.EQUAL, new ProperType(subsTypeArg.get(i), context).capture());
         }

@@ -33,7 +33,7 @@ public class InferenceType extends AbstractType {
 
     public static boolean containsInferenceVar(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
-        return ContainsInferenceVariable.hasAnyInferenceVar(typeVariables, type);
+        return ContainsInferenceVariable.hasAnyTypeVariable(typeVariables, type);
     }
 
     public static List<AbstractType> create(
@@ -97,7 +97,8 @@ public class InferenceType extends AbstractType {
     @Override
     public Collection<Variable> getInferenceVariables() {
         LinkedHashSet<Variable> variables = new LinkedHashSet<>();
-        for (TypeVariable typeVar : ContainsInferenceVariable.getInferenceVar(map.keySet(), type)) {
+        for (TypeVariable typeVar :
+                ContainsInferenceVariable.getMentionedTypeVariables(map.keySet(), type)) {
             variables.add(map.get(typeVar));
         }
         return variables;

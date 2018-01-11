@@ -20,28 +20,36 @@ import javax.lang.model.type.WildcardType;
 
 public class ContainsInferenceVariable {
 
-    public static boolean hasAnyInferenceVar(
+    /** Returns true is {@code type} contains any of the type varibles in {@code typeVariables}. */
+    public static boolean hasAnyTypeVariable(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
         return new Visitor(typeVariables).visit(type);
     }
 
-    public static LinkedHashSet<TypeVariable> getInferenceVar(
+    /** Returns the type variables in {@code typeVariables} that appear in {@code type}. */
+    public static LinkedHashSet<TypeVariable> getMentionedTypeVariables(
             Collection<TypeVariable> typeVariables, TypeMirror type) {
         Visitor visitor = new Visitor(typeVariables);
         visitor.visit(type);
         return visitor.foundVariables;
     }
 
+    /** A helper class to find type variables mentioned by a type. */
     static class Visitor implements TypeVisitor<Boolean, Void> {
+
+        /** Type variables for which to search. */
         private final Collection<TypeVariable> typeVariables;
+        /** Type variables in {@code typeVariables} that have ben found. */
         final LinkedHashSet<TypeVariable> foundVariables = new LinkedHashSet<>();
+        /** A set of types that have been visited. Used to prevent infinite recursion. */
         private final Set<TypeMirror> visitedTypes = new HashSet<>();
 
         Visitor(Collection<TypeVariable> variables) {
             typeVariables = variables;
         }
 
-        private boolean isInferenceVariable(TypeVariable typeVar) {
+        /** Returns true if {@code typeVar} is a type variable in {@code typeVariables} */
+        private boolean isTypeVariableOfInterest(TypeVariable typeVar) {
             if (typeVariables.contains(typeVar)) {
                 foundVariables.add(typeVar);
                 return true;
@@ -96,7 +104,7 @@ public class ContainsInferenceVariable {
                 return false;
             }
             visitedTypes.add(t);
-            if (isInferenceVariable(t)) {
+            if (isTypeVariableOfInterest(t)) {
                 return true;
             }
             if (visit(t.getLowerBound())) {
