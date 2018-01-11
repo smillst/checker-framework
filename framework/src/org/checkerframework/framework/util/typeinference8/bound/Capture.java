@@ -78,6 +78,12 @@ public class Capture {
         }
     }
 
+    /**
+     * Incorporate this capture bound. See JLS 18.3.1.
+     *
+     * <p>Also, reduces and incorporates the constraint {@code G<a1,...,an> -> target}. See JLS
+     * 18.5.2.1.
+     */
     public BoundSet incorporate(AbstractType target, Context context) {
         // First add the non-wildcard bounds.
         for (CaptureTuple t : tuples) {
@@ -114,11 +120,13 @@ public class Capture {
         return b1;
     }
 
-    public List<? extends CaptureVariable> getAllIVOnLHS() {
+    /** @return all variables on the left-hand side of this capture */
+    public List<? extends CaptureVariable> getAllVariablesOnLHS() {
         return captureVariables;
     }
 
-    public LinkedHashSet<Variable> getAllIVOnRHS() {
+    /** @return all variables on the right-hand side of this capture */
+    public LinkedHashSet<Variable> getAllVariablesOnRHS() {
         return new LinkedHashSet<>(capturedType.getInferenceVariables());
     }
 

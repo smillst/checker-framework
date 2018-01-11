@@ -137,14 +137,14 @@ public class BoundSet implements ReductionResult {
     /** Adds {@code capture} to this bound set. */
     public void addCapture(Capture capture) {
         captures.add(capture);
-        variables.addAll(capture.getAllIVOnLHS());
+        variables.addAll(capture.getAllVariablesOnLHS());
     }
 
     /** Does the bound set contain a bound of the form {@code G<..., ai, ...> = capture(G<...>)}? */
     public boolean containsCapture(Collection<Variable> as) {
         List<Variable> list = new ArrayList<>();
         for (Capture c : captures) {
-            list.addAll(c.getAllIVOnLHS());
+            list.addAll(c.getAllVariablesOnLHS());
         }
         for (Variable ai : as) {
             if (list.contains(ai)) {
@@ -192,8 +192,8 @@ public class BoundSet implements ReductionResult {
         Dependencies dependencies = new Dependencies();
 
         for (Capture capture : captures) {
-            List<? extends CaptureVariable> lhsVars = capture.getAllIVOnLHS();
-            LinkedHashSet<Variable> rhsVars = capture.getAllIVOnRHS();
+            List<? extends CaptureVariable> lhsVars = capture.getAllVariablesOnLHS();
+            LinkedHashSet<Variable> rhsVars = capture.getAllVariablesOnRHS();
             for (Variable var : lhsVars) {
                 // An inference variable alpha appearing on the left-hand side of a bound of the
                 // form G<..., alpha, ...> = capture(G<...>) depends on the resolution of every
