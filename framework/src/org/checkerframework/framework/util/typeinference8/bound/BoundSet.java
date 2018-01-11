@@ -26,9 +26,9 @@ public class BoundSet implements ReductionResult {
      */
     private static final int MAX_INCORPORATION_STEPS = 100;
 
-    /** All inference variables including capture inference variables. */
+    /** All inference variables in this bound set. */
     private final LinkedHashSet<Variable> variables;
-    /** All capture inference variables. A subset of {@code variables} */
+    /** All capture bounds */
     private final LinkedHashSet<Capture> captures;
 
     private final Context context;
@@ -60,6 +60,7 @@ public class BoundSet implements ReductionResult {
         }
     }
 
+    /** Restore the bounds to the last saved state. */
     public void restore() {
         for (Variable v : variables) {
             v.restore();
@@ -315,6 +316,7 @@ public class BoundSet implements ReductionResult {
         alpha.constraints.addAll(constraints);
     }
 
+    /** Remove any capture bound that mentions any variable in {@code as}. */
     public void removeCaptures(LinkedHashSet<Variable> as) {
         captures.removeIf((Capture c) -> c.isCaptureMentionsAny(as));
     }
