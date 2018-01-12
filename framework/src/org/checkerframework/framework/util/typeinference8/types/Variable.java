@@ -50,6 +50,9 @@ public class Variable extends AbstractType {
     /** Whether or not this variable has a throws bounds. */
     private boolean hasThrowsBound = false;
 
+    /** Saved bounds. */
+    private EnumMap<BoundKind, LinkedHashSet<AbstractType>> savedBounds = null;
+
     public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
         this(typeVariable, invocation, context, context.getNextVariableId());
     }
@@ -72,6 +75,16 @@ public class Variable extends AbstractType {
     }
 
     @Override
+    public boolean isObject() {
+        return false;
+    }
+
+    @Override
+    public Iterator<ProperType> getTypeParameterBounds() {
+        return null;
+    }
+
+    @Override
     public AbstractType capture() {
         return this;
     }
@@ -79,51 +92,6 @@ public class Variable extends AbstractType {
     @Override
     public AbstractType getErased() {
         return this;
-    }
-
-    protected EnumMap<BoundKind, LinkedHashSet<AbstractType>> savedBounds = null;
-
-    /** Save the current bounds. */
-    public void save() {
-        savedBounds = new EnumMap<>(BoundKind.class);
-        savedBounds.put(BoundKind.EQUAL, new LinkedHashSet<>(bounds.get(BoundKind.EQUAL)));
-        savedBounds.put(BoundKind.UPPER, new LinkedHashSet<>(bounds.get(BoundKind.UPPER)));
-        savedBounds.put(BoundKind.LOWER, new LinkedHashSet<>(bounds.get(BoundKind.LOWER)));
-    }
-
-    /** Restore the bounds to the state previously saved. */
-    public void restore() {
-        assert savedBounds != null;
-        instantiation = null;
-        bounds.clear();
-        bounds.put(BoundKind.EQUAL, new LinkedHashSet<>(savedBounds.get(BoundKind.EQUAL)));
-        bounds.put(BoundKind.UPPER, new LinkedHashSet<>(savedBounds.get(BoundKind.UPPER)));
-        bounds.put(BoundKind.LOWER, new LinkedHashSet<>(savedBounds.get(BoundKind.LOWER)));
-        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
-            if (t.isProper()) {
-                instantiation = (ProperType) t;
-            }
-        }
-    }
-
-    public void initialBounds(Theta map) {
-        TypeMirror upperBound = typeVariable.getUpperBound();
-        // If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set. Otherwise, for
-        // each type T delimited by & in the TypeBound, the bound {@literal al <: T[P1:=a1,..., Pp:=ap]}
-        // appears in the set; if this results in no proper upper bounds for al (only dependencies),
-        // then the bound {@literal al <: Object} also appears in the set.
-        switch (upperBound.getKind()) {
-            case INTERSECTION:
-                for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
-                    AbstractType t1 = InferenceType.create(bound, map, context);
-                    addBound(BoundKind.UPPER, t1);
-                }
-                break;
-            default:
-                AbstractType t1 = InferenceType.create(upperBound, map, context);
-                addBound(BoundKind.UPPER, t1);
-                break;
-        }
     }
 
     @Override
@@ -203,6 +171,55 @@ public class Variable extends AbstractType {
         UPPER,
         /** {@code this = other type } */
         EQUAL;
+    }
+
+    /** Save the current bounds. */
+    public void save() {
+        savedBounds = new EnumMap<>(BoundKind.class);
+        savedBounds.put(BoundKind.EQUAL, new LinkedHashSet<>(bounds.get(BoundKind.EQUAL)));
+        savedBounds.put(BoundKind.UPPER, new LinkedHashSet<>(bounds.get(BoundKind.UPPER)));
+        savedBounds.put(BoundKind.LOWER, new LinkedHashSet<>(bounds.get(BoundKind.LOWER)));
+    }
+
+    /** Restore the bounds to the state previously saved. */
+    public void restore() {
+        assert savedBounds != null;
+        instantiation = null;
+        bounds.clear();
+        bounds.put(BoundKind.EQUAL, new LinkedHashSet<>(savedBounds.get(BoundKind.EQUAL)));
+        bounds.put(BoundKind.UPPER, new LinkedHashSet<>(savedBounds.get(BoundKind.UPPER)));
+        bounds.put(BoundKind.LOWER, new LinkedHashSet<>(savedBounds.get(BoundKind.LOWER)));
+        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
+            if (t.isProper()) {
+                instantiation = (ProperType) t;
+            }
+        }
+    }
+
+    /**
+     * Adds the initial bounds to this variable. These are the bounds implied by the upper bounds of
+     * the type variable. See end of JLS 18.1.3.
+     *
+     * @param map used to determine if the bounds refer to another variable
+     */
+    public void initialBounds(Theta map) {
+        TypeMirror upperBound = typeVariable.getUpperBound();
+        // If Pl has no TypeBound, the bound {@literal al <: Object} appears in the set. Otherwise, for
+        // each type T delimited by & in the TypeBound, the bound {@literal al <: T[P1:=a1,..., Pp:=ap]}
+        // appears in the set; if this results in no proper upper bounds for al (only dependencies),
+        // then the bound {@literal al <: Object} also appears in the set.
+        switch (upperBound.getKind()) {
+            case INTERSECTION:
+                for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
+                    AbstractType t1 = InferenceType.create(bound, map, context);
+                    addBound(BoundKind.UPPER, t1);
+                }
+                break;
+            default:
+                AbstractType t1 = InferenceType.create(upperBound, map, context);
+                addBound(BoundKind.UPPER, t1);
+                break;
+        }
     }
 
     /** @return true if this has a throws bound */
@@ -334,6 +351,7 @@ public class Variable extends AbstractType {
         return set;
     }
 
+    /** Apply instantiations to all bounds and constraints of this variable. */
     public boolean applyInstantiationsToBounds(List<Variable> instantiations) {
         boolean changed = false;
         for (Set<AbstractType> boundList : bounds.values()) {
@@ -360,7 +378,8 @@ public class Variable extends AbstractType {
         return changed;
     }
 
-    public Collection<? extends Variable> getAllMentionedVars() {
+    /** @return all variables mentioned in a bound against this variable. */
+    public Collection<? extends Variable> getVariablesMentionedInBounds() {
         List<Variable> mentioned = new ArrayList<>();
         for (Set<AbstractType> boundList : bounds.values()) {
             for (AbstractType bound : boundList) {
@@ -370,14 +389,17 @@ public class Variable extends AbstractType {
         return mentioned;
     }
 
+    /** @return the instantiation of this variable */
     public ProperType getInstantiation() {
         return instantiation;
     }
 
+    /** @return true if this has an instantiation */
     public boolean hasInstantiation() {
         return instantiation != null;
     }
 
+    /** @return true if any bound mentions a primitive wrapper type. */
     public boolean hasPrimitiveWrapperBound() {
         for (Set<AbstractType> boundList : bounds.values()) {
             for (AbstractType bound : boundList) {
@@ -389,6 +411,10 @@ public class Variable extends AbstractType {
         return false;
     }
 
+    /**
+     * @return true if any lower or equal bound is a parameterized type with at least one wildcard
+     *     for a type argument
+     */
     public boolean hasWildcardParameterizedLowerOrEqualBound() {
         for (AbstractType type : bounds.get(BoundKind.EQUAL)) {
             if (!type.isVariable() && type.isWildcardParameterizedType()) {
@@ -468,20 +494,6 @@ public class Variable extends AbstractType {
 
     // </editor-fold>
 
-    // <editor-fold defaultstate="collapsed" desc="Unsupported opps">
-
-    @Override
-    public boolean isObject() {
-        return false;
-    }
-
-    @Override
-    public Iterator<ProperType> getTypeParameterBounds() {
-        return null;
-    }
-
-    // </editor-fold>
-
     /** A variable created for a capture bound. */
     public static class CaptureVariable extends Variable {
 
@@ -491,6 +503,7 @@ public class Variable extends AbstractType {
 
         @Override
         public String toString() {
+            // Use "b" instead of "a" like super so it is apparent that this is a capture variable.
             if (hasInstantiation()) {
                 return "b" + id + " := " + getInstantiation();
             }

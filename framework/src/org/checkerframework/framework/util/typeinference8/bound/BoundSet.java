@@ -207,7 +207,7 @@ public class BoundSet implements ReductionResult {
             LinkedHashSet<Variable> alphaDependencies = new LinkedHashSet<>();
             // An inference variable alpha depends on the resolution of itself.
             alphaDependencies.add(alpha);
-            alphaDependencies.addAll(alpha.getAllMentionedVars());
+            alphaDependencies.addAll(alpha.getVariablesMentionedInBounds());
 
             if (alpha.isCaptureVariable()) {
                 // If alpha appears on the left-hand side of another bound of the form
