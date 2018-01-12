@@ -13,6 +13,7 @@ import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.ExecutableElement;
@@ -27,7 +28,9 @@ import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
 import org.checkerframework.framework.util.typeinference8.bound.Capture;
+import org.checkerframework.framework.util.typeinference8.constraint.*;
 import org.checkerframework.framework.util.typeinference8.constraint.CheckedExceptionConstraint;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.Expression;
@@ -44,6 +47,30 @@ import org.checkerframework.framework.util.typeinference8.util.InternalInference
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+/**
+ * Performs invocation type inference as described in JLS Chapter 18.5.2. Main entry point is {@link
+ * #infer(MethodInvocationTree)}.
+ *
+ * <p>At a high level, inference creates variables, as place holders for the method type arguments
+ * to infer for the invocation of a method. Then it creates constraints between the arguments to the
+ * method invocation and the its formal parameter types and the return type of the method and the
+ * target type of the invocation. These constraints are reduced to produce bounds on the varibles.
+ * These variables are then incorporated, which produces more bounds or constraints. Then a type for
+ * the variable is computing by resolving the bounds.
+ *
+ * <p>{@link AbstractType}s are type-like structures that might include inference variables.
+ *
+ * <p>Constraints, {@link Constraint}, are between abstract types and either expressions, see {@link
+ * Expression}; other abstract types, see {@link Typing}; or abstract types that might be thrown,
+ * see {@link CheckedExceptionConstraint}. They are reduced by invoking {@link Constraint#reduce}.
+ * Groups of constraints are stored in {@link ConstraintSet}s.
+ *
+ * <p>Bounds are between an inference variable and another abstract type, including another
+ * variable. They are stored in {@link Variable} and {@link Variable}s are stored in {@link
+ * BoundSet}s.
+ *
+ * <p>Variables are resolved via {@link Resolution#resolve(LinkedHashSet, BoundSet)}.
+ */
 public class InvocationTypeInference {
 
     private final Context context;

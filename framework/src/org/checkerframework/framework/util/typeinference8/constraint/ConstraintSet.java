@@ -15,6 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 
+/** A set of constraints */
 public class ConstraintSet implements ReductionResult {
     public static final ConstraintSet TRUE =
             new ConstraintSet() {

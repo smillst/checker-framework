@@ -27,6 +27,7 @@ public class BoundSet implements ReductionResult {
 
     /** All inference variables in this bound set. */
     private final LinkedHashSet<Variable> variables;
+
     /** All capture bounds */
     private final LinkedHashSet<Capture> captures;
 
