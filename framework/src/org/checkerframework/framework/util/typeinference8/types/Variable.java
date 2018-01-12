@@ -83,6 +83,7 @@ public class Variable extends AbstractType {
 
     protected EnumMap<BoundKind, LinkedHashSet<AbstractType>> savedBounds = null;
 
+    /** Save the current bounds. */
     public void save() {
         savedBounds = new EnumMap<>(BoundKind.class);
         savedBounds.put(BoundKind.EQUAL, new LinkedHashSet<>(bounds.get(BoundKind.EQUAL)));
@@ -90,6 +91,7 @@ public class Variable extends AbstractType {
         savedBounds.put(BoundKind.LOWER, new LinkedHashSet<>(bounds.get(BoundKind.LOWER)));
     }
 
+    /** Restore the bounds to the state previously saved. */
     public void restore() {
         assert savedBounds != null;
         instantiation = null;
@@ -188,37 +190,45 @@ public class Variable extends AbstractType {
         return "a" + id;
     }
 
+    /** @return true if this is a variable created for a capture bound. */
     public boolean isCaptureVariable() {
         return this instanceof CaptureVariable;
     }
 
     // <editor-fold defaultstate="collapsed" desc="Bound opps">
     public enum BoundKind {
+        /** {@code other type <: this } */
         LOWER,
+        /** {@code this <: other type } */
         UPPER,
+        /** {@code this = other type } */
         EQUAL;
     }
 
+    /** @return true if this has a throws bound */
     public boolean hasThrowsBound() {
         return hasThrowsBound;
     }
 
+    /** Sets the value of hasThrowsBound to {@code hasThrowsBound} */
     public void setHasThrowsBound(boolean hasThrowsBound) {
         this.hasThrowsBound = hasThrowsBound;
     }
 
-    public boolean addBound(BoundKind kind, AbstractType type) {
-        if (kind == BoundKind.EQUAL && type.isProper()) {
-            instantiation = (ProperType) type;
+    /** Adds {@code otherType} as bound against this variable. */
+    public boolean addBound(BoundKind kind, AbstractType otherType) {
+        if (kind == BoundKind.EQUAL && otherType.isProper()) {
+            instantiation = (ProperType) otherType;
         }
-        if (bounds.get(kind).add(type)) {
-            addConstraints(kind, type);
+        if (bounds.get(kind).add(otherType)) {
+            addConstraintsFromComplementaryBounds(kind, otherType);
             return true;
         }
         return false;
     }
 
-    private void addConstraints(BoundKind kind, AbstractType s) {
+    /** Add constraints created via incorporation of the bound. See JLS 18.3.1. */
+    private void addConstraintsFromComplementaryBounds(BoundKind kind, AbstractType s) {
         if (kind == BoundKind.EQUAL) {
             for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
                 if (s != t) {
@@ -262,25 +272,19 @@ public class Variable extends AbstractType {
             // then for all i (1 <= i <= n), if Si and Ti are types (not wildcards),
             // the constraint formula <Si = Ti> is implied.
             if (s.isInferenceType() || s.isProper()) {
-                TypeMirror tType = s.getJavaType();
                 for (AbstractType t : bounds.get(BoundKind.LOWER)) {
-                    TypeMirror typeMirror;
                     if (t.isProper() || t.isInferenceType()) {
-                        typeMirror = t.getJavaType();
-                    } else {
-                        continue;
+                        constraints.addAll(getConstraintsFromParameterized(s, t));
                     }
-                    Pair<TypeMirror, TypeMirror> pair =
-                            InternalInferenceUtils.getParameterizedSupers(
-                                    typeMirror, tType, context);
-                    constraints.addAll(getConstraintsFromParameterized(pair, s, t));
                 }
             }
         }
     }
 
-    private List<Typing> getConstraintsFromParameterized(
-            Pair<TypeMirror, TypeMirror> pair, AbstractType s, AbstractType t) {
+    private List<Typing> getConstraintsFromParameterized(AbstractType s, AbstractType t) {
+        Pair<TypeMirror, TypeMirror> pair =
+                InternalInferenceUtils.getParameterizedSupers(
+                        s.getJavaType(), t.getJavaType(), context);
         if (pair == null) {
             return new ArrayList<>();
         }
@@ -478,6 +482,7 @@ public class Variable extends AbstractType {
 
     // </editor-fold>
 
+    /** A variable created for a capture bound. */
     public static class CaptureVariable extends Variable {
 
         public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {
