@@ -73,16 +73,20 @@ public class Expression extends Constraint {
         if (getT().isProper()) {
             return reduceProperType();
         } else if (TreeUtils.isStandaloneExpression(expression)) {
-            return reduceStandalone(context);
+            ProperType s = new ProperType(TreeUtils.typeOf(expression), context);
+            return new Typing(s, T, Constraint.Kind.TYPE_COMPATIBILITY);
         }
         switch (expression.getKind()) {
             case PARENTHESIZED:
-                return reduceParenthesized();
+                new Expression(TreeUtils.skipParens(expression), T);
             case NEW_CLASS:
             case METHOD_INVOCATION:
                 return reduceMethodInvocation(context);
             case CONDITIONAL_EXPRESSION:
-                return reduceConditional();
+                ConditionalExpressionTree conditional = (ConditionalExpressionTree) expression;
+                Constraint trueConstraint = new Expression(conditional.getTrueExpression(), T);
+                Constraint falseConstraint = new Expression(conditional.getFalseExpression(), T);
+                return new ConstraintSet(trueConstraint, falseConstraint);
             case LAMBDA_EXPRESSION:
                 return reduceLambda(context);
             case MEMBER_REFERENCE:
@@ -93,22 +97,6 @@ public class Expression extends Constraint {
                         expression.getKind(), expression);
                 throw new RuntimeException();
         }
-    }
-
-    private Constraint reduceParenthesized() {
-        return new Expression(TreeUtils.skipParens(expression), T);
-    }
-
-    private Constraint reduceStandalone(Context context) {
-        ProperType s = new ProperType(TreeUtils.typeOf(expression), context);
-        return new Typing(s, T, Constraint.Kind.TYPE_COMPATIBILITY);
-    }
-
-    private ConstraintSet reduceConditional() {
-        ConditionalExpressionTree conditional = (ConditionalExpressionTree) expression;
-        Constraint trueConstraint = new Expression(conditional.getTrueExpression(), T);
-        Constraint falseConstraint = new Expression(conditional.getFalseExpression(), T);
-        return new ConstraintSet(trueConstraint, falseConstraint);
     }
 
     /**
@@ -275,6 +263,11 @@ public class Expression extends Constraint {
         return ReductionResultPair.of(constraintSet, boundSet);
     }
 
+    /**
+     * Computes the ground target type of {@code t} as defined in JLS 18.5.3. Returned as the first
+     * in the pair. This process might create additional bounds, if so the second in the returned
+     * pair will be non-null.
+     */
     private Pair<AbstractType, BoundSet> getGroundTargetType(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         if (!t.isWildcardParameterizedType()) {
@@ -293,6 +286,7 @@ public class Expression extends Constraint {
         }
     }
 
+    /** Returns the non-wilcard parameterization of {@code t} as defined in JLS 9.9. */
     private AbstractType nonWildcardParameterization(AbstractType t, Context context) {
         List<AbstractType> As = t.getTypeArguments();
         Iterator<ProperType> Bs = t.getTypeParameterBounds();
@@ -315,7 +309,10 @@ public class Expression extends Constraint {
         return t.replaceTypeArgs(Ts);
     }
 
-    /** 18.5.3: Functional Interface Parameterization Inference */
+    /**
+     * Infers the type of {@code lambda}. See 18.5.3: Functional Interface Parameterization
+     * Inference
+     */
     private Pair<AbstractType, BoundSet> explicitlyTypedLambdasWithWildcard(
             AbstractType t, LambdaExpressionTree lambda, Context context) {
         // Where a lambda expression with explicit parameter types P1, ..., Pn targets a functional
