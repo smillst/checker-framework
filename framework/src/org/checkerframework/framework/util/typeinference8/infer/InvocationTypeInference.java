@@ -52,6 +52,7 @@ public class InvocationTypeInference {
         this.context = new Context(factory.getProcessingEnv(), factory, pathToExpression, this);
     }
 
+    /** Preform invocation type inference on {@code methodInvocation}. */
     public List<Variable> infer(MethodInvocationTree methodInvocation) {
         Tree assignmentContext = TreeUtils.getAssignmentContext(context.pathToExpression);
         if (!shouldTryInference(assignmentContext, context.pathToExpression)) {
@@ -68,6 +69,7 @@ public class InvocationTypeInference {
         try {
             result = infer(methodInvocation, targetType);
         } catch (java.lang.Exception ex) {
+            // Catch any exception so all crashes in a compilation unit are reported.
             logException(methodInvocation, ex);
             return null;
         }
@@ -77,6 +79,7 @@ public class InvocationTypeInference {
         return result;
     }
 
+    /** Convert the exceptions into a checker error and report it. */
     private void logException(MethodInvocationTree methodInvocation, java.lang.Exception ex) {
         SourceChecker checker = context.factory.getContext().getChecker();
         StringBuilder message = new StringBuilder();
@@ -107,32 +110,40 @@ public class InvocationTypeInference {
         return sb.toString();
     }
 
-    private boolean shouldTryInference(Tree assignedTo, TreePath path) {
+    /**
+     * Is the leaf of the path a generic method invocation that elides method type arguments that
+     * does not require a invocation type inference to determine its target type?
+     */
+    private boolean shouldTryInference(Tree targetType, TreePath path) {
         if (path.getParentPath().getLeaf().getKind() == Tree.Kind.LAMBDA_EXPRESSION) {
             return false;
         }
-        if (assignedTo == null) {
+        if (targetType == null) {
             return true;
         }
-        switch (assignedTo.getKind()) {
+        switch (targetType.getKind()) {
             case RETURN:
                 HashSet<Tree.Kind> kinds =
                         new HashSet<>(Arrays.asList(Tree.Kind.LAMBDA_EXPRESSION, Tree.Kind.METHOD));
                 Tree enclosing = TreeUtils.enclosingOfKind(path, kinds);
                 return enclosing.getKind() != Tree.Kind.LAMBDA_EXPRESSION;
             case METHOD_INVOCATION:
-                MethodInvocationTree methodInvocationTree = (MethodInvocationTree) assignedTo;
+                MethodInvocationTree methodInvocationTree = (MethodInvocationTree) targetType;
                 if (methodInvocationTree.getTypeArguments().isEmpty()) {
                     ExecutableElement ele = TreeUtils.elementFromUse(methodInvocationTree);
                     return ele.getTypeParameters().isEmpty();
                 }
                 return false;
             default:
-                return !(assignedTo instanceof ExpressionTree
-                        && TreeUtils.isPolyExpression((ExpressionTree) assignedTo));
+                return !(targetType instanceof ExpressionTree
+                        && TreeUtils.isPolyExpression((ExpressionTree) targetType));
         }
     }
 
+    /**
+     * Issues an error if the type arguments computed by this class do not match those computed by
+     * javac.
+     */
     private void checkResult(
             List<Variable> result,
             MethodInvocationTree methodInvocation,
@@ -147,13 +158,11 @@ public class InvocationTypeInference {
             if (fromReturn.containsKey(typeVariable)) {
                 TypeMirror correctType = fromReturn.get(typeVariable);
                 TypeMirror inferredType = variable.getInstantiation().getJavaType();
-                correctType = upperBound(correctType);
-                inferredType = upperBound(inferredType);
                 if (context.types.isSameType(
                         context.types.erasure((Type) correctType),
                         context.types.erasure((Type) inferredType),
                         false)) {
-                    if (sameSame(correctType, inferredType)) {
+                    if (areSameCapture(correctType, inferredType)) {
                         continue;
                     }
                 }
@@ -174,26 +183,8 @@ public class InvocationTypeInference {
         }
     }
 
-    private TypeMirror upperBound(TypeMirror type) {
-        //        if (InternalInferenceUtils.isCaptured(type)) {
-        //            if (((TypeVariable) type).getLowerBound().getKind() != TypeKind.NULL) {
-        //                return ((TypeVariable) type).getLowerBound();
-        //            } else {
-        //                return ((TypeVariable) type).getUpperBound();
-        //            }
-        //        } else if (type.getKind() == TypeKind.WILDCARD) {
-        //            if (((WildcardType) type).getSuperBound() != null) {
-        //                return ((WildcardType) type).getSuperBound();
-        //            } else if (((WildcardType) type).getExtendsBound() != null) {
-        //                return ((WildcardType) type).getExtendsBound();
-        //            } else {
-        //                return context.object.getJavaType();
-        //            }
-        //        }
-        return type;
-    }
-
-    private boolean sameSame(TypeMirror actual, TypeMirror inferred) {
+    /** @return true if actual and inferred are captures of the same wildcard or declared type. */
+    private boolean areSameCapture(TypeMirror actual, TypeMirror inferred) {
         if (TypesUtils.isCaptured(actual) && TypesUtils.isCaptured(inferred)) {
             if (context.types.isSameWildcard(
                     (WildcardType) TypesUtils.getCapturedWildcard((TypeVariable) actual),
@@ -212,7 +203,7 @@ public class InvocationTypeInference {
             DeclaredType inferredDT = (DeclaredType) inferred;
             if (actualDT.getTypeArguments().size() == inferredDT.getTypeArguments().size()) {
                 for (int i = 0; i < actualDT.getTypeArguments().size(); i++) {
-                    if (!sameSame(
+                    if (!areSameCapture(
                             actualDT.getTypeArguments().get(i),
                             inferredDT.getTypeArguments().get(i))) {
                         return false;
@@ -288,7 +279,7 @@ public class InvocationTypeInference {
 
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(invocation, methodType, map, args.size());
+        List<AbstractType> formals = getParameterTypes(invocation, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);
@@ -306,6 +297,11 @@ public class InvocationTypeInference {
         return b1;
     }
 
+    /**
+     * Same as {@link #createB2(ExpressionTree, ExecutableType, List, Theta)}, but for method
+     * references. A list of types is used instead of a list of arguments. These types are the types
+     * of the formal parameters of function type of target type of the method reference.
+     */
     public BoundSet createB2MethodRef(
             MemberReferenceTree expression,
             ExecutableType methodType,
@@ -324,7 +320,7 @@ public class InvocationTypeInference {
 
         BoundSet b1 = b0;
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(expression, methodType, map, args.size());
+        List<AbstractType> formals = getParameterTypes(expression, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             AbstractType ei = args.get(i);
@@ -339,7 +335,11 @@ public class InvocationTypeInference {
         return b1;
     }
 
-    private List<AbstractType> getFormals(
+    /**
+     * Returns a list of the parameter types of {@code executableType} where the vararg parameter
+     * has been modified to match the arguments in {@code expression}.
+     */
+    private List<AbstractType> getParameterTypes(
             ExpressionTree expression, ExecutableType executableType, Theta map, int size) {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
 
@@ -352,6 +352,10 @@ public class InvocationTypeInference {
         return InferenceType.create(params, map, context);
     }
 
+    /**
+     * Returns the result of reducing and incorporating {@code c}. The constraints are reduced in a
+     * particular order. See JLS 18.5.2.2.
+     */
     private BoundSet getB4(BoundSet current, ConstraintSet c) {
         // C might contain new variables that have not yet been added to this bound set.
         List<Variable> newVariables = c.getAllInferenceVariables();
@@ -471,7 +475,7 @@ public class InvocationTypeInference {
             List<? extends ExpressionTree> args,
             Theta map) {
         ConstraintSet c = new ConstraintSet();
-        List<AbstractType> formals = getFormals(invocation, methodType, map, args.size());
+        List<AbstractType> formals = getParameterTypes(invocation, methodType, map, args.size());
 
         for (int i = 0; i < formals.size(); i++) {
             ExpressionTree ei = args.get(i);

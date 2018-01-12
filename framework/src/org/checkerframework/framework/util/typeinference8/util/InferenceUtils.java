@@ -145,6 +145,7 @@ public class InferenceUtils {
         return false;
     }
 
+    /** @return the greatest lower bound of {@code a} and {@code b}. */
     public static AbstractType glb(AbstractType a, AbstractType b, Context context) {
         Type aJavaType = (Type) a.getJavaType();
         Type bJavaType = (Type) b.getJavaType();
@@ -162,6 +163,10 @@ public class InferenceUtils {
         return new ProperType(glb, context);
     }
 
+    /**
+     * Returns a mapping of type variable to type argument computed using the type of {@code
+     * methodInvocationTree} and the return type of {@code methodType}.
+     */
     public static Map<TypeVariable, TypeMirror> getMappingFromReturnType(
             ExpressionTree methodInvocationTree,
             ExecutableType methodType,
@@ -174,6 +179,10 @@ public class InferenceUtils {
         return mapping.subs;
     }
 
+    /**
+     * Helper class for {@link #getMappingFromReturnType(ExpressionTree, ExecutableType,
+     * ProcessingEnvironment)}
+     */
     private static class GetMapping implements TypeVisitor<Void, TypeMirror> {
 
         final Map<TypeVariable, TypeMirror> subs = new HashMap<>();

@@ -1300,7 +1300,10 @@ public abstract class SourceChecker extends AbstractTypeProcessor
         }
 
         Collection<String> checkerSwKeys = this.getSuppressWarningsKeys();
-        if (errKey.startsWith("type.inference")) {
+
+        // TODO: Remove!
+        // This is to force type.inference errors to be reported for test cases where all warnings are suppressed.
+        if (errKey != null && errKey.startsWith("type.inference")) {
             return Arrays.asList(userSwKeys).contains("type.inference.not.same");
         }
 
