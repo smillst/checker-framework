@@ -46,7 +46,7 @@ public abstract class AbstractType {
     }
 
     /** Creates an {@link AbstractType} with underlying type {@code type}. */
-    protected abstract AbstractType create(TypeMirror type);
+    public abstract AbstractType create(TypeMirror type);
 
     /** Returns the kind of {@link AbstractType}. */
     public abstract Kind getKind();

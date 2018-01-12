@@ -10,32 +10,48 @@ import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 
+/** A type like structure that contains inference variables. */
 public class InferenceType extends AbstractType {
+
+    /**
+     * The underlying Java type. It contains type variables that are mapped to inference variables
+     * in {@code map}.
+     */
     private final TypeMirror type;
+    /** A mapping of type variables to inference variables. */
     private final Theta map;
 
-    InferenceType(TypeMirror type, Theta map, Context context) {
+    private InferenceType(TypeMirror type, Theta map, Context context) {
         super(context);
         this.type = type;
         this.map = map;
     }
 
+    /**
+     * Creates an abstract type for the given TypeMirror. The created type is an {@link
+     * InferenceType} if {@code type} contains any type variables that are mapped to inference
+     * variables as specified by {@code map}. Or if {@code type} is a type variable that is mapped
+     * to an inference variable, it will return that {@link Variable}. Or if {@code type} contains
+     * no type variables that are mapped in an inference variable, a {@link ProperType} is returned.
+     */
     public static AbstractType create(TypeMirror type, Theta map, Context context) {
         assert type != null;
         if (type.getKind() == TypeKind.TYPEVAR && map.containsKey(type)) {
             return map.get(type);
-        } else if (containsInferenceVar(map.keySet(), type)) {
+        } else if (ContainsInferenceVariable.hasAnyTypeVariable(map.keySet(), type)) {
             return new InferenceType(type, map, context);
         } else {
             return new ProperType(type, context);
         }
     }
 
-    public static boolean containsInferenceVar(
-            Collection<TypeVariable> typeVariables, TypeMirror type) {
-        return ContainsInferenceVariable.hasAnyTypeVariable(typeVariables, type);
-    }
-
+    /**
+     * Creates abstract types for the each TypeMirror. The created type is an {@link InferenceType}
+     * if {@code type} contains any type variables that are mapped to inference variables as
+     * specified by {@code map}. Or if {@code type} is a type variable that is mapped to an
+     * inference variable, it will return that {@link Variable}. Or if {@code type} contains no type
+     * variables that are mapped in an inference variable, a {@link ProperType} is returned.
+     */
     public static List<AbstractType> create(
             List<? extends TypeMirror> types, Theta map, Context context) {
         List<AbstractType> abstractTypes = new ArrayList<>();
@@ -48,14 +64,6 @@ public class InferenceType extends AbstractType {
     @Override
     public AbstractType create(TypeMirror type) {
         return create(type, map, context);
-    }
-
-    public Theta getMap() {
-        return map;
-    }
-
-    public Context getContext() {
-        return context;
     }
 
     @Override
