@@ -21,18 +21,33 @@ import org.checkerframework.framework.util.typeinference8.util.InternalInference
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TypesUtils;
 
+/** An inference variable */
 public class Variable extends AbstractType {
+
+    /** Identification number. Used only to make debugging easier. */
     protected final int id;
+
+    /** Type variable for which the instantiation of this variable is a type argument, */
     protected final TypeVariable typeVariable;
-    /** The expression for which this variable is being solved. */
+
+    /**
+     * The expression for which this variable is being solved. Used to differentiate inference
+     * variables for two different invocations to the same method.
+     */
     protected final ExpressionTree invocation;
 
     protected ProperType instantiation = null;
-    protected final EnumMap<InferBound, Set<AbstractType>> bounds = new EnumMap<>(InferBound.class);
 
-    /** Constraints implied by complementary pairs of bounds. */
+    /**
+     * Bounds on this variable. Stored as a map from kind of bound (upper, lower, equal) to a set of
+     * {@link AbstractType}s.
+     */
+    protected final EnumMap<BoundKind, Set<AbstractType>> bounds = new EnumMap<>(BoundKind.class);
+
+    /** Constraints implied by complementary pairs of bounds found during incorporation. */
     public ConstraintSet constraints = new ConstraintSet();
 
+    /** Whether or not this variable has a throws bounds. */
     private boolean hasThrowsBound = false;
 
     public Variable(TypeVariable typeVariable, ExpressionTree invocation, Context context) {
@@ -46,9 +61,9 @@ public class Variable extends AbstractType {
         this.typeVariable = typeVariable;
         this.invocation = invocation;
         this.id = id;
-        bounds.put(InferBound.EQUAL, new LinkedHashSet<>());
-        bounds.put(InferBound.UPPER, new LinkedHashSet<>());
-        bounds.put(InferBound.LOWER, new LinkedHashSet<>());
+        bounds.put(BoundKind.EQUAL, new LinkedHashSet<>());
+        bounds.put(BoundKind.UPPER, new LinkedHashSet<>());
+        bounds.put(BoundKind.LOWER, new LinkedHashSet<>());
     }
 
     @Override
@@ -66,23 +81,23 @@ public class Variable extends AbstractType {
         return this;
     }
 
-    protected EnumMap<InferBound, LinkedHashSet<AbstractType>> savedBounds = null;
+    protected EnumMap<BoundKind, LinkedHashSet<AbstractType>> savedBounds = null;
 
     public void save() {
-        savedBounds = new EnumMap<>(InferBound.class);
-        savedBounds.put(InferBound.EQUAL, new LinkedHashSet<>(bounds.get(InferBound.EQUAL)));
-        savedBounds.put(InferBound.UPPER, new LinkedHashSet<>(bounds.get(InferBound.UPPER)));
-        savedBounds.put(InferBound.LOWER, new LinkedHashSet<>(bounds.get(InferBound.LOWER)));
+        savedBounds = new EnumMap<>(BoundKind.class);
+        savedBounds.put(BoundKind.EQUAL, new LinkedHashSet<>(bounds.get(BoundKind.EQUAL)));
+        savedBounds.put(BoundKind.UPPER, new LinkedHashSet<>(bounds.get(BoundKind.UPPER)));
+        savedBounds.put(BoundKind.LOWER, new LinkedHashSet<>(bounds.get(BoundKind.LOWER)));
     }
 
     public void restore() {
         assert savedBounds != null;
         instantiation = null;
         bounds.clear();
-        bounds.put(InferBound.EQUAL, new LinkedHashSet<>(savedBounds.get(InferBound.EQUAL)));
-        bounds.put(InferBound.UPPER, new LinkedHashSet<>(savedBounds.get(InferBound.UPPER)));
-        bounds.put(InferBound.LOWER, new LinkedHashSet<>(savedBounds.get(InferBound.LOWER)));
-        for (AbstractType t : bounds.get(InferBound.EQUAL)) {
+        bounds.put(BoundKind.EQUAL, new LinkedHashSet<>(savedBounds.get(BoundKind.EQUAL)));
+        bounds.put(BoundKind.UPPER, new LinkedHashSet<>(savedBounds.get(BoundKind.UPPER)));
+        bounds.put(BoundKind.LOWER, new LinkedHashSet<>(savedBounds.get(BoundKind.LOWER)));
+        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
             if (t.isProper()) {
                 instantiation = (ProperType) t;
             }
@@ -99,12 +114,12 @@ public class Variable extends AbstractType {
             case INTERSECTION:
                 for (TypeMirror bound : ((IntersectionType) upperBound).getBounds()) {
                     AbstractType t1 = InferenceType.create(bound, map, context);
-                    addBound(InferBound.UPPER, t1);
+                    addBound(BoundKind.UPPER, t1);
                 }
                 break;
             default:
                 AbstractType t1 = InferenceType.create(upperBound, map, context);
-                addBound(InferBound.UPPER, t1);
+                addBound(BoundKind.UPPER, t1);
                 break;
         }
     }
@@ -178,7 +193,7 @@ public class Variable extends AbstractType {
     }
 
     // <editor-fold defaultstate="collapsed" desc="Bound opps">
-    public enum InferBound {
+    public enum BoundKind {
         LOWER,
         UPPER,
         EQUAL;
@@ -192,8 +207,8 @@ public class Variable extends AbstractType {
         this.hasThrowsBound = hasThrowsBound;
     }
 
-    public boolean addBound(InferBound kind, AbstractType type) {
-        if (kind == InferBound.EQUAL && type.isProper()) {
+    public boolean addBound(BoundKind kind, AbstractType type) {
+        if (kind == BoundKind.EQUAL && type.isProper()) {
             instantiation = (ProperType) type;
         }
         if (bounds.get(kind).add(type)) {
@@ -203,44 +218,44 @@ public class Variable extends AbstractType {
         return false;
     }
 
-    private void addConstraints(InferBound kind, AbstractType s) {
-        if (kind == InferBound.EQUAL) {
-            for (AbstractType t : bounds.get(InferBound.EQUAL)) {
+    private void addConstraints(BoundKind kind, AbstractType s) {
+        if (kind == BoundKind.EQUAL) {
+            for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
                 if (s != t) {
                     constraints.add(new Typing(s, t, Typing.Kind.TYPE_EQUALITY));
                 }
             }
-        } else if (kind == InferBound.LOWER) {
-            for (AbstractType t : bounds.get(InferBound.EQUAL)) {
+        } else if (kind == BoundKind.LOWER) {
+            for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
                 if (s != t) {
                     constraints.add(new Typing(s, t, Typing.Kind.SUBTYPE));
                 }
             }
         } else { // UPPER
-            for (AbstractType t : bounds.get(InferBound.EQUAL)) {
+            for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
                 if (s != t) {
                     constraints.add(new Typing(t, s, Typing.Kind.SUBTYPE));
                 }
             }
         }
 
-        if (kind == InferBound.EQUAL || kind == InferBound.UPPER) {
-            for (AbstractType t : bounds.get(InferBound.LOWER)) {
+        if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
+            for (AbstractType t : bounds.get(BoundKind.LOWER)) {
                 if (s != t) {
                     constraints.add(new Typing(t, s, Typing.Kind.SUBTYPE));
                 }
             }
         }
 
-        if (kind == InferBound.EQUAL || kind == InferBound.LOWER) {
-            for (AbstractType t : bounds.get(InferBound.UPPER)) {
+        if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
+            for (AbstractType t : bounds.get(BoundKind.UPPER)) {
                 if (s != t) {
                     constraints.add(new Typing(s, t, Typing.Kind.SUBTYPE));
                 }
             }
         }
 
-        if (kind == InferBound.UPPER) {
+        if (kind == BoundKind.UPPER) {
             // When a bound set contains a pair of bounds var <: S and var <: T, and there exists
             // a supertype of S of the form G<S1, ..., Sn> and
             // a supertype of T of the form G<T1,..., Tn> (for some generic class or interface, G),
@@ -248,7 +263,7 @@ public class Variable extends AbstractType {
             // the constraint formula <Si = Ti> is implied.
             if (s.isInferenceType() || s.isProper()) {
                 TypeMirror tType = s.getJavaType();
-                for (AbstractType t : bounds.get(InferBound.LOWER)) {
+                for (AbstractType t : bounds.get(BoundKind.LOWER)) {
                     TypeMirror typeMirror;
                     if (t.isProper() || t.isInferenceType()) {
                         typeMirror = t.getJavaType();
@@ -287,7 +302,7 @@ public class Variable extends AbstractType {
 
     public LinkedHashSet<ProperType> findProperLowerBounds() {
         LinkedHashSet<ProperType> set = new LinkedHashSet<>();
-        for (AbstractType bound : bounds.get(InferBound.LOWER)) {
+        for (AbstractType bound : bounds.get(BoundKind.LOWER)) {
             if (bound.isProper()) {
                 set.add((ProperType) bound);
             }
@@ -297,7 +312,7 @@ public class Variable extends AbstractType {
 
     public LinkedHashSet<ProperType> findProperUpperBounds() {
         LinkedHashSet<ProperType> set = new LinkedHashSet<>();
-        for (AbstractType bound : bounds.get(InferBound.UPPER)) {
+        for (AbstractType bound : bounds.get(BoundKind.UPPER)) {
             if (bound.isProper()) {
                 set.add((ProperType) bound);
             }
@@ -307,7 +322,7 @@ public class Variable extends AbstractType {
 
     public LinkedHashSet<AbstractType> upperBounds() {
         LinkedHashSet<AbstractType> set = new LinkedHashSet<>();
-        for (AbstractType bound : bounds.get(InferBound.UPPER)) {
+        for (AbstractType bound : bounds.get(BoundKind.UPPER)) {
             if (!bound.isVariable()) {
                 set.add(bound);
             }
@@ -332,7 +347,7 @@ public class Variable extends AbstractType {
         constraints.applyInstantiations(instantiations);
 
         if (changed && instantiation == null) {
-            for (AbstractType bound : bounds.get(InferBound.EQUAL)) {
+            for (AbstractType bound : bounds.get(BoundKind.EQUAL)) {
                 if (bound.isProper()) {
                     instantiation = (ProperType) bound;
                 }
@@ -371,12 +386,12 @@ public class Variable extends AbstractType {
     }
 
     public boolean hasWildcardParameterizedLowerOrEqualBound() {
-        for (AbstractType type : bounds.get(InferBound.EQUAL)) {
+        for (AbstractType type : bounds.get(BoundKind.EQUAL)) {
             if (!type.isVariable() && type.isWildcardParameterizedType()) {
                 return true;
             }
         }
-        for (AbstractType type : bounds.get(InferBound.LOWER)) {
+        for (AbstractType type : bounds.get(BoundKind.LOWER)) {
             if (!type.isVariable() && type.isWildcardParameterizedType()) {
                 return true;
             }
@@ -391,7 +406,7 @@ public class Variable extends AbstractType {
      */
     public boolean hasLowerBoundDifferentParam() {
         List<AbstractType> parameteredTypes = new ArrayList<>();
-        for (AbstractType type : bounds.get(InferBound.LOWER)) {
+        for (AbstractType type : bounds.get(BoundKind.LOWER)) {
             if (!type.isVariable() && type.isParameterizedType()) {
                 parameteredTypes.add(type);
             }
@@ -425,7 +440,7 @@ public class Variable extends AbstractType {
      */
     public boolean hasRawTypeLowerOrEqualBound(AbstractType g) {
         TypeMirror gTypeMirror = g.getJavaType();
-        for (AbstractType type : bounds.get(InferBound.LOWER)) {
+        for (AbstractType type : bounds.get(BoundKind.LOWER)) {
             if (type.isVariable()) {
                 continue;
             }
@@ -435,7 +450,7 @@ public class Variable extends AbstractType {
             }
         }
 
-        for (AbstractType type : bounds.get(InferBound.EQUAL)) {
+        for (AbstractType type : bounds.get(BoundKind.EQUAL)) {
             if (type.isVariable()) {
                 continue;
             }
@@ -483,19 +498,19 @@ public class Variable extends AbstractType {
 
             // Only concerned with bounds against proper types or inference types.
             List<AbstractType> upperBoundsNonVar = new ArrayList<>();
-            for (AbstractType bound : bounds.get(InferBound.UPPER)) {
+            for (AbstractType bound : bounds.get(BoundKind.UPPER)) {
                 if (bound.isProper() || bound.isInferenceType()) {
                     upperBoundsNonVar.add(bound);
                 }
             }
             List<AbstractType> lowerBoundsNonVar = new ArrayList<>();
-            for (AbstractType bound : bounds.get(InferBound.LOWER)) {
+            for (AbstractType bound : bounds.get(BoundKind.LOWER)) {
                 if (bound.isProper() || bound.isInferenceType()) {
                     lowerBoundsNonVar.add(bound);
                 }
             }
 
-            for (AbstractType bound : bounds.get(InferBound.EQUAL)) {
+            for (AbstractType bound : bounds.get(BoundKind.EQUAL)) {
                 if (bound.isProper() || bound.isInferenceType()) {
                     // var = R implies the bound false
                     return null;

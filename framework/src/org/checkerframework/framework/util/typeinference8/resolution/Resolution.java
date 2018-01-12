@@ -15,7 +15,7 @@ import org.checkerframework.framework.util.typeinference8.types.ContainsInferenc
 import org.checkerframework.framework.util.typeinference8.types.Dependencies;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
+import org.checkerframework.framework.util.typeinference8.types.Variable.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
@@ -168,7 +168,7 @@ public class Resolution {
                     ti = InternalInferenceUtils.lub(context.env, ti, li);
                 }
             }
-            ai.addBound(InferBound.EQUAL, new ProperType(ti, context));
+            ai.addBound(BoundKind.EQUAL, new ProperType(ti, context));
             return;
         }
 
@@ -189,9 +189,9 @@ public class Resolution {
                 }
             }
             if (useRuntimeEx) {
-                ai.addBound(InferBound.EQUAL, new ProperType(context.runtimeEx, context));
+                ai.addBound(BoundKind.EQUAL, new ProperType(context.runtimeEx, context));
             } else {
-                ai.addBound(InferBound.EQUAL, new ProperType(ti, context));
+                ai.addBound(BoundKind.EQUAL, new ProperType(ti, context));
             }
         }
     }
@@ -276,7 +276,7 @@ public class Resolution {
             Variable ai = asList.get(i);
             ContainsInferenceVariable.getMentionedTypeVariables(
                     Collections.singleton(ai.getJavaType()), subsTypeArg.get(i));
-            ai.addBound(InferBound.EQUAL, new ProperType(subsTypeArg.get(i), context).capture());
+            ai.addBound(BoundKind.EQUAL, new ProperType(subsTypeArg.get(i), context).capture());
         }
 
         boundSet.incorporateToFixedPoint(resolvedBoundSet);

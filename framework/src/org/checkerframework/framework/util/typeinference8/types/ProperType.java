@@ -9,6 +9,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.TypesUtils;
 
+/** A type that does not contain any inference variables. */
 public class ProperType extends AbstractType {
     private final TypeMirror properType;
 

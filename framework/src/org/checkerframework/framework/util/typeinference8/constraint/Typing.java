@@ -12,7 +12,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
-import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
+import org.checkerframework.framework.util.typeinference8.types.Variable.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.TypesUtils;
@@ -125,16 +125,16 @@ public class Typing extends Constraint {
         if (S.isVariable() || T.isVariable()) {
             if (S.isVariable()) {
                 if (T.getTypeKind() == TypeKind.TYPEVAR && T.isLowerBoundTypeVariable()) {
-                    ((Variable) S).addBound(InferBound.UPPER, T.getTypeVarLowerBound());
+                    ((Variable) S).addBound(BoundKind.UPPER, T.getTypeVarLowerBound());
                 } else {
-                    ((Variable) S).addBound(InferBound.UPPER, T);
+                    ((Variable) S).addBound(BoundKind.UPPER, T);
                 }
             }
             if (T.isVariable()) {
                 if (TypesUtils.isCaptured(S.getJavaType())) {
-                    ((Variable) T).addBound(InferBound.LOWER, S.getTypeVarUpperBound());
+                    ((Variable) T).addBound(BoundKind.LOWER, S.getTypeVarUpperBound());
                 }
-                ((Variable) T).addBound(InferBound.LOWER, S);
+                ((Variable) T).addBound(BoundKind.LOWER, S);
             }
             return ConstraintSet.TRUE;
         }
@@ -328,10 +328,10 @@ public class Typing extends Constraint {
 
         if (S.isVariable() || T.isVariable()) {
             if (S.isVariable()) {
-                ((Variable) S).addBound(InferBound.EQUAL, T);
+                ((Variable) S).addBound(BoundKind.EQUAL, T);
             }
             if (T.isVariable()) {
-                ((Variable) T).addBound(InferBound.EQUAL, S);
+                ((Variable) T).addBound(BoundKind.EQUAL, S);
             }
             return ConstraintSet.TRUE;
         }

@@ -19,8 +19,8 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
+import org.checkerframework.framework.util.typeinference8.types.Variable.BoundKind;
 import org.checkerframework.framework.util.typeinference8.types.Variable.CaptureVariable;
-import org.checkerframework.framework.util.typeinference8.types.Variable.InferBound;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TypesUtils;
@@ -89,7 +89,7 @@ public class Capture {
         for (CaptureTuple t : tuples) {
             if (t.capturedTypeArg.getTypeKind() != TypeKind.WILDCARD) {
                 // If Ai is not a wildcard, then the bound alphai = Ai is implied.
-                t.alpha.addBound(InferBound.EQUAL, t.capturedTypeArg);
+                t.alpha.addBound(BoundKind.EQUAL, t.capturedTypeArg);
             }
         }
 
