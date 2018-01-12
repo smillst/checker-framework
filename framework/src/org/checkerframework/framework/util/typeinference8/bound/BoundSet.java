@@ -286,7 +286,7 @@ public class BoundSet implements ReductionResult {
      * Remove constraints between proper types introduced adding an instantiation against a captured
      * wildcard. If the captured wildcard should be recursive, then the bounds won't be satisfiable,
      * because the captured wildcard won't be recursive. (See {@link
-     * Resolution#resolve2(LinkedHashSet, BoundSet, Context)}.
+     * Resolution#resolveWithCapture(LinkedHashSet, BoundSet, Context)}}.
      */
     private void removeProblematicConstraints(Variable alpha) {
         if (!TypesUtils.isCaptured(alpha.getInstantiation().getJavaType())) {
