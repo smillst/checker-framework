@@ -510,7 +510,7 @@ public class Variable extends AbstractType {
             return "b" + id;
         }
 
-        /** These are constraints generated when incorporating a capture bound. */
+        /** These are constraints generated when incorporating a capture bound. See JLS 18.3.2. */
         public ConstraintSet getWildcardConstraints(AbstractType Ai, AbstractType Bi) {
             ConstraintSet constraintSet = new ConstraintSet();
 

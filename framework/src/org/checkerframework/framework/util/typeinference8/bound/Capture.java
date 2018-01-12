@@ -94,7 +94,7 @@ public class Capture {
         }
 
         ConstraintSet set = new ConstraintSet(new Typing(lhs, target, Kind.TYPE_COMPATIBILITY));
-        // Reduce and incorporate so that the caputure variables bounds are set.
+        // Reduce and incorporate so that the capture variables bounds are set.
         BoundSet b1 = set.reduce(context);
         b1.incorporateToFixedPoint(new BoundSet(context));
 
