@@ -78,7 +78,7 @@ public class Expression extends Constraint {
         }
         switch (expression.getKind()) {
             case PARENTHESIZED:
-                new Expression(TreeUtils.skipParens(expression), T);
+                return new Expression(TreeUtils.skipParens(expression), T);
             case NEW_CLASS:
             case METHOD_INVOCATION:
                 return reduceMethodInvocation(context);
