@@ -76,30 +76,38 @@ public class Resolution {
     public BoundSet resolve(BoundSet boundSet, Queue<Variable> unresolvedVars) {
 
         while (!unresolvedVars.isEmpty()) {
-            LinkedHashSet<Variable> smallestDependencySet = null;
-            // This loop is looking for the smallest set of dependencies that have not been resolved.
-            for (Variable alpha : unresolvedVars) {
-                LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
-                alphasDependencySet.removeAll(resolvedVars);
+            assert !boundSet.containsFalse();
 
-                if (smallestDependencySet == null
-                        || alphasDependencySet.size() < smallestDependencySet.size()) {
-                    smallestDependencySet = alphasDependencySet;
-                }
-
-                if (smallestDependencySet.size() == 1) {
-                    // If the size is 1, then alpha has the smallest possible set of unresolved dependencies.
-                    // (A variable is always dependent on itself.) So, stop looking for smaller ones.
-                    break;
-                }
-            }
+            LinkedHashSet<Variable> smallestDependencySet = getSmallestDependecySet(unresolvedVars);
 
             // Resolve the smallest unresolved dependency set.
             boundSet = resolve(smallestDependencySet, boundSet);
+
             resolvedVars = boundSet.getInstantiatedVariables();
             unresolvedVars.removeAll(resolvedVars);
         }
         return boundSet;
+    }
+
+    private LinkedHashSet<Variable> getSmallestDependecySet(Queue<Variable> unresolvedVars) {
+        LinkedHashSet<Variable> smallestDependencySet = null;
+        // This loop is looking for the smallest set of dependencies that have not been resolved.
+        for (Variable alpha : unresolvedVars) {
+            LinkedHashSet<Variable> alphasDependencySet = dependencies.get(alpha);
+            alphasDependencySet.removeAll(resolvedVars);
+
+            if (smallestDependencySet == null
+                    || alphasDependencySet.size() < smallestDependencySet.size()) {
+                smallestDependencySet = alphasDependencySet;
+            }
+
+            if (smallestDependencySet.size() == 1) {
+                // If the size is 1, then alpha has the smallest possible set of unresolved dependencies.
+                // (A variable is always dependent on itself.) So, stop looking for smaller ones.
+                break;
+            }
+        }
+        return smallestDependencySet;
     }
 
     private BoundSet resolve(LinkedHashSet<Variable> as, BoundSet boundSet) {
@@ -110,7 +118,7 @@ public class Resolution {
             // First resolve the non-capture variables using the usual resolution algorithm.
             for (Variable ai : as) {
                 if (!ai.isCaptureVariable()) {
-                    resolve1(ai);
+                    resolveNoCapture(ai);
                 }
             }
             as.removeAll(boundSet.getInstantiatedVariables());
@@ -119,7 +127,7 @@ public class Resolution {
         } else {
             BoundSet copy = new BoundSet(boundSet);
             try {
-                resolvedBounds = resolve1(as, boundSet);
+                resolvedBounds = resolveNoCapture(as, boundSet);
             } catch (FalseBoundException ex) {
                 resolvedBounds = null;
             }
@@ -133,11 +141,11 @@ public class Resolution {
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-A */
-    private BoundSet resolve1(LinkedHashSet<Variable> as, BoundSet boundSet) {
+    private BoundSet resolveNoCapture(LinkedHashSet<Variable> as, BoundSet boundSet) {
         BoundSet resolvedBoundSet = new BoundSet(context);
         for (Variable ai : as) {
             assert !ai.hasInstantiation();
-            resolve1(ai);
+            resolveNoCapture(ai);
             if (!ai.hasInstantiation()) {
                 resolvedBoundSet.addFalse();
                 break;
@@ -147,7 +155,7 @@ public class Resolution {
         return boundSet;
     }
 
-    private void resolve1(Variable ai) {
+    private void resolveNoCapture(Variable ai) {
         assert !ai.hasInstantiation();
         LinkedHashSet<ProperType> lowerBounds = ai.findProperLowerBounds();
         if (!lowerBounds.isEmpty()) {
