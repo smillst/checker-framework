@@ -31,8 +31,9 @@ public class ConstraintSet implements ReductionResult {
                 }
             };
     /**
-     * This needs to be kept in the order created, which should be lexically left to right. This is
-     * for {@link #getMagicalSubSet(Dependencies)}.
+     * A list of constraints in this set. It does not contain constraints that are equal. This needs
+     * to be kept in the order created, which should be lexically left to right. This is so the
+     * {@link #getClosedSubset(Dependencies)} is computed correctly.
      */
     private final List<Constraint> list = new ArrayList<>();
 
@@ -86,9 +87,10 @@ public class ConstraintSet implements ReductionResult {
 
     /**
      * A subset of constraints is selected in C, satisfying the property that, for each constraint,
-     * no input variable can influence an output variable of another constraint in C.
+     * no input variable can influence an output variable of another constraint in C. (See JLS
+     * 18.5.2.2)
      */
-    public ConstraintSet getMagicalSubSet(Dependencies dependencies) {
+    public ConstraintSet getClosedSubset(Dependencies dependencies) {
         ConstraintSet subset = new ConstraintSet();
         Set<Variable> inputDependencies = new LinkedHashSet<>();
         Set<Variable> outDependencies = new LinkedHashSet<>();
@@ -104,7 +106,7 @@ public class ConstraintSet implements ReductionResult {
                     outDependencies.addAll(newOutputs);
                     subset.add(c);
                 } else {
-                    //there is a cycle (or cycles) in the graph of dependencies between constraints.
+                    // A cycle (or cycles) in the graph of dependencies between constraints exists.
                     subset = new ConstraintSet();
                     break;
                 }

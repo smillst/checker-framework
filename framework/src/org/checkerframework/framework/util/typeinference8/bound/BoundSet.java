@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import org.checkerframework.framework.util.PluginUtil;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
-import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.resolution.Resolution;
@@ -182,13 +181,13 @@ public class BoundSet implements ReductionResult {
         return b.getInstantiationsInAlphas(variables);
     }
 
-    /** JLS 18.4. Guides order of resolution. */
+    /** Returns the dependencies between variables. */
     public Dependencies getDependencies() {
-        return getDependencies(null);
+        return getDependencies(new ArrayList<>());
     }
 
-    /** JLS 18.4. Guides order of resolution. */
-    public Dependencies getDependencies(ConstraintSet c) {
+    /** Returns the dependencies between variables. */
+    public Dependencies getDependencies(List<Variable> additionalVars) {
         Dependencies dependencies = new Dependencies();
 
         for (Capture capture : captures) {
@@ -202,11 +201,9 @@ public class BoundSet implements ReductionResult {
                 dependencies.putOrAddAll(var, lhsVars);
             }
         }
-        Set<Variable> set = new LinkedHashSet<>(variables);
-        if (c != null) {
-            set.addAll(c.getAllInferenceVariables());
-        }
-        for (Variable alpha : set) {
+        Set<Variable> allVariables = new LinkedHashSet<>(variables);
+        allVariables.addAll(additionalVars);
+        for (Variable alpha : allVariables) {
             LinkedHashSet<Variable> alphaDependencies = new LinkedHashSet<>();
             // An inference variable alpha depends on the resolution of itself.
             alphaDependencies.add(alpha);

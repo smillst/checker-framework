@@ -67,7 +67,7 @@ public class Resolution {
     private final Dependencies dependencies;
     private List<Variable> resolvedVars;
 
-    public Resolution(Context context, Dependencies dependencies, List<Variable> resolvedVars) {
+    private Resolution(Context context, Dependencies dependencies, List<Variable> resolvedVars) {
         this.context = context;
         this.dependencies = dependencies;
         this.resolvedVars = resolvedVars;
@@ -115,7 +115,7 @@ public class Resolution {
             }
             as.removeAll(boundSet.getInstantiatedVariables());
             // Then resolve the capture variables
-            resolvedBounds = resolve2(as, boundSet, context);
+            resolvedBounds = resolveWithCapture(as, boundSet, context);
         } else {
             BoundSet copy = new BoundSet(boundSet);
             try {
@@ -126,7 +126,7 @@ public class Resolution {
             if (resolvedBounds == null || resolvedBounds.containsFalse()) {
                 boundSet = copy;
                 boundSet.restore();
-                resolvedBounds = resolve2(as, boundSet, context);
+                resolvedBounds = resolveWithCapture(as, boundSet, context);
             }
         }
         return resolvedBounds;
@@ -189,7 +189,7 @@ public class Resolution {
     }
 
     /** https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.4-320-B */
-    private static BoundSet resolve2(
+    private static BoundSet resolveWithCapture(
             LinkedHashSet<Variable> as, BoundSet boundSet, Context context) {
         assert !boundSet.containsFalse();
         boundSet.removeCaptures(as);

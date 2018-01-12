@@ -360,8 +360,10 @@ public class InvocationTypeInference {
     }
 
     private BoundSet getB4(BoundSet current, ConstraintSet c) {
+        // C might contain new variables that have not yet been added to this bound set.
+        List<Variable> newVariables = c.getAllInferenceVariables();
         while (!c.isEmpty()) {
-            ConstraintSet subset = c.getMagicalSubSet(current.getDependencies(c));
+            ConstraintSet subset = c.getClosedSubset(current.getDependencies(newVariables));
             List<Variable> alphas = subset.getAllInputVariables();
             if (!alphas.isEmpty()) {
                 BoundSet resolved = Resolution.resolve(alphas, current, context);
