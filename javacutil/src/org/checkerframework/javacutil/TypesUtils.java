@@ -788,4 +788,19 @@ public final class TypesUtils {
                 com.sun.tools.javac.util.List.from(newP),
                 com.sun.tools.javac.util.List.from(newT));
     }
+
+    /**
+     * Creates a wildcard with the given bounds. If upper bound is Object, then the created wildcard
+     * will not have an upper bound.
+     */
+    public static TypeMirror createWildcard(
+            TypeMirror lowerBound, TypeMirror upperBound, Types types) {
+        if (isObject(upperBound)) {
+            upperBound = null;
+        }
+
+        assert lowerBound == null || upperBound == null;
+        WildcardType wildcardType = types.getWildcardType(upperBound, lowerBound);
+        return com.sun.tools.javac.util.List.of((Type) wildcardType).head;
+    }
 }

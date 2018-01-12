@@ -15,7 +15,6 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.WildcardType;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.ErrorReporter;
 import org.checkerframework.javacutil.Pair;
@@ -54,7 +53,6 @@ public class InternalInferenceUtils {
         if (type.getKind() == TypeKind.TYPEVAR) {
             return (DeclaredType) ((TypeVariable) type).getUpperBound();
         }
-        // TODO: this must exist else where.....
         return type.getKind() == TypeKind.DECLARED ? (DeclaredType) type : null;
     }
 
@@ -88,22 +86,6 @@ public class InternalInferenceUtils {
         }
         javax.lang.model.util.Types types = context.env.getTypeUtils();
         return (ExecutableType) types.asMemberOf(receiverType, ele);
-    }
-
-    /**
-     * Creates a wildcard with the given bounds. If upper bound is Object, then the created wildcard
-     * will not have an upper bound.
-     */
-    public static TypeMirror createWildcard(
-            TypeMirror lowerBound, TypeMirror upperBound, Context context) {
-        if (TypesUtils.isObject(upperBound)) {
-            upperBound = null;
-        }
-
-        assert lowerBound == null || upperBound == null;
-        WildcardType wildcardType =
-                context.env.getTypeUtils().getWildcardType(upperBound, lowerBound);
-        return com.sun.tools.javac.util.List.of((Type) wildcardType).head;
     }
 
     /**
