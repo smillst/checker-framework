@@ -147,7 +147,7 @@ public class Expression extends Constraint {
 
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(expressionTree, context);
-        Theta map = Theta.theta(expressionTree, methodType, context);
+        Theta map = Theta.create(expressionTree, methodType, context);
         BoundSet b2 = context.inference.createB2(expressionTree, methodType, args, map);
         return context.inference.createB3(b2, expressionTree, methodType, T, map);
     }
@@ -203,7 +203,7 @@ public class Expression extends Constraint {
         // compile-time declaration is a generic method, and
         // the return type of the
         // compile-time declaration mentions at least one of the method's type parameters,
-        Theta map = Theta.theta(memRef, compileTimeDecl, context);
+        Theta map = Theta.create(memRef, compileTimeDecl, context);
         AbstractType compileTimeReturn =
                 InferenceType.create(compileTimeDecl.getReturnType(), map, context);
         if (memRef.getTypeArguments() == null

@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -47,24 +46,19 @@ import org.checkerframework.javacutil.TypesUtils;
 
 public class InvocationTypeInference {
 
-    private final ProcessingEnvironment env;
-    private final TreePath pathToExpression;
-
     private final Context context;
 
     public InvocationTypeInference(AnnotatedTypeFactory factory, TreePath pathToExpression) {
-        this.env = factory.getProcessingEnv();
-        this.pathToExpression = pathToExpression;
-        this.context = new Context(env, factory, pathToExpression, this);
+        this.context = new Context(factory.getProcessingEnv(), factory, pathToExpression, this);
     }
 
     public List<Variable> infer(MethodInvocationTree methodInvocation) {
-        Tree assignmentContext = TreeUtils.getAssignmentContext(pathToExpression);
-        if (!shouldTryInference(assignmentContext, pathToExpression)) {
+        Tree assignmentContext = TreeUtils.getAssignmentContext(context.pathToExpression);
+        if (!shouldTryInference(assignmentContext, context.pathToExpression)) {
             return null;
         }
         ProperType targetType = null;
-        TypeMirror assignmentType = InferenceUtils.getTargetType(pathToExpression, context);
+        TypeMirror assignmentType = InferenceUtils.getTargetType(context.pathToExpression, context);
 
         if (assignmentType != null) {
             targetType = new ProperType(assignmentType, context);
@@ -234,7 +228,7 @@ public class InvocationTypeInference {
     public List<Variable> infer(MethodInvocationTree methodInvocation, ProperType target) {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
-        Theta map = Theta.theta(methodInvocation, methodType, context);
+        Theta map = Theta.create(methodInvocation, methodType, context);
         BoundSet b2 = createB2(methodInvocation, methodType, methodInvocation.getArguments(), map);
         BoundSet b3;
         if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
@@ -486,13 +480,13 @@ public class InvocationTypeInference {
             if (notPertinentToApplicability(ei, fi.isVariable())) {
                 c.add(new Expression(ei, fi));
             }
-            c.addAll(createAddtionalArgConstraints(ei, fi, map));
+            c.addAll(createAdditionalArgConstraints(ei, fi, map));
         }
 
         return c;
     }
 
-    private ConstraintSet createAddtionalArgConstraints(
+    private ConstraintSet createAdditionalArgConstraints(
             ExpressionTree ei, AbstractType fi, Theta map) {
         ConstraintSet c = new ConstraintSet();
 
@@ -504,7 +498,7 @@ public class InvocationTypeInference {
                 c.add(new CheckedExceptionConstraint(ei, fi, map));
                 LambdaExpressionTree lambda = (LambdaExpressionTree) ei;
                 for (ExpressionTree expression : TreeUtils.getReturnedExpressions(lambda)) {
-                    c.addAll(createAddtionalArgConstraints(expression, fi, map));
+                    c.addAll(createAdditionalArgConstraints(expression, fi, map));
                 }
                 break;
             case METHOD_INVOCATION:
@@ -513,7 +507,7 @@ public class InvocationTypeInference {
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     methodInvocation, context);
-                    Theta newMap = Theta.theta(methodInvocation, methodType, context);
+                    Theta newMap = Theta.create(methodInvocation, methodType, context);
                     c.addAll(
                             createC(
                                     methodInvocation,
@@ -528,18 +522,18 @@ public class InvocationTypeInference {
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
                                     newClassTree, context);
-                    Theta newMap = Theta.theta(newClassTree, methodType, context);
+                    Theta newMap = Theta.create(newClassTree, methodType, context);
                     c.addAll(
                             createC(newClassTree, methodType, newClassTree.getArguments(), newMap));
                 }
                 break;
             case PARENTHESIZED:
-                c.addAll(createAddtionalArgConstraints(TreeUtils.skipParens(ei), fi, map));
+                c.addAll(createAdditionalArgConstraints(TreeUtils.skipParens(ei), fi, map));
                 break;
             case CONDITIONAL_EXPRESSION:
                 ConditionalExpressionTree conditional = (ConditionalExpressionTree) ei;
-                c.addAll(createAddtionalArgConstraints(conditional.getTrueExpression(), fi, map));
-                c.addAll(createAddtionalArgConstraints(conditional.getFalseExpression(), fi, map));
+                c.addAll(createAdditionalArgConstraints(conditional.getTrueExpression(), fi, map));
+                c.addAll(createAdditionalArgConstraints(conditional.getFalseExpression(), fi, map));
                 break;
             default:
                 // no constraints

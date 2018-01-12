@@ -9,6 +9,7 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
 
+/** A mapping from type variable to inference variable. */
 public class Theta extends HashMap<TypeVariable, Variable> {
     private static final long serialVersionUID = 42L;
     List<Entry<TypeVariable, Variable>> entryList = new ArrayList<>();
@@ -36,19 +37,34 @@ public class Theta extends HashMap<TypeVariable, Variable> {
         return super.keySet();
     }
 
-    public static Theta theta(ExpressionTree tree, ExecutableType methodType, Context context) {
-        if (context.maps.containsKey(tree)) {
-            return context.maps.get(tree);
+    /**
+     * If a mapping for {@code invocation} doesn't exist create it by:
+     *
+     * <p>Creates inference variables for the type parameters to {@code methodType} for a particular
+     * {@code invocation}. Initializes the bounds of the variables. Returns a mapping from type
+     * variables to newly created variables.
+     *
+     * <p>Otherwise, return the previously created mapping.
+     *
+     * @param invocation method or constructor invocation
+     * @param methodType type of generic method
+     * @param context Context
+     * @return a mapping of the type variables of {@code methodType} to inference variables
+     */
+    public static Theta create(
+            ExpressionTree invocation, ExecutableType methodType, Context context) {
+        if (context.maps.containsKey(invocation)) {
+            return context.maps.get(invocation);
         }
         Theta map = new Theta();
         for (TypeVariable pl : methodType.getTypeVariables()) {
-            Variable al = new Variable(pl, tree, context);
+            Variable al = new Variable(pl, invocation, context);
             map.put(pl, al);
         }
         for (Variable v : map.values()) {
             v.initialBounds(map);
         }
-        context.maps.put(tree, map);
+        context.maps.put(invocation, map);
         return map;
     }
 }

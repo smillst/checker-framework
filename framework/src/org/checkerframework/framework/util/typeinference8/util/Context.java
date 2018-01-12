@@ -18,26 +18,52 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 public class Context {
+
+    /** Path to the top level expression whose type arguments are inferred. */
+    public final TreePath pathToExpression;
+
+    /** javax.annotation.processing.ProcessingEnvironment */
     public final ProcessingEnvironment env;
+
+    /** ProperType for java.lang.Object. */
     public final ProperType object;
+
+    /** Type factory */
     public final AnnotatedTypeFactory factory;
-    public final TreePath treePath;
+
+    /** Invocation type inference object. */
     public final InvocationTypeInference inference;
+
+    /** com.sun.tools.javac.code.Types */
     public final Types types;
+
+    /**
+     * The type of class that encloses the top level expression whose type arguments are inferred.
+     */
     public final DeclaredType enclosingType;
+
+    /**
+     * Store previously created type variable to inference variable maps as a map from invocation
+     * expression to Theta.
+     */
     public final Map<ExpressionTree, Theta> maps;
-    public int variableCount = 1;
-    public int captureVariableCount = 1;
+
+    /** Number of non-capture variables. */
+    private int variableCount = 1;
+    /** Number of capture variables. */
+    private int captureVariableCount = 1;
+
+    /** TypeMirror for java.lang.RuntimeException. */
     public TypeMirror runtimeEx;
 
     public Context(
             ProcessingEnvironment env,
             AnnotatedTypeFactory factory,
-            TreePath expression,
+            TreePath pathToExpression,
             InvocationTypeInference inference) {
+        this.pathToExpression = pathToExpression;
         this.env = env;
         this.factory = factory;
-        this.treePath = expression;
         this.inference = inference;
         JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
         this.types = Types.instance(javacEnv.getContext());
@@ -47,7 +73,7 @@ public class Context {
                         factory.getContext().getTypeUtils(),
                         factory.getElementUtils());
         this.object = new ProperType(objecTypeMirror, this);
-        ClassTree clazz = TreeUtils.enclosingClass(treePath);
+        ClassTree clazz = TreeUtils.enclosingClass(pathToExpression);
         this.enclosingType = (DeclaredType) TreeUtils.typeOf(clazz);
         this.maps = new HashMap<>();
         this.runtimeEx =
