@@ -8,7 +8,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /** A type like structure that contains inference variables. */
 public class InferenceType extends AbstractType {
@@ -127,8 +127,7 @@ public class InferenceType extends AbstractType {
             return this;
         }
 
-        TypeMirror newType =
-                InternalInferenceUtils.substitute(type, typeVariables, arguments, context.env);
+        TypeMirror newType = TypesUtils.substitute(type, typeVariables, arguments, context.env);
         return create(newType, map, context);
     }
 

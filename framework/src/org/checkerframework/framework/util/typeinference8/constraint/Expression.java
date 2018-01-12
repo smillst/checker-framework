@@ -72,7 +72,7 @@ public class Expression extends Constraint {
     public ReductionResult reduce(Context context) {
         if (getT().isProper()) {
             return reduceProperType();
-        } else if (InternalInferenceUtils.isStandaloneExpression(expression)) {
+        } else if (TreeUtils.isStandaloneExpression(expression)) {
             return reduceStandalone(context);
         }
         switch (expression.getKind()) {
@@ -187,8 +187,7 @@ public class Expression extends Constraint {
         // Otherwise, the method reference is inexact,
 
         // Compile-time declaration of the member reference expression
-        ExecutableType compileTimeDecl =
-                InternalInferenceUtils.compileTimeDeclarationType(memRef, context.env);
+        ExecutableType compileTimeDecl = TreeUtils.compileTimeDeclarationType(memRef, context.env);
         if (compileTimeDecl.getReturnType().getKind() == TypeKind.VOID) {
             return ConstraintSet.TRUE;
         }

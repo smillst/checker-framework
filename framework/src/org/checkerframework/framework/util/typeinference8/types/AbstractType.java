@@ -16,7 +16,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.util.typeinference8.util.Context;
-import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -213,7 +212,7 @@ public abstract class AbstractType {
      */
     public final AbstractType getMostSpecificArrayType() {
         TypeMirror mostSpecific =
-                InternalInferenceUtils.getMostSpecificArrayType(getJavaType(), context.types);
+                TypesUtils.getMostSpecificArrayType(getJavaType(), context.env.getTypeUtils());
         if (mostSpecific != null) {
             return create(mostSpecific);
         } else {
@@ -263,7 +262,7 @@ public abstract class AbstractType {
      *     argument.
      */
     public final boolean isWildcardParameterizedType() {
-        return InternalInferenceUtils.isWildcardParameterized(getJavaType());
+        return TypesUtils.isWildcardParameterized(getJavaType());
     }
 
     /** @return this type's type arguments or null this type isn't a declared type */

@@ -129,7 +129,7 @@ public class InvocationTypeInference {
                 return false;
             default:
                 return !(assignedTo instanceof ExpressionTree
-                        && InternalInferenceUtils.isPolyExpression((ExpressionTree) assignedTo));
+                        && TreeUtils.isPolyExpression((ExpressionTree) assignedTo));
         }
     }
 
@@ -231,7 +231,7 @@ public class InvocationTypeInference {
         Theta map = Theta.create(methodInvocation, methodType, context);
         BoundSet b2 = createB2(methodInvocation, methodType, methodInvocation.getArguments(), map);
         BoundSet b3;
-        if (target != null && InternalInferenceUtils.isPolyExpression(methodInvocation)) {
+        if (target != null && TreeUtils.isPolyExpression(methodInvocation)) {
             b3 = createB3(b2, methodInvocation, methodType, target, map);
         } else {
             b3 = b2;
@@ -343,8 +343,7 @@ public class InvocationTypeInference {
             ExpressionTree expression, ExecutableType executableType, Theta map, int size) {
         List<TypeMirror> params = new ArrayList<>(executableType.getParameterTypes());
 
-        boolean isVarArg = InternalInferenceUtils.isVarArgMethodCall(expression);
-        if (isVarArg) {
+        if (TreeUtils.isVarArgMethodCall(expression)) {
             ArrayType vararg = (ArrayType) params.remove(params.size() - 1);
             for (int i = params.size(); i < size; i++) {
                 params.add(vararg.getComponentType());
@@ -502,7 +501,7 @@ public class InvocationTypeInference {
                 }
                 break;
             case METHOD_INVOCATION:
-                if (InternalInferenceUtils.isPolyExpression(ei)) {
+                if (TreeUtils.isPolyExpression(ei)) {
                     MethodInvocationTree methodInvocation = (MethodInvocationTree) ei;
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(
@@ -517,7 +516,7 @@ public class InvocationTypeInference {
                 }
                 break;
             case NEW_CLASS:
-                if (InternalInferenceUtils.isPolyExpression(ei)) {
+                if (TreeUtils.isPolyExpression(ei)) {
                     NewClassTree newClassTree = (NewClassTree) ei;
                     ExecutableType methodType =
                             InternalInferenceUtils.getTypeOfMethodAdaptedToUse(

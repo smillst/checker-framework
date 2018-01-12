@@ -16,6 +16,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
@@ -68,6 +69,8 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -1364,5 +1367,103 @@ public final class TreeUtils {
         // overloadKind is set com.sun.tools.javac.comp.DeferredAttr.DeferredChecker.visitReference()
         // IsExact: https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.13.1-400
         return ((JCMemberReference) ref).overloadKind != OverloadKind.OVERLOADED;
+    }
+
+    /**
+     * Returns whether or not {@code expression} is a poly expression as defined in JLS 15.2.
+     *
+     * @param expression expression
+     * @return whether or not {@code expression} is a poly expression
+     */
+    public static boolean isPolyExpression(ExpressionTree expression) {
+        if (expression instanceof JCTree.JCExpression) {
+            return ((JCTree.JCExpression) expression).isPoly();
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether or not {@code expression} is a standalone expression as defined in JLS 15.2.
+     *
+     * @param expression expression
+     * @return whether or not {@code expression} is a standalone expression
+     */
+    public static boolean isStandaloneExpression(ExpressionTree expression) {
+        if (expression instanceof JCTree.JCExpression) {
+            return ((JCTree.JCExpression) expression).isStandalone();
+        }
+        return false;
+    }
+
+    /**
+     * Was applicability by variable arity invocation necessary to determine the method signature?
+     *
+     * <p>This isn't the same as {@link ExecutableElement#isVarArgs()}. That method returns true if
+     * the method accepts a variable number of arguments. This method returns true if the method
+     * invocation actually used that fact to invoke that method.
+     *
+     * @param methodInvocation method or constructor invocation
+     * @return whether applicability by variable arity invocation necessary to determine the method
+     *     signature
+     */
+    public static boolean isVarArgMethodCall(ExpressionTree methodInvocation) {
+        if (methodInvocation.getKind() == Kind.METHOD_INVOCATION) {
+            return ((JCMethodInvocation) methodInvocation).varargsElement != null;
+        } else if (methodInvocation.getKind() == Kind.NEW_CLASS) {
+            return ((JCNewClass) methodInvocation).varargsElement != null;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * JLS 15.13.1: "The compile-time declaration of a method reference is the method to which the
+     * expression refers."
+     *
+     * @param memberReferenceTree method reference
+     * @param env processing environment
+     * @return method to which the expression refers
+     */
+    public static ExecutableType compileTimeDeclarationType(
+            MemberReferenceTree memberReferenceTree, ProcessingEnvironment env) {
+        ExecutableType type;
+        if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
+            TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
+            return TypesUtils.findFunctionType(functionalType, env);
+        }
+        // The compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
+        // However, to get the correct type, the declaration has to be modified based on the use.
+        ExecutableElement ctDecl =
+                (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
+        switch (((JCMemberReference) memberReferenceTree).kind) {
+            case UNBOUND: // ref is of form: Type :: instance method
+                TypeMirror functionalType = TreeUtils.typeOf(memberReferenceTree);
+                ExecutableType functionType = TypesUtils.findFunctionType(functionalType, env);
+                DeclaredType receiver = (DeclaredType) functionType.getParameterTypes().get(0);
+                type = (ExecutableType) env.getTypeUtils().asMemberOf(receiver, ctDecl);
+                break;
+            case BOUND: // ref is of form: expression :: method
+            case SUPER: // ref is of form: super :: method
+                TypeMirror expr = TreeUtils.typeOf(((JCMemberReference) memberReferenceTree).expr);
+                JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
+                Types types = Types.instance(javacEnv.getContext());
+                type = (ExecutableType) types.memberType((Type) expr, (Symbol) ctDecl);
+                break;
+            case STATIC: // ref is of form: Type :: static method
+                type = (ExecutableType) ctDecl.asType();
+                break;
+            default:
+                throw new RuntimeException();
+        }
+
+        if (memberReferenceTree.getTypeArguments() == null
+                || memberReferenceTree.getTypeArguments().isEmpty()) {
+            return type;
+        }
+        List<TypeMirror> args = new ArrayList<>();
+        for (ExpressionTree tree : memberReferenceTree.getTypeArguments()) {
+            args.add(TreeUtils.typeOf(tree));
+        }
+        return (ExecutableType) TypesUtils.substitute(type, type.getTypeVariables(), args, env);
     }
 }

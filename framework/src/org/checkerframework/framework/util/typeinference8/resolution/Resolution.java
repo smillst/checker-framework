@@ -19,6 +19,7 @@ import org.checkerframework.framework.util.typeinference8.types.Variable.BoundKi
 import org.checkerframework.framework.util.typeinference8.util.Context;
 import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.framework.util.typeinference8.util.InternalInferenceUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 public class Resolution {
     public static BoundSet resolve(Collection<Variable> as, BoundSet boundSet, Context context) {
@@ -255,7 +256,7 @@ public class Resolution {
                 // TODO: This causes problems when incorporating the bounds.
                 TypeMirror unbound = context.env.getTypeUtils().getWildcardType(null, null);
                 inst =
-                        InternalInferenceUtils.substitute(
+                        TypesUtils.substitute(
                                 inst,
                                 Collections.singletonList(typeVariableI),
                                 Collections.singletonList(unbound),
@@ -268,7 +269,7 @@ public class Resolution {
         // Instantiations that refer to another variable
         List<TypeMirror> subsTypeArg = new ArrayList<>();
         for (TypeMirror type : typeArg) {
-            subsTypeArg.add(InternalInferenceUtils.substitute(type, typeVar, typeArg, context.env));
+            subsTypeArg.add(TypesUtils.substitute(type, typeVar, typeArg, context.env));
         }
 
         // Create the new bounds.

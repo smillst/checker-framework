@@ -119,7 +119,7 @@ public class InferenceUtils {
         ExecutableType methodType =
                 InternalInferenceUtils.getTypeOfMethodAdaptedToUse(methodInvocation, context);
         if (treeIndex >= methodType.getParameterTypes().size() - 1
-                && InternalInferenceUtils.isVarArgMethodCall(methodInvocation)) {
+                && TreeUtils.isVarArgMethodCall(methodInvocation)) {
             treeIndex = methodType.getParameterTypes().size() - 1;
             TypeMirror typeMirror = methodType.getParameterTypes().get(treeIndex);
             return ((ArrayType) typeMirror).getComponentType();
