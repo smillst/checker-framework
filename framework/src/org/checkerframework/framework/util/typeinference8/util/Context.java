@@ -17,6 +17,10 @@ import org.checkerframework.framework.util.typeinference8.types.Theta;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
+/**
+ * An object to pass around for use during invocation type inference. One context is created per
+ * top-level invocation expression.
+ */
 public class Context {
 
     /** Path to the top level expression whose type arguments are inferred. */
@@ -81,11 +85,13 @@ public class Context {
                         RuntimeException.class, env.getTypeUtils(), env.getElementUtils());
     }
 
+    /** @return the next number to use as the id for a non-capture variable */
     public int getNextVariableId() {
         return variableCount++;
     }
 
-    public int getNextCaputerVariableId() {
+    /** @return the next number to use as the id for a capture variable */
+    public int getNextCaptureVariableId() {
         return captureVariableCount++;
     }
 }

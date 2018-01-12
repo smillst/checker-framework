@@ -498,7 +498,7 @@ public class Variable extends AbstractType {
     public static class CaptureVariable extends Variable {
 
         public CaptureVariable(TypeVariable type, ExpressionTree invocation, Context context) {
-            super(type, invocation, context, context.getNextCaputerVariableId());
+            super(type, invocation, context, context.getNextCaptureVariableId());
         }
 
         @Override
