@@ -283,7 +283,7 @@ public class Typing extends Constraint {
             return new Typing(((ProperType) S).boxType(), T, Kind.TYPE_COMPATIBILITY);
         } else if (T.isProper() && T.getTypeKind().isPrimitive()) {
             return new Typing(S, ((ProperType) T).boxType(), Kind.TYPE_EQUALITY);
-        } else if (T.isParameterizedType()) {
+        } else if (T.isParameterizedType() && !S.isVariable()) {
             // Otherwise, if T is a parameterized type of the form G<T1, ..., Tn>,
             // and there exists no type of the form G<...> that is a supertype of S,
             // but the raw type G is a supertype of S, then the constraint reduces to true.
