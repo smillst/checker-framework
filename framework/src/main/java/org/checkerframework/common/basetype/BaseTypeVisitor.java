@@ -384,6 +384,10 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         super.visitClass(classTree, null);
     }
 
+    /**
+     * Throws an error if {@code classTree} has polymorphic fields but is not annotated with
+     * {@code @HasQualifierParameter}.
+     */
     private void checkPolymorphicClass(ClassTree classTree) {
         boolean hasPolyField = false;
         List<? extends Tree> members = classTree.getMembers();

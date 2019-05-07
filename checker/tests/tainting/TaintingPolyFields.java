@@ -3,6 +3,7 @@ import org.checkerframework.checker.tainting.qual.PolyTainted;
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
+// :: error: (missing.annotation.on.class)
 public class TaintingPolyFields {
     @PolyTainted Integer x;
     @PolyTainted List<@PolyTainted String> lst;
