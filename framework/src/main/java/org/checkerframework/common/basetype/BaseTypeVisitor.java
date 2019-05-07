@@ -82,6 +82,7 @@ import org.checkerframework.dataflow.util.PurityUtils;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.qual.DefaultQualifier;
+import org.checkerframework.framework.qual.HasQualifierParameter;
 import org.checkerframework.framework.qual.Unused;
 import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.source.SourceVisitor;
@@ -102,14 +103,11 @@ import org.checkerframework.framework.type.TypeHierarchy;
 import org.checkerframework.framework.type.VisitorState;
 import org.checkerframework.framework.type.poly.QualifierPolymorphism;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
-import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.framework.util.ContractsUtils;
+import org.checkerframework.framework.util.*;
 import org.checkerframework.framework.util.ContractsUtils.ConditionalPostcondition;
 import org.checkerframework.framework.util.ContractsUtils.Contract;
 import org.checkerframework.framework.util.ContractsUtils.Postcondition;
 import org.checkerframework.framework.util.ContractsUtils.Precondition;
-import org.checkerframework.framework.util.FieldInvariants;
-import org.checkerframework.framework.util.FlowExpressionParseUtil;
 import org.checkerframework.framework.util.FlowExpressionParseUtil.FlowExpressionContext;
 import org.checkerframework.framework.util.FlowExpressionParseUtil.FlowExpressionParseException;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
@@ -381,7 +379,44 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
         checkExtendsImplements(classTree);
 
+        checkPolymorphicClass(classTree);
+
         super.visitClass(classTree, null);
+    }
+
+    private void checkPolymorphicClass(ClassTree classTree) {
+        boolean hasPolyField = false;
+        List<? extends Tree> members = classTree.getMembers();
+        Set<? extends AnnotationMirror> topAnnotations =
+                atypeFactory.getQualifierHierarchy().getTopAnnotations();
+
+        for (Tree mem : members) {
+            if (mem.getKind() == Tree.Kind.VARIABLE) {
+                AnnotatedTypeMirror fieldAnno = atypeFactory.getAnnotatedType(mem);
+                for (AnnotationMirror top : topAnnotations) {
+                    AnnotationMirror fieldAnnoInHierarchy = fieldAnno.getAnnotationInHierarchy(top);
+                    AnnotationMirror polyAnnoInHierarchy =
+                            atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
+                    if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, fieldAnnoInHierarchy)) {
+                        hasPolyField = true;
+                        break;
+                    }
+                }
+                if (hasPolyField) {
+                    break;
+                }
+            }
+        }
+        if (hasPolyField) {
+            Element classTreeElement = TreeUtils.elementFromTree(classTree);
+            List<? extends AnnotationMirror> classAnnotations =
+                    classTreeElement.getAnnotationMirrors();
+            if (!AnnotationUtils.containsSameByName(
+                    classAnnotations,
+                    AnnotationBuilder.fromClass(elements, HasQualifierParameter.class))) {
+                checker.report(Result.failure("missing.annotation.on.class"), classTree);
+            }
+        }
     }
 
     /**
