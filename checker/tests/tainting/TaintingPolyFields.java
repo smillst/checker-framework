@@ -3,9 +3,10 @@ import org.checkerframework.checker.tainting.qual.PolyTainted;
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
-// :: error: (missing.annotation.on.class)
 public class TaintingPolyFields {
+    // :: error: (invalid.polymorphic.qualifier.use)
     @PolyTainted Integer x;
+    // :: error: (invalid.polymorphic.qualifier.use)
     @PolyTainted List<@PolyTainted String> lst;
 
     // Access of poly fields outside of the declaring class.

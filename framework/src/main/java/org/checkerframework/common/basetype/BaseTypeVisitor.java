@@ -406,24 +406,19 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
                         if (AnnotationUtils.areSameByName(
                                 polyAnnoInHierarchy, fieldAnnoInHierarchy)) {
-                            hasPolyField = true;
-                            break;
+                            Element classTreeElement = TreeUtils.elementFromTree(classTree);
+                            List<? extends AnnotationMirror> classAnnotations =
+                                    classTreeElement.getAnnotationMirrors();
+                            if (!AnnotationUtils.containsSameByName(
+                                    classAnnotations,
+                                    AnnotationBuilder.fromClass(
+                                            elements, HasQualifierParameter.class))) {
+                                checker.report(
+                                        Result.failure("invalid.polymorphic.qualifier.use"), mem);
+                            }
                         }
                     }
                 }
-                if (hasPolyField) {
-                    break;
-                }
-            }
-        }
-        if (hasPolyField) {
-            Element classTreeElement = TreeUtils.elementFromTree(classTree);
-            List<? extends AnnotationMirror> classAnnotations =
-                    classTreeElement.getAnnotationMirrors();
-            if (!AnnotationUtils.containsSameByName(
-                    classAnnotations,
-                    AnnotationBuilder.fromClass(elements, HasQualifierParameter.class))) {
-                checker.report(Result.failure("missing.annotation.on.class"), classTree);
             }
         }
     }
