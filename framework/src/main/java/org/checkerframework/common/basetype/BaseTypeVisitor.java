@@ -398,12 +398,17 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             if (mem.getKind() == Tree.Kind.VARIABLE) {
                 AnnotatedTypeMirror fieldAnno = atypeFactory.getAnnotatedType(mem);
                 for (AnnotationMirror top : topAnnotations) {
-                    AnnotationMirror fieldAnnoInHierarchy = fieldAnno.getAnnotationInHierarchy(top);
                     AnnotationMirror polyAnnoInHierarchy =
                             atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
-                    if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, fieldAnnoInHierarchy)) {
-                        hasPolyField = true;
-                        break;
+                    if (polyAnnoInHierarchy != null) {
+                        AnnotationMirror fieldAnnoInHierarchy =
+                                fieldAnno.getAnnotationInHierarchy(top);
+
+                        if (AnnotationUtils.areSameByName(
+                                polyAnnoInHierarchy, fieldAnnoInHierarchy)) {
+                            hasPolyField = true;
+                            break;
+                        }
                     }
                 }
                 if (hasPolyField) {
