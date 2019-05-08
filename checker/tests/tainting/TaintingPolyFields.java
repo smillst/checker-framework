@@ -8,6 +8,9 @@ public class TaintingPolyFields {
     @PolyTainted Integer x;
     // :: error: (invalid.polymorphic.qualifier.use)
     @PolyTainted List<@PolyTainted String> lst;
+    @PolyTainted String @PolyTainted [] str;
+    List<@PolyTainted String> lst1;
+    String @PolyTainted [] str1;
 
     // Access of poly fields outside of the declaring class.
     static void test() {
@@ -16,6 +19,9 @@ public class TaintingPolyFields {
         @Untainted Integer myX = obj.x;
         // :: error: (assignment.type.incompatible)
         @Untainted List<@Untainted String> myLst = obj.lst;
+        // :: error: (assignment.type.incompatible)
+        @Untainted String @Untainted [] myStr = obj.str;
+
         // :: warning: (cast.unsafe.constructor.invocation)
         @Untainted TaintingPolyFields obj1 = new @Untainted TaintingPolyFields();
         @Untainted Integer myX1 = obj1.x;
