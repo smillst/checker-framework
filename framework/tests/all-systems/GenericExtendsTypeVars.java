@@ -18,8 +18,8 @@ class WithWildcard<ZZ extends QQ, QQ extends YY, YY extends MMyMap<QQ, ZZ>> {
 
 @SuppressWarnings("initialization.fields.uninitialized")
 class Test<KK extends FF, FF extends MMyMap<KK, KK>> {
-    //    KK kk;
-    //    FF ff;
+    KK kk;
+    FF ff;
 }
 
 @SuppressWarnings("initialization.fields.uninitialized")
