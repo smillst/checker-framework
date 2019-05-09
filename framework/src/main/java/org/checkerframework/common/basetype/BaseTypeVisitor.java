@@ -102,6 +102,7 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.TypeHierarchy;
 import org.checkerframework.framework.type.VisitorState;
 import org.checkerframework.framework.type.poly.QualifierPolymorphism;
+import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.*;
 import org.checkerframework.framework.util.ContractsUtils.ConditionalPostcondition;
@@ -389,7 +390,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      * {@code @HasQualifierParameter}.
      */
     private void checkPolymorphicClass(ClassTree classTree) {
-        boolean hasPolyField = false;
         List<? extends Tree> members = classTree.getMembers();
         Set<? extends AnnotationMirror> topAnnotations =
                 atypeFactory.getQualifierHierarchy().getTopAnnotations();
@@ -401,11 +401,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     AnnotationMirror polyAnnoInHierarchy =
                             atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
                     if (polyAnnoInHierarchy != null) {
-                        AnnotationMirror fieldAnnoInHierarchy =
-                                fieldAnno.getAnnotationInHierarchy(top);
-
-                        if (AnnotationUtils.areSameByName(
-                                polyAnnoInHierarchy, fieldAnnoInHierarchy)) {
+                        PolyTypeScanner polyScanner = new PolyTypeScanner();
+                        if (polyScanner != null && polyScanner.visit(fieldAnno)) {
                             Element classTreeElement = TreeUtils.elementFromTree(classTree);
                             List<? extends AnnotationMirror> classAnnotations =
                                     classTreeElement.getAnnotationMirrors();
@@ -420,6 +417,59 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     }
                 }
             }
+        }
+    }
+
+    class PolyTypeScanner extends AnnotatedTypeScanner<Boolean, Void> {
+        @Override
+        public Boolean visitDeclared(AnnotatedDeclaredType type, Void aVoid) {
+            Set<? extends AnnotationMirror> topAnnotations =
+                    atypeFactory.getQualifierHierarchy().getTopAnnotations();
+            for (AnnotationMirror top : topAnnotations) {
+                AnnotationMirror polyAnnoInHierarchy =
+                        atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
+                AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
+                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
+                    return true;
+                }
+            }
+            if (type.getTypeArguments().isEmpty()) {
+                return false;
+            }
+            return super.visitDeclared(type, aVoid);
+        }
+
+        @Override
+        public Boolean visitArray(AnnotatedArrayType type, Void aVoid) {
+            Set<? extends AnnotationMirror> topAnnotations =
+                    atypeFactory.getQualifierHierarchy().getTopAnnotations();
+            for (AnnotationMirror top : topAnnotations) {
+                AnnotationMirror polyAnnoInHierarchy =
+                        atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
+                AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
+                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
+                    return true;
+                }
+            }
+            if (type.getComponentType() == null) {
+                return false;
+            }
+            return super.visitArray(type, aVoid);
+        }
+
+        @Override
+        public Boolean visitPrimitive(AnnotatedPrimitiveType type, Void aVoid) {
+            Set<? extends AnnotationMirror> topAnnotations =
+                    atypeFactory.getQualifierHierarchy().getTopAnnotations();
+            for (AnnotationMirror top : topAnnotations) {
+                AnnotationMirror polyAnnoInHierarchy =
+                        atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
+                AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
+                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

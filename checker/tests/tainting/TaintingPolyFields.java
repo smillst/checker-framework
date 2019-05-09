@@ -8,9 +8,18 @@ public class TaintingPolyFields {
     @PolyTainted Integer x;
     // :: error: (invalid.polymorphic.qualifier.use)
     @PolyTainted List<@PolyTainted String> lst;
+    // :: error: (invalid.polymorphic.qualifier.use)
     @PolyTainted String @PolyTainted [] str;
+    // :: error: (invalid.polymorphic.qualifier.use)
     List<@PolyTainted String> lst1;
-    String @PolyTainted [] str1;
+    // :: error: (invalid.polymorphic.qualifier.use)
+    @PolyTainted String[] str1;
+    // :: error: (invalid.polymorphic.qualifier.use)
+    @PolyTainted List<String> lst2;
+    // :: error: (invalid.polymorphic.qualifier.use)
+    String @PolyTainted [] str2;
+    // :: error: (invalid.polymorphic.qualifier.use)
+    @PolyTainted int z;
 
     // Access of poly fields outside of the declaring class.
     static void test() {

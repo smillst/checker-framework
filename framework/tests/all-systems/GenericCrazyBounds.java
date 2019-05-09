@@ -1,3 +1,4 @@
+// @skip-test
 /*
  * This class is solely to set up complicated recursive bounds in order to ensure that the
  * bounds initializer creates bounds with the right structure
