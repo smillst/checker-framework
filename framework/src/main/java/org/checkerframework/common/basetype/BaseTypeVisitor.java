@@ -419,6 +419,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
     }
 
+    /** A scanner that indicates whether any (sub-)types are annotated as polymorphic. */
     class PolyTypeScanner extends SimpleAnnotatedTypeScanner<Boolean, Void> {
         @Override
         protected Boolean reduce(Boolean r1, Boolean r2) {
