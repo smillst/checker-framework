@@ -39,3 +39,7 @@ public class TaintingPolyFields {
         @Untainted List<@Untainted String> myLst2 = obj2.lst;
     }
 }
+
+class TypeParam<T> {
+    T field;
+}

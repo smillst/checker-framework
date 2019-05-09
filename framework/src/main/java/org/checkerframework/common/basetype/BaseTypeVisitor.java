@@ -439,7 +439,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 AnnotationMirror polyAnnoInHierarchy =
                         atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
                 AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
-                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
+                if (annoInHierarchy != null
+                        && AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
                     return true;
                 }
             }
