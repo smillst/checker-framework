@@ -102,7 +102,6 @@ import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.type.TypeHierarchy;
 import org.checkerframework.framework.type.VisitorState;
 import org.checkerframework.framework.type.poly.QualifierPolymorphism;
-import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 import org.checkerframework.framework.util.*;
 import org.checkerframework.framework.util.ContractsUtils.ConditionalPostcondition;
@@ -402,7 +401,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                             atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
                     if (polyAnnoInHierarchy != null) {
                         PolyTypeScanner polyScanner = new PolyTypeScanner();
-                        if (polyScanner != null && polyScanner.visit(fieldAnno)) {
+                        if (polyScanner.visit(fieldAnno)) {
                             Element classTreeElement = TreeUtils.elementFromTree(classTree);
                             List<? extends AnnotationMirror> classAnnotations =
                                     classTreeElement.getAnnotationMirrors();
@@ -420,45 +419,19 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         }
     }
 
-    class PolyTypeScanner extends AnnotatedTypeScanner<Boolean, Void> {
+    class PolyTypeScanner extends SimpleAnnotatedTypeScanner<Boolean, Void> {
         @Override
-        public Boolean visitDeclared(AnnotatedDeclaredType type, Void aVoid) {
-            Set<? extends AnnotationMirror> topAnnotations =
-                    atypeFactory.getQualifierHierarchy().getTopAnnotations();
-            for (AnnotationMirror top : topAnnotations) {
-                AnnotationMirror polyAnnoInHierarchy =
-                        atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
-                AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
-                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
-                    return true;
-                }
-            }
-            if (type.getTypeArguments().isEmpty()) {
-                return false;
-            }
-            return super.visitDeclared(type, aVoid);
+        protected Boolean reduce(Boolean r1, Boolean r2) {
+            r1 = r1 == null ? false : r1;
+            r2 = r2 == null ? false : r2;
+            return r1 || r2;
         }
 
         @Override
-        public Boolean visitArray(AnnotatedArrayType type, Void aVoid) {
-            Set<? extends AnnotationMirror> topAnnotations =
-                    atypeFactory.getQualifierHierarchy().getTopAnnotations();
-            for (AnnotationMirror top : topAnnotations) {
-                AnnotationMirror polyAnnoInHierarchy =
-                        atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
-                AnnotationMirror annoInHierarchy = type.getAnnotationInHierarchy(top);
-                if (AnnotationUtils.areSameByName(polyAnnoInHierarchy, annoInHierarchy)) {
-                    return true;
-                }
-            }
-            if (type.getComponentType() == null) {
+        protected Boolean defaultAction(AnnotatedTypeMirror type, Void aVoid) {
+            if (type == null) {
                 return false;
             }
-            return super.visitArray(type, aVoid);
-        }
-
-        @Override
-        public Boolean visitPrimitive(AnnotatedPrimitiveType type, Void aVoid) {
             Set<? extends AnnotationMirror> topAnnotations =
                     atypeFactory.getQualifierHierarchy().getTopAnnotations();
             for (AnnotationMirror top : topAnnotations) {
@@ -469,7 +442,17 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     return true;
                 }
             }
-            return false;
+            if (type.getKind() == TypeKind.INT
+                    || type.getKind() == TypeKind.BYTE
+                    || type.getKind() == TypeKind.BOOLEAN
+                    || type.getKind() == TypeKind.CHAR
+                    || type.getKind() == TypeKind.DOUBLE
+                    || type.getKind() == TypeKind.FLOAT
+                    || type.getKind() == TypeKind.LONG
+                    || type.getKind() == TypeKind.SHORT) {
+                return false;
+            }
+            return super.defaultAction(type, aVoid);
         }
     }
 

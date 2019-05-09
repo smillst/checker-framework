@@ -1,4 +1,3 @@
-// @skip-test
 public class WildCardCrash {}
 
 abstract class AbstractTransfer123<

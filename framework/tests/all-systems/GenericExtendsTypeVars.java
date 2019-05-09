@@ -1,4 +1,3 @@
-// @skip-test
 /*
  * Sets up recursive bounds where the bounds themselves are type variables.
  */
