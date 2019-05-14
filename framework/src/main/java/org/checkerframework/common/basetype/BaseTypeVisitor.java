@@ -82,7 +82,6 @@ import org.checkerframework.dataflow.util.PurityUtils;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.qual.DefaultQualifier;
-import org.checkerframework.framework.qual.HasQualifierParameter;
 import org.checkerframework.framework.qual.Unused;
 import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.source.SourceVisitor;
@@ -403,12 +402,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                         PolyTypeScanner polyScanner = new PolyTypeScanner();
                         if (polyScanner.visit(fieldAnno)) {
                             Element classTreeElement = TreeUtils.elementFromTree(classTree);
-                            List<? extends AnnotationMirror> classAnnotations =
-                                    classTreeElement.getAnnotationMirrors();
-                            if (!AnnotationUtils.containsSameByName(
-                                    classAnnotations,
-                                    AnnotationBuilder.fromClass(
-                                            elements, HasQualifierParameter.class))) {
+                            if (!atypeFactory.hasQualifierParameter(classTreeElement)) {
                                 checker.report(
                                         Result.failure("invalid.polymorphic.qualifier.use"), mem);
                             }
