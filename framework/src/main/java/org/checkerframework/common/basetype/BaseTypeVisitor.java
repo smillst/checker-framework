@@ -389,8 +389,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     private void checkPolymorphicClass(ClassTree classTree) {
         List<? extends Tree> members = classTree.getMembers();
-        Set<? extends AnnotationMirror> topAnnotations =
-                atypeFactory.getQualifierHierarchy().getTopAnnotations();
 
         for (Tree mem : members) {
             if (mem.getKind() == Tree.Kind.VARIABLE) {
