@@ -395,18 +395,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         for (Tree mem : members) {
             if (mem.getKind() == Tree.Kind.VARIABLE) {
                 AnnotatedTypeMirror fieldAnno = atypeFactory.getAnnotatedType(mem);
-                for (AnnotationMirror top : topAnnotations) {
-                    AnnotationMirror polyAnnoInHierarchy =
-                            atypeFactory.getQualifierHierarchy().getPolymorphicAnnotation(top);
-                    if (polyAnnoInHierarchy != null) {
-                        PolyTypeScanner polyScanner = new PolyTypeScanner();
-                        if (polyScanner.visit(fieldAnno)) {
-                            Element classTreeElement = TreeUtils.elementFromTree(classTree);
-                            if (!atypeFactory.hasQualifierParameter(classTreeElement)) {
-                                checker.report(
-                                        Result.failure("invalid.polymorphic.qualifier.use"), mem);
-                            }
-                        }
+                PolyTypeScanner polyScanner = new PolyTypeScanner();
+                if (polyScanner.visit(fieldAnno)) {
+                    Element classTreeElement = TreeUtils.elementFromTree(classTree);
+                    if (!atypeFactory.hasQualifierParameter(classTreeElement)) {
+                        checker.report(Result.failure("invalid.polymorphic.qualifier.use"), mem);
                     }
                 }
             }
