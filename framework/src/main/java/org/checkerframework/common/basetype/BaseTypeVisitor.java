@@ -431,14 +431,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     return true;
                 }
             }
-            if (type.getKind() == TypeKind.INT
-                    || type.getKind() == TypeKind.BYTE
-                    || type.getKind() == TypeKind.BOOLEAN
-                    || type.getKind() == TypeKind.CHAR
-                    || type.getKind() == TypeKind.DOUBLE
-                    || type.getKind() == TypeKind.FLOAT
-                    || type.getKind() == TypeKind.LONG
-                    || type.getKind() == TypeKind.SHORT) {
+            if (type.getKind().isPrimitive()) {
                 return false;
             }
             return super.defaultAction(type, aVoid);
