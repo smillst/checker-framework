@@ -384,19 +384,19 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
 
     /**
-     * Throws an error if {@code classTree} has polymorphic fields but is not annotated with
+     * Issues an error if {@code classTree} has polymorphic fields but is not annotated with
      * {@code @HasQualifierParameter}.
      */
     private void checkPolymorphicClass(ClassTree classTree) {
         List<? extends Tree> members = classTree.getMembers();
 
-        for (Tree mem : members) {
-            if (mem.getKind() == Tree.Kind.VARIABLE) {
-                AnnotatedTypeMirror fieldAnno = atypeFactory.getAnnotatedType(mem);
-                PolyTypeScanner polyScanner = new PolyTypeScanner();
-                if (polyScanner.visit(fieldAnno)) {
-                    Element classTreeElement = TreeUtils.elementFromTree(classTree);
-                    if (!atypeFactory.hasQualifierParameter(classTreeElement)) {
+        PolyTypeScanner polyScanner = new PolyTypeScanner();
+        Element classTreeElement = TreeUtils.elementFromTree(classTree);
+        if (!atypeFactory.hasQualifierParameter(classTreeElement)) {
+            for (Tree mem : members) {
+                if (mem.getKind() == Tree.Kind.VARIABLE) {
+                    AnnotatedTypeMirror fieldAnno = atypeFactory.getAnnotatedType(mem);
+                    if (polyScanner.visit(fieldAnno)) {
                         checker.report(Result.failure("invalid.polymorphic.qualifier.use"), mem);
                     }
                 }
@@ -429,10 +429,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                     return true;
                 }
             }
-            if (type.getKind().isPrimitive()) {
-                return false;
-            }
-            return super.defaultAction(type, aVoid);
+            return false;
         }
     }
 
