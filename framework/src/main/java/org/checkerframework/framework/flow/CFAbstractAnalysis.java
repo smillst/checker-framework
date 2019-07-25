@@ -9,7 +9,10 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.dataflow.analysis.Analysis;
+import org.checkerframework.dataflow.analysis.TransferInput;
+import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
+import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -168,5 +171,14 @@ public abstract class CFAbstractAnalysis<
         annos.remove(f);
         annos.add(anno);
         return createAbstractValue(annos, underlyingType);
+    }
+
+    @Override
+    protected TransferResult<V, S> callTransferFunction(Node node, TransferInput<V, S> store) {
+        atypeFactory.clearCache(node.getTree());
+        TransferResult<V, S> result = super.callTransferFunction(node, store);
+        // Clear it again because the cached result doesn't incudle the refinement.
+        atypeFactory.clearCache(node.getTree());
+        return result;
     }
 }

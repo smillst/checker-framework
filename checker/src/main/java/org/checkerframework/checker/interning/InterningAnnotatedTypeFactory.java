@@ -3,6 +3,7 @@ package org.checkerframework.checker.interning;
 import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.UnaryTree;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -151,6 +152,14 @@ public class InterningAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
         InterningTreeAnnotator(InterningAnnotatedTypeFactory atypeFactory) {
             super(atypeFactory);
+        }
+
+        @Override
+        public Void visitUnary(UnaryTree node, AnnotatedTypeMirror type) {
+            if (type.getKind().isPrimitive()) {
+                type.replaceAnnotation(INTERNED);
+            }
+            return null;
         }
 
         @Override

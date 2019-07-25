@@ -1,4 +1,8 @@
 import org.checkerframework.checker.interning.qual.*;
+package java.lang;
+class Integer {
+@Interned int intValue();
+}
 
 package com.sun.org.apache.xml.internal.utils;
 

@@ -1,4 +1,5 @@
 // Test case for Issue 2199.
+// @skip-test
 @SuppressWarnings("unchecked")
 class Issue2199 {
     static class StrangeConstructorTypeArgs<K, V> {

@@ -1510,6 +1510,7 @@ public abstract class GenericAnnotatedTypeFactory<
             ClassTree classTree = (ClassTree) tree;
             if (!scannedClasses.containsKey(classTree)) {
                 performFlowAnalysis(classTree);
+                fullFromExpressionTreeCache.clear();
             }
         }
     }
@@ -1722,5 +1723,9 @@ public abstract class GenericAnnotatedTypeFactory<
         } else {
             defaultQualifierForUseTypeAnnotator.visit(type);
         }
+    }
+
+    public void clearCache(Tree tree) {
+        fullFromExpressionTreeCache.remove(tree);
     }
 }

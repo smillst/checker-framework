@@ -362,6 +362,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      */
     protected final Map<Tree, AnnotatedTypeMirror> fromExpressionTreeCache;
 
+    protected final Map<Tree, AnnotatedTypeMirror> fullFromExpressionTreeCache;
+
     /**
      * Mapping from a member tree to its annotated type; before implicits are applied, just what the
      * programmer wrote.
@@ -437,6 +439,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             int cacheSize = getCacheSize();
             this.classAndMethodTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fromExpressionTreeCache = CollectionUtils.createLRUCache(cacheSize);
+            this.fullFromExpressionTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fromMemberTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fromTypeTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.elementCache = CollectionUtils.createLRUCache(cacheSize);
@@ -444,6 +447,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         } else {
             this.classAndMethodTreeCache = null;
             this.fromExpressionTreeCache = null;
+            this.fullFromExpressionTreeCache = null;
             this.fromMemberTreeCache = null;
             this.fromTypeTreeCache = null;
             this.elementCache = null;
@@ -622,6 +626,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             // the trees may be modified and lose type arguments.
             elementToTreeCache.clear();
             fromExpressionTreeCache.clear();
+            fullFromExpressionTreeCache.clear();
             fromMemberTreeCache.clear();
             fromTypeTreeCache.clear();
             classAndMethodTreeCache.clear();
@@ -1091,6 +1096,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             type = fromMember(tree);
         } else if (TreeUtils.isExpressionTree(tree)) {
             tree = TreeUtils.withoutParens((ExpressionTree) tree);
+            if (shouldCache && fullFromExpressionTreeCache.containsKey(tree)) {
+                return fullFromExpressionTreeCache.get(tree).deepCopy();
+            }
             type = fromExpression((ExpressionTree) tree);
         } else {
             throw new BugInCF(
@@ -1099,7 +1107,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         }
 
         addComputedTypeAnnotations(tree, type);
-
+        if (shouldCache && TreeUtils.isExpressionTree(tree)) {
+            fullFromExpressionTreeCache.put(tree, type.deepCopy());
+        }
         if (TreeUtils.isClassTree(tree) || tree.getKind() == Tree.Kind.METHOD) {
             // Don't cache VARIABLE
             if (shouldCache) {
