@@ -12,7 +12,11 @@ public class Varargs {
         // The assignment context infers @Odd for the component type.
         // With invariant array subtyping, this will fail, as the main
         // type is a subtype.
+        // :: error: (argument.type.incompatible)
         moreVarargs(new String @Odd [1]);
+        String @Odd [] oddArray = new String @Odd [1];
+        // :: error: (argument.type.incompatible)
+        moreVarargs(oddArray);
         // :: warning: (cast.unsafe.constructor.invocation)
         moreVarargs(new @Odd String(), new @Odd String());
         // :: error: (argument.type.incompatible)
