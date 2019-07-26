@@ -199,6 +199,7 @@ public abstract class CFAbstractTransfer<
             }
         }
         AnnotatedTypeMirror at = factory.getAnnotatedType(tree);
+        factory.clearCache(tree);
         analysis.setCurrentTree(preTree);
         factory.getVisitorState().setAssignmentContext(preCtxt);
         return analysis.createAbstractValue(at);
