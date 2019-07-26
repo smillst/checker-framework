@@ -1510,7 +1510,9 @@ public abstract class GenericAnnotatedTypeFactory<
             ClassTree classTree = (ClassTree) tree;
             if (!scannedClasses.containsKey(classTree)) {
                 performFlowAnalysis(classTree);
-                fullFromExpressionTreeCache.clear();
+                if (fullFromExpressionTreeCache != null) {
+                    fullFromExpressionTreeCache.clear();
+                }
             }
         }
     }
