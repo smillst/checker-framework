@@ -356,12 +356,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     /** Mapping from a Tree to its annotated type; implicits have been applied. */
     private final Map<Tree, AnnotatedTypeMirror> classAndMethodTreeCache;
 
-    /**
-     * Mapping from an expression tree to its annotated type; before implicits are applied, just
-     * what the programmer wrote.
-     */
-    protected final Map<Tree, AnnotatedTypeMirror> fromExpressionTreeCache;
-
     protected final Map<Tree, AnnotatedTypeMirror> fullFromExpressionTreeCache;
 
     /**
@@ -438,7 +432,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         if (shouldCache) {
             int cacheSize = getCacheSize();
             this.classAndMethodTreeCache = CollectionUtils.createLRUCache(cacheSize);
-            this.fromExpressionTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fullFromExpressionTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fromMemberTreeCache = CollectionUtils.createLRUCache(cacheSize);
             this.fromTypeTreeCache = CollectionUtils.createLRUCache(cacheSize);
@@ -446,7 +439,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             this.elementToTreeCache = CollectionUtils.createLRUCache(cacheSize);
         } else {
             this.classAndMethodTreeCache = null;
-            this.fromExpressionTreeCache = null;
             this.fullFromExpressionTreeCache = null;
             this.fromMemberTreeCache = null;
             this.fromTypeTreeCache = null;
@@ -625,7 +617,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             // Clear the caches with trees because once the compilation unit changes,
             // the trees may be modified and lose type arguments.
             elementToTreeCache.clear();
-            fromExpressionTreeCache.clear();
             fullFromExpressionTreeCache.clear();
             fromMemberTreeCache.clear();
             fromTypeTreeCache.clear();
@@ -1348,15 +1339,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @see TypeFromExpressionVisitor
      */
     private AnnotatedTypeMirror fromExpression(ExpressionTree tree) {
-        if (shouldCache && fromExpressionTreeCache.containsKey(tree)) {
-            return fromExpressionTreeCache.get(tree).deepCopy();
-        }
-
         AnnotatedTypeMirror result = TypeFromTree.fromExpression(this, tree);
-
-        if (shouldCache) {
-            fromExpressionTreeCache.put(tree, result.deepCopy());
-        }
         return result;
     }
 
