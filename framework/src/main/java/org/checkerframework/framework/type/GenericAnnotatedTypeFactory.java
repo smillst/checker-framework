@@ -1726,6 +1726,8 @@ public abstract class GenericAnnotatedTypeFactory<
     }
 
     public void clearCache(Tree tree) {
-        fullFromExpressionTreeCache.remove(tree);
+        if (fullFromExpressionTreeCache != null) {
+            fullFromExpressionTreeCache.remove(tree);
+        }
     }
 }
