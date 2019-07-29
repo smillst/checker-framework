@@ -2,11 +2,9 @@ package org.checkerframework.framework.type;
 
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
-import org.checkerframework.javacutil.Pair;
 
 /**
  * Represents the state of a visitor. Stores the relevant information to find the type of 'this' in
@@ -22,9 +20,6 @@ public class VisitorState {
     private AnnotatedDeclaredType mrt;
     /** The enclosing method tree. */
     private MethodTree mt;
-
-    /** The assignment context is a tree as well as its type. */
-    private Pair<Tree, AnnotatedTypeMirror> assignmentcontext;
 
     /** The visitor's current tree path. */
     private TreePath path;
@@ -47,10 +42,6 @@ public class VisitorState {
     /** Updates the method currently visited. */
     public void setMethodTree(MethodTree mt) {
         this.mt = mt;
-    }
-
-    public void setAssignmentContext(Pair<Tree, AnnotatedTypeMirror> assCtxt) {
-        this.assignmentcontext = assCtxt;
     }
 
     /** Sets the current path for the visitor. */
@@ -84,10 +75,6 @@ public class VisitorState {
         return this.mt;
     }
 
-    public Pair<Tree, AnnotatedTypeMirror> getAssignmentContext() {
-        return assignmentcontext;
-    }
-
     /** @return the current path for the visitor */
     public TreePath getPath() {
         return this.path;
@@ -104,8 +91,6 @@ public class VisitorState {
                 mrt,
                 (ct != null ? ct.getSimpleName() : "null"),
                 act,
-                (assignmentcontext != null ? assignmentcontext.first : "null"),
-                (assignmentcontext != null ? assignmentcontext.second : "null"),
                 path != null);
     }
 }

@@ -37,7 +37,6 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutab
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeMerger;
 import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
@@ -220,18 +219,9 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
 
     @Override
     public AnnotatedTypeMirror visitArrayAccess(ArrayAccessTree node, AnnotatedTypeFactory f) {
-
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = f.visitorState.getAssignmentContext();
-        try {
-            // TODO: what other trees shouldn't maintain the context?
-            f.visitorState.setAssignmentContext(null);
-
-            AnnotatedTypeMirror type = f.getAnnotatedType(node.getExpression());
-            assert type instanceof AnnotatedArrayType;
-            return ((AnnotatedArrayType) type).getComponentType();
-        } finally {
-            f.visitorState.setAssignmentContext(preAssCtxt);
-        }
+        AnnotatedTypeMirror type = f.getAnnotatedType(node.getExpression());
+        assert type instanceof AnnotatedArrayType;
+        return ((AnnotatedArrayType) type).getComponentType();
     }
 
     @Override

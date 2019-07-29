@@ -4,7 +4,6 @@ import com.sun.source.tree.BinaryTree;
 import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.NewArrayTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.UnaryTree;
 import java.util.Collection;
@@ -15,7 +14,7 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.javacutil.Pair;
+import org.checkerframework.framework.util.typeinference.TypeArgInferenceUtil;
 
 /**
  * {@link PropagationTreeAnnotator} adds qualifiers to types where the resulting type is a function
@@ -67,15 +66,12 @@ public class PropagationTreeAnnotator extends TreeAnnotator {
         assert prev != null
                 : "PropagationTreeAnnotator.visitNewArray: violated assumption about qualifiers";
 
-        Pair<Tree, AnnotatedTypeMirror> context =
-                atypeFactory.getVisitorState().getAssignmentContext();
         Collection<? extends AnnotationMirror> post;
-
-        if (context != null
-                && context.second != null
-                && context.second instanceof AnnotatedArrayType) {
+        AnnotatedTypeMirror context =
+                TypeArgInferenceUtil.assignedTo(atypeFactory, atypeFactory.getPath(tree));
+        if (context != null && context != null && context instanceof AnnotatedArrayType) {
             AnnotatedTypeMirror contextComponentType =
-                    ((AnnotatedArrayType) context.second).getComponentType();
+                    ((AnnotatedArrayType) context).getComponentType();
             // Only compare the qualifiers that existed in the array type.
             // Defaulting wasn't performed yet, so prev might have fewer qualifiers than
             // contextComponentType, which would cause a failure.

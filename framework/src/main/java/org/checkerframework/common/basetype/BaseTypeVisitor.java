@@ -323,7 +323,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         ClassTree preCT = visitorState.getClassTree();
         AnnotatedDeclaredType preAMT = visitorState.getMethodReceiver();
         MethodTree preMT = visitorState.getMethodTree();
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
 
         // Don't use atypeFactory.getPath, b/c that depends on the visitorState path.
         visitorState.setPath(TreePath.getPath(root, classTree));
@@ -332,8 +331,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         visitorState.setClassTree(classTree);
         visitorState.setMethodReceiver(null);
         visitorState.setMethodTree(null);
-        visitorState.setAssignmentContext(null);
-
         try {
             processClassTree(classTree);
             atypeFactory.postProcessClassTree(classTree);
@@ -343,7 +340,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             visitorState.setClassTree(preCT);
             visitorState.setMethodReceiver(preAMT);
             visitorState.setMethodTree(preMT);
-            visitorState.setAssignmentContext(preAssCtxt);
         }
         return null;
     }
@@ -1012,28 +1008,20 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     public Void visitVariable(VariableTree node, Void p) {
         warnAboutTypeAnnotationsTooEarly(node, node.getModifiers());
 
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-        visitorState.setAssignmentContext(
-                Pair.of((Tree) node, atypeFactory.getAnnotatedType(node)));
-
-        try {
-            if (atypeFactory.getDependentTypesHelper() != null) {
-                atypeFactory
-                        .getDependentTypesHelper()
-                        .checkType(atypeFactory.getAnnotatedTypeLhs(node), node);
-            }
-            // If there's no assignment in this variable declaration, skip it.
-            if (node.getInitializer() != null) {
-                commonAssignmentCheck(node, node.getInitializer(), "assignment.type.incompatible");
-            } else {
-                // commonAssignmentCheck validates the type of node,
-                // so only validate if commonAssignmentCheck wasn't called
-                validateTypeOf(node);
-            }
-            return super.visitVariable(node, p);
-        } finally {
-            visitorState.setAssignmentContext(preAssCtxt);
+        if (atypeFactory.getDependentTypesHelper() != null) {
+            atypeFactory
+                    .getDependentTypesHelper()
+                    .checkType(atypeFactory.getAnnotatedTypeLhs(node), node);
         }
+        // If there's no assignment in this variable declaration, skip it.
+        if (node.getInitializer() != null) {
+            commonAssignmentCheck(node, node.getInitializer(), "assignment.type.incompatible");
+        } else {
+            // commonAssignmentCheck validates the type of node,
+            // so only validate if commonAssignmentCheck wasn't called
+            validateTypeOf(node);
+        }
+        return super.visitVariable(node, p);
     }
 
     /**
@@ -1155,18 +1143,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
      */
     @Override
     public Void visitAssignment(AssignmentTree node, Void p) {
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-        visitorState.setAssignmentContext(
-                Pair.of(
-                        (Tree) node.getVariable(),
-                        atypeFactory.getAnnotatedType(node.getVariable())));
-        try {
-            commonAssignmentCheck(
-                    node.getVariable(), node.getExpression(), "assignment.type.incompatible");
-            return super.visitAssignment(node, p);
-        } finally {
-            visitorState.setAssignmentContext(preAssCtxt);
-        }
+        commonAssignmentCheck(
+                node.getVariable(), node.getExpression(), "assignment.type.incompatible");
+        return super.visitAssignment(node, p);
     }
 
     /**
@@ -1583,7 +1562,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             // Check return type for single statement returns here.
             AnnotatedTypeMirror ret = functionType.getReturnType();
             if (ret.getKind() != TypeKind.VOID) {
-                visitorState.setAssignmentContext(Pair.of((Tree) node, ret));
                 commonAssignmentCheck(
                         ret, (ExpressionTree) node.getBody(), "return.type.incompatible");
             }
@@ -1622,39 +1600,30 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         if (node.getExpression() == null) {
             return super.visitReturn(node, p);
         }
+        Tree enclosing =
+                TreeUtils.enclosingOfKind(
+                        getCurrentPath(),
+                        new HashSet<>(
+                                Arrays.asList(Tree.Kind.METHOD, Tree.Kind.LAMBDA_EXPRESSION)));
 
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-        try {
+        AnnotatedTypeMirror ret = null;
+        if (enclosing.getKind() == Tree.Kind.METHOD) {
 
-            Tree enclosing =
-                    TreeUtils.enclosingOfKind(
-                            getCurrentPath(),
-                            new HashSet<>(
-                                    Arrays.asList(Tree.Kind.METHOD, Tree.Kind.LAMBDA_EXPRESSION)));
-
-            AnnotatedTypeMirror ret = null;
-            if (enclosing.getKind() == Tree.Kind.METHOD) {
-
-                MethodTree enclosingMethod = TreeUtils.enclosingMethod(getCurrentPath());
-                boolean valid = validateTypeOf(enclosing);
-                if (valid) {
-                    ret = atypeFactory.getMethodReturnType(enclosingMethod, node);
-                }
-            } else {
-                Pair<AnnotatedDeclaredType, AnnotatedExecutableType> result =
-                        atypeFactory.getFnInterfaceFromTree((LambdaExpressionTree) enclosing);
-                ret = result.second.getReturnType();
+            MethodTree enclosingMethod = TreeUtils.enclosingMethod(getCurrentPath());
+            boolean valid = validateTypeOf(enclosing);
+            if (valid) {
+                ret = atypeFactory.getMethodReturnType(enclosingMethod, node);
             }
-
-            if (ret != null) {
-                visitorState.setAssignmentContext(Pair.of((Tree) node, ret));
-
-                commonAssignmentCheck(ret, node.getExpression(), "return.type.incompatible");
-            }
-            return super.visitReturn(node, p);
-        } finally {
-            visitorState.setAssignmentContext(preAssCtxt);
+        } else {
+            Pair<AnnotatedDeclaredType, AnnotatedExecutableType> result =
+                    atypeFactory.getFnInterfaceFromTree((LambdaExpressionTree) enclosing);
+            ret = result.second.getReturnType();
         }
+
+        if (ret != null) {
+            commonAssignmentCheck(ret, node.getExpression(), "return.type.incompatible");
+        }
+        return super.visitReturn(node, p);
     }
 
     /* TODO: something similar to visitReturn should be done.
@@ -1721,8 +1690,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             AnnotatedTypeMirror expected = annoTypes.get(at.getVariable().toString());
-            Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-
             {
                 // Determine and set the new assignment context.
                 ExpressionTree var = at.getVariable();
@@ -1732,35 +1699,27 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 assert meth instanceof AnnotatedExecutableType
                         : "Expected AnnotatedExecutableType as context. Found: " + meth;
                 AnnotatedTypeMirror newctx = ((AnnotatedExecutableType) meth).getReturnType();
-                visitorState.setAssignmentContext(Pair.of((Tree) null, newctx));
             }
 
-            try {
-                AnnotatedTypeMirror actual = atypeFactory.getAnnotatedType(at.getExpression());
-                if (expected.getKind() != TypeKind.ARRAY) {
-                    // Expected is not an array -> direct comparison.
+            AnnotatedTypeMirror actual = atypeFactory.getAnnotatedType(at.getExpression());
+            if (expected.getKind() != TypeKind.ARRAY) {
+                // Expected is not an array -> direct comparison.
+                commonAssignmentCheck(
+                        expected, actual, at.getExpression(), "annotation.type.incompatible");
+            } else {
+                if (actual.getKind() == TypeKind.ARRAY) {
+                    // Both actual and expected are arrays.
                     commonAssignmentCheck(
                             expected, actual, at.getExpression(), "annotation.type.incompatible");
                 } else {
-                    if (actual.getKind() == TypeKind.ARRAY) {
-                        // Both actual and expected are arrays.
-                        commonAssignmentCheck(
-                                expected,
-                                actual,
-                                at.getExpression(),
-                                "annotation.type.incompatible");
-                    } else {
-                        // The declaration is an array type, but just a single
-                        // element is given.
-                        commonAssignmentCheck(
-                                ((AnnotatedArrayType) expected).getComponentType(),
-                                actual,
-                                at.getExpression(),
-                                "annotation.type.incompatible");
-                    }
+                    // The declaration is an array type, but just a single
+                    // element is given.
+                    commonAssignmentCheck(
+                            ((AnnotatedArrayType) expected).getComponentType(),
+                            actual,
+                            at.getExpression(),
+                            "annotation.type.incompatible");
                 }
-            } finally {
-                visitorState.setAssignmentContext(preAssCtxt);
             }
         }
         return null;
@@ -1993,14 +1952,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     @Override
     public Void visitArrayAccess(ArrayAccessTree node, Void p) {
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-        try {
-            visitorState.setAssignmentContext(null);
-            scan(node.getExpression(), p);
-            scan(node.getIndex(), p);
-        } finally {
-            visitorState.setAssignmentContext(preAssCtxt);
-        }
+        scan(node.getExpression(), p);
+        scan(node.getIndex(), p);
+
         return null;
     }
 
@@ -2799,19 +2753,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                         + passedArgs
                         + ")";
 
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt = visitorState.getAssignmentContext();
-        try {
-            for (int i = 0; i < requiredArgs.size(); ++i) {
-                visitorState.setAssignmentContext(
-                        Pair.of((Tree) null, (AnnotatedTypeMirror) requiredArgs.get(i)));
-                commonAssignmentCheck(
-                        requiredArgs.get(i), passedArgs.get(i), "argument.type.incompatible");
-                // Also descend into the argument within the correct assignment
-                // context.
-                scan(passedArgs.get(i), null);
-            }
-        } finally {
-            visitorState.setAssignmentContext(preAssCtxt);
+        for (int i = 0; i < requiredArgs.size(); ++i) {
+            commonAssignmentCheck(
+                    requiredArgs.get(i), passedArgs.get(i), "argument.type.incompatible");
+            // Also descend into the argument within the correct assignment
+            // context.
+            scan(passedArgs.get(i), null);
         }
     }
 

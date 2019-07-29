@@ -128,6 +128,9 @@ public class TypeArgInferenceUtil {
      * @return type that path leaf is assigned to
      */
     public static AnnotatedTypeMirror assignedTo(AnnotatedTypeFactory atypeFactory, TreePath path) {
+        if (path == null) {
+            return null;
+        }
         Tree assignmentContext = TreeUtils.getAssignmentContext(path);
         AnnotatedTypeMirror res;
         if (assignmentContext == null) {

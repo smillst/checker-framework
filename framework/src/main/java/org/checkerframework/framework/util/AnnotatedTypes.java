@@ -842,19 +842,12 @@ public class AnnotatedTypes {
                         + " Arguments: "
                         + trees;
         List<AnnotatedTypeMirror> types = new ArrayList<>();
-        Pair<Tree, AnnotatedTypeMirror> preAssCtxt =
-                atypeFactory.getVisitorState().getAssignmentContext();
-
-        try {
-            for (int i = 0; i < trees.size(); ++i) {
-                AnnotatedTypeMirror param = paramTypes.get(i);
-                atypeFactory.getVisitorState().setAssignmentContext(Pair.of((Tree) null, param));
-                ExpressionTree arg = trees.get(i);
-                types.add(atypeFactory.getAnnotatedType(arg));
-            }
-        } finally {
-            atypeFactory.getVisitorState().setAssignmentContext(preAssCtxt);
+        for (int i = 0; i < trees.size(); ++i) {
+            AnnotatedTypeMirror param = paramTypes.get(i);
+            ExpressionTree arg = trees.get(i);
+            types.add(atypeFactory.getAnnotatedType(arg));
         }
+
         return types;
     }
 
