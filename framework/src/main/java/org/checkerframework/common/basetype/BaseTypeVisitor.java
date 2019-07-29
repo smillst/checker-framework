@@ -1690,17 +1690,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             }
 
             AnnotatedTypeMirror expected = annoTypes.get(at.getVariable().toString());
-            {
-                // Determine and set the new assignment context.
-                ExpressionTree var = at.getVariable();
-                assert var instanceof IdentifierTree
-                        : "Expected IdentifierTree as context. Found: " + var;
-                AnnotatedTypeMirror meth = atypeFactory.getAnnotatedType(var);
-                assert meth instanceof AnnotatedExecutableType
-                        : "Expected AnnotatedExecutableType as context. Found: " + meth;
-                AnnotatedTypeMirror newctx = ((AnnotatedExecutableType) meth).getReturnType();
-            }
-
             AnnotatedTypeMirror actual = atypeFactory.getAnnotatedType(at.getExpression());
             if (expected.getKind() != TypeKind.ARRAY) {
                 // Expected is not an array -> direct comparison.

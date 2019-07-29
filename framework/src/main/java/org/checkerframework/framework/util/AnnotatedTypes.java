@@ -831,6 +831,7 @@ public class AnnotatedTypes {
      * @param trees the AST nodes
      * @return a list with the AnnotatedTypeMirror of each tree in trees
      */
+    @Deprecated
     public static List<AnnotatedTypeMirror> getAnnotatedTypes(
             AnnotatedTypeFactory atypeFactory,
             List<AnnotatedTypeMirror> paramTypes,
@@ -842,9 +843,24 @@ public class AnnotatedTypes {
                         + " Arguments: "
                         + trees;
         List<AnnotatedTypeMirror> types = new ArrayList<>();
-        for (int i = 0; i < trees.size(); ++i) {
-            AnnotatedTypeMirror param = paramTypes.get(i);
-            ExpressionTree arg = trees.get(i);
+        for (ExpressionTree arg : trees) {
+            types.add(atypeFactory.getAnnotatedType(arg));
+        }
+
+        return types;
+    }
+
+    /**
+     * Return a list of the AnnotatedTypeMirror of the passed expression trees, in the same order as
+     * the trees.
+     *
+     * @param trees the AST nodes
+     * @return a list with the AnnotatedTypeMirror of each tree in trees
+     */
+    public static List<AnnotatedTypeMirror> getAnnotatedTypes(
+            AnnotatedTypeFactory atypeFactory, List<? extends ExpressionTree> trees) {
+        List<AnnotatedTypeMirror> types = new ArrayList<>();
+        for (ExpressionTree arg : trees) {
             types.add(atypeFactory.getAnnotatedType(arg));
         }
 

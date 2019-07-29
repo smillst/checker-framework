@@ -69,7 +69,7 @@ public class PropagationTreeAnnotator extends TreeAnnotator {
         Collection<? extends AnnotationMirror> post;
         AnnotatedTypeMirror context =
                 TypeArgInferenceUtil.assignedTo(atypeFactory, atypeFactory.getPath(tree));
-        if (context != null && context != null && context instanceof AnnotatedArrayType) {
+        if (context != null && context instanceof AnnotatedArrayType) {
             AnnotatedTypeMirror contextComponentType =
                     ((AnnotatedArrayType) context).getComponentType();
             // Only compare the qualifiers that existed in the array type.
