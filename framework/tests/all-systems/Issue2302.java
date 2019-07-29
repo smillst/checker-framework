@@ -1,6 +1,5 @@
 // Test case for Issue 2302
 // https://github.com/typetools/checker-framework/issues/2302
-// @skip-test
 @SuppressWarnings("unchecked")
 class Issue2302 {
     static class StrangeConstructorTypeArgs<V> {
