@@ -271,7 +271,7 @@ public class FlowExpressionParseUtil {
             } else if (!context.parsingMember && context.useLocalScope) {
                 // Attempt to match a local variable within the scope of the
                 // given path before attempting to match a field.
-                VariableElement varElem = resolver.findLocalVariableOrParameterOrField(s, path);
+                VariableElement varElem = resolver.findLocalVariableOrParameter(s, path);
                 if (varElem != null) {
                     if (varElem.getKind() == ElementKind.FIELD) {
                         boolean isOriginalReceiver = context.receiver instanceof ThisReference;
@@ -367,13 +367,13 @@ public class FlowExpressionParseUtil {
                 TypeMirror receiverType = context.receiver.getType();
 
                 if (receiverType.getKind() == TypeKind.ARRAY) {
-                    element = resolver.findMethod(methodName, receiverType, path, argumentTypes);
+                    element = resolver.findMethod(methodName, receiverType, argumentTypes);
                 }
 
                 // Search for method in each enclosing class.
                 while (receiverType.getKind() == TypeKind.DECLARED) {
-                    element = resolver.findMethod(methodName, receiverType, path, argumentTypes);
-                    if (element.getKind() == ElementKind.METHOD) {
+                    element = resolver.findMethod(methodName, receiverType, argumentTypes);
+                    if (element != null && element.getKind() == ElementKind.METHOD) {
                         break;
                     }
                     receiverType = getTypeOfEnclosingClass((DeclaredType) receiverType);

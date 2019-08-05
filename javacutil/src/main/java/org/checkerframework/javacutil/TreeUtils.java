@@ -49,7 +49,6 @@ import com.sun.tools.javac.tree.JCTree.JCTypeParameter;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.util.Context;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -969,13 +968,7 @@ public final class TreeUtils {
                 }
             }
         }
-        throw new BugInCF(
-                "TreeUtils.getMethod: found no match for "
-                        + typeName
-                        + "."
-                        + methodName
-                        + "("
-                        + Arrays.toString(paramTypes));
+        return null;
     }
 
     /**

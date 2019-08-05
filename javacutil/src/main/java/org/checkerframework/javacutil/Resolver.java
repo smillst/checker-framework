@@ -1,5 +1,6 @@
 package org.checkerframework.javacutil;
 
+import com.sun.source.tree.Scope;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.api.JavacScope;
@@ -11,24 +12,24 @@ import com.sun.tools.javac.code.Symbol.PackageSymbol;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Type;
 import com.sun.tools.javac.comp.AttrContext;
-import com.sun.tools.javac.comp.DeferredAttr;
 import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.comp.Resolve;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.util.Context;
-import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Log;
 import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Types;
 
 /** A Utility class to find symbols corresponding to string references. */
 public class Resolver {
@@ -37,8 +38,6 @@ public class Resolver {
     private final Trees trees;
     private final Log log;
 
-    private static final Method FIND_METHOD;
-    private static final Method FIND_VAR;
     private static final Method FIND_IDENT;
     private static final Method FIND_IDENT_IN_TYPE;
     private static final Method FIND_IDENT_IN_PACKAGE;
@@ -50,20 +49,6 @@ public class Resolver {
 
     static {
         try {
-            FIND_METHOD =
-                    Resolve.class.getDeclaredMethod(
-                            "findMethod",
-                            Env.class,
-                            Type.class,
-                            Name.class,
-                            List.class,
-                            List.class,
-                            boolean.class,
-                            boolean.class);
-            FIND_METHOD.setAccessible(true);
-
-            FIND_VAR = Resolve.class.getDeclaredMethod("findVar", Env.class, Name.class);
-            FIND_VAR.setAccessible(true);
 
             FIND_IDENT =
                     Resolve.class.getDeclaredMethod(
@@ -111,8 +96,11 @@ public class Resolver {
         }
     }
 
+    Types types;
+
     public Resolver(ProcessingEnvironment env) {
         Context context = ((JavacProcessingEnvironment) env).getContext();
+        this.types = env.getTypeUtils();
         this.resolve = Resolve.instance(context);
         this.names = Names.instance(context);
         this.trees = Trees.instance(env);
@@ -120,12 +108,12 @@ public class Resolver {
     }
 
     /**
-     * Determine the environment for the given path.
+     * Determine the scope for the given path.
      *
      * @param path the tree path to the local scope
-     * @return the corresponding attribution environment
+     * @return the corresponding scope
      */
-    public Env<AttrContext> getEnvForPath(TreePath path) {
+    public Scope getScopePath(TreePath path) {
         TreePath iter = path;
         JavacScope scope = null;
         while (scope == null && iter != null) {
@@ -139,10 +127,20 @@ public class Resolver {
             }
         }
         if (scope != null) {
-            return scope.getEnv();
+            return scope;
         } else {
             throw new BugInCF("Could not determine any possible scope for path: " + path.getLeaf());
         }
+    }
+
+    /**
+     * Determine the environment for the given path.
+     *
+     * @param path the tree path to the local scope
+     * @return the corresponding attribution environment
+     */
+    public Env<AttrContext> getEnvForPath(TreePath path) {
+        return ((JavacScope) getScopePath(path)).getEnv();
     }
 
     /**
@@ -217,19 +215,16 @@ public class Resolver {
      * @param path the tree path to the local scope
      * @return the element for the local variable
      */
-    public VariableElement findLocalVariableOrParameterOrField(String name, TreePath path) {
+    public VariableElement findLocalVariableOrParameter(String name, TreePath path) {
         Log.DiagnosticHandler discardDiagnosticHandler = new Log.DiscardDiagnosticHandler(log);
         try {
-            Env<AttrContext> env = getEnvForPath(path);
-            Element res = wrapInvocationOnResolveInstance(FIND_VAR, env, names.fromString(name));
-            if (res.getKind() == ElementKind.LOCAL_VARIABLE
-                    || res.getKind() == ElementKind.PARAMETER
-                    || res.getKind() == ElementKind.FIELD) {
-                return (VariableElement) res;
-            } else {
-                // Most likely didn't find the variable and the Element is a SymbolNotFoundError
-                return null;
+            Scope scope = getScopePath(path);
+            for (Element element : scope.getLocalElements()) {
+                if (element.getSimpleName().contentEquals(name)) {
+                    return (VariableElement) element;
+                }
             }
+            return null;
         } finally {
             log.popDiagnosticHandler(discardDiagnosticHandler);
         }
@@ -284,103 +279,33 @@ public class Resolver {
         }
     }
 
-    /**
-     * Finds the method element for a given name and list of expected parameter types.
-     *
-     * <p>The method adheres to all the rules of Java's scoping (while also considering the imports)
-     * for name resolution.
-     *
-     * @param methodName name of the method to find
-     * @param receiverType type of the receiver of the method
-     * @param path tree path
-     * @return the method element (if found)
-     */
     public Element findMethod(
-            String methodName,
-            TypeMirror receiverType,
-            TreePath path,
-            java.util.List<TypeMirror> argumentTypes) {
-        Log.DiagnosticHandler discardDiagnosticHandler = new Log.DiscardDiagnosticHandler(log);
-        try {
-            Env<AttrContext> env = getEnvForPath(path);
+            String methodName, TypeMirror receiverType, java.util.List<TypeMirror> argTypes) {
+        TypeElement typeElt = TypesUtils.getTypeElement(receiverType);
+        return getExecutableElement(methodName, typeElt, argTypes);
+    }
 
-            Type site = (Type) receiverType;
-            Name name = names.fromString(methodName);
-            List<Type> argtypes = List.nil();
-            for (TypeMirror a : argumentTypes) {
-                argtypes = argtypes.append((Type) a);
+    public ExecutableElement getExecutableElement(
+            String methodName, TypeElement typeElt, java.util.List<TypeMirror> argTypes) {
+        for (ExecutableElement exec : ElementFilter.methodsIn(typeElt.getEnclosedElements())) {
+            if (exec.getParameters().size() == argTypes.size()
+                    && exec.getSimpleName().contentEquals(methodName)) {
+                boolean typesMatch = true;
+                java.util.List<? extends VariableElement> params = exec.getParameters();
+                for (int i = 0; i < argTypes.size(); i++) {
+                    VariableElement ve = params.get(i);
+                    TypeMirror paramType = ve.asType();
+                    if (!types.isAssignable(argTypes.get(i), paramType)) {
+                        typesMatch = false;
+                        break;
+                    }
+                }
+                if (typesMatch) {
+                    return exec;
+                }
             }
-            List<Type> typeargtypes = List.nil();
-            boolean allowBoxing = true;
-            boolean useVarargs = false;
-
-            try {
-                // For some reason we have to set our own method context, which is rather ugly.
-                // TODO: find a nicer way to do this.
-                Object methodContext = buildMethodContext();
-                Object oldContext = getField(resolve, "currentResolutionContext");
-                setField(resolve, "currentResolutionContext", methodContext);
-                Element result =
-                        wrapInvocationOnResolveInstance(
-                                FIND_METHOD,
-                                env,
-                                site,
-                                name,
-                                argtypes,
-                                typeargtypes,
-                                allowBoxing,
-                                useVarargs);
-                setField(resolve, "currentResolutionContext", oldContext);
-                return result;
-            } catch (Throwable t) {
-                Error err =
-                        new AssertionError(
-                                String.format(
-                                        "Unexpected Reflection error in findMethod(%s, %s, ..., %s)",
-                                        methodName,
-                                        receiverType,
-                                        // path
-                                        argumentTypes));
-                err.initCause(t);
-                throw err;
-            }
-        } finally {
-            log.popDiagnosticHandler(discardDiagnosticHandler);
         }
-    }
-
-    /** Build an instance of {@code Resolve$MethodResolutionContext}. */
-    protected Object buildMethodContext()
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException,
-                    InvocationTargetException, NoSuchFieldException {
-        // Class is not accessible, instantiate reflectively.
-        Class<?> methCtxClss =
-                Class.forName("com.sun.tools.javac.comp.Resolve$MethodResolutionContext");
-        Constructor<?> constructor = methCtxClss.getDeclaredConstructors()[0];
-        constructor.setAccessible(true);
-        Object methodContext = constructor.newInstance(resolve);
-        // we need to also initialize the fields attrMode and step
-        setField(methodContext, "attrMode", DeferredAttr.AttrMode.CHECK);
-        @SuppressWarnings("rawtypes")
-        List<?> phases = (List) getField(resolve, "methodResolutionSteps");
-        setField(methodContext, "step", phases.get(1));
-        return methodContext;
-    }
-
-    /** Reflectively set a field. */
-    private void setField(Object receiver, String fieldName, Object value)
-            throws NoSuchFieldException, IllegalAccessException {
-        Field f = receiver.getClass().getDeclaredField(fieldName);
-        f.setAccessible(true);
-        f.set(receiver, value);
-    }
-
-    /** Reflectively get the value of a field. */
-    private Object getField(Object receiver, String fieldName)
-            throws NoSuchFieldException, IllegalAccessException {
-        Field f = receiver.getClass().getDeclaredField(fieldName);
-        f.setAccessible(true);
-        return f.get(receiver);
+        return null;
     }
 
     private Symbol wrapInvocationOnResolveInstance(Method method, Object... args) {
