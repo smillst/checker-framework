@@ -16,12 +16,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** A Utility class to find symbols corresponding to string references. */
 public class Resolver {
@@ -106,13 +108,27 @@ public class Resolver {
         return getClass(name, typeElt);
     }
 
-    public TypeElement getClass(String classname, TypeElement typeElt) {
+    public TypeElement getClass(String classname, @Nullable Element typeElt) {
+        if (typeElt == null) {
+            return null;
+        }
+        if ((typeElt.getKind().isClass() || typeElt.getKind().isInterface())
+                && typeElt.getSimpleName().contentEquals(classname)) {
+            return (TypeElement) typeElt;
+        }
         for (TypeElement type : ElementFilter.typesIn(typeElt.getEnclosedElements())) {
             if (type.getSimpleName().contentEquals(classname)) {
                 return type;
             }
         }
-        return null;
+        if (typeElt.getKind() == ElementKind.PACKAGE) {
+            return null;
+        }
+        TypeElement enclosingClass = ElementUtils.enclosingClass(typeElt.getEnclosingElement());
+        if (enclosingClass != null) {
+            return getClass(classname, enclosingClass);
+        }
+        return getClass(classname, ElementUtils.enclosingPackage(typeElt));
     }
 
     /**
@@ -147,7 +163,11 @@ public class Resolver {
      * @param path the tree path to the local scope
      * @return the element for the class
      */
-    public Element findClass(String name, TreePath path) {
+    public Element findClass(String name, TreePath path, TypeMirror typeMirror) {
+        Element ele = findClass(name, typeMirror);
+        if (ele != null) {
+            return ele;
+        }
         Log.DiagnosticHandler discardDiagnosticHandler = new Log.DiscardDiagnosticHandler(log);
         try {
             Scope scope = getScopePath(path);
@@ -160,6 +180,7 @@ public class Resolver {
                 }
                 scope = scope.getEnclosingScope();
             }
+
             return null;
 
         } finally {

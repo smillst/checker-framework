@@ -289,7 +289,7 @@ public class FlowExpressionParseUtil {
             }
             if (!context.parsingMember && context.useLocalScope) {
                 // Class name
-                Element classElem = resolver.findClass(s, path);
+                Element classElem = resolver.findClass(s, path, context.receiver.getType());
                 if (classElem != null) {
                     TypeMirror classType = ElementUtils.getType(classElem);
                     return new ClassName(classType);
