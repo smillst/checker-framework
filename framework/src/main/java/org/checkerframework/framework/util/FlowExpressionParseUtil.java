@@ -42,6 +42,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -286,6 +287,14 @@ public class FlowExpressionParseUtil {
                     }
                 }
             }
+            if (!context.parsingMember && context.useLocalScope) {
+                // Class name
+                Element classElem = resolver.findClass(s, path);
+                if (classElem != null) {
+                    TypeMirror classType = ElementUtils.getType(classElem);
+                    return new ClassName(classType);
+                }
+            }
 
             // field access
             TypeMirror receiverType = context.receiver.getType();
@@ -293,12 +302,12 @@ public class FlowExpressionParseUtil {
             VariableElement fieldElem = null;
 
             if (receiverType.getKind() == TypeKind.ARRAY && s.equals("length")) {
-                fieldElem = resolver.findField(s, receiverType, path);
+                fieldElem = resolver.findField(s, receiverType);
             }
 
             // Search for field in each enclosing class.
             while (receiverType.getKind() == TypeKind.DECLARED) {
-                fieldElem = resolver.findField(s, receiverType, path);
+                fieldElem = resolver.findField(s, receiverType);
                 if (fieldElem != null) {
                     break;
                 }
@@ -311,9 +320,9 @@ public class FlowExpressionParseUtil {
             }
 
             // Class name
-            Element classElem = resolver.findClass(s, path);
-            TypeMirror classType = ElementUtils.getType(classElem);
-            if (classType != null) {
+            Element classElem = resolver.findClass(s, context.receiver.getType());
+            if (classElem != null) {
+                TypeMirror classType = ElementUtils.getType(classElem);
                 return new ClassName(classType);
             }
 
@@ -452,31 +461,18 @@ public class FlowExpressionParseUtil {
             }
         }
 
-        /** @param expr a field access, a fully qualified class name, or qualified class name */
+        /** @param expr a field access or a fully qualified class name */
         @Override
         public Receiver visit(FieldAccessExpr expr, FlowExpressionContext context) {
-            Resolver resolver = new Resolver(env);
-
-            Symbol.PackageSymbol packageSymbol =
-                    resolver.findPackage(expr.getScope().toString(), path);
-            if (packageSymbol != null) {
-                ClassSymbol classSymbol =
-                        resolver.findClassInPackage(expr.getNameAsString(), packageSymbol, path);
-                if (classSymbol != null) {
-                    return new ClassName(classSymbol.asType());
-                }
-                throw new ParseRuntimeException(
-                        constructParserException(
-                                expr.toString(),
-                                "could not find class "
-                                        + expr.getNameAsString()
-                                        + " inside "
-                                        + expr.getScope().toString()));
+            // First check for fully qualified class name
+            TypeElement typeElement = env.getElementUtils().getTypeElement(expr.toString());
+            if (typeElement != null) {
+                return new ClassName(typeElement.asType());
             }
 
+            // expr is a field access
             Receiver receiver = expr.getScope().accept(this, context);
 
-            // Parse the rest, with a new receiver.
             FlowExpressionContext newContext =
                     context.copyChangeToParsingMemberOfReceiver(receiver);
             return visit(expr.getNameAsExpression(), newContext);
