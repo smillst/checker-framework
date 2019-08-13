@@ -69,13 +69,10 @@ public class SignednessAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     protected void addComputedTypeAnnotations(
             Tree tree, AnnotatedTypeMirror type, boolean iUseFlow) {
-        // Prevent @ImplicitFor from applying to local variables of type byte, short, int, and long,
+        // Prevent @DefaultFor from applying to local variables of type byte, short, int, and long,
         // but adding the top type to them, which permits flow-sensitive type refinement.
-        // (When it is possible to default types based on their TypeKinds,
-        // this whole method will no longer be needed.)
-        addSignednessGlbAnnotation(tree, type);
         addUnknownSignednessToSomeLocals(tree, type);
-
+        addSignednessGlbAnnotation(tree, type);
         super.addComputedTypeAnnotations(tree, type, iUseFlow);
     }
 
