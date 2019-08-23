@@ -32,7 +32,6 @@ import org.checkerframework.framework.qual.PolyAll;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeVisitor;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationBuilder.CheckerFrameworkAnnotationMirror;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -523,9 +522,6 @@ public abstract class AnnotatedTypeMirror {
     public void addAnnotation(AnnotationMirror a) {
         if (a == null) {
             throw new BugInCF("AnnotatedTypeMirror.addAnnotation: null argument.");
-        }
-        if (!(a instanceof CheckerFrameworkAnnotationMirror)) {
-            a = new CheckerFrameworkAnnotationMirror(a);
         }
         if (atypeFactory.isSupportedQualifier(a)) {
             this.annotations.add(a);
