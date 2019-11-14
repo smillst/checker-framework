@@ -65,6 +65,7 @@ import org.checkerframework.common.wholeprograminference.WholeProgramInferenceSc
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.qual.FieldInvariant;
 import org.checkerframework.framework.qual.FromStubFile;
+import org.checkerframework.framework.qual.HasQualifierParameter;
 import org.checkerframework.framework.qual.InheritedAnnotation;
 import org.checkerframework.framework.qual.PolymorphicQualifier;
 import org.checkerframework.framework.qual.SubtypeOf;
@@ -537,6 +538,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     /** Creates {@link QualifierUpperBounds} for this type factory. */
     protected QualifierUpperBounds createQualifierUpperBounds() {
         return new QualifierUpperBounds(this);
+    }
+
+    /** @return {@link QualifierUpperBounds} for this type factory */
+    public QualifierUpperBounds getQualifierUpperBounds() {
+        return qualifierUpperBounds;
     }
 
     /** Returns the WholeProgramInference instance. */
@@ -3219,6 +3225,78 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
             }
         }
         return result;
+    }
+    /**
+     * Whether or not the {@code annotatedTypeMirror} has an implicit qualifier parameter.
+     *
+     * @param annotatedTypeMirror AnnotatedTypeMirror to check
+     * @return true if the type has a qualifier parameter
+     */
+    public boolean hasQualifierParameterInHierarchy(
+            AnnotatedTypeMirror annotatedTypeMirror, AnnotationMirror top) {
+        return AnnotationUtils.containsSame(
+                getQualifierParameterHierarchies(annotatedTypeMirror), top);
+    }
+    /**
+     * Whether or not the {@code element} has an implicit qualifier parameter.
+     *
+     * @param element element to check
+     * @return true if the type has a qualifier parameter
+     */
+    public boolean hasQualifierParameterInHierarchy(
+            @Nullable Element element, AnnotationMirror top) {
+        return AnnotationUtils.containsSame(getQualifierParameterHierarchies(element), top);
+    }
+
+    /**
+     * Returns the set of top annotations representing all the hierarchies for which this type has a
+     * qualifier parameter.
+     *
+     * @param annotatedType AnnotatedTypeMirror to check
+     * @return the set of top annotations representing all the hierarchies for which this type has a
+     *     qualifier parameter
+     */
+    public Set<AnnotationMirror> getQualifierParameterHierarchies(
+            AnnotatedTypeMirror annotatedType) {
+        if (annotatedType.getKind() != TypeKind.DECLARED) {
+            return AnnotationUtils.createAnnotationSet();
+        }
+
+        AnnotatedDeclaredType declaredType = (AnnotatedDeclaredType) annotatedType;
+        Element element = declaredType.getUnderlyingType().asElement();
+        return getQualifierParameterHierarchies(element);
+    }
+
+    /**
+     * Returns the set of top annotations representing all the hierarchies for which this element
+     * has a qualifier parameter.
+     *
+     * @param element Element to check
+     * @return the set of top annotations representing all the hierarchies for which this element
+     *     has a qualifier parameter
+     */
+    public Set<AnnotationMirror> getQualifierParameterHierarchies(@Nullable Element element) {
+        Set<AnnotationMirror> found = AnnotationUtils.createAnnotationSet();
+
+        if (element == null || !ElementUtils.isTypeDeclaration(element)) {
+            return found;
+        }
+        // TODO: caching
+        AnnotationMirror hasQualifierParam =
+                getDeclAnnotation(element, HasQualifierParameter.class);
+        if (hasQualifierParam == null) {
+            return found;
+        }
+
+        List<Name> qualClasses =
+                AnnotationUtils.getElementValueClassNames(hasQualifierParam, "value", true);
+        for (Name qual : qualClasses) {
+            AnnotationMirror annotationMirror = AnnotationBuilder.fromName(elements, qual);
+            if (isSupportedQualifier(annotationMirror)) {
+                found.add(annotationMirror);
+            }
+        }
+        return found;
     }
 
     /**
