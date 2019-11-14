@@ -1565,7 +1565,7 @@ public abstract class GenericAnnotatedTypeFactory<
     }
 
     /**
-     * Applies defaults for types in a class with an qualifier parameter.
+     * Applies defaults for types in a class with a qualifier parameter.
      *
      * @param elt Element whose type is {@code type}
      * @param type where the defaults are applied
@@ -1587,6 +1587,9 @@ public abstract class GenericAnnotatedTypeFactory<
 
         TypeElement enclosingClass = ElementUtils.enclosingClass(elt);
         Set<AnnotationMirror> tops = getQualifierParameterHierarchies(enclosingClass);
+        if (enclosingClass.getKind() == ElementKind.ENUM) {
+            return;
+        }
         if (tops.isEmpty()) {
             return;
         }
