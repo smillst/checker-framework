@@ -1977,7 +1977,7 @@ public class StubParser {
         if (warnings.add(warning)) {
             processingEnv
                     .getMessager()
-                    .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParser: " + warning);
+                    .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParserq: " + warning);
         }
     }
 

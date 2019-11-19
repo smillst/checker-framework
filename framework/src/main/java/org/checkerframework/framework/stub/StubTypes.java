@@ -47,6 +47,8 @@ public class StubTypes {
      */
     private final Map<String, Set<AnnotationMirror>> declAnnosFromStubFiles;
 
+    private final String jdkLocation;
+
     /**
      * Whether or not a stub file is currently being parsed. (If one is being parsed, don't try to
      * parse another.)
@@ -82,10 +84,10 @@ public class StubTypes {
         this.annotatedJdkVersion =
                 release != null ? release : String.valueOf(PluginUtil.getJreVersion());
 
-        this.shouldParseJdk =
-                !factory.getContext().getChecker().hasOption("ignorejdkastub")
-                        && PluginUtil.getJreVersion() != 8
-                        && annotatedJdkVersion.equals("11");
+        this.shouldParseJdk = !factory.getContext().getChecker().hasOption("ignorejdkastub");
+        //                        && PluginUtil.getJreVersion() != 8
+        //                        && annotatedJdkVersion.equals("11");
+        jdkLocation = "/jdk11";
     }
 
     /** @return true if stub files are currently being parsed; otherwise, false. */
@@ -384,7 +386,7 @@ public class StubTypes {
 
     /** @return JarURLConnection to "/jdk*" */
     private JarURLConnection getJarURLConnectionToJdk() {
-        URL resourceURL = factory.getClass().getResource("/jdk" + annotatedJdkVersion);
+        URL resourceURL = factory.getClass().getResource(jdkLocation);
         JarURLConnection connection;
         try {
             connection = (JarURLConnection) resourceURL.openConnection();
@@ -409,7 +411,7 @@ public class StubTypes {
         if (!shouldParseJdk) {
             return;
         }
-        URL resourceURL = factory.getClass().getResource("/jdk" + annotatedJdkVersion);
+        URL resourceURL = factory.getClass().getResource(jdkLocation);
         if (resourceURL == null) {
             if (factory.getContext().getChecker().hasOption("nocheckjdk")) {
                 return;
