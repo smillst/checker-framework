@@ -220,7 +220,7 @@ optional step.
   %BEGIN LATEX
   \\
   %END LATEX
-  \url{https://checkerframework.org/checker-framework-3.0.0.zip}
+  \url{https://checkerframework.org/checker-framework-3.0.1.zip}
 
 \item
   Unzip it to create a \code{checker-framework} directory.
@@ -741,9 +741,10 @@ Partially-annotated libraries
   Warn if a stub file entry could not be found; see Section~\ref{stub-using}.
 \item \<-AstubWarnIfNotFoundIgnoresClasses>
   Don't warn about missing classes (only methods and fields) even when \<-AwarnIfNotFound> is true.
-\item \<-AstubWarnIfOverwritesBytecode>
-  Warn if a stub file entry overwrite bytecode information; see
-  Section~\ref{stub-using}.
+%% Uncomment when https://tinyurl.com/cfissue/2759 is fixed.
+% \item \<-AstubWarnIfOverwritesBytecode>
+%   Warn if a stub file entry overwrite bytecode information; see
+%   Section~\ref{stub-using}.
 \item \<-AstubWarnIfRedundantWithBytecode>
   Warn if a stub file entry is redundant with bytecode information; see
   Section~\ref{stub-using}.

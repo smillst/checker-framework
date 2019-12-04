@@ -55,7 +55,7 @@ public class StubTypes {
      */
     private boolean parsing;
 
-    /** AnnotatedTypeFactory */
+    /** AnnotatedTypeFactory. */
     private final AnnotatedTypeFactory factory;
 
     /**
@@ -80,13 +80,14 @@ public class StubTypes {
         this.typesFromStubFiles = new HashMap<>();
         this.declAnnosFromStubFiles = new HashMap<>();
         this.parsing = false;
-        String release = PluginUtil.releaseValue(factory.getProcessingEnv());
+        String release = PluginUtil.getReleaseValue(factory.getProcessingEnv());
         this.annotatedJdkVersion =
                 release != null ? release : String.valueOf(PluginUtil.getJreVersion());
 
-        this.shouldParseJdk = !factory.getContext().getChecker().hasOption("ignorejdkastub");
-        //                        && PluginUtil.getJreVersion() != 8
-        //                        && annotatedJdkVersion.equals("11");
+        this.shouldParseJdk =
+                !factory.getContext().getChecker().hasOption("ignorejdkastub")
+                        && PluginUtil.getJreVersion() != 8
+                        && annotatedJdkVersion.equals("11");
         jdkLocation = "/jdk11";
     }
 
@@ -101,9 +102,9 @@ public class StubTypes {
      * <ol>
      *   <li>jdk.astub in the same directory as the checker, if it exists and ignorejdkastub option
      *       is not supplied <br>
-     *   <li>If parings JDK as stub files, all package-info.java in the jdk directory <br>
+     *   <li>If parsing a JDK as stub files, all package-info.java in the jdk directory <br>
      *   <li>Stub files listed in @StubFiles annotation on the checker; must be in same directory as
-     *       the checker<br>
+     *       the checker <br>
      *   <li>Stub files provide via stubs system property <br>
      *   <li>Stub files provide via stubs environment variable <br>
      *   <li>Stub files provide via stubs compiler option
@@ -250,7 +251,7 @@ public class StubTypes {
      * Returns the annotated type for {@code e} containing only annotations explicitly written in a
      * stub file or {@code null} if {@code e} does not appear in a stub file.
      *
-     * @param e Element whose type is returned.
+     * @param e an Element whose type is returned
      * @return an AnnotatedTypeMirror for {@code e} containing only annotations explicitly written
      *     in the stubfile and in the element. {@code null} is returned if {@code element} does not
      *     appear in a stub file.
@@ -290,6 +291,8 @@ public class StubTypes {
     /**
      * Parses the outermost enclosing class of {@code e} if there exists a stub file for it and it
      * has not already been parsed.
+     *
+     * @param e element whose outermost enclosing class will be parsed.
      */
     private void parseEnclosingClass(Element e) {
         if (!shouldParseJdk) {
@@ -432,6 +435,8 @@ public class StubTypes {
     /**
      * Walk through the jdk directory and create a mapping, {@link #jdkStubFiles}, from file name to
      * the class contained with in it. Also, parses all package-info.java files.
+     *
+     * @param resourceURL the URL pointing to the JDK directory
      */
     private void prepJdkFromFile(URL resourceURL) {
         Path root;
@@ -468,7 +473,7 @@ public class StubTypes {
      * Walk through the jdk directory and create a mapping, {@link #jdkStubFilesJar}, from file name
      * to the class contained with in it. Also, parses all package-info.java files.
      *
-     * @param resourceURL
+     * @param resourceURL the URL pointing to the JDK directory
      */
     private void prepJdkFromJar(URL resourceURL) {
         JarURLConnection connection = getJarURLConnectionToJdk();
