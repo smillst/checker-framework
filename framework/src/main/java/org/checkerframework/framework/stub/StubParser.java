@@ -992,6 +992,7 @@ public class StubParser {
                                         declType.getTypeArguments().get().size(),
                                         adeclType,
                                         adeclType.getTypeArguments().size()));
+                        break;
                     }
                     for (int i = 0; i < declType.getTypeArguments().get().size(); ++i) {
                         annotate(
@@ -1985,10 +1986,10 @@ public class StubParser {
      */
     private void stubWarn(String warning, Object... args) {
         warning = String.format(warning, args);
-        if (warnings.add(warning)) {
+        if (warnings.add(warning) && !isJdkAsStub) {
             processingEnv
                     .getMessager()
-                    .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParserq: " + warning);
+                    .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParser: " + warning);
         }
     }
 

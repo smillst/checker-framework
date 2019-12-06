@@ -338,7 +338,10 @@ import org.checkerframework.javacutil.UserError;
     "atfCacheSize",
 
     // Sets AnnotatedTypeFactory shouldCache to false
-    "atfDoNotCache"
+    "atfDoNotCache",
+
+    // Parse all JDK files at start up rather than as needed.
+    "parseAllJdk"
 })
 public abstract class SourceChecker extends AbstractTypeProcessor
         implements CFContext, OptionConfiguration {

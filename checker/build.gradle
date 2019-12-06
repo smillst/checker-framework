@@ -57,10 +57,12 @@ task copyJdk11Files(dependsOn: cloneTypetoolsJdk, group: 'Build') {
         SortedSet<String> annotatedForFiles = new TreeSet<>();
         tree.visit { FileVisitDetails fvd ->
             if (!fvd.file.isDirectory() && fvd.file.name.matches(".*\\.java")) {
-                fvd.getFile().readLines().any { line ->
-                    if (line.contains("@AnnotatedFor") || line.contains("org.checkerframework")) {
-                        annotatedForFiles.add(fvd.file.absolutePath)
-                        return true;
+                if(!(fvd.file.path.contains("org/checkerframework"))) {
+                    fvd.getFile().readLines().any { line ->
+                        if (line.contains("@AnnotatedFor") || line.contains("org.checkerframework")) {
+                            annotatedForFiles.add(fvd.file.absolutePath)
+                            return true;
+                        }
                     }
                 }
             }
