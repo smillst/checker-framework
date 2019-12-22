@@ -22,8 +22,9 @@ import java.lang.annotation.Target;
 public @interface NoQualifierParameter {
 
     /**
-     * @return class of the top qualifier for the hierarchy for which this class has no qualifier
-     *     parameter.
+     * Class of the top qualifier for the hierarchy for which this class has no qualifier parameter.
+     *
+     * @return the value
      */
     Class<? extends Annotation>[] value();
 }
