@@ -935,26 +935,21 @@ qualifier on the upper bound).
 \subsectionAndLabel{Implicit qualifier parameters by default}{default-has-qualifier-parameter}
 
 If many classes in a project should have \<@HasQualifierParameter>, it's
-possible to enable it on all classes by default with names matching a regular
-expression. The \<-AdefaultHasQualifierParameter> command-line option takes a
-semicolon separated list of pairs containing an annotation and a regular
-expression.
+possible to enable it on all classes in a package by default. Writing
+\refqualclass{framework/qual}{DefaultHasQualifierParameter} on a package is
+equivalent to writing \<@HasQualifierParameter> on each class in that package
+and all subpackages. The arguments to \<@DefaultHasQualifierParameter> are the
+same as for \<@HasQualifierParameter>.
 
-Each pair should be of the form ``\<annotation:pattern>'' where \<annotation> is
-the fully qualified name of the top annotation in the hierarchy to enable
-\<@HasQualifierParameter> for and \<pattern> is a regular expression. This
-option is the same as writing ``\<@HasQualifierParameter(annotation.class)>'' on
-all classes that match \<pattern>. The \<pattern> should not contain a
-semicolon.
-
-For example, adding this command-line option enables \<@HasQualifierParameter>
+For example, writing this annotation enables \<@HasQualifierParameter>
 for all classes in \code{mypackage}.
 
 \begin{Verbatim}
--AdefaultHasQualifierParameter=org.checkerframework.checker.tainting.qual.Tainted:^mypackage\..*>
+@DefaultHasQualifierParameter(Tainted.class)
+package mypackage;
 \end{Verbatim}
 
-When using \<-AdefaultHasQualifierParameter>, it's possible to disable
+When using \<@DefaultHasQualifierParameter>, it's possible to disable
 \<@HasQualifierParameter> for a specific class using
 \refqualclass{framework/qual}{NoQualifierParameter}. Writing this on a class
 indicates it has no implicit qualifier parameter and \<@HasQualifierParameter>
