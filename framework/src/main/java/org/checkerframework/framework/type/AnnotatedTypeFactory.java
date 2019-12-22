@@ -375,12 +375,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     protected final ExecutableElement objectGetClass;
 
     /**
-     * Mapping from top annotations in hierarchies to regexes for which the {@code
-     * HasQualifierParameter} annotation should be on by default.
-     */
-    private final Map<AnnotationMirror, Pattern> defaultHasQualifierParameterPatterns;
-
-    /**
      * Constructs a factory from the given {@link ProcessingEnvironment} instance and syntax tree
      * root. (These parameters are required so that the factory may conduct the appropriate
      * annotation-gathering analyses on certain tree types.)
@@ -444,8 +438,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         ignoreUninferredTypeArguments = !checker.hasOption("conservativeUninferredTypeArguments");
 
         objectGetClass = TreeUtils.getMethod("java.lang.Object", "getClass", 0, processingEnv);
-
-        defaultHasQualifierParameterPatterns = AnnotationUtils.createAnnotationMap();
     }
 
     /**
@@ -547,8 +539,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
         initializeReflectionResolution();
 
-        initializeDefaultHasQualifierParameter();
-
         if (this.getClass() == AnnotatedTypeFactory.class) {
             this.parseStubFiles();
         }
@@ -580,37 +570,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
                     (MethodValAnnotatedTypeFactory) methodValChecker.getAnnotationProvider();
 
             reflectionResolver = new DefaultReflectionResolver(checker, methodValATF, debug);
-        }
-    }
-
-    /** Parses -AdefaultHasQualifierParameter option if present. */
-    protected void initializeDefaultHasQualifierParameter() {
-        if (!checker.hasOption("defaultHasQualifierParameter")) {
-            return;
-        }
-
-        String defaultHasQualifierParameterOption =
-                checker.getOption("defaultHasQualifierParameter");
-        if (defaultHasQualifierParameterOption == null) {
-            return;
-        }
-
-        String[] quals = defaultHasQualifierParameterOption.split(";");
-        for (String qual : quals) {
-            int splitLocation = qual.indexOf(":");
-            if (splitLocation == -1) {
-                throw new UserError(
-                        "Each part of -AdefaultHasQualifierParameter should have a colon");
-            }
-
-            String qualName = qual.substring(0, splitLocation);
-            String classPattern = qual.substring(splitLocation + 1);
-            AnnotationMirror anno = AnnotationBuilder.fromName(elements, qualName);
-            if (anno == null) {
-                throw new UserError("Invalid annotation name: " + qualName);
-            }
-
-            defaultHasQualifierParameterPatterns.put(anno, Pattern.compile(classPattern));
         }
     }
 

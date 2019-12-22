@@ -343,14 +343,7 @@ import org.checkerframework.javacutil.UserError;
     "atfCacheSize",
 
     // Sets AnnotatedTypeFactory shouldCache to false
-    "atfDoNotCache",
-
-    // Turns on @HasQualifierParameter for specified classes. Takes a semicolon separated list of
-    // strings, each with a top annotation followed by a colon and a regular expression. For example
-    // "Annotation1:(package1|package2).*;Annotation2:package3.*" enables @HasQualifierParameter for
-    // the Annotation1 hierarchy on classes in package1 and package2 and the hierarchy for
-    // Annotation2 on classes in package3.
-    "defaultHasQualifierParameter"
+    "atfDoNotCache"
 })
 public abstract class SourceChecker extends AbstractTypeProcessor
         implements CFContext, OptionConfiguration {
