@@ -1918,8 +1918,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 newExprType = exprType;
             }
 
-            if (!atypeFactory.getTypeHierarchy().isSubtype(newExprType, newCastType)) {
-                return false;
+            if (TypesUtils.isErasedSubtype(
+                    newExprType.getUnderlyingType(), newCastType.getUnderlyingType(), types)) {
+                if (!atypeFactory.getTypeHierarchy().isSubtype(newExprType, newCastType)) {
+                    return false;
+                }
             }
             if (newCastType.getKind() == TypeKind.ARRAY
                     && newExprType.getKind() != TypeKind.ARRAY) {
@@ -1928,6 +1931,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
                 return false;
             } else if (newCastType.getKind() == TypeKind.DECLARED
                     && newExprType.getKind() == TypeKind.DECLARED) {
+
                 int castSize = ((AnnotatedDeclaredType) newCastType).getTypeArguments().size();
                 int exprSize = ((AnnotatedDeclaredType) newExprType).getTypeArguments().size();
 
