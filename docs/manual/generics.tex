@@ -936,27 +936,25 @@ qualifier on the upper bound).
 
 If many classes in a project should have \<@HasQualifierParameter>, it's
 possible to enable it on all classes in a package by default. Writing
-\refqualclass{framework/qual}{DefaultHasQualifierParameter} on a package is
-equivalent to writing \<@HasQualifierParameter> on each class in that package
-and all subpackages. The arguments to \<@DefaultHasQualifierParameter> are the
-same as for \<@HasQualifierParameter>.
+\<@HasQualifierParameter> on a package is equivalent to writing
+\<@HasQualifierParameter> on each class in that package and all subpackages with
+the same arguments.
 
 For example, writing this annotation enables \<@HasQualifierParameter>
 for all classes in \code{mypackage}.
 
 \begin{Verbatim}
-@DefaultHasQualifierParameter(Tainted.class)
+@HasQualifierParameter(Tainted.class)
 package mypackage;
 \end{Verbatim}
 
-When using \<@DefaultHasQualifierParameter>, it's possible to disable
-\<@HasQualifierParameter> for a specific class using
-\refqualclass{framework/qual}{NoQualifierParameter}. Writing this on a class
-indicates it has no implicit qualifier parameter and \<@HasQualifierParameter>
-will not be enabled by default. Like \<@HasQualifierParameter>, it takes one or
-more top annotations. It is illegal to explicitly write both
-\<@HasQualifierParameter> and \<@NoQualifierParameter> on the same class for the
-same hierarchy.
+When using \<@HasQualifierParameter> on a package, it's possible to disable it
+for a specific class using \refqualclass{framework/qual}{NoQualifierParameter}.
+Writing this on a class indicates it has no implicit qualifier parameter and
+\<@HasQualifierParameter> will not be enabled by default. Like
+\<@HasQualifierParameter>, it takes one or more top annotations. It is illegal
+to explicitly write both \<@HasQualifierParameter> and \<@NoQualifierParameter>
+on the same class for the same hierarchy.
 
 %% TODO: implement this.
 %\subsectionAndLabel{Inheritance of classes with a qualifier parameter}{class-qual-param-inheritance}

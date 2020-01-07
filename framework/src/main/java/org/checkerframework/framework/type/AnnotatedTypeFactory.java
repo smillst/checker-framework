@@ -64,7 +64,6 @@ import org.checkerframework.common.reflection.ReflectionResolver;
 import org.checkerframework.common.wholeprograminference.WholeProgramInference;
 import org.checkerframework.common.wholeprograminference.WholeProgramInferenceScenes;
 import org.checkerframework.dataflow.qual.SideEffectFree;
-import org.checkerframework.framework.qual.DefaultHasQualifierParameter;
 import org.checkerframework.framework.qual.FieldInvariant;
 import org.checkerframework.framework.qual.FromStubFile;
 import org.checkerframework.framework.qual.HasQualifierParameter;
@@ -3346,7 +3345,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         while (packageElement != null) {
             Set<AnnotationMirror> packageDefaultTops =
                     getSupportedAnnotationsInElementAnnotation(
-                            packageElement, DefaultHasQualifierParameter.class);
+                            packageElement, HasQualifierParameter.class);
             hasQualifierParameterTops.addAll(packageDefaultTops);
 
             packageElement = ElementUtils.parentPackage(packageElement, elements);
