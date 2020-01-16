@@ -3426,9 +3426,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
      * @param element Element to check
      * @param annoClass the class for an annotation that's written on elements, whose value element
      *     is a list of annotation classes.
-     * @return the set of supported annotations written inside the {@code annoClass} on the {@code
-     *     element}. Returns an empty set if {@code annoClass} is not written on {@code element} or
-     *     {@code element} is null.
+     * @return the set of supported annotations with classes listed in the value element of an
+     *     annotation with class {@code annoClass} on the {@code element}. Returns an empty set if
+     *     {@code annoClass} is not written on {@code element} or {@code element} is null.
      */
     private Set<AnnotationMirror> getSupportedAnnotationsInElementAnnotation(
             @Nullable Element element, Class<? extends Annotation> annoClass) {
