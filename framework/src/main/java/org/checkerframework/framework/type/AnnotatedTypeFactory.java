@@ -3420,25 +3420,25 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     /**
-     * Returns the set of supported annotations listed inside a specified annotation written on the
-     * given element.
+     * Returns a set of supported annotation mirrors corresponding to the annotation classes listed
+     * in the value element of an annotation with class {@code annoClass} on {@code element}.
      *
      * @param element Element to check
-     * @param elementAnnotation the class for an annotation that's written on elements, which takes
-     *     as its arguments other annotations
-     * @return the set of supported annotations written inside the {@code elementAnnotation} on the
-     *     {@code element}. Returns an empty set if {@code elementAnnotation} is not written on
-     *     {@code element} or {@code element} is null.
+     * @param annoClass the class for an annotation that's written on elements, whose value element
+     *     is a list of annotation classes.
+     * @return the set of supported annotations written inside the {@code annoClass} on the {@code
+     *     element}. Returns an empty set if {@code annoClass} is not written on {@code element} or
+     *     {@code element} is null.
      */
     private Set<AnnotationMirror> getSupportedAnnotationsInElementAnnotation(
-            @Nullable Element element, Class<? extends Annotation> elementAnnotation) {
+            @Nullable Element element, Class<? extends Annotation> annoClass) {
         Set<AnnotationMirror> found = AnnotationUtils.createAnnotationSet();
 
         if (element == null) {
             return found;
         }
         // TODO: caching
-        AnnotationMirror annotation = getDeclAnnotation(element, elementAnnotation);
+        AnnotationMirror annotation = getDeclAnnotation(element, annoClass);
         if (annotation == null) {
             return found;
         }
