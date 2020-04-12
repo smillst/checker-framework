@@ -88,9 +88,7 @@ public class StubTypes {
         this.annotatedJdkVersion =
                 release != null ? release : String.valueOf(PluginUtil.getJreVersion());
 
-        this.shouldParseJdk =
-                !factory.getContext().getChecker().hasOption("ignorejdkastub")
-                        && PluginUtil.getJreVersion() != 8;
+        this.shouldParseJdk = !factory.getContext().getChecker().hasOption("ignorejdkastub");
         jdkDir = "jdk11";
         parseAllJdkFiles = factory.getContext().getChecker().hasOption("parseAllJdk");
     }
