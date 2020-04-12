@@ -220,7 +220,7 @@ public class StubParser {
 
         this.atypes = atypes;
         this.declAnnos = declAnnos;
-        this.isJdkAsStub = false;
+        this.isJdkAsStub = isJdkAsStub;
     }
 
     /**
@@ -2045,7 +2045,7 @@ public class StubParser {
      */
     private void stubWarn(String warning, Object... args) {
         warning = String.format(warning, args);
-        if (warnings.add(warning)) {
+        if (warnings.add(warning) && !isJdkAsStub) {
             processingEnv
                     .getMessager()
                     .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParser: " + warning);
