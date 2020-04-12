@@ -646,7 +646,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             throw new UnsupportedOperationException();
         }
 
-        public final boolean equals(Object o) {
+        public final boolean equals(@Nullable Object o) {
             Object k, v, u; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
@@ -1356,7 +1356,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
      * @param o object to be compared for equality with this map
      * @return {@code true} if the specified object is equal to this map
      */
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
         if (o != this) {
             if (!(o instanceof Map))
                 return false;
@@ -3507,7 +3507,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
         public int hashCode()    { return key.hashCode() ^ val.hashCode(); }
         public String toString() { return key + "=" + val; }
 
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             Object k, v; Map.Entry<?,?> e;
             return ((o instanceof Map.Entry) &&
                     (k = (e = (Map.Entry<?,?>)o).getKey()) != null &&
@@ -4519,7 +4519,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             return sb.append(']').toString();
         }
 
-        public final boolean containsAll(Collection<?> c) {
+        public final boolean containsAll(Collection<? extends @NonNull Object> c) {
             if (c != this) {
                 for (Object e : c) {
                     if (e == null || !contains(e))
@@ -4529,7 +4529,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             return true;
         }
 
-        public final boolean removeAll(Collection<?> c) {
+        public final boolean removeAll(Collection<? extends @NonNull Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<E> it = iterator(); it.hasNext();) {
@@ -4541,7 +4541,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             return modified;
         }
 
-        public final boolean retainAll(Collection<?> c) {
+        public final boolean retainAll(Collection<? extends @NonNull Object> c) {
             if (c == null) throw new NullPointerException();
             boolean modified = false;
             for (Iterator<E> it = iterator(); it.hasNext();) {
@@ -4659,7 +4659,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             return h;
         }
 
-        public boolean equals(Object o) {
+        public boolean equals(@Nullable Object o) {
             Set<?> c;
             return ((o instanceof Set) &&
                     ((c = (Set<?>)o) == this ||
@@ -4809,7 +4809,7 @@ public class ConcurrentHashMap<K extends @NonNull Object, V extends @NonNull Obj
             return h;
         }
 
-        public final boolean equals(Object o) {
+        public final boolean equals(@Nullable Object o) {
             Set<?> c;
             return ((o instanceof Set) &&
                     ((c = (Set<?>)o) == this ||

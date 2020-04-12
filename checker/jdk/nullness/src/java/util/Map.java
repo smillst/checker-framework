@@ -136,7 +136,7 @@ import org.checkerframework.framework.qual.Covariant;
  */
 // Subclasses of this interface/class may opt to prohibit null elements
 @Covariant(0)
-public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
+public interface Map<K, V> {
     // Query Operations
 
     /**
@@ -176,7 +176,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      */
     @Pure
     @EnsuresKeyForIf(result=true, expression="#1", map="this")
-    boolean containsKey(@Nullable Object key);
+    boolean containsKey(Object key);
 
     /**
      * Returns <tt>true</tt> if this map maps one or more keys to the
@@ -197,7 +197,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     @Pure
-    boolean containsValue(@Nullable Object value);
+    boolean containsValue(Object value);
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -224,16 +224,8 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      *         does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    /// Despite the below comment, commit 18e1bb8d2f1c2cdc88af5616faadb28a5381b8d2
-    /// made the parameter @Nullable.  Was that a compromise to reduce false positives?
-    // The parameter is not nullable, because implementations of Map.get and
-    // Map.put are specifically permitted to throw NullPointerException if
-    // any of the arguments is a null).  And some implementations do not
-    // permit nulls (sorted queues PriorityQueue, Hashtable, most concurrent
-    // collections).  Some other implementation do accept nulls and are so
-    // annotatied (see ArrayList, LinkedList, HashMap).
     @Pure
-    @Nullable V get(@Nullable Object key);
+    @Nullable V get(Object key);
 
     // Modification Operations
 
@@ -294,7 +286,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      *         map does not permit null keys
      * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
      */
-    @Nullable V remove(@Nullable Object key);
+    @Nullable V remove(Object key);
 
 
     // Bulk Operations
@@ -404,7 +396,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      * @since 1.2
      */
     @Covariant(0)
-    interface Entry<K extends @Nullable Object, V extends @Nullable Object> {
+    interface Entry<K, V> {
         /**
          * Returns the key corresponding to this entry.
          *
@@ -578,7 +570,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      * @param o object to be compared for equality with this map
      * @return <tt>true</tt> if the specified object is equal to this map
      */
-    boolean equals(Object o);
+    boolean equals(@Nullable Object o);
 
     /**
      * Returns the hash code value for this map.  The hash code of a map is
@@ -775,7 +767,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      * @since 1.8
      */
     @EnsuresKeyFor(value="#1", map="this")
-    default V putIfAbsent(K key, V value) {
+    default @Nullable V putIfAbsent(K key, V value) {
         V v = get(key);
         if (v == null) {
             v = put(key, value);
@@ -918,7 +910,7 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      *         or value prevents it from being stored in this map
      * @since 1.8
      */
-    default V replace(K key, V value) {
+    default @Nullable V replace(K key, V value) {
         V curValue;
         if (((curValue = get(key)) != null) || containsKey(key)) {
             curValue = put(key, value);
@@ -1203,8 +1195,11 @@ public interface Map<K extends @Nullable Object, V extends @Nullable Object> {
      *         null
      * @since 1.8
      */
+    // It would be more flexible to make the return type of remappingFunction be `@Nullable V`.  A
+    // remappingFunction that returns null is is probably rare, and these annotations accommodate
+    // the majority of uses that don't return null.
     default V merge(K key, V value,
-            BiFunction<? super V, ? super V, ? extends @Nullable V> remappingFunction) {
+            BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         Objects.requireNonNull(remappingFunction);
         Objects.requireNonNull(value);
         V oldValue = get(key);
