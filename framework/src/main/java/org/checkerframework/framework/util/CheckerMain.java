@@ -128,7 +128,7 @@ public class CheckerMain {
     /** Assert that required jars exist. */
     protected void assertValidState() {
         if (PluginUtil.getJreVersion() < 9) {
-            assertFilesExist(Arrays.asList(javacJar, jdkJar, checkerJar, checkerQualJar));
+            assertFilesExist(Arrays.asList(javacJar, checkerJar, checkerQualJar));
         } else {
             // TODO: once the jdk11 jars exist, check for them.
             assertFilesExist(Arrays.asList(checkerJar, checkerQualJar));
@@ -160,12 +160,7 @@ public class CheckerMain {
      *     using Java 8
      */
     protected List<String> createCompilationBootclasspath(final List<String> argsList) {
-        final List<String> extractedBcp = extractBootClassPath(argsList);
-        if (PluginUtil.getJreVersion() == 8) {
-            extractedBcp.add(0, jdkJar.getAbsolutePath());
-        }
-
-        return extractedBcp;
+        return extractBootClassPath(argsList);
     }
 
     protected List<String> createCpOpts(final List<String> argsList) {

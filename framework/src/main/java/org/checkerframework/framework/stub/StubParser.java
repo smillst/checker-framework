@@ -1,6 +1,8 @@
 package org.checkerframework.framework.stub;
 
 import com.github.javaparser.ParseProblemException;
+import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.ParserConfiguration.LanguageLevel;
 import com.github.javaparser.Problem;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -218,7 +220,7 @@ public class StubParser {
 
         this.atypes = atypes;
         this.declAnnos = declAnnos;
-        this.isJdkAsStub = isJdkAsStub;
+        this.isJdkAsStub = false;
     }
 
     /**
@@ -483,6 +485,9 @@ public class StubParser {
         if (debugStubParser) {
             stubDebug(String.format("parsing stub file %s", filename));
         }
+        ParserConfiguration c = new ParserConfiguration();
+        c.setLanguageLevel(LanguageLevel.JAVA_11);
+        StaticJavaParser.setConfiguration(c);
         stubUnit = StaticJavaParser.parseStubUnit(inputStream);
 
         // getAllStubAnnotations() also modifies importedConstants and importedTypes. This should
@@ -2040,7 +2045,7 @@ public class StubParser {
      */
     private void stubWarn(String warning, Object... args) {
         warning = String.format(warning, args);
-        if (warnings.add(warning) && !isJdkAsStub) {
+        if (warnings.add(warning)) {
             processingEnv
                     .getMessager()
                     .printMessage(javax.tools.Diagnostic.Kind.WARNING, "StubParser: " + warning);

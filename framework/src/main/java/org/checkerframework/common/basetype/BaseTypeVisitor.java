@@ -228,7 +228,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         targetValueElement =
                 TreeUtils.getMethod(java.lang.annotation.Target.class.getName(), "value", 0, env);
 
-        checkForAnnotatedJdk();
+        //        checkForAnnotatedJdk();
     }
 
     /**

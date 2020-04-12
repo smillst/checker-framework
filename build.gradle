@@ -266,7 +266,6 @@ def createCheckTypeTask(projectName, checker, shortName, args = []) {
 
         if (isJava8) {
             options.compilerArgs += [
-                "-Xbootclasspath/p:${rootDir}/checker/dist/jdk8.jar",
                 "-source",
                 "8",
                 "-target",
@@ -677,11 +676,6 @@ subprojects {
                                 "-javacoptions:-source 8",
                                 "-javacoptions:-target 8"
                                 ]
-                            if (project.name.is('checker')) {
-                                args += [
-                                        "-javacoptions:-Xbootclasspath/p:${projectDir}/dist/jdk8.jar",
-                                ]
-                            }
                         } else {
                             args += [
                                     // checker/jtreg/nullness/defaultsPersist/ReferenceInfoUtil.java
@@ -733,7 +727,6 @@ subprojects {
 
             if (project.name.is('checker')) {
                 dependsOn('copyJarsToDist')
-                systemProperties += [JDK_JAR: "${projectDir}/dist/jdk8.jar"]
             }
 
             if (project.hasProperty('emit.test.debug')) {
