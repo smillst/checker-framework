@@ -72,9 +72,6 @@ public class StubTypes {
     /** Should the JDK be parsed? */
     private final boolean shouldParseJdk;
 
-    /** Name of the jdk directory containing the files that should be parsed.* */
-    private final String jdkDir;
-
     /** Parse all JDK files at start up rather than as needed. */
     private boolean parseAllJdkFiles;
 
@@ -89,8 +86,7 @@ public class StubTypes {
                 release != null ? release : String.valueOf(PluginUtil.getJreVersion());
 
         this.shouldParseJdk = !factory.getContext().getChecker().hasOption("ignorejdkastub");
-        jdkDir = "jdk11";
-        parseAllJdkFiles = factory.getContext().getChecker().hasOption("parseAllJdk");
+        this.parseAllJdkFiles = factory.getContext().getChecker().hasOption("parseAllJdk");
     }
 
     /** @return true if stub files are currently being parsed; otherwise, false. */
