@@ -13,7 +13,7 @@ sourceSets {
     main {
         resources {
             // Stub files, message.properties, etc.
-            srcDirs += ['src/main/java', "${buildDir}/jdk"]
+            srcDirs += ['src/main/java', "${buildDir}/generated-resources"]
         }
     }
     testannotations
@@ -57,10 +57,10 @@ task cloneTypetoolsJdk() {
     }
 }
 
-task copyJdk11Files(dependsOn: cloneTypetoolsJdk, group: 'Build') {
+task copyAnnotatedJdkFiles(dependsOn: cloneTypetoolsJdk, group: 'Build') {
     def inputDir = "${jdkHome}/src"
-    def outputDir = "${buildDir}/jdk/jdk11"
-    description "Copy annotated jdk 11 files to ${outputDir}"
+    def outputDir = "${buildDir}/generated-resources/annotated-jdk/"
+    description "Copy annotated jdk files to ${outputDir}"
 
     inputs.dir file(inputDir)
     outputs.dir file(outputDir)
@@ -92,7 +92,17 @@ task copyJdk11Files(dependsOn: cloneTypetoolsJdk, group: 'Build') {
     }
 }
 
-processResources.dependsOn(copyJdk11Files)
+task minimizeJdk(type: JavaExec) {
+    description 'Removes all private and package private methods and all method bodies from the annotated jdk.'
+    dependsOn copyAnnotatedJdkFiles
+    dependsOn ':framework:compileJava'
+    classpath = project(':framework').sourceSets.main.runtimeClasspath
+
+    main = 'org.checkerframework.framework.stub.JavaStubifier'
+    args "${buildDir}/generated-resources/annotated-jdk/"
+}
+
+processResources.dependsOn(minimizeJdk)
 
 jar {
     manifest {

@@ -415,7 +415,7 @@ public class StubTypes {
 
     /** @return JarURLConnection to "/jdk*" */
     private JarURLConnection getJarURLConnectionToJdk() {
-        URL resourceURL = factory.getClass().getResource("/" + jdkDir);
+        URL resourceURL = factory.getClass().getResource("/annotated-jdk");
         JarURLConnection connection;
         try {
             connection = (JarURLConnection) resourceURL.openConnection();
@@ -440,7 +440,7 @@ public class StubTypes {
         if (!shouldParseJdk) {
             return;
         }
-        URL resourceURL = factory.getClass().getResource("/" + jdkDir);
+        URL resourceURL = factory.getClass().getResource("/annotated-jdk");
         if (resourceURL == null) {
             if (factory.getContext().getChecker().hasOption("permitMissingJdk")
                     // temporary, for backward compatibility
@@ -518,7 +518,7 @@ public class StubTypes {
                 // filter out directories and non-class files
                 if (!jarEntry.isDirectory()
                         && jarEntry.getName().endsWith(".java")
-                        && jarEntry.getName().startsWith(jdkDir)
+                        && jarEntry.getName().startsWith("annotated-jdk")
                         && !jarEntry.getName().contains("module-info")) {
                     String jarEntryName = jarEntry.getName();
                     if (parseAllJdkFiles) {
