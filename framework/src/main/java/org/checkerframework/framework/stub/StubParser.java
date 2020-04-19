@@ -188,8 +188,8 @@ public class StubParser {
      * file.
      *
      * @param filename name of stub file, used only for diagnostic messages
-     * @param atypeFactory AnnotatedtypeFactory to use
-     * @param processingEnv ProcessingEnviroment to use
+     * @param atypeFactory AnnotatedTypeFactory to use
+     * @param processingEnv ProcessingEnvironment to use
      * @param isJdkAsStub whether or not the stub file is a part of the JDK
      */
     public StubParser(
@@ -401,8 +401,8 @@ public class StubParser {
      *
      * @param filename name of stub file, used only for diagnostic messages
      * @param inputStream of stub file to parse
-     * @param atypeFactory AnnotatedtypeFactory to use
-     * @param processingEnv ProcessingEnviroment to use
+     * @param atypeFactory AnnotatedTypeFactory to use
+     * @param processingEnv ProcessingEnvironment to use
      * @param atypes annotated types from this stub file is added to this map
      * @param declAnnos declaration annotations from this stub file are added to this map
      */
@@ -422,8 +422,8 @@ public class StubParser {
      *
      * @param filename name of stub file, used only for diagnostic messages
      * @param inputStream of stub file to parse
-     * @param atypeFactory AnnotatedtypeFactory to use
-     * @param processingEnv ProcessingEnviroment to use
+     * @param atypeFactory AnnotatedTypeFactory to use
+     * @param processingEnv ProcessingEnvironment to use
      * @param atypes annotated types from this stub file is added to this map
      * @param declAnnos declaration annotations from this stub file are added to this map
      */
@@ -442,8 +442,8 @@ public class StubParser {
      *
      * @param filename name of stub file, used only for diagnostic messages
      * @param inputStream of stub file to parse
-     * @param atypeFactory AnnotatedtypeFactory to use
-     * @param processingEnv ProcessingEnviroment to use
+     * @param atypeFactory AnnotatedTypeFactory to use
+     * @param processingEnv ProcessingEnvironment to use
      * @param atypes annotated types from this stub file is added to this map
      * @param declAnnos declaration annotations from this stub file are added to this map
      * @param isJdkAsStub whether or not the stub file is a part of the annotated jdk
