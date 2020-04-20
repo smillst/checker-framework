@@ -400,13 +400,4 @@ public class TestConfigurationBuilder {
         String globalclasspath = System.getProperty("java.class.path", "");
         return classpath + File.pathSeparator + globalclasspath;
     }
-
-    /**
-     * The path to the annotated JDK, looked up from the system property "JDK_JAR".
-     *
-     * @return the value of the system property "JDK_JAR"
-     */
-    public static String getJdkJarPathFromProperty() {
-        return System.getProperty("JDK_JAR");
-    }
 }

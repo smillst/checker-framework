@@ -103,9 +103,6 @@ android {
 \begin{mysmall}
 \begin{Verbatim}
 configurations {
-    checkerFrameworkAnnotatedJDK {
-        description = 'a copy of JDK classes with Checker Framework type qualifiers inserted'
-    }
     errorproneJavac {
         description = 'required to run the Checker Framework.'
     }
@@ -125,21 +122,17 @@ dependencies {
     // or if you use no annotations in source code the above line could be
     // compileOnly "org.checkerframework:checker-qual-android:${checkerFrameworkVersion}"
     annotationProcessor "org.checkerframework:checker:${checkerFrameworkVersion}"
-    checkerFrameworkAnnotatedJDK "org.checkerframework:jdk8:${checkerFrameworkVersion}"
     errorproneJavac 'com.google.errorprone:javac:9+181-r4173-1'
 }
 \end{Verbatim}
 \end{mysmall}
 
-\item Direct all tasks of type \<JavaCompile> used by the \<checkTypes> build variant to use the annotated JDK:
+\item Direct all tasks of type \<JavaCompile> used by the \<checkTypes> build variant to use the ErrorProne compiler:
 \begin{mysmall}
 \begin{Verbatim}
 gradle.projectsEvaluated {
     tasks.withType(JavaCompile).all { compile ->
         if (compile.name.contains("CheckTypes")) {
-            compile.options.compilerArgs += [
-                    "-Xbootclasspath/p:${configurations.checkerFrameworkAnnotatedJDK.asPath}"
-            ]
             options.fork = true
             options.forkOptions.jvmArgs += ["-Xbootclasspath/p:${configurations.errorproneJavac.asPath}"]
         }
@@ -364,7 +357,6 @@ java_library (
 # To add annotation processing
     annotation_processors = [ 'org.checkerframework.checker.units.UnitsChecker' ],
     annotation_processor_deps = [ ':checker-framework', ':checker-qual' ],
-    annotation_processor_params = [ 'permitMissingJdk' ]
 )
 \end{Verbatim}
 
@@ -893,8 +885,8 @@ JDK 8 is explained in Section~\ref{java8-install}.
 
 \end{enumerate}
 
-\item If using JDK 8, use Maven properties to hold the locations of the
-  annotated JDK and ErrorProne javac.jar.  They were declared as Maven dependencies above.
+\item If using JDK 8, use a Maven property to hold the location of the
+  ErrorProne javac.jar.  They were declared as Maven dependencies above.
 To set the value of these properties automatically, you will use the Maven Dependency plugin.
 
 First, create the property in the \code{properties} section of the POM:
