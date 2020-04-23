@@ -61,7 +61,10 @@ task copyAnnotatedJdkFiles(dependsOn: cloneTypetoolsJdk, group: 'Build') {
         FileTree tree = fileTree(dir: inputDir)
         SortedSet<String> annotatedForFiles = new TreeSet<>();
         tree.visit { FileVisitDetails fvd ->
-            if (!fvd.file.isDirectory() && fvd.file.name.matches(".*\\.java")) {
+            if (!fvd.file.isDirectory() && fvd.file.name.matches(".*\\.java")
+                    && !fvd.file.name.matches("module-info.java")) {
+                // Ignore module-info until this JavaParser bug is fixed (and merged in the StubParser):
+                // https://github.com/javaparser/javaparser/issues/2615
                 if(!(fvd.file.path.contains("org/checkerframework"))) {
                     fvd.getFile().readLines().any { line ->
                         if (line.contains("@AnnotatedFor") || line.contains("org.checkerframework")) {
@@ -85,7 +88,7 @@ task copyAnnotatedJdkFiles(dependsOn: cloneTypetoolsJdk, group: 'Build') {
 }
 
 task minimizeJdk(type: JavaExec) {
-    description 'Removes all private and package private methods and all method bodies from the annotated jdk.'
+    description 'Removes private and package-private methods, method bodies, comments, etc. from the annotated JDK.'
     dependsOn copyAnnotatedJdkFiles
     dependsOn ':framework:compileJava'
     classpath = project(':framework').sourceSets.main.runtimeClasspath

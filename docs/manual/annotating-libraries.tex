@@ -574,6 +574,7 @@ minimal stub files.
   mkdir project-stubs
   cp -R project/src project-stubs
   java -cp $CHECKERFRAMEWORK/checker/dist/checker.jar org.checkerframework.framework.stub.JavaStubifier project-stubs
+  find project-stubs -type f -name "*.java" -exec rename 's/.java$/.astub/' {} \;
 \end{Verbatim}
 
 Supply it a list of directories to process. Replacement happens in-place, so make sure to
@@ -581,13 +582,14 @@ process a copy of your sources.
 
 You can now provide \<project-stubs> as a stub directory using \<-Astubs=project-stubs> as
 an additional command-line option.
-You can also concatenate all minimized \<.java> files into a single \<.astub> file:
+
+If you wish to use a single stub file, rather than a stub directory,
+you can concatenate all the minimized \<.java> files into a single \<.astub> file:
 
 \begin{Verbatim}
 find project-stubs/ -name "*.java" -type f | xargs cat > project.astub
 \end{Verbatim}
 
-and then pass just that single file.
 % That file will contain many non-unique import statements, but that shouldn't be harmful.
 
 
