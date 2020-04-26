@@ -105,8 +105,6 @@ public class CheckerMain {
         this.javacJar =
                 extractFileArg(PluginUtil.JAVAC_PATH_OPT, new File(searchPath, "javac.jar"), args);
 
-        final String jdkJarName = PluginUtil.getJdkJarName();
-
         this.compilationBootclasspath = createCompilationBootclasspath(args);
         this.runtimeClasspath = createRuntimeClasspath(args);
         this.jvmOpts = extractJvmOpts(args);

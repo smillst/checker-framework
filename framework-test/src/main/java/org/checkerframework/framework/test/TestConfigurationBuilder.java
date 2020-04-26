@@ -109,10 +109,6 @@ public class TestConfigurationBuilder {
         return builder.validateThenBuild(true);
     }
 
-    private static boolean notNullOrEmpty(String str) {
-        return str != null && !str.isEmpty();
-    }
-
     /**
      * This is the default configuration used by Checker Framework JUnit tests.
      *
