@@ -178,9 +178,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     /** An instance of the {@link ContractsUtils} helper class. */
     protected final ContractsUtils contractsUtils;
 
-    /** The Object.equals method. */
-    private final ExecutableElement objectEquals;
-
     /** The element for java.util.Vector#copyInto. */
     private final ExecutableElement vectorCopyInto;
 
@@ -219,7 +216,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         this.visitorState = atypeFactory.getVisitorState();
         this.typeValidator = createTypeValidator();
         ProcessingEnvironment env = checker.getProcessingEnvironment();
-        this.objectEquals = TreeUtils.getMethod("java.lang.Object", "equals", 1, env);
         this.vectorCopyInto = TreeUtils.getMethod("java.util.Vector", "copyInto", 1, env);
         this.functionApply = TreeUtils.getMethod("java.util.function.Function", "apply", 1, env);
         this.vectorType = atypeFactory.fromElement(elements.getTypeElement("java.util.Vector"));
