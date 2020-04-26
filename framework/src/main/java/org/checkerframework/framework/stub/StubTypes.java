@@ -75,7 +75,11 @@ public class StubTypes {
     /** Parse all JDK files at start up rather than as needed. */
     private boolean parseAllJdkFiles;
 
-    /** Creates a stub type. */
+    /**
+     * Creates a stub type.
+     *
+     * @param factory AnnotatedTypeFactory
+     */
     public StubTypes(AnnotatedTypeFactory factory) {
         this.factory = factory;
         this.typesFromStubFiles = new HashMap<>();
