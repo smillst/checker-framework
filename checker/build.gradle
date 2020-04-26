@@ -254,7 +254,6 @@ task jtregJdk11Tests(dependsOn: ':downloadJtreg', group: 'Verification') {
     description 'Run the jtreg tests made for JDK 11.'
     dependsOn('compileJava')
     dependsOn('compileTestJava')
-    dependsOn(':checker:updateJdk')
     dependsOn('shadowJar')
 
     String jtregOutput = "${buildDir}/jtregJdk11"
