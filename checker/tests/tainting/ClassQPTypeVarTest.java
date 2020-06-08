@@ -19,4 +19,18 @@ public class ClassQPTypeVarTest {
         // :: error: (type.argument.invalid.hasqualparam)
         cast(b).append(s);
     }
+
+    <T extends Buffer> @Tainted T castBuffer(T param) {
+        // :: error: return.type.incompatible
+        return param;
+    }
+
+    <T extends Buffer> T identity(T param) {
+        return param; // ok
+    }
+
+    void use(@Untainted Buffer ub, @Tainted Buffer tb) {
+        identity(ub); // ok
+        identity(tb); // ok
+    }
 }
