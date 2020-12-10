@@ -454,7 +454,13 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
         if (isSubtypeVisitHistory.contains(subtypeAsSuper, supertype, currentTop)) {
             return true;
         }
-
+        if (subtypeAsSuper.getEnclosingType() != null
+                // TODO: Check the full enclosing type.The annotations on enclosing type arguments
+                //  are sometimes incorrect. See
+                // https://github.com/typetools/checker-framework/issues/3983
+                && !isPrimarySubtype(subtype.getEnclosingType(), supertype.getEnclosingType())) {
+            return false;
+        }
         final boolean result =
                 visitTypeArgs(subtypeAsSuper, supertype, subtype.wasRaw(), supertype.wasRaw());
         isSubtypeVisitHistory.put(subtypeAsSuper, supertype, currentTop, result);

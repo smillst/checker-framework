@@ -22,9 +22,9 @@ public class RawTypesAssignment {
     // :: warning: [unchecked] unchecked conversion
     RecursiveGeneric<MyClass> notRawRecursiveGenericRaw = new RecursiveGeneric();
 
-    class Generic<G extends @Nullable Object> {}
+    static class Generic<G extends @Nullable Object> {}
 
-    class RecursiveGeneric<R extends Generic<R>> {}
+    static class RecursiveGeneric<R extends Generic<R>> {}
 
-    class MyClass extends Generic<MyClass> {}
+    static class MyClass extends Generic<MyClass> {}
 }
