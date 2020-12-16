@@ -30,7 +30,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeVisitor;
-import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -42,9 +41,6 @@ import org.checkerframework.javacutil.TypeKindUtils;
  * declared types (class and interface types), array types, type variables, and the null type. Also
  * represented are wildcard type arguments, the signature and return types of executables, and
  * pseudo-types corresponding to packages and to the keyword {@code void}.
- *
- * <p>Types should be compared using the utility methods in {@link AnnotatedTypes}. There is no
- * guarantee that any particular type will always be represented by the same object.
  *
  * <p>To implement operations based on the class of an {@code AnnotatedTypeMirror} object, either
  * use a visitor or use the result of the {@link #getKind()} method.
@@ -252,6 +248,9 @@ public abstract class AnnotatedTypeMirror {
      * <p>It doesn't account for annotations in deep types (type arguments, array components, etc).
      *
      * <p>If there is only one hierarchy, you can use {@link #getAnnotation()} instead.
+     *
+     * <p>May return null if the receiver is a type variable or a wildcard without a primary
+     * annotation, or if the receiver is not yet fully annotated.
      *
      * @param p the qualifier hierarchy to check for
      * @return an annotation from the same hierarchy as p if present
@@ -1181,27 +1180,7 @@ public abstract class AnnotatedTypeMirror {
          *     constructors of top-level classes
          */
         public @Nullable AnnotatedDeclaredType getReceiverType() {
-            if (receiverType == null
-                    // Static methods don't have a receiver
-                    && !ElementUtils.isStatic(getElement())
-                    // Array constructors should also not have a receiver. Array members have a
-                    // getEnclosingElement().getEnclosingElement() of NONE
-                    && !(getElement().getKind() == ElementKind.CONSTRUCTOR
-                            && getElement()
-                                    .getEnclosingElement()
-                                    .getSimpleName()
-                                    .toString()
-                                    .equals("Array")
-                            && getElement()
-                                            .getEnclosingElement()
-                                            .getEnclosingElement()
-                                            .asType()
-                                            .getKind()
-                                    == TypeKind.NONE)
-                    // Top-level constructors don't have a receiver
-                    && (getElement().getKind() != ElementKind.CONSTRUCTOR
-                            || getElement().getEnclosingElement().getEnclosingElement().getKind()
-                                    != ElementKind.PACKAGE)) {
+            if (receiverType == null && ElementUtils.hasReceiver(getElement())) {
 
                 TypeElement encl = ElementUtils.enclosingClass(getElement());
                 if (getElement().getKind() == ElementKind.CONSTRUCTOR) {
