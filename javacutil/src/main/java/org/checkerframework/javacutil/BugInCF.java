@@ -1,5 +1,7 @@
 package org.checkerframework.javacutil;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /** Exception type indicating a bug in the framework or in a checker implementation. */
 @SuppressWarnings("serial")
 public class BugInCF extends RuntimeException {
@@ -16,12 +18,12 @@ public class BugInCF extends RuntimeException {
 
     /**
      * Constructs a new CheckerError with a detail message composed from the given arguments, and
-     * with no cause (use this at the root cause).
+     * with no cause (use the current callstack as the root cause).
      *
      * @param fmt the format string
      * @param args the arguments for the format string
      */
-    public BugInCF(String fmt, Object... args) {
+    public BugInCF(String fmt, @Nullable Object... args) {
         this(String.format(fmt, args), new Throwable());
     }
 

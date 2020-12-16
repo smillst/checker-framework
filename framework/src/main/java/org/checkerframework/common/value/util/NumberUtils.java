@@ -2,11 +2,11 @@ package org.checkerframework.common.value.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.javacutil.TypesUtils;
+import org.checkerframework.javacutil.TypeKindUtils;
 
+/** Utility routines for manipulating numbers. */
 public class NumberUtils {
 
     /** Converts a {@code List<A>} to a {@code List<B>}, where A and B are numeric types. */
@@ -15,7 +15,10 @@ public class NumberUtils {
         if (numbers == null) {
             return null;
         }
-        TypeKind typeKind = unboxPrimitive(type);
+        TypeKind typeKind = TypeKindUtils.primitiveOrBoxedToTypeKind(type);
+        if (typeKind == null) {
+            throw new UnsupportedOperationException(type.toString());
+        }
         switch (typeKind) {
             case BYTE:
                 List<Byte> bytes = new ArrayList<>();
@@ -60,7 +63,7 @@ public class NumberUtils {
                 }
                 return shorts;
             default:
-                throw new UnsupportedOperationException(typeKind.toString());
+                throw new UnsupportedOperationException(typeKind + ": " + type);
         }
     }
 
@@ -73,7 +76,10 @@ public class NumberUtils {
      * @return the intersection of the given range and the possible values of the given type
      */
     public static Range castRange(TypeMirror type, Range range) {
-        TypeKind typeKind = unboxPrimitive(type);
+        TypeKind typeKind = TypeKindUtils.primitiveOrBoxedToTypeKind(type);
+        if (typeKind == null) {
+            throw new UnsupportedOperationException(type.toString());
+        }
         switch (typeKind) {
             case BYTE:
                 return range.byteRange();
@@ -88,40 +94,7 @@ public class NumberUtils {
             case DOUBLE:
                 return range;
             default:
-                throw new UnsupportedOperationException(typeKind.toString());
+                throw new UnsupportedOperationException(typeKind + ": " + type);
         }
-    }
-
-    /**
-     * Given a primitive type, return it. Given a boxed primitive type, return the corresponding
-     * primitive type.
-     *
-     * @param type a primitive or boxed primitive type
-     * @return a primitive type
-     */
-    private static TypeKind unboxPrimitive(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            String typeString = TypesUtils.getQualifiedName((DeclaredType) type).toString();
-
-            switch (typeString) {
-                case "java.lang.Byte":
-                    return TypeKind.BYTE;
-                case "java.lang.Boolean":
-                    return TypeKind.BOOLEAN;
-                case "java.lang.Character":
-                    return TypeKind.CHAR;
-                case "java.lang.Double":
-                    return TypeKind.DOUBLE;
-                case "java.lang.Float":
-                    return TypeKind.FLOAT;
-                case "java.lang.Integer":
-                    return TypeKind.INT;
-                case "java.lang.Long":
-                    return TypeKind.LONG;
-                case "java.lang.Short":
-                    return TypeKind.SHORT;
-            }
-        }
-        return type.getKind();
     }
 }

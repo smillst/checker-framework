@@ -33,7 +33,7 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/** A Utility class to find symbols corresponding to string references. */
+/** A utility class to find symbols corresponding to string references. */
 // This class reflectively accesses jdk.compiler/com.sun.tools.javac.comp.
 // This is why --add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED is required when
 // running the Checker Framework.  If this class is re-written, then that --add-opens should be
@@ -187,7 +187,7 @@ public class Resolver {
      * for name resolution.
      *
      * @param name the name of the field
-     * @param type the type of the receiver (i.e., the type in which to look for the field).
+     * @param type the type of the receiver (i.e., the type in which to look for the field)
      * @param path the tree path to the local scope
      * @return the element for the field, {@code null} otherwise
      */
@@ -282,7 +282,7 @@ public class Resolver {
                             pck,
                             names.fromString(name),
                             Kinds.KindSelector.TYP);
-            if (res.getKind() == ElementKind.CLASS) {
+            if (ElementUtils.isTypeElement(res)) {
                 return (ClassSymbol) res;
             } else {
                 return null;
@@ -376,7 +376,19 @@ public class Resolver {
         return methodContext;
     }
 
-    /** Reflectively set a field. */
+    /**
+     * Reflectively set a field.
+     *
+     * @param receiver the receiver in which to set the field
+     * @param fieldName name of field to set
+     * @param value new value for field
+     * @throws NoSuchFieldException if the field does not exist in the receiver
+     * @throws IllegalAccessException if the field is not accessible
+     */
+    @SuppressWarnings({
+        "nullness:argument.type.incompatible",
+        "interning:argument.type.incompatible"
+    }) // assume that the fields all accept null and uninterned values
     private void setField(Object receiver, String fieldName, @Nullable Object value)
             throws NoSuchFieldException, IllegalAccessException {
         Field f = receiver.getClass().getDeclaredField(fieldName);

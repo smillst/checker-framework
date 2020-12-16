@@ -1,6 +1,6 @@
 package org.checkerframework.common.value;
 
-import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import java.lang.reflect.Constructor;
@@ -17,14 +17,13 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.signature.qual.CanonicalNameOrEmpty;
 import org.checkerframework.checker.signature.qual.ClassGetName;
-import org.checkerframework.checker.signature.qual.DotSeparatedIdentifiers;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.framework.source.Result;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.PluginUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.UtilPlume;
 
 /**
  * Evaluates expressions (such as method calls and field accesses) at compile time, to determine
@@ -48,6 +47,9 @@ public class ReflectiveEvaluator {
     }
 
     /**
+     * Returns all possible values that the method may return, or null if the method could not be
+     * evaluated.
+     *
      * @param allArgValues a list of list where the first list corresponds to all possible values
      *     for the first argument. Pass null to indicate that the method has no arguments.
      * @param receiverValues a list of possible receiver values. null indicates that the method has
@@ -95,41 +97,38 @@ public class ReflectiveEvaluator {
                     results.add(method.invoke(receiver, arguments));
                 } catch (InvocationTargetException e) {
                     if (reportWarnings) {
-                        checker.report(
-                                Result.warning(
-                                        "method.evaluation.exception",
-                                        method,
-                                        e.getTargetException().toString()),
-                                tree);
+                        checker.reportWarning(
+                                tree,
+                                "method.evaluation.exception",
+                                method,
+                                e.getTargetException().toString());
                     }
                     // Method evaluation will always fail, so don't bother
                     // trying again
                     return null;
                 } catch (ExceptionInInitializerError e) {
                     if (reportWarnings) {
-                        checker.report(
-                                Result.warning(
-                                        "method.evaluation.exception",
-                                        method,
-                                        e.getCause().toString()),
-                                tree);
+                        checker.reportWarning(
+                                tree,
+                                "method.evaluation.exception",
+                                method,
+                                e.getCause().toString());
                     }
                     return null;
                 } catch (IllegalArgumentException e) {
                     if (reportWarnings) {
-                        String args = PluginUtil.join(", ", arguments);
-                        checker.report(
-                                Result.warning(
-                                        "method.evaluation.exception",
-                                        method,
-                                        e.getLocalizedMessage() + ": " + args),
-                                tree);
+                        String args = UtilPlume.join(", ", arguments);
+                        checker.reportWarning(
+                                tree,
+                                "method.evaluation.exception",
+                                method,
+                                e.getLocalizedMessage() + ": " + args);
                     }
                     return null;
                 } catch (Throwable e) {
                     // Catch any exception thrown because they shouldn't crash the type checker.
                     if (reportWarnings) {
-                        checker.report(Result.warning("method.evaluation.failed", method), tree);
+                        checker.reportWarning(tree, "method.evaluation.failed", method);
                     }
                     return null;
                 }
@@ -172,19 +171,21 @@ public class ReflectiveEvaluator {
      * Method for reflectively obtaining a method object so it can (potentially) be statically
      * executed by the checker for constant propagation.
      *
-     * @return the Method object corresponding to the method being invoke in tree
+     * @param tree a method invocation tree
+     * @return the Method object corresponding to the method invocation tree
      */
     private Method getMethodObject(MethodInvocationTree tree) {
+        final ExecutableElement ele = TreeUtils.elementFromUse(tree);
+        List<Class<?>> paramClasses = null;
         try {
-            ExecutableElement ele = TreeUtils.elementFromUse(tree);
-            @DotSeparatedIdentifiers Name clazz =
+            @CanonicalNameOrEmpty Name className =
                     TypesUtils.getQualifiedName((DeclaredType) ele.getEnclosingElement().asType());
-            List<Class<?>> paramClzz = getParameterClasses(ele);
+            paramClasses = getParameterClasses(ele);
             @SuppressWarnings("signature") // https://tinyurl.com/cfissue/658 for Class.toString
-            Class<?> clzz = Class.forName(clazz.toString());
+            Class<?> clazz = Class.forName(className.toString());
             Method method =
-                    clzz.getMethod(
-                            ele.getSimpleName().toString(), paramClzz.toArray(new Class<?>[0]));
+                    clazz.getMethod(
+                            ele.getSimpleName().toString(), paramClasses.toArray(new Class<?>[0]));
             @SuppressWarnings("deprecation") // TODO: find alternative
             boolean acc = method.isAccessible();
             if (!acc) {
@@ -193,26 +194,28 @@ public class ReflectiveEvaluator {
             return method;
         } catch (ClassNotFoundException | UnsupportedClassVersionError | NoClassDefFoundError e) {
             if (reportWarnings) {
-                checker.report(
-                        Result.warning(
-                                "class.find.failed",
-                                TreeUtils.elementFromUse(tree).getEnclosingElement()),
-                        tree);
+                checker.reportWarning(tree, "class.find.failed", ele.getEnclosingElement());
             }
             return null;
 
         } catch (Throwable e) {
             // The class we attempted to getMethod from inside the
             // call to getMethodObject.
-            Element classElem = TreeUtils.elementFromUse(tree).getEnclosingElement();
+            Element classElem = ele.getEnclosingElement();
 
             if (classElem == null) {
                 if (reportWarnings) {
-                    checker.report(Result.warning("method.find.failed"), tree);
+                    checker.reportWarning(
+                            tree, "method.find.failed", ele.getSimpleName(), paramClasses);
                 }
             } else {
                 if (reportWarnings) {
-                    checker.report(Result.warning("method.find.failed.in.class", classElem), tree);
+                    checker.reportWarning(
+                            tree,
+                            "method.find.failed.in.class",
+                            ele.getSimpleName(),
+                            paramClasses,
+                            classElem);
                 }
             }
             return null;
@@ -222,12 +225,12 @@ public class ReflectiveEvaluator {
     private List<Class<?>> getParameterClasses(ExecutableElement ele)
             throws ClassNotFoundException {
         List<? extends VariableElement> paramEles = ele.getParameters();
-        List<Class<?>> paramClzz = new ArrayList<>();
+        List<Class<?>> paramClasses = new ArrayList<>();
         for (Element e : paramEles) {
             TypeMirror pType = ElementUtils.getType(e);
-            paramClzz.add(ValueCheckerUtils.getClassFromType(pType));
+            paramClasses.add(TypesUtils.getClassFromType(pType));
         }
-        return paramClzz;
+        return paramClasses;
     }
 
     private List<Object[]> cartesianProduct(List<List<?>> allArgValues, int whichArg) {
@@ -261,15 +264,17 @@ public class ReflectiveEvaluator {
     }
 
     /**
-     * Return the value of a static field access. Return null if there is trouble.
+     * Return the value of a static field access. Return null if accessing the field reflectively
+     * fails.
      *
      * @param classname the class containing the field
      * @param fieldName the name of the field
-     * @param tree the static field access in the program; used for diagnostics
+     * @param tree the static field access in the program; a MemberSelectTree or an IdentifierTree;
+     *     used for diagnostics
      * @return the value of the static field access, or null if it cannot be determined
      */
     public Object evaluateStaticFieldAccess(
-            @ClassGetName String classname, String fieldName, MemberSelectTree tree) {
+            @ClassGetName String classname, String fieldName, ExpressionTree tree) {
         try {
             Class<?> recClass = Class.forName(classname);
             Field field = recClass.getField(fieldName);
@@ -277,13 +282,19 @@ public class ReflectiveEvaluator {
 
         } catch (ClassNotFoundException | UnsupportedClassVersionError | NoClassDefFoundError e) {
             if (reportWarnings) {
-                checker.report(Result.warning("class.find.failed", classname), tree);
+                checker.reportWarning(
+                        tree, "class.find.failed", classname, e.getClass() + ": " + e.getMessage());
             }
             return null;
         } catch (Throwable e) {
             // Catch all exception so that the checker doesn't crash
             if (reportWarnings) {
-                checker.report(Result.warning("field.access.failed", fieldName, classname), tree);
+                checker.reportWarning(
+                        tree,
+                        "field.access.failed",
+                        fieldName,
+                        classname,
+                        e.getClass() + ": " + e.getMessage());
             }
             return null;
         }
@@ -298,7 +309,7 @@ public class ReflectiveEvaluator {
         } catch (Throwable e) {
             // Catch all exception so that the checker doesn't crash
             if (reportWarnings) {
-                checker.report(Result.warning("constructor.invocation.failed"), tree);
+                checker.reportWarning(tree, "constructor.invocation.failed");
             }
             return null;
         }
@@ -322,12 +333,11 @@ public class ReflectiveEvaluator {
                 results.add(constructor.newInstance(arguments));
             } catch (Throwable e) {
                 if (reportWarnings) {
-                    checker.report(
-                            Result.warning(
-                                    "constructor.evaluation.failed",
-                                    typeToCreate,
-                                    PluginUtil.join(", ", arguments)),
-                            tree);
+                    checker.reportWarning(
+                            tree,
+                            "constructor.evaluation.failed",
+                            typeToCreate,
+                            UtilPlume.join(", ", arguments));
                 }
                 return null;
             }
@@ -339,7 +349,7 @@ public class ReflectiveEvaluator {
             throws ClassNotFoundException, NoSuchMethodException {
         ExecutableElement ele = TreeUtils.elementFromUse(tree);
         List<Class<?>> paramClasses = getParameterClasses(ele);
-        Class<?> recClass = boxPrimitives(ValueCheckerUtils.getClassFromType(typeToCreate));
+        Class<?> recClass = boxPrimitives(TypesUtils.getClassFromType(typeToCreate));
         Constructor<?> constructor = recClass.getConstructor(paramClasses.toArray(new Class<?>[0]));
         return constructor;
     }

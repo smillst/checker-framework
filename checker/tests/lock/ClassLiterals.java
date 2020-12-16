@@ -8,7 +8,7 @@ class ClassLiterals {
         return new Object();
     }
 
-    // a class literal may not terminate a flow expression string
+    // a class literal may not terminate a JavaExpression string
     @Holding("ClassLiterals")
     // :: error: (flowexpr.parse.error)
     static void method2() {}
@@ -19,11 +19,14 @@ class ClassLiterals {
     @Holding("testpackage.ClassLiterals.class")
     static void method4() {}
 
-    // a class literal may not terminate a flow expression string
+    // a class literal may not terminate a JavaExpression string
     @Holding("testpackage.ClassLiterals")
     // :: error: (flowexpr.parse.error)
     static void method5() {}
 
     @Holding("testpackage.ClassLiterals.method1()")
     static void method6() {}
+
+    @Holding("java.lang.Comparable.class")
+    static void method7() {}
 }

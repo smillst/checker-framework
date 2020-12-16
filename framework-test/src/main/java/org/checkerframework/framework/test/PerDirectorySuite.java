@@ -9,6 +9,8 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
+import org.checkerframework.javacutil.BugInCF;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -50,6 +52,7 @@ public class PerDirectorySuite extends Suite {
      *
      * @param klass the class whose tests to run
      */
+    @SuppressWarnings("nullness") // JUnit needs to be annotated
     public PerDirectorySuite(Class<?> klass) throws Throwable {
         super(klass, Collections.emptyList());
         final TestClass testClass = getTestClass();
@@ -62,6 +65,7 @@ public class PerDirectorySuite extends Suite {
     }
 
     /** Returns a list of one-element arrays, each containing a Java File. */
+    @SuppressWarnings("nullness") // JUnit needs to be annotated
     private List<List<File>> getParametersList(TestClass klass) throws Throwable {
         FrameworkMethod method = getParametersMethod(klass);
 
@@ -79,32 +83,25 @@ public class PerDirectorySuite extends Suite {
         final List<FrameworkMethod> parameterMethods =
                 testClass.getAnnotatedMethods(Parameters.class);
         if (parameterMethods.size() != 1) {
-            StringBuilder methods = new StringBuilder();
+            // Construct error message
 
+            String methods;
             if (parameterMethods.isEmpty()) {
-                methods.append("[No methods specified]");
+                methods = "[No methods specified]";
             } else {
-                boolean first = true;
+                StringJoiner sj = new StringJoiner(", ");
                 for (FrameworkMethod method : parameterMethods) {
-                    if (!first) {
-                        methods.append(", ");
-                    } else {
-                        first = false;
-                    }
-                    methods.append(method.getName());
+                    sj.add(method.getName());
                 }
+                methods = sj.toString();
             }
 
-            throw new RuntimeException(
-                    "Exactly one of the following methods should be declared:\n"
-                            + requiredFormsMessage
-                            + "\n"
-                            + "testClass="
-                            + testClass.getName()
-                            + "\n"
-                            + "parameterMethods="
-                            + methods);
-        } // else
+            throw new BugInCF(
+                    "Exactly one of the following methods should be declared:%n%s%n"
+                            + "testClass=%s%n"
+                            + "parameterMethods=%s",
+                    requiredFormsMessage, testClass.getName(), methods);
+        }
 
         FrameworkMethod method = parameterMethods.get(0);
 
@@ -112,22 +109,19 @@ public class PerDirectorySuite extends Suite {
         String methodName = method.getName();
         switch (methodName) {
             case "getTestDirs":
-                if (returnType.isArray()) {
-                    if (returnType.getComponentType() != String.class) {
-                        throw new RuntimeException(
-                                "Component type of getTestDirs must be java.lang.String, found "
-                                        + returnType.getComponentType().getCanonicalName());
-                    }
+                if (!(returnType.isArray() && returnType.getComponentType() == String.class)) {
+                    throw new RuntimeException(
+                            "getTestDirs should return String[], found " + returnType);
                 }
                 break;
 
             default:
                 throw new RuntimeException(
                         requiredFormsMessage
-                                + "\n"
+                                + "%n"
                                 + "testClass="
                                 + testClass.getName()
-                                + "\n"
+                                + "%n"
                                 + "parameterMethods="
                                 + method);
         }
@@ -141,8 +135,11 @@ public class PerDirectorySuite extends Suite {
         return method;
     }
 
+    /** The message about the required getTestDirs method. */
     private static final String requiredFormsMessage =
-            "Parameter method must the following form:\n" + "@Parameters String [] getTestDirs()";
+            "Parameter method must have the following form:"
+                    + System.lineSeparator()
+                    + "@Parameters String[] getTestDirs()";
 
     /** Runs the test class for the set of javaFiles passed in the constructor. */
     private static class PerParameterSetTestRunner extends BlockJUnit4ClassRunner {
@@ -161,6 +158,9 @@ public class PerDirectorySuite extends Suite {
 
         String testCaseName() {
             File file = javaFiles.get(0).getParentFile();
+            if (file == null) {
+                throw new Error("root was passed? " + javaFiles.get(0));
+            }
             return file.getPath().replace("tests" + System.getProperty("file.separator"), "");
         }
 

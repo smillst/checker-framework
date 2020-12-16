@@ -6,15 +6,18 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.lock.LockAnnotatedTypeFactory.SideEffectAnnotation;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.analysis.FlowExpressions;
-import org.checkerframework.dataflow.analysis.FlowExpressions.ArrayAccess;
-import org.checkerframework.dataflow.analysis.FlowExpressions.FieldAccess;
-import org.checkerframework.dataflow.analysis.FlowExpressions.LocalVariable;
-import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
-import org.checkerframework.dataflow.cfg.CFGVisualizer;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
+import org.checkerframework.dataflow.cfg.visualize.CFGVisualizer;
+import org.checkerframework.dataflow.expression.ArrayAccess;
+import org.checkerframework.dataflow.expression.ClassName;
+import org.checkerframework.dataflow.expression.FieldAccess;
+import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.dataflow.expression.LocalVariable;
+import org.checkerframework.dataflow.expression.MethodCall;
+import org.checkerframework.dataflow.expression.ThisReference;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFValue;
+import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -63,38 +66,48 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
      * Insert an annotation exactly, without regard to whether an annotation was already present.
      * This is only done for @LockPossiblyHeld. This is not sound for other type qualifiers.
      */
-    public void insertLockPossiblyHeld(FlowExpressions.Receiver r) {
-        if (r.containsUnknown()) {
+    public void insertLockPossiblyHeld(JavaExpression je) {
+        if (je.containsUnknown()) {
             // Expressions containing unknown expressions are not stored.
             return;
         }
-        if (r instanceof FlowExpressions.LocalVariable) {
-            FlowExpressions.LocalVariable localVar = (FlowExpressions.LocalVariable) r;
+        if (je instanceof LocalVariable) {
+            LocalVariable localVar = (LocalVariable) je;
             CFValue current = localVariableValues.get(localVar);
-            CFValue value = changeLockAnnoToTop(r, current);
-            localVariableValues.put(localVar, value);
-        } else if (r instanceof FlowExpressions.FieldAccess) {
-            FlowExpressions.FieldAccess fieldAcc = (FlowExpressions.FieldAccess) r;
+            CFValue value = changeLockAnnoToTop(je, current);
+            if (value != null) {
+                localVariableValues.put(localVar, value);
+            }
+        } else if (je instanceof FieldAccess) {
+            FieldAccess fieldAcc = (FieldAccess) je;
             CFValue current = fieldValues.get(fieldAcc);
-            CFValue value = changeLockAnnoToTop(r, current);
-            fieldValues.put(fieldAcc, value);
-        } else if (r instanceof FlowExpressions.MethodCall) {
-            FlowExpressions.MethodCall method = (FlowExpressions.MethodCall) r;
+            CFValue value = changeLockAnnoToTop(je, current);
+            if (value != null) {
+                fieldValues.put(fieldAcc, value);
+            }
+        } else if (je instanceof MethodCall) {
+            MethodCall method = (MethodCall) je;
             CFValue current = methodValues.get(method);
-            CFValue value = changeLockAnnoToTop(r, current);
-            methodValues.put(method, value);
-        } else if (r instanceof FlowExpressions.ArrayAccess) {
-            FlowExpressions.ArrayAccess arrayAccess = (ArrayAccess) r;
+            CFValue value = changeLockAnnoToTop(je, current);
+            if (value != null) {
+                methodValues.put(method, value);
+            }
+        } else if (je instanceof ArrayAccess) {
+            ArrayAccess arrayAccess = (ArrayAccess) je;
             CFValue current = arrayValues.get(arrayAccess);
-            CFValue value = changeLockAnnoToTop(r, current);
-            arrayValues.put(arrayAccess, value);
-        } else if (r instanceof FlowExpressions.ThisReference) {
-            thisValue = changeLockAnnoToTop(r, thisValue);
-        } else if (r instanceof FlowExpressions.ClassName) {
-            FlowExpressions.ClassName className = (FlowExpressions.ClassName) r;
+            CFValue value = changeLockAnnoToTop(je, current);
+            if (value != null) {
+                arrayValues.put(arrayAccess, value);
+            }
+        } else if (je instanceof ThisReference) {
+            thisValue = changeLockAnnoToTop(je, thisValue);
+        } else if (je instanceof ClassName) {
+            ClassName className = (ClassName) je;
             CFValue current = classValues.get(className);
-            CFValue value = changeLockAnnoToTop(r, current);
-            classValues.put(className, value);
+            CFValue value = changeLockAnnoToTop(je, current);
+            if (value != null) {
+                classValues.put(className, value);
+            }
         } else {
             // No other types of expressions need to be stored.
         }
@@ -105,12 +118,12 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
      * the LockPossiblyHeld hierarchy is set to LockPossiblyHeld. If currentValue is null, then a
      * new value is created where the annotation set is LockPossiblyHeld and GuardedByUnknown
      */
-    private CFValue changeLockAnnoToTop(Receiver r, CFValue currentValue) {
+    private CFValue changeLockAnnoToTop(JavaExpression je, CFValue currentValue) {
         if (currentValue == null) {
             Set<AnnotationMirror> set = AnnotationUtils.createAnnotationSet();
             set.add(atypeFactory.GUARDEDBYUNKNOWN);
             set.add(atypeFactory.LOCKPOSSIBLYHELD);
-            return analysis.createAbstractValue(set, r.getType());
+            return analysis.createAbstractValue(set, je.getType());
         }
 
         QualifierHierarchy hierarchy = atypeFactory.getQualifierHierarchy();
@@ -130,17 +143,16 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
     }
 
     @Override
-    public @Nullable CFValue getValue(FlowExpressions.Receiver expr) {
+    public @Nullable CFValue getValue(JavaExpression expr) {
 
         if (inConstructorOrInitializer) {
             // 'this' is automatically considered as being held in a constructor or initializer.
             // The class name, however, is not.
-            if (expr instanceof FlowExpressions.ThisReference) {
+            if (expr instanceof ThisReference) {
                 initializeThisValue(atypeFactory.LOCKHELD, expr.getType());
-            } else if (expr instanceof FlowExpressions.FieldAccess) {
-                FlowExpressions.FieldAccess fieldAcc = (FlowExpressions.FieldAccess) expr;
-                if (!fieldAcc.isStatic()
-                        && fieldAcc.getReceiver() instanceof FlowExpressions.ThisReference) {
+            } else if (expr instanceof FieldAccess) {
+                FieldAccess fieldAcc = (FieldAccess) expr;
+                if (!fieldAcc.isStatic() && fieldAcc.getReceiver() instanceof ThisReference) {
                     insertValue(fieldAcc.getReceiver(), atypeFactory.LOCKHELD);
                 }
             }
@@ -152,6 +164,7 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
     @Override
     protected String internalVisualize(CFGVisualizer<CFValue, LockStore, ?> viz) {
         return viz.visualizeStoreKeyVal("inConstructorOrInitializer", inConstructorOrInitializer)
+                + viz.getSeparator()
                 + super.internalVisualize(viz);
     }
 
@@ -159,8 +172,9 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
     protected boolean isSideEffectFree(
             AnnotatedTypeFactory atypeFactory, ExecutableElement method) {
         LockAnnotatedTypeFactory lockAnnotatedTypeFactory = (LockAnnotatedTypeFactory) atypeFactory;
-        return ((LockChecker) lockAnnotatedTypeFactory.getContext())
-                        .hasOption("assumeSideEffectFree")
+        SourceChecker checker = lockAnnotatedTypeFactory.getContext().getChecker();
+        return checker.hasOption("assumeSideEffectFree")
+                || checker.hasOption("assumePure")
                 || lockAnnotatedTypeFactory.methodSideEffectAnnotation(method, false)
                         == SideEffectAnnotation.RELEASESNOLOCKS
                 || super.isSideEffectFree(atypeFactory, method);
@@ -171,6 +185,9 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
             MethodInvocationNode n, AnnotatedTypeFactory atypeFactory, CFValue val) {
         super.updateForMethodCall(n, atypeFactory, val);
         ExecutableElement method = n.getTarget().getMethod();
+        // The following behavior is similar to setting the sideEffectsUnrefineAliases field of
+        // Lockannotatedtypefactory, but it affects only one of the two type hierarchies, so it
+        // cannot use that logic.
         if (!isSideEffectFree(atypeFactory, method)) {
             // After the call to super.updateForMethodCall, only final fields are left in
             // fieldValues (if the method called is side-effecting). For the LockPossiblyHeld
@@ -178,13 +195,20 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
             // method.  So, final fields must be set to @LockPossiblyHeld, but the annotation in
             // the GuardedBy hierarchy should not be changed.
             for (FieldAccess field : new ArrayList<>(fieldValues.keySet())) {
-                fieldValues.put(field, changeLockAnnoToTop(field, fieldValues.get(field)));
+                CFValue newValue = changeLockAnnoToTop(field, fieldValues.get(field));
+                if (newValue != null) {
+                    fieldValues.put(field, newValue);
+                } else {
+                    fieldValues.remove(field);
+                }
             }
 
             // Local variables could also be unlocked via an alias
             for (LocalVariable var : new ArrayList<>(localVariableValues.keySet())) {
                 CFValue newValue = changeLockAnnoToTop(var, localVariableValues.get(var));
-                localVariableValues.put(var, newValue);
+                if (newValue != null) {
+                    localVariableValues.put(var, newValue);
+                }
             }
 
             if (thisValue != null) {
@@ -202,7 +226,7 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
     }
 
     @Override
-    public void insertValue(FlowExpressions.Receiver r, @Nullable CFValue value) {
+    public void insertValue(JavaExpression je, @Nullable CFValue value) {
         if (value == null) {
             // No need to insert a null abstract value because it represents
             // top and top is also the default value.
@@ -214,15 +238,15 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
         // -Locks are assumed to be effectively final, hence another thread will not
         // side effect the lock expression that has value @LockHeld.
         if (hasLockHeld(value)) {
-            if (r instanceof FlowExpressions.FieldAccess) {
-                FlowExpressions.FieldAccess fieldAcc = (FlowExpressions.FieldAccess) r;
+            if (je instanceof FieldAccess) {
+                FieldAccess fieldAcc = (FieldAccess) je;
                 CFValue oldValue = fieldValues.get(fieldAcc);
                 CFValue newValue = value.mostSpecific(oldValue, null);
                 if (newValue != null) {
                     fieldValues.put(fieldAcc, newValue);
                 }
-            } else if (r instanceof FlowExpressions.MethodCall) {
-                FlowExpressions.MethodCall method = (FlowExpressions.MethodCall) r;
+            } else if (je instanceof MethodCall) {
+                MethodCall method = (MethodCall) je;
                 CFValue oldValue = methodValues.get(method);
                 CFValue newValue = value.mostSpecific(oldValue, null);
                 if (newValue != null) {
@@ -231,6 +255,6 @@ public class LockStore extends CFAbstractStore<CFValue, LockStore> {
             }
         }
 
-        super.insertValue(r, value);
+        super.insertValue(je, value);
     }
 }

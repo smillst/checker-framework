@@ -10,6 +10,7 @@ task copySources(type: Copy, dependsOn: ':checker-qual:copySources') {
     }
     from files('../checker-qual/src/main')
     include "**/*.java"
+    exclude "**/SignednessUtilExtra.java"
     into file('src/main')
 
     // Not read only because "replaceAnnotations" tasks writes to the files.
@@ -36,4 +37,19 @@ compileJava.dependsOn replaceAnnotations
 
 clean {
     delete file('src')
+}
+
+task deployArtifactsToLocalRepo(dependsOn: jar) {
+    description "Deploys ${jar.archiveFileName.get()} to the local Maven repository"
+    doLast {
+        mvnDeployToLocalRepo(project, "${pomFiles}/checker-qual-android-pom.xml")
+    }
+}
+
+task deployArtifactsToSonatype {
+    description "Deploys ${jar.archiveFileName.get()} to the Sonatype repository"
+    dependsOn ('jar', 'sourcesJar', 'javadocJar')
+    doLast {
+        mvnSignAndDeployMultipleToSonatype(project, "${pomFiles}/checker-qual-android-pom.xml")
+    }
 }

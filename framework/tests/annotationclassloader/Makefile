@@ -36,8 +36,7 @@ demo1:
 	  -classpath $(PROJECTDIR):${CHECKERQUALBUILD} \
 	  -processor org.checkerframework.common.aliasing.AliasingChecker \
 	  -Anomsgtext \
-	  -Anocheckjdk \
-	  -Astubs=$(PROJECTDIR)/../aliasing/stubfile.astub \
+	  -ApermitMissingJdk \
 	  LoaderTest.java
 
 # loads from framework.jar
@@ -48,8 +47,7 @@ demo2:
 	  -classpath $(PROJECTDIR):${CHECKERQUALJAR} \
 	  -processor org.checkerframework.common.aliasing.AliasingChecker \
 	  -Anomsgtext \
-	  -Anocheckjdk \
-	  -Astubs=$(PROJECTDIR)/../aliasing/stubfile.astub \
+	  -ApermitMissingJdk \
 	  LoaderTest.java
 
 # ======================================================
@@ -61,8 +59,7 @@ load-from-dir-test:
 	  -classpath $(PROJECTDIR):${CHECKERQUALBUILD} \
 	  -processor org.checkerframework.common.aliasing.AliasingChecker \
 	  -Anomsgtext \
-	  -Astubs=$(PROJECTDIR)/../aliasing/stubfile.astub \
-	  -Anocheckjdk \
+	  -ApermitMissingJdk \
 	  LoaderTest.java > Out.txt 2>&1 || true
 	diff -u Expected.txt Out.txt -I 'Note'
 	rm -f Out.txt
@@ -74,8 +71,7 @@ load-from-jar-test:
 	  -classpath $(PROJECTDIR):${CHECKERQUALJAR} \
 	  -processor org.checkerframework.common.aliasing.AliasingChecker \
 	  -Anomsgtext \
-	  -Anocheckjdk \
-	  -Astubs=$(PROJECTDIR)/../aliasing/stubfile.astub \
+	  -ApermitMissingJdk \
 	  LoaderTest.java > Out.txt 2>&1 || true
 	diff -u Expected.txt Out.txt
 	rm -f Out.txt

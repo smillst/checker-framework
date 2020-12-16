@@ -1,44 +1,125 @@
+ext {
+    annotatedJdkHome = '../../jdk'
+}
 sourceSets {
     main {
         resources {
             // Stub files, message.properties, etc.
-            srcDirs = ['src/main/java']
-            exclude '**/*.java'
+            srcDirs += ['src/main/java', "${buildDir}/generated/resources"]
         }
     }
     testannotations
-    test {
-        java {
-            // Tests that fail by design.
-            exclude 'tests/SubtypingStringPatternsPartialTest.java'
+}
+
+def versions = [
+        autoValue       : "1.7.4",
+        lombok          : "1.18.16",
+]
+
+
+dependencies {
+    implementation project(':javacutil')
+    implementation project(':dataflow')
+    implementation files("${stubparserJar}")
+    // AFU is an "includedBuild" imported in checker-framework/settings.gradle, so the version number doesn't matter.
+    // https://docs.gradle.org/current/userguide/composite_builds.html#settings_defined_composite
+    implementation('org.checkerframework:annotation-file-utilities:*') {
+        exclude group: 'com.google.errorprone', module: 'javac'
+    }
+    implementation project(':checker-qual')
+    implementation 'org.plumelib:plume-util:1.2.0'
+    implementation 'org.plumelib:reflection-util:1.0.2'
+
+    // TODO: it's a bug that annotatedlib:guava requires the error_prone_annotations dependency.
+    // Update the next two version numbers in tandem.  Get the Error Prone version from the "compile
+    // dependencies" section of https://mvnrepository.com/artifact/com.google.guava/guava/28.2-jre .
+    // (It isn't at https://mvnrepository.com/artifact/org.checkerframework.annotatedlib/guava/28.2-jre, which is the bug.)
+    implementation 'com.google.errorprone:error_prone_annotations:2.3.4'
+    implementation ('org.checkerframework.annotatedlib:guava:30.0-jre') {
+        // So long as Guava only uses annotations from checker-qual, excluding it should not cause problems.
+        exclude group: 'org.checkerframework'
+    }
+
+    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
+    testImplementation project(':framework-test')
+    testImplementation sourceSets.testannotations.output
+
+    // AutoValue support in Returns Receiver Checker
+    testImplementation "com.google.auto.value:auto-value-annotations:${versions.autoValue}"
+    testImplementation "com.google.auto.value:auto-value:${versions.autoValue}"
+
+    // Lombok support in Returns Receiver Checker
+    testImplementation "org.projectlombok:lombok:${versions.lombok}"
+}
+
+task cloneTypetoolsJdk() {
+    description 'Obtain or update the annotated JDK.'
+    doLast {
+        if (file(annotatedJdkHome).exists()) {
+            exec {
+                workingDir annotatedJdkHome
+                executable 'git'
+                args = ['pull', '-q']
+                ignoreExitValue = true
+            }
+        } else {
+            println 'Cloning annotated JDK repository.'
+            exec {
+                workingDir "${annotatedJdkHome}/../"
+                executable 'git'
+                args = ['clone', '-q', '--depth', '1', 'https://github.com/typetools/jdk.git', 'jdk']
+            }
         }
     }
 }
 
-dependencies {
-    implementation project(':dataflow')
-    implementation project(':javacutil')
-    implementation files("${stubparserJar}")
-    implementation files("${afuJar}")
-    implementation project(':checker-qual')
-    // As of 2019/12/16, the version of reflection-util in the Annotation
-    // File Utilities takes priority over this version, in the fat jar
-    // file. :-( So update it and re-build it locally when updating this.
-    implementation 'org.plumelib:reflection-util:0.2.0'
 
-    testImplementation group: 'junit', name: 'junit', version: '4.13'
-    testImplementation project(':framework-test')
-    testImplementation sourceSets.testannotations.output
+task copyAndMinimizeAnnotatedJdkFiles(dependsOn: cloneTypetoolsJdk, group: 'Build') {
+    dependsOn ':framework:compileJava'
+    def inputDir = "${annotatedJdkHome}/src"
+    def outputDir = "${buildDir}/generated/resources/annotated-jdk/"
+
+    description "Copy annotated JDK files to ${outputDir}. Removes private and package-private methods, method bodies, comments, etc. from the annotated JDK"
+
+    inputs.dir file(inputDir)
+    outputs.dir file(outputDir)
+
+    doLast {
+        FileTree tree = fileTree(dir: inputDir)
+        SortedSet<String> annotatedForFiles = new TreeSet<>();
+        tree.visit { FileVisitDetails fvd ->
+            if (!fvd.file.isDirectory() && fvd.file.name.matches(".*\\.java")
+                    && !fvd.file.path.contains("org/checkerframework")) {
+                fvd.getFile().readLines().any { line ->
+                    if (line.contains("@AnnotatedFor") || line.contains("org.checkerframework")) {
+                        annotatedForFiles.add(fvd.file.absolutePath)
+                        return true;
+                    }
+                }
+            }
+        }
+        String absolutejdkHome = file(annotatedJdkHome).absolutePath
+        int jdkDirStringSize = absolutejdkHome.size()
+        copy {
+            from(annotatedJdkHome)
+            into(outputDir)
+            for (String filename : annotatedForFiles) {
+                include filename.substring(jdkDirStringSize)
+            }
+        }
+        javaexec {
+            classpath = sourceSets.main.runtimeClasspath
+
+            main = 'org.checkerframework.framework.stub.JavaStubifier'
+            args outputDir
+        }
+    }
 }
 
-task checkDependencies() {
+processResources.dependsOn(copyAndMinimizeAnnotatedJdkFiles)
+
+task checkDependencies(dependsOn: ':maybeCloneAndBuildDependencies') {
     doLast {
-        if (!file(afuJar).exists()) {
-            if (!file(stubparserJar).exists()) {
-                throw new GradleException("${afuJar} and ${stubparserJar} do not exist. Try running './gradlew cloneAndBuildDependencies'")
-            }
-            throw new GradleException("${afuJar} does not exist. Try running './gradlew cloneAndBuildDependencies'")
-        }
         if (!file(stubparserJar).exists()) {
             throw new GradleException("${stubparserJar} does not exist. Try running './gradlew cloneAndBuildDependencies'")
         }
@@ -75,84 +156,12 @@ shadowJar {
     }
 }
 
-createCheckTypeTask(project.name, 'org.checkerframework.checker.compilermsgs.CompilerMessagesChecker', "CompilerMessages")
+createCheckTypeTask(project.name, "CompilerMessages",
+    'org.checkerframework.checker.compilermsgs.CompilerMessagesChecker')
 checkCompilerMessages {
     options.compilerArgs += [
             '-Apropfiles=' + sourceSets.main.resources.filter { file -> file.name.equals('messages.properties') }.asPath
     ]
-}
-
-task testWPI(type: Test) {
-    doFirst {
-        delete("tests/whole-program-inference/annotated")
-    }
-    outputs.upToDateWhen { false }
-    include '**/WholeProgramInferenceTest.class'
-    testLogging {
-        // Always run the tests
-        outputs.upToDateWhen { false }
-
-        // Show the found unexpected diagnostics and expected diagnostics not found.
-        exceptionFormat "full"
-        events "passed", "skipped", "failed"
-    }
-}
-
-task testWPIValidate(type: Test) {
-    outputs.upToDateWhen { false }
-    include '**/WholeProgramInferenceValidationTest.class'
-    testLogging {
-        // Always run the tests
-        outputs.upToDateWhen { false }
-
-        // Show the found unexpected diagnostics and expected diagnostics not found.
-        exceptionFormat "full"
-        events "passed", "skipped", "failed"
-    }
-}
-
-task wholeProgramInferenceTests(dependsOn: 'shadowJar', group: 'Verification') {
-    description 'Run tests for whole-program inference using .jaif files'
-    dependsOn(compileTestJava)
-    dependsOn(testWPI)
-    outputs.upToDateWhen { false }
-
-    doLast {
-        // Copying all test files to another directory, removing all expected errors that should not
-        // occur after inserting inferred annotations from .jaif files.
-        copy {
-            from files('tests/whole-program-inference/non-annotated')
-            into file('tests/whole-program-inference/annotated')
-            filter { String line ->
-                line.contains('// :: error:') ? null : line
-            }
-        }
-        // The only file for which expected errors are maintained is ExpectedErrors.java, so we copy it over
-        delete('tests/whole-program-inference/annotated/ExpectedErrors.java')
-        copy {
-            from file('tests/whole-program-inference/non-annotated/ExpectedErrors.java')
-            into file('tests/whole-program-inference/annotated')
-        }
-
-        // Inserting annotations from .jaif files in-place.
-        List<File> jaifs = fileTree("${buildDir}/whole-program-inference/").matching {
-            include '*.jaif'
-        }.asList()
-        List<File> javas = fileTree("tests/whole-program-inference/annotated/").matching {
-            include '*.java'
-        }.asList()
-        exec {
-            executable "${afu}/scripts/insert-annotations-to-source"
-            args = ['-i']
-            for (File jaif : jaifs) {
-                args += [jaif.toString()]
-            }
-            for (File javaFile : javas) {
-                args += [javaFile.toString()]
-            }
-        }
-    }
-    finalizedBy(testWPIValidate)
 }
 
 task loaderTests(dependsOn: 'shadowJar', group: 'Verification') {
@@ -171,4 +180,31 @@ task loaderTests(dependsOn: 'shadowJar', group: 'Verification') {
 
 clean {
     delete("tests/whole-program-inference/annotated")
+    delete("tests/returnsreceiverdelomboked")
+    delete('dist')
 }
+
+
+task delombok {
+    description 'Delomboks the source code tree in tests/returnsreceiverlombok'
+
+    def srcDelomboked = 'tests/returnsreceiverdelomboked'
+    def srcJava = 'tests/returnsreceiverlombok'
+
+    inputs.files file(srcJava)
+    outputs.dir file(srcDelomboked)
+
+    // This dependency is required to ensure the checker-qual jar exists,
+    // to prevent lombok from emitting "cannot find symbol" errors for @This
+    // annotations in the test input code.
+    dependsOn project(':checker-qual').tasks.jar
+
+    doLast {
+        def collection = files(configurations.testCompileClasspath)
+        ant.taskdef(name: 'delombok', classname: 'lombok.delombok.ant.Tasks$Delombok',
+                classpath: collection.asPath)
+        ant.delombok(from: srcJava, to: srcDelomboked, classpath: collection.asPath)
+    }
+}
+
+tasks.test.dependsOn("delombok")

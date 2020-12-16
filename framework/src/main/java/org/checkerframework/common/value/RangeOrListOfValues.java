@@ -8,15 +8,13 @@ import org.checkerframework.common.value.qual.ArrayLenRange;
 import org.checkerframework.common.value.qual.IntVal;
 import org.checkerframework.common.value.util.Range;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.javacutil.PluginUtil;
+import org.plumelib.util.UtilPlume;
 
 /**
  * An abstraction that can be either a range or a list of values that could come from an {@link
  * ArrayLen} or {@link IntVal}. This abstraction reduces the number of cases that {@link
- * org.checkerframework.common.value.ValueAnnotatedTypeFactory.ValueTreeAnnotator#handleInitializers(List,
- * AnnotatedTypeMirror.AnnotatedArrayType)} and {@link
- * org.checkerframework.common.value.ValueAnnotatedTypeFactory.ValueTreeAnnotator#handleDimensions(List,
- * AnnotatedTypeMirror.AnnotatedArrayType)} must handle.
+ * ValueTreeAnnotator#handleInitializers(List, AnnotatedTypeMirror.AnnotatedArrayType)} and {@link
+ * ValueTreeAnnotator#handleDimensions(List, AnnotatedTypeMirror.AnnotatedArrayType)} must handle.
  *
  * <p>Tracks Ints in the list, and creates ArrayLen or ArrayLenRange annotations, because it's meant
  * to be used to reason about ArrayLen and ArrayLenRange values.
@@ -74,12 +72,15 @@ class RangeOrListOfValues {
     /**
      * Produces the most precise annotation that captures the information stored in this
      * RangeOrListofValues. The result is either a {@link ArrayLen} or a {@link ArrayLenRange}.
+     *
+     * @param atypeFactory the type factory
+     * @return an annotation correspending to this RangeOrListofValues
      */
-    public AnnotationMirror createAnnotation(ValueAnnotatedTypeFactory atypefactory) {
+    public AnnotationMirror createAnnotation(ValueAnnotatedTypeFactory atypeFactory) {
         if (isRange) {
-            return atypefactory.createArrayLenRangeAnnotation(range);
+            return atypeFactory.createArrayLenRangeAnnotation(range);
         } else {
-            return atypefactory.createArrayLenAnnotation(values);
+            return atypeFactory.createArrayLenAnnotation(values);
         }
     }
 
@@ -122,7 +123,7 @@ class RangeOrListOfValues {
                 return "[]";
             }
             String res = "[";
-            res += PluginUtil.join(", ", values);
+            res += UtilPlume.join(", ", values);
             res += "]";
             return res;
         }

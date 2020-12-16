@@ -6,19 +6,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.DefaultFor;
-import org.checkerframework.framework.qual.DefaultInUncheckedCodeFor;
 import org.checkerframework.framework.qual.LiteralKind;
 import org.checkerframework.framework.qual.QualifierForLiterals;
 import org.checkerframework.framework.qual.SubtypeOf;
-import org.checkerframework.framework.qual.TypeUseLocation;
 
 /**
  * {@link Nullable} is a type annotation that indicates that the value is not known to be non-null
  * (see {@link NonNull}). Only if an expression has a {@link Nullable} type may it be assigned
  * {@code null}.
- *
- * <p>This annotation is associated with the {@link
- * org.checkerframework.checker.nullness.NullnessChecker}.
  *
  * @see NonNull
  * @see MonotonicNonNull
@@ -31,5 +26,4 @@ import org.checkerframework.framework.qual.TypeUseLocation;
 @SubtypeOf({})
 @QualifierForLiterals(LiteralKind.NULL)
 @DefaultFor(types = Void.class)
-@DefaultInUncheckedCodeFor({TypeUseLocation.RETURN, TypeUseLocation.UPPER_BOUND})
 public @interface Nullable {}

@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
-import org.checkerframework.framework.source.Result;
+import javax.tools.Diagnostic.Kind;
+import org.checkerframework.framework.source.DiagMessage;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.javacutil.BugInCF;
@@ -96,22 +97,31 @@ public class FieldInvariants {
         return list;
     }
 
-    /** @return true if there is a qualifier for each field in {@code fields} */
+    /**
+     * Returns true if there is a qualifier for each field in {@code fields}.
+     *
+     * @return true if there is a qualifier for each field in {@code fields}
+     */
     public boolean isWellFormed() {
         return qualifiers.size() == fields.size();
     }
 
     /**
-     * @return null if {@code superInvar} is a super invariant, otherwise returns a Result with the
-     *     error message
+     * Returns null if {@code superInvar} is a super invariant, otherwise returns the error message.
+     *
+     * @param superInvar the value to check for being a super invariant
+     * @param factory the type factory
+     * @return null if {@code superInvar} is a super invariant, otherwise returns the error message
      */
-    public Result isSuperInvariant(FieldInvariants superInvar, AnnotatedTypeFactory factory) {
+    public DiagMessage isSuperInvariant(FieldInvariants superInvar, AnnotatedTypeFactory factory) {
         QualifierHierarchy qualifierHierarchy = factory.getQualifierHierarchy();
         if (!this.fields.containsAll(superInvar.fields)) {
             List<String> missingFields = new ArrayList<>(superInvar.fields);
             missingFields.removeAll(fields);
-            return Result.failure(
-                    "field.invariant.not.found.superclass", String.join(", ", missingFields));
+            return new DiagMessage(
+                    Kind.ERROR,
+                    "field.invariant.not.found.superclass",
+                    String.join(", ", missingFields));
         }
 
         for (String field : superInvar.fields) {
@@ -121,8 +131,12 @@ public class FieldInvariants {
                 AnnotationMirror sub =
                         qualifierHierarchy.findAnnotationInSameHierarchy(subQualifiers, superA);
                 if (sub == null || !qualifierHierarchy.isSubtype(sub, superA)) {
-                    return Result.failure(
-                            "field.invariant.not.subtype.superclass", field, sub, superA);
+                    return new DiagMessage(
+                            Kind.ERROR,
+                            "field.invariant.not.subtype.superclass",
+                            field,
+                            sub,
+                            superA);
                 }
             }
         }

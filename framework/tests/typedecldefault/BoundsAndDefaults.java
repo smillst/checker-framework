@@ -1,5 +1,5 @@
 import org.checkerframework.framework.qual.*;
-import typedecldefault.quals.*;
+import org.checkerframework.framework.testchecker.typedecldefault.quals.*;
 
 // @TypeDeclDefaultBottom is the default qualifier in hierarchy.
 @SuppressWarnings("inconsistent.constructor.type")
@@ -19,8 +19,7 @@ public class BoundsAndDefaults {
 
     @NoDefaultQualifierForUse(TypeDeclDefaultTop.class)
     static @TypeDeclDefaultMiddle class MiddleBoundClass {
-        @TypeDeclDefaultMiddle
-        MiddleBoundClass() {}
+        @TypeDeclDefaultMiddle MiddleBoundClass() {}
     }
 
     @TypeDeclDefaultBottom MiddleBoundClass method(

@@ -7,6 +7,10 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -14,27 +18,30 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.StringJoiner;
 import javax.tools.Diagnostic;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
-import org.checkerframework.javacutil.PluginUtil;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.BugInCF;
+import org.checkerframework.javacutil.SystemUtil;
 import org.junit.Assert;
+import org.plumelib.util.UtilPlume;
 
+/** Utilities for testing. */
 public class TestUtilities {
 
-    public static final boolean IS_AT_LEAST_9_JVM;
-    public static final boolean IS_AT_LEAST_11_JVM;
+    public static final boolean IS_AT_LEAST_9_JVM = SystemUtil.getJreVersion() >= 9;
+    public static final boolean IS_AT_LEAST_11_JVM = SystemUtil.getJreVersion() >= 11;
 
     static {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         OutputStream err = new ByteArrayOutputStream();
         compiler.run(null, null, err, "-version");
-        IS_AT_LEAST_9_JVM = PluginUtil.getJreVersion() >= 9;
-        IS_AT_LEAST_11_JVM = PluginUtil.getJreVersion() >= 11;
     }
 
     public static List<File> findNestedJavaTestFiles(String... dirNames) {
@@ -66,10 +73,26 @@ public class TestUtilities {
      * @return list where each item is a list of Java test files grouped by directory
      */
     public static List<List<File>> findJavaFilesPerDirectory(File parent, String... dirNames) {
+        if (!parent.exists()) {
+            throw new BugInCF(
+                    "test parent directory does not exist: %s %s",
+                    parent, parent.getAbsoluteFile());
+        }
+        if (!parent.isDirectory()) {
+            throw new BugInCF(
+                    "test parent directory is not a directory: %s %s",
+                    parent, parent.getAbsoluteFile());
+        }
+
         List<List<File>> filesPerDirectory = new ArrayList<>();
 
         for (String dirName : dirNames) {
-            File dir = new File(parent, dirName);
+            File dir = new File(parent, dirName).toPath().toAbsolutePath().normalize().toFile();
+            // This fails for the whole-program-inference tests:  their sources do not necessarily
+            // exist yet but will be created by a test that runs earlier than they do.
+            // if (!dir.isDirectory()) {
+            //     throw new BugInCF("test directory does not exist: %s", dir);
+            // }
             if (dir.isDirectory()) {
                 filesPerDirectory.addAll(findJavaTestFilesInDirectory(dir));
             }
@@ -79,28 +102,32 @@ public class TestUtilities {
     }
 
     /**
-     * Returns a list where each item is a list of Java files, excluding any skip tests, for each
-     * subdirectory of {@code dir} and also a list of Java files in dir.
+     * Returns a list where each item is a list of Java files, excluding any skip tests. There is
+     * one list for {@code dir}, and one list for each subdirectory of {@code dir}.
      *
      * @param dir directory in which to search for Java files
      * @return a list of list of Java test files
      */
     private static List<List<File>> findJavaTestFilesInDirectory(File dir) {
-        assert dir.isDirectory();
         List<List<File>> fileGroupedByDirectory = new ArrayList<>();
-        List<File> fileInDir = new ArrayList<>();
+        List<File> filesInDir = new ArrayList<>();
 
-        fileGroupedByDirectory.add(fileInDir);
-        for (String fileName : dir.list()) {
+        fileGroupedByDirectory.add(filesInDir);
+        String[] dirContents = dir.list();
+        if (dirContents == null) {
+            throw new Error("Not a directory: " + dir);
+        }
+        Arrays.sort(dirContents);
+        for (String fileName : dirContents) {
             File file = new File(dir, fileName);
             if (file.isDirectory()) {
                 fileGroupedByDirectory.addAll(findJavaTestFilesInDirectory(file));
             } else if (isJavaTestFile(file)) {
-                fileInDir.add(file);
+                filesInDir.add(file);
             }
         }
-        if (fileInDir.isEmpty()) {
-            fileGroupedByDirectory.remove(fileInDir);
+        if (filesInDir.isEmpty()) {
+            fileGroupedByDirectory.remove(filesInDir);
         }
         return fileGroupedByDirectory;
     }
@@ -143,7 +170,8 @@ public class TestUtilities {
 
         List<File> javaFiles = new ArrayList<>();
 
-        File[] in = directory.listFiles();
+        @SuppressWarnings("nullness") // checked above that it's a directory
+        File @NonNull [] in = directory.listFiles();
         Arrays.sort(
                 in,
                 new Comparator<File>() {
@@ -199,7 +227,7 @@ public class TestUtilities {
         return true;
     }
 
-    public static String diagnosticToString(
+    public static @Nullable String diagnosticToString(
             final Diagnostic<? extends JavaFileObject> diagnostic, boolean usingAnomsgtxt) {
 
         String result = diagnostic.toString().trim();
@@ -217,8 +245,8 @@ public class TestUtilities {
             // and should be printed in full.
             if (!result.contains("unexpected Throwable")) {
                 String firstLine;
-                if (result.contains("\n")) {
-                    firstLine = result.substring(0, result.indexOf('\n'));
+                if (result.contains(System.lineSeparator())) {
+                    firstLine = result.substring(0, result.indexOf(System.lineSeparator()));
                 } else {
                     firstLine = result;
                 }
@@ -246,20 +274,18 @@ public class TestUtilities {
         return actualDiagnosticsStr;
     }
 
+    /**
+     * Return the file absolute pathnames, separated by commas.
+     *
+     * @param javaFiles a list of Java files
+     * @return the file absolute pathnames, separated by commas
+     */
     public static String summarizeSourceFiles(List<File> javaFiles) {
-        StringBuilder listStrBuilder = new StringBuilder();
-
-        boolean first = true;
+        StringJoiner sj = new StringJoiner(", ");
         for (File file : javaFiles) {
-            if (first) {
-                first = false;
-            } else {
-                listStrBuilder.append(", ");
-            }
-            listStrBuilder.append(file.getAbsolutePath());
+            sj.add(file.getAbsolutePath());
         }
-
-        return listStrBuilder.toString();
+        return sj.toString();
     }
 
     public static File getTestFile(String fileRelativeToTestsDir) {
@@ -272,10 +298,10 @@ public class TestUtilities {
         return comparisonFile;
     }
 
-    public static List<String> optionMapToList(Map<String, String> options) {
+    public static List<String> optionMapToList(Map<String, @Nullable String> options) {
         List<String> optionList = new ArrayList<>(options.size() * 2);
 
-        for (Entry<String, String> opt : options.entrySet()) {
+        for (Map.Entry<String, @Nullable String> opt : options.entrySet()) {
             optionList.add(opt.getKey());
 
             if (opt.getValue() != null) {
@@ -316,38 +342,31 @@ public class TestUtilities {
             List<String> missing,
             boolean usingNoMsgText,
             boolean testFailed) {
-        try {
-            final BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
-            bw.write("File: " + testFile.getAbsolutePath() + "\n");
-            bw.write("TestFailed: " + testFailed + "\n");
-            bw.write("Using nomsgtxt: " + usingNoMsgText + "\n");
-            bw.write(
-                    "#Missing: "
-                            + missing.size()
-                            + "      #Unexpected: "
-                            + unexpected.size()
-                            + "\n");
+        try (PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
+            pw.println("File: " + testFile.getAbsolutePath());
+            pw.println("TestFailed: " + testFailed);
+            pw.println("Using nomsgtxt: " + usingNoMsgText);
+            pw.println("#Missing: " + missing.size() + "      #Unexpected: " + unexpected.size());
 
-            bw.write("Expected:\n");
-            bw.write(String.join("\n", expected));
-            bw.newLine();
+            pw.println("Expected:");
+            pw.println(UtilPlume.joinLines(expected));
+            pw.println();
 
-            bw.write("Actual:\n");
-            bw.write(String.join("\n", actual));
-            bw.newLine();
+            pw.println("Actual:");
+            pw.println(UtilPlume.joinLines(actual));
+            pw.println();
 
-            bw.write("Missing:\n");
-            bw.write(String.join("\n", missing));
-            bw.newLine();
+            pw.println("Missing:");
+            pw.println(UtilPlume.joinLines(missing));
+            pw.println();
 
-            bw.write("Unexpected:\n");
-            bw.write(String.join("\n", unexpected));
-            bw.newLine();
+            pw.println("Unexpected:");
+            pw.println(UtilPlume.joinLines(unexpected));
+            pw.println();
 
-            bw.newLine();
-            bw.newLine();
-            bw.flush();
-            bw.close();
+            pw.println();
+            pw.println();
+            pw.flush();
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -373,32 +392,27 @@ public class TestUtilities {
             Iterable<? extends JavaFileObject> files,
             Iterable<String> options,
             Iterable<String> processors) {
-        try {
-            final BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
-            bw.write("Files:\n");
+        try (PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
+            pw.println("Files:");
             for (JavaFileObject f : files) {
-                bw.write("    " + f.getName());
-                bw.newLine();
+                pw.println("    " + f.getName());
             }
-            bw.newLine();
+            pw.println();
 
-            bw.write("Options:\n");
+            pw.println("Options:");
             for (String o : options) {
-                bw.write("    " + o);
-                bw.newLine();
+                pw.println("    " + o);
             }
-            bw.newLine();
+            pw.println();
 
-            bw.write("Processors:\n");
+            pw.println("Processors:");
             for (String p : processors) {
-                bw.write("    " + p);
-                bw.newLine();
+                pw.println("    " + p);
             }
-            bw.newLine();
-            bw.newLine();
+            pw.println();
+            pw.println();
 
-            bw.flush();
-            bw.close();
+            pw.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -407,33 +421,72 @@ public class TestUtilities {
     /**
      * TODO: REDO COMMENT Compares the result of the compiler against an array of Strings.
      *
-     * <p>In a checker, we treat a more specific error message as subsumed by a general one. For
-     * example, "new.array.type.invalid" is subsumed by "type.invalid". This is not the case in the
-     * test framework; the exact error key is expected.
+     * <p>In a checker, a more specific error message is subsumed by a general one. For example,
+     * "new.array.type.invalid" is subsumed by "type.invalid". This is not the case in the test
+     * framework, which must use the exact error message key.
+     *
+     * @param testResult the result of type-checking
      */
-    public static void assertResultsAreValid(TypecheckResult testResult) {
+    public static void assertTestDidNotFail(TypecheckResult testResult) {
         if (testResult.didTestFail()) {
+            if (getShouldEmitDebugInfo()) {
+                System.out.println("---------------- start of javac ouput ----------------");
+                System.out.println(testResult.getCompilationResult().getJavacOutput());
+                System.out.println("---------------- end of javac ouput ----------------");
+            }
             Assert.fail(testResult.summarize());
         }
     }
 
-    public static void ensureDirectoryExists(File path) {
-        if (!path.exists()) {
-            if (!path.mkdirs()) {
-                throw new RuntimeException("Could not make directory: " + path.getAbsolutePath());
-            }
+    /**
+     * Create the directory (and its parents) if it does not exist.
+     *
+     * @param dir the directory to create
+     */
+    public static void ensureDirectoryExists(String dir) {
+        try {
+            Files.createDirectories(Paths.get(dir));
+        } catch (FileAlreadyExistsException e) {
+            // directory already exists
+        } catch (IOException e) {
+            throw new RuntimeException("Could not make directory: " + dir + ": " + e.getMessage());
         }
     }
 
-    public static boolean testBooleanProperty(String propName) {
-        return testBooleanProperty(propName, false);
+    /**
+     * Return true if the system property is set to "true". Return false if the system property is
+     * not set or is set to "false". Otherwise, errs.
+     *
+     * @param key system property to check
+     * @return true if the system property is set to "true". Return false if the system property is
+     *     not set or is set to "false". Otherwise, errs.
+     * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String)} instead.
+     */
+    @Deprecated
+    public static boolean testBooleanProperty(String key) {
+        return testBooleanProperty(key, false);
     }
 
-    public static boolean testBooleanProperty(String propName, boolean defaultValue) {
-        return PluginUtil.getBooleanSystemProperty(propName, defaultValue);
+    /**
+     * If the system property is set, return its boolean value; otherwise return {@code
+     * defaultValue}. Errs if the system property is set to a non-boolean value.
+     *
+     * @param key system property to check
+     * @param defaultValue value to use if the property is not set
+     * @return the boolean value of {@code key} or {@code defaultValue} if {@code key} is not set
+     * @deprecated Use {@link SystemUtil#getBooleanSystemProperty(String, boolean)} instead.
+     */
+    @Deprecated
+    public static boolean testBooleanProperty(String key, boolean defaultValue) {
+        return SystemUtil.getBooleanSystemProperty(key, defaultValue);
     }
 
+    /**
+     * Returns the value of system property "emit.test.debug".
+     *
+     * @return the value of system property "emit.test.debug"
+     */
     public static boolean getShouldEmitDebugInfo() {
-        return PluginUtil.getBooleanSystemProperty("emit.test.debug");
+        return SystemUtil.getBooleanSystemProperty("emit.test.debug");
     }
 }

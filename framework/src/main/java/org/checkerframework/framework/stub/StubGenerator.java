@@ -23,8 +23,9 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import org.checkerframework.javacutil.ElementUtils;
-import org.checkerframework.javacutil.PluginUtil;
+import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.UtilPlume;
 
 /**
  * Generates a stub file from a single class or an entire package.
@@ -76,7 +77,7 @@ public class StubGenerator {
             return;
         }
 
-        String pkg = ElementUtils.getVerboseName(ElementUtils.enclosingPackage(elt));
+        String pkg = ElementUtils.getQualifiedName(ElementUtils.enclosingPackage(elt));
         if (!"".equals(pkg)) {
             currentPackage = pkg;
             currentIndention = "    ";
@@ -109,7 +110,7 @@ public class StubGenerator {
             return;
         }
 
-        String newPackage = ElementUtils.getVerboseName(ElementUtils.enclosingPackage(elt));
+        String newPackage = ElementUtils.getQualifiedName(ElementUtils.enclosingPackage(elt));
         if (!newPackage.equals("")) {
             currentPackage = newPackage;
             currentIndention = "    ";
@@ -130,7 +131,7 @@ public class StubGenerator {
         }
 
         String newPackageName =
-                ElementUtils.getVerboseName(ElementUtils.enclosingPackage(typeElement));
+                ElementUtils.getQualifiedName(ElementUtils.enclosingPackage(typeElement));
         boolean newPackage = !newPackageName.equals(currentPackage);
         currentPackage = newPackageName;
 
@@ -367,21 +368,14 @@ public class StubGenerator {
     }
 
     /**
-     * Return a string representation of the list in the form of {@code item1, item2, item3, ...}.
+     * Return a string representation of the list in the form of {@code item1, item2, item3, ...},
+     * without surrounding square brackets as the default representation has.
      *
-     * <p>instead of the default representation, {@code [item1, item2, item3, ...]}
+     * @param lst a list to format
+     * @return a string representation of the list, without surrounding square brackets
      */
     private String formatList(List<?> lst) {
-        StringBuilder sb = new StringBuilder();
-        boolean isFirst = true;
-        for (Object o : lst) {
-            if (!isFirst) {
-                sb.append(", ");
-            }
-            sb.append(o);
-            isFirst = false;
-        }
-        return sb.toString();
+        return UtilPlume.join(", ", lst);
     }
 
     /** Returns true if the element is public or protected element. */
@@ -407,6 +401,12 @@ public class StubGenerator {
         return sb.toString();
     }
 
+    /**
+     * The main entry point to StubGenerator.
+     *
+     * @param args command-line arguments
+     */
+    @SuppressWarnings("signature") // User-supplied arguments to main
     public static void main(String[] args) {
         if (args.length != 1) {
             System.out.println("Usage:");
@@ -416,10 +416,9 @@ public class StubGenerator {
 
         Context context = new Context();
         Options options = Options.instance(context);
-        if (PluginUtil.getJreVersion() == 8) {
+        if (SystemUtil.getJreVersion() == 8) {
             options.put(Option.SOURCE, "8");
             options.put(Option.TARGET, "8");
-            options.put(Option.XBOOTCLASSPATH_PREPEND, "jdk8.jar");
         }
 
         JavaCompiler javac = JavaCompiler.instance(context);

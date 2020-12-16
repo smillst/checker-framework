@@ -7,9 +7,8 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeValidator;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.common.reflection.qual.MethodVal;
-import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
-import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 public class MethodValVisitor extends BaseTypeVisitor<MethodValAnnotatedTypeFactory> {
@@ -39,7 +38,7 @@ class MethodNameValidator extends BaseTypeValidator {
     }
 
     @Override
-    public boolean isValid(AnnotatedTypeMirror type, Tree tree) {
+    public Void visitDeclared(AnnotatedDeclaredType type, Tree tree) {
         AnnotationMirror methodVal = type.getAnnotation(MethodVal.class);
         if (methodVal != null) {
             List<String> classNames =
@@ -51,16 +50,16 @@ class MethodNameValidator extends BaseTypeValidator {
                     AnnotationUtils.getElementValueArray(
                             methodVal, "methodName", String.class, true);
             if (!(params.size() == methodNames.size() && params.size() == classNames.size())) {
-                checker.report(Result.failure("invalid.methodval", methodVal), tree);
+                checker.reportError(tree, "invalid.methodval", methodVal);
             }
 
             for (String methodName : methodNames) {
                 if (!legalMethodName(methodName)) {
-                    checker.report(Result.failure("illegal.methodname", methodName, type), tree);
+                    checker.reportError(tree, "illegal.methodname", methodName, type);
                 }
             }
         }
-        return super.isValid(type, tree);
+        return super.visitDeclared(type, tree);
     }
 
     private boolean legalMethodName(String methodName) {

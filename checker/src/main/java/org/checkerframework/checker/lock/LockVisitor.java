@@ -1,7 +1,5 @@
 package org.checkerframework.checker.lock;
 
-import static org.checkerframework.javacutil.TreeUtils.getReceiverTree;
-
 import com.sun.source.tree.AnnotatedTypeTree;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ArrayAccessTree;
@@ -45,22 +43,20 @@ import org.checkerframework.checker.lock.qual.Holding;
 import org.checkerframework.checker.lock.qual.LockHeld;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
-import org.checkerframework.dataflow.analysis.FlowExpressions;
-import org.checkerframework.dataflow.analysis.FlowExpressions.Receiver;
-import org.checkerframework.dataflow.analysis.FlowExpressions.Unknown;
+import org.checkerframework.dataflow.expression.JavaExpression;
+import org.checkerframework.dataflow.expression.Unknown;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.flow.CFAbstractValue;
-import org.checkerframework.framework.source.Result;
 import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.framework.util.FlowExpressionParseUtil;
-import org.checkerframework.framework.util.FlowExpressionParseUtil.FlowExpressionContext;
-import org.checkerframework.framework.util.FlowExpressionParseUtil.FlowExpressionParseException;
+import org.checkerframework.framework.util.JavaExpressionParseUtil;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionContext;
+import org.checkerframework.framework.util.JavaExpressionParseUtil.JavaExpressionParseException;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesError;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -100,7 +96,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     || atm.hasExplicitAnnotationRelaxed(atypeFactory.GUARDEDBY)
                     || atm.hasExplicitAnnotation(atypeFactory.GUARDEDBYUNKNOWN)
                     || atm.hasExplicitAnnotation(atypeFactory.GUARDEDBYBOTTOM)) {
-                checker.report(Result.failure("immutable.type.guardedby"), node);
+                checker.reportError(node, "immutable.type.guardedby");
             }
         }
 
@@ -120,7 +116,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
      * </ul>
      *
      * @param variableTree the VariableTree for the variable declaration used to determine if
-     *     multiple @GuardedBy annotations are present and to report the error via checker.report.
+     *     multiple @GuardedBy annotations are present and to report the error
      */
     private void issueErrorIfMoreThanOneGuardedByAnnotationPresent(VariableTree variableTree) {
         int guardedByAnnotationCount = 0;
@@ -135,7 +131,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                             anno, "javax.annotation.concurrent.GuardedBy")) {
                 guardedByAnnotationCount++;
                 if (guardedByAnnotationCount > 1) {
-                    checker.report(Result.failure("multiple.guardedby.annotations"), variableTree);
+                    checker.reportError(variableTree, "multiple.guardedby.annotations");
                     return;
                 }
             }
@@ -187,7 +183,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             }
 
             if (issueGSwithMRLWarning) {
-                checker.report(Result.failure("guardsatisfied.with.mayreleaselocks"), node);
+                checker.reportError(node, "guardsatisfied.with.mayreleaselocks");
             }
         }
 
@@ -200,14 +196,14 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                 int returnGuardSatisfiedIndex = atypeFactory.getGuardSatisfiedIndex(returnTypeATM);
 
                 if (returnGuardSatisfiedIndex == -1) {
-                    checker.report(Result.failure("guardsatisfied.return.must.have.index"), node);
+                    checker.reportError(node, "guardsatisfied.return.must.have.index");
                 }
             }
         }
 
         if (!sea.isWeakerThan(SideEffectAnnotation.LOCKINGFREE)
                 && methodElement.getModifiers().contains(Modifier.SYNCHRONIZED)) {
-            checker.report(Result.failure("lockingfree.synchronized.method", sea), node);
+            checker.reportError(node, "lockingfree.synchronized.method", sea);
         }
 
         return super.visitMethod(node, p);
@@ -223,7 +219,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
      * </ul>
      *
      * @param methodElement the ExecutableElement for the method call referred to by {@code node}
-     * @param treeForErrorReporting the MethodTree used to report the error via checker.report.
+     * @param treeForErrorReporting the MethodTree used to report the error
      */
     private void issueErrorIfMoreThanOneLockPreconditionMethodAnnotationPresent(
             ExecutableElement methodElement, MethodTree treeForErrorReporting) {
@@ -251,9 +247,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         }
 
         if (lockPreconditionAnnotationCount > 1) {
-            checker.report(
-                    Result.failure("multiple.lock.precondition.annotations"),
-                    treeForErrorReporting);
+            checker.reportError(treeForErrorReporting, "multiple.lock.precondition.annotations");
         }
     }
 
@@ -348,7 +342,8 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             AnnotatedTypeMirror varType,
             AnnotatedTypeMirror valueType,
             Tree valueTree,
-            @CompilerMessageKey String errorKey) {
+            @CompilerMessageKey String errorKey,
+            Object... extraArgs) {
 
         Kind valueTreeKind = valueTree.getKind();
 
@@ -403,10 +398,11 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                             atypeFactory.getGuardSatisfiedIndex(valueType);
 
                     if (varTypeGuardSatisfiedIndex == -1 && valueTypeGuardSatisfiedIndex == -1) {
-                        checker.report(
-                                Result.failure(
-                                        "guardsatisfied.assignment.disallowed", varType, valueType),
-                                valueTree);
+                        checker.reportError(
+                                valueTree,
+                                "guardsatisfied.assignment.disallowed",
+                                varType,
+                                valueType);
                     }
                 } else {
                     // The RHS can be @GuardSatisfied with a different index when matching method
@@ -434,7 +430,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             }
         }
 
-        super.commonAssignmentCheck(varType, valueType, valueTree, errorKey);
+        super.commonAssignmentCheck(varType, valueType, valueTree, errorKey, extraArgs);
     }
 
     @Override
@@ -474,21 +470,23 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         String overriddenTyp = overriddenType.getUnderlyingType().asElement().toString();
 
         if (overriderLocks == null || overriddenLocks == null) {
-            checker.report(
-                    Result.failure(
-                            messageKey, overriderMeth, overriderTyp, overriddenMeth, overriddenTyp),
-                    overriderTree);
+            checker.reportError(
+                    overriderTree,
+                    messageKey,
+                    overriderMeth,
+                    overriderTyp,
+                    overriddenMeth,
+                    overriddenTyp);
         } else {
-            checker.report(
-                    Result.failure(
-                            messageKey,
-                            overriderMeth,
-                            overriderTyp,
-                            overriddenMeth,
-                            overriddenTyp,
-                            overriderLocks,
-                            overriddenLocks),
-                    overriderTree);
+            checker.reportError(
+                    overriderTree,
+                    messageKey,
+                    overriderMeth,
+                    overriderTyp,
+                    overriddenMeth,
+                    overriddenTyp,
+                    overriderLocks,
+                    overriddenLocks);
         }
     }
 
@@ -582,23 +580,22 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     atypeFactory.methodSideEffectAnnotation(enclosingMethodElement, false);
 
             if (seaOfInvokedMethod.isWeakerThan(seaOfContainingMethod)) {
-                checker.report(
-                        Result.failure(
-                                "method.guarantee.violated",
-                                seaOfContainingMethod.getNameOfSideEffectAnnotation(),
-                                enclosingMethodElement.toString(),
-                                methodElement.toString(),
-                                seaOfInvokedMethod.getNameOfSideEffectAnnotation()),
-                        node);
+                checker.reportError(
+                        node,
+                        "method.guarantee.violated",
+                        seaOfContainingMethod.getNameOfSideEffectAnnotation(),
+                        enclosingMethodElement.getSimpleName(),
+                        methodElement.getSimpleName(),
+                        seaOfInvokedMethod.getNameOfSideEffectAnnotation());
             }
         }
 
         if (methodElement != null) {
             // Handle releasing of explicit locks. Verify that the lock expression is effectively
             // final.
-            ExpressionTree recvTree = getReceiverTree(node);
+            ExpressionTree receiverTree = TreeUtils.getReceiverTree(node);
 
-            ensureReceiverOfExplicitUnlockCallIsEffectivelyFinal(methodElement, recvTree);
+            ensureReceiverOfExplicitUnlockCallIsEffectivelyFinal(methodElement, receiverTree);
 
             // Handle acquiring of explicit locks. Verify that the lock expression is effectively
             // final.
@@ -630,10 +627,11 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
 
             for (String expr : expressions) {
                 if (expr.equals("this")) {
-                    // recvTree will be null for implicit this, or class name receivers. But they
+                    // receiverTree will be null for implicit this, or class name receivers. But
+                    // they
                     // are also final. So nothing to be checked for them.
-                    if (recvTree != null) {
-                        ensureExpressionIsEffectivelyFinal(recvTree);
+                    if (receiverTree != null) {
+                        ensureExpressionIsEffectivelyFinal(receiverTree);
                     }
                 } else if (expr.equals("#1")) {
                     ExpressionTree firstParameter = node.getArguments().get(0);
@@ -757,16 +755,15 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                                 String formalParam2 =
                                         "parameter #" + j; // j, not j-1, so the index is 1-based
 
-                                checker.report(
-                                        Result.failure(
-                                                "guardsatisfied.parameters.must.match",
-                                                formalParam1,
-                                                formalParam2,
-                                                invokedMethod.toString(),
-                                                guardSatisfiedIndex[i],
-                                                arg1Anno,
-                                                arg2Anno),
-                                        node);
+                                checker.reportError(
+                                        node,
+                                        "guardsatisfied.parameters.must.match",
+                                        formalParam1,
+                                        formalParam2,
+                                        invokedMethod.toString(),
+                                        guardSatisfiedIndex[i],
+                                        arg1Anno,
+                                        arg2Anno);
                             }
                         }
                     }
@@ -848,7 +845,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                         atypeFactory.getAnnotatedType(synchronizedExpression).getUnderlyingType());
 
         if (types.isSubtype(expressionType, lockInterfaceTypeMirror)) {
-            checker.report(Result.failure("explicit.lock.synchronized"), node);
+            checker.reportError(node, "explicit.lock.synchronized");
         }
 
         MethodTree enclosingMethod = TreeUtils.enclosingMethod(atypeFactory.getPath(node));
@@ -861,10 +858,8 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     atypeFactory.methodSideEffectAnnotation(methodElement, false);
 
             if (!seaOfContainingMethod.isWeakerThan(SideEffectAnnotation.LOCKINGFREE)) {
-                checker.report(
-                        Result.failure(
-                                "synchronized.block.in.lockingfree.method", seaOfContainingMethod),
-                        node);
+                checker.reportError(
+                        node, "synchronized.block.in.lockingfree.method", seaOfContainingMethod);
             }
         }
 
@@ -899,27 +894,21 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             switch (tree.getKind()) {
                 case MEMBER_SELECT:
                     if (!isTreeSymbolEffectivelyFinalOrUnmodifiable(tree)) {
-                        checker.report(
-                                Result.failure("lock.expression.not.final", lockExpressionTree),
-                                tree);
+                        checker.reportError(tree, "lock.expression.not.final", lockExpressionTree);
                         return;
                     }
                     tree = ((MemberSelectTree) tree).getExpression();
                     break;
                 case IDENTIFIER:
                     if (!isTreeSymbolEffectivelyFinalOrUnmodifiable(tree)) {
-                        checker.report(
-                                Result.failure("lock.expression.not.final", lockExpressionTree),
-                                tree);
+                        checker.reportError(tree, "lock.expression.not.final", lockExpressionTree);
                     }
                     return;
                 case METHOD_INVOCATION:
                     Element elem = TreeUtils.elementFromUse(tree);
                     if (atypeFactory.getDeclAnnotationNoAliases(elem, Deterministic.class) == null
                             && atypeFactory.getDeclAnnotationNoAliases(elem, Pure.class) == null) {
-                        checker.report(
-                                Result.failure("lock.expression.not.final", lockExpressionTree),
-                                tree);
+                        checker.reportError(tree, "lock.expression.not.final", lockExpressionTree);
                         return;
                     }
 
@@ -932,23 +921,22 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                     tree = methodInvocationTree.getMethodSelect();
                     break;
                 default:
-                    checker.report(
-                            Result.failure(
-                                    "lock.expression.possibly.not.final", lockExpressionTree),
-                            tree);
+                    checker.reportError(
+                            tree, "lock.expression.possibly.not.final", lockExpressionTree);
                     return;
             }
         }
     }
 
     private void ensureExpressionIsEffectivelyFinal(
-            final Receiver lockExpr,
+            final JavaExpression lockExpr,
             String expressionForErrorReporting,
             Tree treeForErrorReporting) {
         if (!atypeFactory.isExpressionEffectivelyFinal(lockExpr)) {
-            checker.report(
-                    Result.failure("lock.expression.not.final", expressionForErrorReporting),
-                    treeForErrorReporting);
+            checker.reportError(
+                    treeForErrorReporting,
+                    "lock.expression.not.final",
+                    expressionForErrorReporting);
         }
     }
 
@@ -1017,11 +1005,11 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
             }
         }
 
-        checker.report(Result.failure("guardsatisfied.location.disallowed"), annotationTree);
+        checker.reportError(annotationTree, "guardsatisfied.location.disallowed");
     }
 
     /**
-     * The flow expression parser requires a path for retrieving the scope that will be used to
+     * The JavaExpression parser requires a path for retrieving the scope that will be used to
      * resolve local variables. One would expect that simply providing the path to an AnnotationTree
      * would work, since the compiler (as called by the org.checkerframework.javacutil.Resolver
      * class) could walk up the path from the AnnotationTree to determine the scope. Unfortunately
@@ -1100,15 +1088,17 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
     }
 
     @Override
+    @SuppressWarnings("interning:not.interned") // AST node comparison
     public Void visitIdentifier(IdentifierTree tree, Void p) {
-        // If the identifier is a field accessed via an implicit this,
-        // then check the lock of this.  (All other field accessed are checked in visitMemberSelect.
+        // If the identifier is a field accessed via an implicit this, then check the lock of this.
+        // (All other field accesses are checked in visitMemberSelect.)
         if (TreeUtils.isFieldAccess(tree)) {
             Tree parent = getCurrentPath().getParentPath().getLeaf();
             // If the parent is not a member select, or if it is and the field is the expression,
             // then the field is accessed via an implicit this.
-            if (parent.getKind() != Kind.MEMBER_SELECT
-                    || ((MemberSelectTree) parent).getExpression() == tree) {
+            if ((parent.getKind() != Kind.MEMBER_SELECT
+                            || ((MemberSelectTree) parent).getExpression() == tree)
+                    && !ElementUtils.isStatic(TreeUtils.elementFromUse(tree))) {
                 AnnotationMirror guardedBy =
                         atypeFactory
                                 .getSelfType(tree)
@@ -1187,7 +1177,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         }
         if (atypeFactory.areSameByClass(gbAnno, GuardedByUnknown.class)
                 || atypeFactory.areSameByClass(gbAnno, GuardedByBottom.class)) {
-            checker.report(Result.failure("lock.not.held", "unknown lock " + gbAnno), tree);
+            checker.reportError(tree, "lock.not.held", "unknown lock " + gbAnno);
             return;
         } else if (atypeFactory.areSameByClass(gbAnno, GuardSatisfied.class)) {
             return;
@@ -1201,19 +1191,13 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         LockStore store = atypeFactory.getStoreBefore(tree);
         for (LockExpression expression : expressions) {
             if (expression.error != null) {
-                checker.report(
-                        Result.failure(
-                                "expression.unparsable.type.invalid", expression.error.toString()),
-                        tree);
+                checker.reportError(
+                        tree, "expression.unparsable.type.invalid", expression.error.toString());
             } else if (expression.lockExpression == null) {
-                checker.report(
-                        Result.failure(
-                                "expression.unparsable.type.invalid", expression.expressionString),
-                        tree);
+                checker.reportError(
+                        tree, "expression.unparsable.type.invalid", expression.expressionString);
             } else if (!isLockHeld(expression.lockExpression, store)) {
-                checker.report(
-                        Result.failure("lock.not.held", expression.lockExpression.toString()),
-                        tree);
+                checker.reportError(tree, "lock.not.held", expression.lockExpression.toString());
             }
 
             if (expression.error != null && expression.lockExpression != null) {
@@ -1223,11 +1207,11 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         }
     }
 
-    private boolean isLockHeld(Receiver lock, LockStore store) {
+    private boolean isLockHeld(JavaExpression lockExpr, LockStore store) {
         if (store == null) {
             return false;
         }
-        CFAbstractValue<?> value = store.getValue(lock);
+        CFAbstractValue<?> value = store.getValue(lockExpr);
         if (value == null) {
             return false;
         }
@@ -1249,19 +1233,19 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
         }
 
         TreePath currentPath = getCurrentPath();
-        List<Receiver> params =
-                FlowExpressions.getParametersOfEnclosingMethod(atypeFactory, currentPath);
+        List<JavaExpression> params =
+                JavaExpression.getParametersOfEnclosingMethod(atypeFactory, currentPath);
 
         TypeMirror enclosingType = TreeUtils.typeOf(TreeUtils.enclosingClass(currentPath));
-        Receiver pseudoReceiver =
-                FlowExpressions.internalReprOfPseudoReceiver(currentPath, enclosingType);
-        FlowExpressionContext exprContext =
-                new FlowExpressionContext(pseudoReceiver, params, atypeFactory.getContext());
-        Receiver self;
+        JavaExpression pseudoReceiver =
+                JavaExpression.getPseudoReceiver(currentPath, enclosingType);
+        JavaExpressionContext exprContext =
+                new JavaExpressionContext(pseudoReceiver, params, atypeFactory.getContext());
+        JavaExpression self;
         if (implicitThis) {
             self = pseudoReceiver;
         } else if (TreeUtils.isExpressionTree(tree)) {
-            self = FlowExpressions.internalReprOf(atypeFactory, (ExpressionTree) tree);
+            self = JavaExpression.fromTree(atypeFactory, (ExpressionTree) tree);
         } else {
             self = new Unknown(TreeUtils.typeOf(tree));
         }
@@ -1275,9 +1259,9 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
 
     private LockExpression parseExpressionString(
             String expression,
-            FlowExpressionContext flowExprContext,
+            JavaExpressionContext flowExprContext,
             TreePath path,
-            Receiver itself) {
+            JavaExpression itself) {
 
         LockExpression lockExpression = new LockExpression(expression);
         if (DependentTypesError.isExpressionError(expression)) {
@@ -1292,44 +1276,44 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
                 if (remainingExpression == null || remainingExpression.isEmpty()) {
                     lockExpression.lockExpression = itself;
                     if (!atypeFactory.isExpressionEffectivelyFinal(lockExpression.lockExpression)) {
-                        checker.report(
-                                Result.failure(
-                                        "lock.expression.not.final", lockExpression.lockExpression),
-                                path.getLeaf());
+                        checker.reportError(
+                                path.getLeaf(),
+                                "lock.expression.not.final",
+                                lockExpression.lockExpression);
                     }
                     return lockExpression;
                 } else {
                     // TODO: The proper way to do this is to call
                     // flowExprContext.copyChangeToParsingMemberOfReceiver to set the receiver to
-                    // the <self> expression, and then call FlowExpressionParseUtil.parse on the
-                    // remaining expression string with the new flow expression context. However,
-                    // this currently results in a FlowExpressions.Receiver that has a different
-                    // hash code than if the following flow expression is parsed directly, which
+                    // the <self> expression, and then call JavaExpressionParseUtil.parse on the
+                    // remaining expression string with the new JavaExpressionContext. However,
+                    // this currently results in a JavaExpression that has a different
+                    // hash code than if the following JavaExpression is parsed directly, which
                     // results in our inability to check that a lock expression is held as it does
                     // not match anything in the store due to the hash code mismatch.  For now,
                     // convert the "<self>" portion to the node's string representation, and parse
                     // the entire string:
 
                     lockExpression.lockExpression =
-                            FlowExpressionParseUtil.parse(
+                            JavaExpressionParseUtil.parse(
                                     itself.toString() + "." + remainingExpression,
                                     flowExprContext,
                                     path,
                                     true);
                     if (!atypeFactory.isExpressionEffectivelyFinal(lockExpression.lockExpression)) {
-                        checker.report(
-                                Result.failure(
-                                        "lock.expression.not.final", lockExpression.lockExpression),
-                                path.getLeaf());
+                        checker.reportError(
+                                path.getLeaf(),
+                                "lock.expression.not.final",
+                                lockExpression.lockExpression);
                     }
                     return lockExpression;
                 }
             } else {
                 lockExpression.lockExpression =
-                        FlowExpressionParseUtil.parse(expression, flowExprContext, path, true);
+                        JavaExpressionParseUtil.parse(expression, flowExprContext, path, true);
                 return lockExpression;
             }
-        } catch (FlowExpressionParseException ex) {
+        } catch (JavaExpressionParseException ex) {
             lockExpression.error = new DependentTypesError(expression, ex);
             return lockExpression;
         }
@@ -1337,7 +1321,7 @@ public class LockVisitor extends BaseTypeVisitor<LockAnnotatedTypeFactory> {
 
     private static class LockExpression {
         final String expressionString;
-        Receiver lockExpression = null;
+        JavaExpression lockExpression = null;
         DependentTypesError error = null;
 
         LockExpression(String expression) {

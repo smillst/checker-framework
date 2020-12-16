@@ -33,6 +33,7 @@ local.properties
 api
 build
 dist
+docs/tmpapi/
 stubparser/docs/api
 # Don't want to ignore .jar files in checker/lib/ nor in gradle/wrapper
 # *.jar
@@ -43,10 +44,14 @@ checker/build-temp
 checker/bin-devel/.plume-scripts
 checker/bin-devel/.run-google-java-format
 checker/bin-devel/dockerdir
-framework/src/main/resources/git.properties
+checker/src/main/resources/git.properties
+# These tests are generated from those in checker/tests/calledmethods-lombok during the build.
+# They must be in the tests/ directory rather than the build/ directory so that
+# CheckerFrameworkPerDirectoryTest can be used.
+checker/tests/calledmethods-delomboked
 
 # manual files
-bib
+plume-bib
 *.synctex.gz
 manual.aux
 manual.blg
@@ -80,6 +85,8 @@ docs/manual/*.png
 docs/manual/*.svg
 docs/examples/**/*.class
 docs/examples/MavenExample/Out.txt
+docs/examples/errorprone/.gradle/
+docs/examples/errorprone/Out.txt
 docs/examples/lombok/Out.txt
 docs/examples/lombok/.gradle/
 docs/examples/lombok/lombok.config
@@ -121,7 +128,8 @@ checker/jtreg/multipleexecutions/Main.class
 checker-qual/src
 checker-qual-android/src
 
-framework/tests/whole-program-inference/annotated/
+checker/tests/whole-program-inference/annotated/
+framework/tests/returnsreceiverdelomboked/
 
 docs/tutorial/src/personalblog-demo/bin/net/eyde/personalblog/service/PersonalBlogService.class
 docs/tutorial/src/personalblog-demo/bin/net/eyde/personalblog/struts/action/ReadAction.class

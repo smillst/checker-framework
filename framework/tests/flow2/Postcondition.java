@@ -1,10 +1,8 @@
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.EnsuresQualifier;
 import org.checkerframework.framework.qual.EnsuresQualifierIf;
-import org.checkerframework.framework.qual.EnsuresQualifiers;
-import org.checkerframework.framework.qual.EnsuresQualifiersIf;
 import org.checkerframework.framework.test.*;
-import testlib.util.*;
+import org.checkerframework.framework.testchecker.util.*;
 
 class Postcondition {
 
@@ -90,7 +88,7 @@ class Postcondition {
         param3();
     }
 
-    // postcondition with more complex flow expression
+    // postcondition with more complex expression
     void tn1(boolean b) {
         // :: error: (assignment.type.incompatible)
         @Odd String l1 = p.f1;
@@ -98,7 +96,7 @@ class Postcondition {
         @Odd String l2 = p.f1;
     }
 
-    // postcondition with more complex flow expression
+    // postcondition with more complex expression
     void tn2(boolean b) {
         Postcondition param = null;
         // :: error: (assignment.type.incompatible)
@@ -107,7 +105,7 @@ class Postcondition {
         @Odd String l2 = param.f1;
     }
 
-    // postcondition with more complex flow expression
+    // postcondition with more complex expression
     void tn3(boolean b) {
         // :: error: (assignment.type.incompatible)
         @Odd String l1 = p.p1();
@@ -116,7 +114,7 @@ class Postcondition {
     }
 
     /** *** many postcondition ***** */
-    @EnsuresQualifiers({
+    @EnsuresQualifier.List({
         @EnsuresQualifier(expression = "f1", qualifier = Odd.class),
         @EnsuresQualifier(expression = "f2", qualifier = Value.class)
     })
@@ -132,7 +130,7 @@ class Postcondition {
         f2 = p1;
     }
 
-    @EnsuresQualifiers({
+    @EnsuresQualifier.List({
         @EnsuresQualifier(expression = "f1", qualifier = Odd.class),
     })
     @EnsuresQualifier(expression = "f2", qualifier = Value.class)
@@ -142,20 +140,20 @@ class Postcondition {
     }
 
     @EnsuresQualifier(expression = "f1", qualifier = Odd.class)
-    @EnsuresQualifiers({@EnsuresQualifier(expression = "f2", qualifier = Value.class)})
+    @EnsuresQualifier.List({@EnsuresQualifier(expression = "f2", qualifier = Value.class)})
     void oddValueF1_repeated3(@Value String p1) {
         f1 = null;
         f2 = p1;
     }
 
-    @EnsuresQualifiers({
+    @EnsuresQualifier.List({
         @EnsuresQualifier(expression = "f1", qualifier = Odd.class),
         @EnsuresQualifier(expression = "f2", qualifier = Value.class)
     })
     // :: error: (contracts.postcondition.not.satisfied)
     void oddValueF1_invalid(@Value String p1) {}
 
-    @EnsuresQualifiers({
+    @EnsuresQualifier.List({
         @EnsuresQualifier(expression = "--", qualifier = Odd.class),
     })
     // :: error: (flowexpr.parse.error)
@@ -264,7 +262,7 @@ class Postcondition {
     }
 
     /** *** many conditional postcondition ***** */
-    @EnsuresQualifiersIf({
+    @EnsuresQualifierIf.List({
         @EnsuresQualifierIf(result = true, expression = "f1", qualifier = Odd.class),
         @EnsuresQualifierIf(result = false, expression = "f1", qualifier = Value.class)
     })
@@ -277,7 +275,7 @@ class Postcondition {
         return false;
     }
 
-    @EnsuresQualifiersIf({
+    @EnsuresQualifierIf.List({
         @EnsuresQualifierIf(result = true, expression = "f1", qualifier = Odd.class),
         @EnsuresQualifierIf(result = false, expression = "f1", qualifier = Value.class)
     })
@@ -290,7 +288,7 @@ class Postcondition {
         return false;
     }
 
-    @EnsuresQualifiersIf({
+    @EnsuresQualifierIf.List({
         @EnsuresQualifierIf(result = false, expression = "f1", qualifier = Odd.class)
     })
     // :: error: (contracts.conditional.postcondition.invalid.returntype)

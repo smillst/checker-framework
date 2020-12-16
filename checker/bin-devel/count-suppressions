@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This command counts the approximate frequency of each distinct reason for
-# warning suppressions.
+# warning suppressions, in all files under the current directory.
 # To invoke it, pass a type system name; for example:
 #   count-suppressions nullness
 
@@ -18,11 +18,16 @@
 debug=0
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    SED=gsed
-    GREP=ggrep
+    SED="gsed"
+    GREP="ggrep"
 else
-    SED=sed
-    GREP=grep
+    SED="sed"
+    GREP="grep"
+fi
+
+if [ "$1" == "--debug" ] ; then
+    debug=1
+    shift
 fi
 
 if [ "$#" -ne 1 ]; then
@@ -40,29 +45,32 @@ if [ "$regex" = "index" ]; then
     regex="\(index\|lessthan\|lowerbound\|samelen\|searchindex\|substringindex\|upperbound\)"
 fi
 
-# Implementation notes:
-# These are the two types of matching lines:
-# Matching lines:
-#  * "KEY"  (for @SuppressWarnings, but don't match "@SuppressWarnings"
-#    because that might be on the previous line)
-#  * @AssumeAssertion(key)
-
-echo "regex=${regex}"
+# Diagnostics
+# echo "regex=${regex}"
 
 greplines=$(mktemp /tmp/count-suppressions.XXXXXX)
+
+# These are the two types of matching lines:
+#  * "checkername" or "chekername:..."
+#    This matches occurrences within @SuppressWarnings.  The regex does not
+#    include "@SuppressWarnings" because it might appear on the previous line.
+#  * @AssumeAssertion(checkername)
 # This grep command captures a few stray lines; users should ignore them.
-${GREP} -n --recursive --include='*.java' "\"${regex}[:\"]\(.*[^;]\)\?\(\$\|//\)\|@AssumeAssertion(${regex})" | grep -v "@AnnotatedFor" > ${greplines}
+# This grep command assumes that tests are not annotated, and it hard-codes ignoring annotated-jdk.
+${GREP} -n --recursive --include='*.java' "\"${regex}[:\"]\(.*[^;]\)\?\(\$\|//\)\|@AssumeAssertion(${regex})" | grep -v "@AnnotatedFor" | grep -v "/tests/" | grep -v "/annotated-jdk/" > "${greplines}"
+
 ## Don't output a total, to avoid people using this approximate count.
 # echo -n "Total: "
 # cat ${greplines} | wc -l
-cat ${greplines} \
+# shellcheck disable=SC2002
+cat "${greplines}" \
     | ${SED} 's/.*\/\/ //g' \
     | ${SED} "s/.*@AssumeAssertion([^)])[ :]*\([^\"]\+\)\";/\1/g" \
     | ${SED} 's/\([^0-9]\): [^:].*/\1/' \
     | ${SED} 's/ \+$//' \
     | sort | uniq -c | sort -rg
 if [ "$debug" -eq "0" ]; then
-  rm -f ${greplines}
+  rm -f "${greplines}"
 else
-  echo Output is in: ${greplines}
+  echo Output is in: "${greplines}"
 fi

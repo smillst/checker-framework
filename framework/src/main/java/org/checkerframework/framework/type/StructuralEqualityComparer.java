@@ -6,6 +6,7 @@ import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedIntersectionType;
@@ -17,8 +18,8 @@ import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.framework.util.AtmCombo;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
-import org.checkerframework.javacutil.PluginUtil;
 import org.checkerframework.javacutil.TypesUtils;
+import org.plumelib.util.UtilPlume;
 
 /**
  * A visitor used to compare two type mirrors for "structural" equality. Structural equality implies
@@ -76,19 +77,11 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     @Override
     protected String defaultErrorMessage(
             AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, Void p) {
-        return "AnnotatedTypeMirrors aren't structurally equal.\n"
-                + "  type1 = "
-                + type1.getClass().getSimpleName()
-                + "( "
-                + type1
-                + " )\n"
-                + "  type2 = "
-                + type2.getClass().getSimpleName()
-                + "( "
-                + type2
-                + " )\n"
-                + "  visitHistory = "
-                + visitHistory;
+        return UtilPlume.joinLines(
+                "AnnotatedTypeMirrors aren't structurally equal.",
+                "  type1 = " + type1.getClass().getSimpleName() + "( " + type1 + " )",
+                "  type2 = " + type2.getClass().getSimpleName() + "( " + type2 + " )",
+                "  visitHistory = " + visitHistory);
     }
 
     /**
@@ -97,13 +90,16 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
      * Framework sometimes "infers" Typevars to be Wildcards, we allow the combination
      * Wildcard,Typevar. In this case, the two types are "equal" if their bounds are.
      *
+     * @param type1 the first AnnotatedTypeMirror to compare
+     * @param type2 the second AnnotatedTypeMirror to compare
      * @return true if type1 and type2 are equal
      */
+    @EqualsMethod
     private boolean areEqual(final AnnotatedTypeMirror type1, final AnnotatedTypeMirror type2) {
-        assert currentTop != null;
         if (type1 == type2) {
             return true;
         }
+        assert currentTop != null;
         if (type1 == null || type2 == null) {
             return false;
         }
@@ -150,15 +146,11 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
             final Collection<? extends AnnotatedTypeMirror> types2) {
         if (types1.size() != types2.size()) {
             throw new BugInCF(
-                    "Mismatching collection sizes:\n    types 1: "
-                            + PluginUtil.join("; ", types1)
-                            + " ("
-                            + types1.size()
-                            + ")\n    types 2: "
-                            + PluginUtil.join("; ", types2)
-                            + " ("
-                            + types2.size()
-                            + ")");
+                    "Mismatching collection sizes:%n    types 1: %s (%d)%n    types 2: %s (%d)",
+                    UtilPlume.join("; ", types1),
+                    types1.size(),
+                    UtilPlume.join("; ", types2),
+                    types2.size());
         }
 
         final Iterator<? extends AnnotatedTypeMirror> types1Iter = types1.iterator();
@@ -176,17 +168,21 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
 
     /**
      * First check visitHistory to see if type1 and type2 have been compared once already. If so
-     * return true; otherwise compare them and add them to visitHistory
+     * return true; otherwise compare them and put them in visitHistory.
+     *
+     * @param type1 the first type
+     * @param type2 the second type
+     * @return whether the two types are equal
      */
     protected boolean checkOrAreEqual(
             final AnnotatedTypeMirror type1, final AnnotatedTypeMirror type2) {
-        Boolean pastResult = visitHistory.result(type1, type2, currentTop);
+        Boolean pastResult = visitHistory.get(type1, type2, currentTop);
         if (pastResult != null) {
             return pastResult;
         }
 
         final Boolean result = areEqual(type1, type2);
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -220,7 +216,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     @Override
     public Boolean visitDeclared_Declared(
             final AnnotatedDeclaredType type1, final AnnotatedDeclaredType type2, final Void p) {
-        Boolean pastResult = visitHistory.result(type1, type2, currentTop);
+        Boolean pastResult = visitHistory.get(type1, type2, currentTop);
         if (pastResult != null) {
             return pastResult;
         }
@@ -232,10 +228,10 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         }
 
         // Prevent infinite recursion e.g. in Issue1587b
-        visitHistory.add(type1, type2, currentTop, true);
+        visitHistory.put(type1, type2, currentTop, true);
 
         boolean result = visitTypeArgs(type1, type2);
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -261,19 +257,12 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         } else {
             return true;
             /* TODO! This should be an error. See framework/tests/all-systems/InitializationVisitor.java
-             * for a failure.
-            throw new BugInCF(
-                    "Mismatching type argument sizes:\n    type 1: "
-                            + type1
-                            + " ("
-                            + type1Args.size()
-                            + ")\n    type 2: "
-                            + type2
-                            + " ("
-                            + type2Args.size()
-                            + ")");
-            return false;
-            */
+            * for a failure.
+               throw new BugInCF(
+                       "Mismatching type argument sizes:%n    type 1: %s (%d)%n    type 2: %s (%d)",
+                                type1, type1Args.size(), type2, type2Args.size());
+               return false;
+               */
         }
     }
 
@@ -297,8 +286,8 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
             return false;
         }
 
-        Boolean result = areAllEqual(type1.directSuperTypes(), type2.directSuperTypes());
-        visitHistory.add(type1, type2, currentTop, result);
+        boolean result = areAllEqual(type1.getBounds(), type2.getBounds());
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -327,7 +316,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     @Override
     public Boolean visitTypevar_Typevar(
             final AnnotatedTypeVariable type1, final AnnotatedTypeVariable type2, final Void p) {
-        Boolean pastResult = visitHistory.result(type1, type2, currentTop);
+        Boolean pastResult = visitHistory.get(type1, type2, currentTop);
         if (pastResult != null) {
             return pastResult;
         }
@@ -339,7 +328,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
                 Boolean result =
                         subtypeAndCompare(type1.getUpperBound(), type2.getUpperBound())
                                 && subtypeAndCompare(type1.getLowerBound(), type2.getLowerBound());
-                visitHistory.add(type1, type2, currentTop, result);
+                visitHistory.put(type1, type2, currentTop, result);
                 return result;
             }
         }
@@ -347,7 +336,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         Boolean result =
                 areEqual(type1.getUpperBound(), type2.getUpperBound())
                         && areEqual(type1.getLowerBound(), type2.getLowerBound());
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -400,7 +389,11 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         return areEqual(t1, t2);
     }
 
-    /** @return true if the underlying types of the bounds for type1 and type2 are equal */
+    /**
+     * Returns true if the underlying types of the bounds for type1 and type2 are equal.
+     *
+     * @return true if the underlying types of the bounds for type1 and type2 are equal
+     */
     public boolean boundsMatch(
             final AnnotatedTypeVariable type1, final AnnotatedTypeVariable type2) {
         final Types types = type1.atypeFactory.types;
@@ -429,7 +422,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     @Override
     public Boolean visitWildcard_Wildcard(
             final AnnotatedWildcardType type1, final AnnotatedWildcardType type2, final Void p) {
-        Boolean pastResult = visitHistory.result(type1, type2, currentTop);
+        Boolean pastResult = visitHistory.get(type1, type2, currentTop);
         if (pastResult != null) {
             return pastResult;
         }
@@ -442,7 +435,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         Boolean result =
                 areEqual(type1.getExtendsBound(), type2.getExtendsBound())
                         && areEqual(type1.getSuperBound(), type2.getSuperBound());
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -485,7 +478,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     @Override
     public Boolean visitWildcard_Typevar(
             final AnnotatedWildcardType type1, final AnnotatedTypeVariable type2, final Void p) {
-        Boolean pastResult = visitHistory.result(type1, type2, currentTop);
+        Boolean pastResult = visitHistory.get(type1, type2, currentTop);
         if (pastResult != null) {
             return pastResult;
         }
@@ -498,7 +491,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
                 areEqual(type1.getExtendsBound(), type2.getUpperBound())
                         && areEqual(type1.getSuperBound(), type2.getLowerBound());
 
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 
@@ -530,7 +523,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
                         qualifierHierarchy, type2, currentTop);
 
         Boolean result = qualifierHierarchy.isSubtype(q1, q2);
-        visitHistory.add(type1, type2, currentTop, result);
+        visitHistory.put(type1, type2, currentTop, result);
         return result;
     }
 }

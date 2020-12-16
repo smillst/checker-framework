@@ -11,6 +11,7 @@ import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.TypeCastTree;
+import com.sun.tools.javac.util.Log;
 import java.util.List;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -57,14 +58,27 @@ public class JavaCodeStatistics extends SourceChecker {
      */
     int numberOfIndexWarningSuppressions = 0;
 
+    /** Creates a JavaCodeStatistics. */
+    public JavaCodeStatistics() {
+        // This checker never issues any warnings, so don't warn about
+        // @SuppressWarnings("allcheckers:...").
+        this.useAllcheckersPrefix = false;
+    }
+
     @Override
     public void typeProcessingOver() {
-        System.out.printf("Found %d generic type uses.\n", generics);
-        System.out.printf("Found %d array accesses and creations.\n", arrayAccesses);
-        System.out.printf("Found %d typecasts.\n", typecasts);
-        System.out.printf(
-                "Found %d warning suppression annotations for the Index Checker.\n",
-                numberOfIndexWarningSuppressions);
+        Log log = getCompilerLog();
+        if (log.nerrors != 0) {
+            System.out.printf("Not outputting statistics, because compilation issued an error.%n");
+        } else {
+            System.out.printf("Found %d generic type uses.%n", generics);
+            System.out.printf("Found %d array accesses and creations.%n", arrayAccesses);
+            System.out.printf("Found %d typecasts.%n", typecasts);
+            System.out.printf(
+                    "Found %d warning suppression annotations for the Index Checker.%n",
+                    numberOfIndexWarningSuppressions);
+        }
+        super.typeProcessingOver();
     }
 
     @Override

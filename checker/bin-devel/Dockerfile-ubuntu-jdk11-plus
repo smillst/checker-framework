@@ -1,5 +1,5 @@
 # Create a Docker image that is ready to run the full Checker Framework tests,
-# including building the manual, Javadoc, and the JDK, using JDK 11.
+# including building the manual and Javadoc, using JDK 11.
 
 FROM ubuntu
 MAINTAINER Michael Ernst <mernst@cs.washington.edu>
@@ -28,6 +28,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   make \
   maven \
   mercurial \
+  pdf2svg \
   python3-pip \
   python3-requests \
   unzip \
@@ -39,11 +40,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   dia \
   hevea \
   imagemagick \
-  jq \
   latexmk \
   librsvg2-bin \
-  maven \
-  python3-pip \
   rsync \
   texlive-font-utils \
   texlive-fonts-recommended \
