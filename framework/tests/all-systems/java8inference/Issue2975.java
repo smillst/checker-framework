@@ -3,7 +3,11 @@ import java.util.function.Consumer;
 
 public class Issue2975<T extends AutoCloseable> {
     static class Child extends Issue2975<Closeable> {
-        // :: error: (assignment.type.incompatible)
+        // true postives.
+        @SuppressWarnings({
+            "nullness:assignment.type.incompatible",
+            "nullness:constructor.invocation.invalid"
+        })
         Wrapper y = new Wrapper(Child::takesCloseable);
 
         private static void takesCloseable(Closeable rhs) {}
