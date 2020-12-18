@@ -1,6 +1,6 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-class GenericsBounds4 {
+public class GenericsBounds4 {
     static class Collection1<E extends @Nullable Object> {
         public void add(E elt) {
             // :: error: (dereference.of.nullable)

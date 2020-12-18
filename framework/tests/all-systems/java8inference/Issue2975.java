@@ -1,7 +1,7 @@
 import java.io.Closeable;
 import java.util.function.Consumer;
 
-class Issue2975<T extends AutoCloseable> {
+public class Issue2975<T extends AutoCloseable> {
     static class Child extends Issue2975<Closeable> {
         // :: error: (assignment.type.incompatible)
         Wrapper y = new Wrapper(Child::takesCloseable);
