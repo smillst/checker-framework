@@ -473,7 +473,7 @@ public class AnnotationUtils {
      * @return a sorted new set to store {@link AnnotationMirror} as element
      */
     public static NavigableSet<AnnotationMirror> createAnnotationSet() {
-        return new TreeSet<>(AnnotationUtils::compareAnnotationMirrors);
+        return new AnnotationMirrorSet();
     }
 
     /**

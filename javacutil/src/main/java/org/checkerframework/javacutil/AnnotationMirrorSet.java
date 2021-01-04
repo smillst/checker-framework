@@ -1,11 +1,12 @@
-package org.checkerframework.framework.util;
+package org.checkerframework.javacutil;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.NavigableSet;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import javax.lang.model.element.AnnotationMirror;
-import org.checkerframework.javacutil.AnnotationUtils;
 
 /**
  * The Set interface defines many methods with respect to the equals method. This implementation of
@@ -21,10 +22,10 @@ import org.checkerframework.javacutil.AnnotationUtils;
  * <p>AnnotationMirror is an interface and not all implementing classes provide a correct equals
  * method; therefore, the existing implementations of Set cannot be used.
  */
-public class AnnotationMirrorSet implements Set<AnnotationMirror> {
+public class AnnotationMirrorSet implements NavigableSet<AnnotationMirror> {
 
     /** Backing set. */
-    private Set<AnnotationMirror> shadowSet =
+    private NavigableSet<AnnotationMirror> shadowSet =
             new TreeSet<>(AnnotationUtils::compareAnnotationMirrors);
 
     /** Default constructor. */
@@ -52,8 +53,98 @@ public class AnnotationMirrorSet implements Set<AnnotationMirror> {
     }
 
     @Override
+    public AnnotationMirror lower(AnnotationMirror annotationMirror) {
+        return shadowSet.lower(annotationMirror);
+    }
+
+    @Override
+    public AnnotationMirror floor(AnnotationMirror annotationMirror) {
+        return shadowSet.floor(annotationMirror);
+    }
+
+    @Override
+    public AnnotationMirror ceiling(AnnotationMirror annotationMirror) {
+        return shadowSet.ceiling(annotationMirror);
+    }
+
+    @Override
+    public AnnotationMirror higher(AnnotationMirror annotationMirror) {
+        return shadowSet.higher(annotationMirror);
+    }
+
+    @Override
+    public AnnotationMirror pollFirst() {
+        return shadowSet.pollFirst();
+    }
+
+    @Override
+    public AnnotationMirror pollLast() {
+        return shadowSet.pollLast();
+    }
+
+    @Override
     public Iterator<AnnotationMirror> iterator() {
         return shadowSet.iterator();
+    }
+
+    @Override
+    public NavigableSet<AnnotationMirror> descendingSet() {
+        return shadowSet.descendingSet();
+    }
+
+    @Override
+    public Iterator<AnnotationMirror> descendingIterator() {
+        return shadowSet.descendingIterator();
+    }
+
+    @Override
+    public NavigableSet<AnnotationMirror> subSet(
+            AnnotationMirror fromElement,
+            boolean fromInclusive,
+            AnnotationMirror toElement,
+            boolean toInclusive) {
+        return shadowSet.subSet(fromElement, fromInclusive, toElement, toInclusive);
+    }
+
+    @Override
+    public NavigableSet<AnnotationMirror> headSet(AnnotationMirror toElement, boolean inclusive) {
+        return shadowSet.headSet(toElement, inclusive);
+    }
+
+    @Override
+    public NavigableSet<AnnotationMirror> tailSet(AnnotationMirror fromElement, boolean inclusive) {
+        return shadowSet.tailSet(fromElement, inclusive);
+    }
+
+    @Override
+    public Comparator<? super AnnotationMirror> comparator() {
+        return shadowSet.comparator();
+    }
+
+    @Override
+    public SortedSet<AnnotationMirror> subSet(
+            AnnotationMirror fromElement, AnnotationMirror toElement) {
+        return shadowSet.subSet(fromElement, toElement);
+    }
+
+    @Override
+    public SortedSet<AnnotationMirror> headSet(AnnotationMirror toElement) {
+        return shadowSet.headSet(toElement);
+    }
+
+    @Override
+    public SortedSet<AnnotationMirror> tailSet(AnnotationMirror fromElement) {
+        return shadowSet.tailSet(fromElement);
+    }
+
+    @Override
+    public AnnotationMirror first() {
+        return shadowSet.first();
+    }
+
+    @Override
+    public AnnotationMirror last() {
+        return shadowSet.last();
     }
 
     @Override
@@ -107,7 +198,8 @@ public class AnnotationMirrorSet implements Set<AnnotationMirror> {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        Set<AnnotationMirror> newSet = new TreeSet<>(AnnotationUtils::compareAnnotationMirrors);
+        NavigableSet<AnnotationMirror> newSet =
+                new TreeSet<>(AnnotationUtils::compareAnnotationMirrors);
         for (Object o : c) {
             if (contains(o)) {
                 newSet.add((AnnotationMirror) o);

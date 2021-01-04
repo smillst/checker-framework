@@ -6,7 +6,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.util.AnnotationMirrorMap;
-import org.checkerframework.framework.util.AnnotationMirrorSet;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 
 /**
  * TargetConstraints represents the set of all TUConstraints for which target was the type
