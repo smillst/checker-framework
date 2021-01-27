@@ -3,7 +3,10 @@ import org.checkerframework.checker.guieffect.qual.AlwaysSafe;
 import org.checkerframework.checker.guieffect.qual.PolyUIType;
 import org.checkerframework.checker.guieffect.qual.UI;
 
-class ThrowCatchTest {
+public class ThrowCatchTest {
+    // Default type of List's type parameter is below @UI so these
+    // fields are type.argument.incompatible
+    // :: error: (type.argument.type.incompatible)
     List<? extends @UI Object> ooo;
 
     // :: error: (type.invalid.annotations.on.use)
