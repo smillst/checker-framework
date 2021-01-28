@@ -53,7 +53,7 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TypesUtils;
-import org.plumelib.util.UtilPlume;
+import org.plumelib.util.StringsPlume;
 
 /**
  * Utility methods for operating on {@code AnnotatedTypeMirror}. This class mimics the class {@link
@@ -297,7 +297,7 @@ public class AnnotatedTypes {
             if (enclosingType == null) {
                 // TODO: https://github.com/typetools/checker-framework/issues/724
                 // testcase javacheck -processor nullness  src/java/util/AbstractMap.java
-                //                SourceChecker checker =  atypeFactory.getContext().getChecker();
+                //                SourceChecker checker =  atypeFactory.getChecker().getChecker();
                 //                String msg = (String.format("OuterAsSuper did not find outer
                 // class. type: %s superType: %s", type, superType));
                 //                checker.message(Kind.WARNING, msg);
@@ -358,7 +358,7 @@ public class AnnotatedTypes {
      * String>}, the {@code Set.add} method is an {@code ExecutableType} whose parameter is of type
      * {@code @NonNull String}.
      *
-     * <p>The result is customized according to the type system semantics, according to {@link
+     * <p>Before returning the result, this method adjusts it by calling {@link
      * AnnotatedTypeFactory#postAsMemberOf(AnnotatedTypeMirror, AnnotatedTypeMirror, Element)}.
      *
      * <p>Note that this method does not currently return (top level) captured types for type
@@ -366,7 +366,7 @@ public class AnnotatedTypes {
      * sometimes inferring type arguments will create a wildcard type which is returned. The bounds
      * of an inferred wildcard may itself have captures.
      *
-     * <p>To prevent unsoundness, the rest of the checker framework must expect wildcard in places
+     * <p>To prevent unsoundness, the rest of the Checker Framework must handle wildcards in places
      * where captures should appear (like type arguments). This should just involve the bounds of
      * the wildcard where the bounds of the capture would have been used.
      *
@@ -412,13 +412,12 @@ public class AnnotatedTypes {
             case TYPE_PARAMETER:
                 return elemType;
             default:
-                if (!ElementUtils.isStatic(elem) && t != null) {
-                    AnnotatedTypeMirror res =
-                            asMemberOfImpl(types, atypeFactory, t, elem, elemType);
-                    atypeFactory.postAsMemberOf(res, t, elem);
-                    return res;
+                if (t == null || ElementUtils.isStatic(elem)) {
+                    return elemType;
                 }
-                return elemType;
+                AnnotatedTypeMirror res = asMemberOfImpl(types, atypeFactory, t, elem, elemType);
+                atypeFactory.postAsMemberOf(res, t, elem);
+                return res;
         }
     }
 
@@ -428,24 +427,24 @@ public class AnnotatedTypes {
      *
      * @param types the Types instance to use
      * @param atypeFactory the type factory to use
-     * @param of the receiver type
-     * @param member the element that should be viewed as member of of
+     * @param receiverType the receiver type
+     * @param member the element that should be viewed as member of receiverType
      * @param memberType unsubstituted type of member
-     * @return the type of member as member of of, with initial type memberType; can be an alias to
-     *     memberType
+     * @return the type of member as a member of receiverType; can be an alias to memberType
      */
     private static AnnotatedTypeMirror asMemberOfImpl(
             final Types types,
             final AnnotatedTypeFactory atypeFactory,
-            final AnnotatedTypeMirror of,
+            final AnnotatedTypeMirror receiverType,
             final Element member,
             final AnnotatedTypeMirror memberType) {
-        switch (of.getKind()) {
+        switch (receiverType.getKind()) {
             case ARRAY:
                 // Method references like String[]::clone should have a return type of String[]
-                // rather than Object
-                if (SyntheticArrays.isArrayClone(of, member)) {
-                    return SyntheticArrays.replaceReturnType(member, (AnnotatedArrayType) of);
+                // rather than Object.
+                if (SyntheticArrays.isArrayClone(receiverType, member)) {
+                    return SyntheticArrays.replaceReturnType(
+                            member, (AnnotatedArrayType) receiverType);
                 }
                 return memberType;
             case TYPEVAR:
@@ -453,37 +452,39 @@ public class AnnotatedTypes {
                         types,
                         atypeFactory,
                         atypeFactory.applyCaptureConversion(
-                                ((AnnotatedTypeVariable) of).getUpperBound()),
+                                ((AnnotatedTypeVariable) receiverType).getUpperBound()),
                         member,
                         memberType);
             case WILDCARD:
-                if (((AnnotatedWildcardType) of).isUninferredTypeArgument()) {
+                if (((AnnotatedWildcardType) receiverType).isUninferredTypeArgument()) {
                     return substituteUninferredTypeArgs(atypeFactory, member, memberType);
                 }
                 return asMemberOf(
                         types,
                         atypeFactory,
-                        ((AnnotatedWildcardType) of).getExtendsBound().deepCopy(),
+                        ((AnnotatedWildcardType) receiverType).getExtendsBound().deepCopy(),
                         member,
                         memberType);
             case INTERSECTION:
-                AnnotatedTypeMirror iter = memberType;
-                for (AnnotatedTypeMirror bound : ((AnnotatedIntersectionType) of).getBounds()) {
-                    iter = substituteTypeVariables(types, atypeFactory, bound, member, iter);
+                AnnotatedTypeMirror result = memberType;
+                for (AnnotatedTypeMirror bound :
+                        ((AnnotatedIntersectionType) receiverType).getBounds()) {
+                    result = substituteTypeVariables(types, atypeFactory, bound, member, result);
                 }
-                return iter;
+                return result;
             case UNION:
             case DECLARED:
-                return substituteTypeVariables(types, atypeFactory, of, member, memberType);
+                return substituteTypeVariables(
+                        types, atypeFactory, receiverType, member, memberType);
             default:
-                throw new BugInCF("asMemberOf called on unexpected type.%nt: %s", of);
+                throw new BugInCF("asMemberOf called on unexpected type.%nt: %s", receiverType);
         }
     }
 
     private static AnnotatedTypeMirror substituteTypeVariables(
             Types types,
             AnnotatedTypeFactory atypeFactory,
-            AnnotatedTypeMirror of,
+            AnnotatedTypeMirror receiverType,
             Element member,
             AnnotatedTypeMirror memberType) {
 
@@ -492,15 +493,15 @@ public class AnnotatedTypes {
         // 2. Find the base type of enclosingClassOfMember (e.g. type of enclosingClassOfMember as
         //      supertype of passed type)
         // 3. Substitute for type variables if any exist
-        TypeElement enclosingClassOfMember = ElementUtils.enclosingClass(member);
+        TypeElement enclosingClassOfMember = ElementUtils.enclosingTypeElement(member);
         final Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
 
         // Look for all enclosing classes that have type variables
         // and collect type to be substituted for those type variables
         while (enclosingClassOfMember != null) {
-            addTypeVarMappings(types, atypeFactory, of, enclosingClassOfMember, mappings);
+            addTypeVarMappings(types, atypeFactory, receiverType, enclosingClassOfMember, mappings);
             enclosingClassOfMember =
-                    ElementUtils.enclosingClass(enclosingClassOfMember.getEnclosingElement());
+                    ElementUtils.enclosingTypeElement(enclosingClassOfMember.getEnclosingElement());
         }
 
         if (!mappings.isEmpty()) {
@@ -528,7 +529,7 @@ public class AnnotatedTypes {
         for (final AnnotatedTypeMirror typeParam : enclosingType.getTypeArguments()) {
             if (typeParam.getKind() != TypeKind.TYPEVAR) {
                 throw new BugInCF(
-                        UtilPlume.joinLines(
+                        StringsPlume.joinLines(
                                 "Type arguments of a declaration should be type variables",
                                 "enclosingClassOfElem=" + enclosingClassOfElem,
                                 "enclosingType=" + enclosingType,
@@ -540,7 +541,7 @@ public class AnnotatedTypes {
         List<AnnotatedTypeMirror> baseParams = base.getTypeArguments();
         if (ownerParams.size() != baseParams.size() && !base.wasRaw()) {
             throw new BugInCF(
-                    UtilPlume.joinLines(
+                    StringsPlume.joinLines(
                             "Unexpected number of parameters.",
                             "enclosingType=" + enclosingType,
                             "baseType=" + base));
@@ -561,10 +562,17 @@ public class AnnotatedTypes {
         }
     }
 
-    /** Substitutes uninferred type arguments for type variables in {@code memberType}. */
+    /**
+     * Substitutes uninferred type arguments for type variables in {@code memberType}.
+     *
+     * @param atypeFactory the type factory
+     * @param member the element with type {@code memberType}; used to obtain the enclosing type
+     * @param memberType the type to side-effect
+     * @return memberType, with type arguments substituted for type variables
+     */
     private static AnnotatedTypeMirror substituteUninferredTypeArgs(
             AnnotatedTypeFactory atypeFactory, Element member, AnnotatedTypeMirror memberType) {
-        TypeElement enclosingClassOfMember = ElementUtils.enclosingClass(member);
+        TypeElement enclosingClassOfMember = ElementUtils.enclosingTypeElement(member);
         final Map<TypeVariable, AnnotatedTypeMirror> mappings = new HashMap<>();
 
         while (enclosingClassOfMember != null) {
@@ -579,7 +587,7 @@ public class AnnotatedTypes {
                 }
             }
             enclosingClassOfMember =
-                    ElementUtils.enclosingClass(enclosingClassOfMember.getEnclosingElement());
+                    ElementUtils.enclosingTypeElement(enclosingClassOfMember.getEnclosingElement());
         }
 
         if (!mappings.isEmpty()) {
@@ -949,7 +957,7 @@ public class AnnotatedTypes {
 
     /**
      * Given an AnnotatedExecutableType of a method or constructor declaration, get the parameter
-     * type expect at the indexth position (unwrapping var args if necessary).
+     * type expected at the indexth position (unwrapping varargs if necessary).
      *
      * @param methodType AnnotatedExecutableType of method or constructor containing parameter to
      *     return
@@ -1109,7 +1117,7 @@ public class AnnotatedTypes {
     }
 
     /**
-     * Returns true if atm is an Annotation interface, i.e. an implementation of
+     * Returns true if atm is an Annotation interface, i.e., an implementation of
      * java.lang.annotation.Annotation. Given {@code @interface MyAnno}, a call to {@code
      * implementsAnnotation} returns true when called on an AnnotatedDeclaredType representing a use
      * of MyAnno.
@@ -1182,7 +1190,7 @@ public class AnnotatedTypes {
      * the two methods overrides the other Within their method declaration, both types have the same
      * type parameter index
      *
-     * @return returns true if type1 and type2 are corresponding type variables (that is, either one
+     * @return true if type1 and type2 are corresponding type variables (that is, either one
      *     "overrides" the other)
      */
     public static boolean areCorrespondingTypeVariables(
@@ -1281,7 +1289,7 @@ public class AnnotatedTypes {
                     }
 
                     throw new BugInCF(
-                            UtilPlume.joinLines(
+                            StringsPlume.joinLines(
                                     "Unexpected AnnotatedTypeMirror with no primary annotation.",
                                     "toSearch=" + toSearch,
                                     "top=" + top,
