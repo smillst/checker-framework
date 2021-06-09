@@ -1,5 +1,5 @@
 // @below-java9-jdk-skip-test
-public class Issue3407 {
+public class Issue3408 {
   final String foo;
 
   String getFoo() {
@@ -11,7 +11,7 @@ public class Issue3407 {
         new Object() {
           String bar() {
             // :: error: (method.invocation)
-            return Issue3407.this.getFoo().substring(1);
+            return Issue3408.this.getFoo().substring(1);
           }
         };
     anon.bar(); // / WHOOPS... NPE, `getFoo()` returns `foo` which is still null

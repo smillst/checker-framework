@@ -1950,6 +1950,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotatedDeclaredType dt = atypeFactory.getAnnotatedType(node);
       atypeFactory.getDependentTypesHelper().checkTypeForErrorExpressions(dt, node);
       checkConstructorInvocation(dt, constructorType, node);
+      checkConstructorInvocability(constructorType, node);
     }
     // Do not call super, as that would observe the arguments without
     // a set assignment context.
@@ -3146,6 +3147,38 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   }
 
   /**
+   * Indicates whether to skip subtype checks on the receiver when checking constructor
+   * invocability.
+   *
+   * @param node the constructor invocation node
+   * @param methodDefinitionReceiver the ATM of the receiver of the method definition
+   * @param methodCallReceiver the ATM of the receiver of the method call
+   * @return whether to skip subtype checks on the receiver
+   */
+  protected boolean skipReceiverSubtypeCheck(
+      NewClassTree node,
+      AnnotatedTypeMirror methodDefinitionReceiver,
+      AnnotatedTypeMirror methodCallReceiver) {
+    return false;
+  }
+
+  /**
+   * Tests whether the constructor can be invoked using the receiver of the 'node' constructor
+   * invocation, and issues a "constructor.invocation" if the invocation is invalid.
+   *
+   * <p>This implementation tests whether the receiver in the constructor invocation is a subtype of
+   * the constructor receiver type. This behavior can be specialized by overriding
+   * skipReceiverSubtypeCheck.
+   *
+   * @param constructor the type of the invoked constructor
+   * @param node the constructor invocation node
+   */
+  protected void checkConstructorInvocability(
+      AnnotatedExecutableType constructor, NewClassTree node) {
+    checkInvocability(constructor, node);
+  }
+
+  /**
    * Tests whether the method can be invoked using the receiver of the 'node' method invocation, and
    * issues a "method.invocation" if the invocation is invalid.
    *
@@ -3157,11 +3190,24 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    */
   protected void checkMethodInvocability(
       AnnotatedExecutableType method, MethodInvocationTree node) {
-    if (method.getReceiverType() == null) {
-      // Static methods don't have a receiver.
+    checkInvocability(method, node);
+  }
+
+  /**
+   * The implementation of {@link #checkMethodInvocability(AnnotatedExecutableType,
+   * MethodInvocationTree)} and {@link #checkConstructorInvocability(AnnotatedExecutableType,
+   * NewClassTree)}.
+   *
+   * @param type type of {@code invocation}
+   * @param invocation a method invocation tree of a new class tree
+   */
+  private void checkInvocability(AnnotatedExecutableType type, ExpressionTree invocation) {
+    if (type.getReceiverType() == null) {
+      // Static methods and some constructors don't have receivers.
       return;
     }
-    if (method.getElement().getKind() == ElementKind.CONSTRUCTOR) {
+    if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION
+        && type.getElement().getKind() == ElementKind.CONSTRUCTOR) {
       // TODO: Explicit "this()" calls of constructors have an implicit passed
       // from the enclosing constructor. We must not use the self type, but
       // instead should find a way to determine the receiver of the enclosing constructor.
@@ -3170,18 +3216,31 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return;
     }
 
-    AnnotatedTypeMirror methodReceiver = method.getReceiverType().getErased();
+    AnnotatedTypeMirror methodReceiver = type.getReceiverType().getErased();
     AnnotatedTypeMirror treeReceiver = methodReceiver.shallowCopy(false);
-    AnnotatedTypeMirror rcv = atypeFactory.getReceiverType(node);
+    AnnotatedTypeMirror rcv = atypeFactory.getReceiverType(invocation);
 
     treeReceiver.addAnnotations(rcv.getEffectiveAnnotations());
+    boolean shouldSkip;
+    if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION) {
+      shouldSkip =
+          !skipReceiverSubtypeCheck((MethodInvocationTree) invocation, methodReceiver, rcv);
+    } else {
+      shouldSkip = !skipReceiverSubtypeCheck((NewClassTree) invocation, methodReceiver, rcv);
+    }
 
-    if (!skipReceiverSubtypeCheck(node, methodReceiver, rcv)) {
-      commonAssignmentCheckStartDiagnostic(methodReceiver, treeReceiver, node);
+    if (shouldSkip) {
+      commonAssignmentCheckStartDiagnostic(methodReceiver, treeReceiver, invocation);
       boolean success = atypeFactory.getTypeHierarchy().isSubtype(treeReceiver, methodReceiver);
-      commonAssignmentCheckEndDiagnostic(success, null, methodReceiver, treeReceiver, node);
+      commonAssignmentCheckEndDiagnostic(success, null, methodReceiver, treeReceiver, invocation);
       if (!success) {
-        reportMethodInvocabilityError(node, treeReceiver, methodReceiver);
+        if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION) {
+          reportMethodInvocabilityError(
+              (MethodInvocationTree) invocation, treeReceiver, methodReceiver);
+        } else {
+          reportConstructorInvocabilityError(
+              (NewClassTree) invocation, treeReceiver, methodReceiver);
+        }
       }
     }
   }
@@ -3198,6 +3257,23 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     checker.reportError(
         node,
         "method.invocation",
+        TreeUtils.elementFromUse(node),
+        found.toString(),
+        expected.toString());
+  }
+
+  /**
+   * Report a constructor invocability error. Allows checkers to change how the message is output.
+   *
+   * @param node the AST node at which to report the error
+   * @param found the actual type of the receiver
+   * @param expected the expected type of the receiver
+   */
+  protected void reportConstructorInvocabilityError(
+      NewClassTree node, AnnotatedTypeMirror found, AnnotatedTypeMirror expected) {
+    checker.reportError(
+        node,
+        "constructor.invocation",
         TreeUtils.elementFromUse(node),
         found.toString(),
         expected.toString());
