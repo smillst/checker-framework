@@ -4786,8 +4786,15 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return false;
     }
 
-    if (uncapturedType.isUnderlyingTypeRaw() || uncapturedType.containsUninferredTypeArguments()) {
+    if (uncapturedType.isUnderlyingTypeRaw()) {
       return false;
+    }
+
+    for (AnnotatedTypeMirror typeArg : uncapturedType.getTypeArguments()) {
+      if (typeArg.getKind() == TypeKind.WILDCARD
+          && ((AnnotatedWildcardType) typeArg).isUninferredTypeArgument()) {
+        return false;
+      }
     }
 
     if (capturedTypeMirror.getTypeArguments().size() != uncapturedType.getTypeArguments().size()) {
@@ -4848,21 +4855,31 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
     // If the type contains uninferred type arguments, don't capture, but mark all wildcards that
     // shuuld have been captured as "uninferred" before it is returned.
-    if (type.containsUninferredTypeArguments()
-        && typeMirror.getKind() == TypeKind.DECLARED
-        && type.getKind() == TypeKind.DECLARED) {
+    // If the type contains uninferred type arguments, don't capture, but mark all wildcards that
+    // should have been captured as "uninferred" before it is returned.
+    if (typeMirror.getKind() == TypeKind.DECLARED && type.getKind() == TypeKind.DECLARED) {
+      boolean hasUninfer = false;
       AnnotatedDeclaredType uncapturedType = (AnnotatedDeclaredType) type;
-      DeclaredType capturedTypeMirror = (DeclaredType) typeMirror;
-      for (int i = 0; i < capturedTypeMirror.getTypeArguments().size(); i++) {
-        AnnotatedTypeMirror uncapturedTypeArg = uncapturedType.getTypeArguments().get(i);
-        TypeMirror capturedTypeArgTM = capturedTypeMirror.getTypeArguments().get(i);
-        if (uncapturedTypeArg.getKind() == TypeKind.WILDCARD
-            && (TypesUtils.isCapturedTypeVariable(capturedTypeArgTM)
-                || capturedTypeArgTM.getKind() != TypeKind.WILDCARD)) {
-          ((AnnotatedWildcardType) uncapturedTypeArg).setUninferredTypeArgument();
+      for (AnnotatedTypeMirror typeArg : uncapturedType.getTypeArguments()) {
+        if (typeArg.getKind() == TypeKind.WILDCARD
+            && ((AnnotatedWildcardType) typeArg).isUninferredTypeArgument()) {
+          hasUninfer = true;
+          break;
         }
       }
-      return type;
+      if (hasUninfer) {
+        DeclaredType capturedTypeMirror = (DeclaredType) typeMirror;
+        for (int i = 0; i < capturedTypeMirror.getTypeArguments().size(); i++) {
+          AnnotatedTypeMirror uncapturedTypeArg = uncapturedType.getTypeArguments().get(i);
+          TypeMirror capturedTypeArgTM = capturedTypeMirror.getTypeArguments().get(i);
+          if (uncapturedTypeArg.getKind() == TypeKind.WILDCARD
+              && (TypesUtils.isCapturedTypeVariable(capturedTypeArgTM)
+                  || capturedTypeArgTM.getKind() != TypeKind.WILDCARD)) {
+            ((AnnotatedWildcardType) uncapturedTypeArg).setUninferredTypeArgument();
+          }
+        }
+        return type;
+      }
     }
 
     if (!shouldCapture(type, typeMirror)) {
