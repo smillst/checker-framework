@@ -18,7 +18,6 @@ public class Wellformed {
 
   class Gen2a<@Nullable T> {}
 
-  // :: error: (bound)
   class Gen2b<@Nullable T extends Object> {}
 
   // :: error: (bound)
@@ -57,7 +56,7 @@ public class Wellformed {
 
   class Gen5c<S> extends Gen5a<@Nullable S> {}
 
-  class Gen6a<T extends Object> {}
+  class Gen6a<T extends @NonNull Object> {}
   // :: error: (type.argument)
   class Gen6b<S> extends Gen6a<@Nullable Object> {}
   // :: error: (type.argument)

@@ -10,8 +10,18 @@ class Banana<T extends Number> extends Apple<int[]> {
 
   class InnerBanana extends InnerApple<long[]> {
     @Override
-    // :: error: (override.param)
     <F2 extends Object> void foo(int[] array, long[] array2, F2 param3) {}
+  }
+}
+
+class Banana2<T extends Number> extends Apple<int[]> {
+  @Override
+  void fooOuter(int[] array) {}
+
+  class InnerBanana2 extends InnerApple<long[]> {
+    @Override
+    // :: error: (override.param)
+    <F2 extends @Nullable Object> void foo(int[] array, long[] array2, F2 param3) {}
   }
 }
 

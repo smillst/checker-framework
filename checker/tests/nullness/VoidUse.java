@@ -16,7 +16,7 @@ public class VoidUse {
 
   public static class VoidTestInvNode extends VoidTestNode<@NonNull Void> {}
 
-  class Scanner<P extends Object> {
+  class Scanner<P extends @NonNull Object> {
     public void scan(Object tree, P p) {}
   }
 

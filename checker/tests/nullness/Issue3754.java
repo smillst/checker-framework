@@ -1,5 +1,6 @@
 // @above-java17-jdk-skip-test TODO: reinstate, false positives may be due to issue #979
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 class Issue3754 {
@@ -7,7 +8,7 @@ class Issue3754 {
     U get();
   }
 
-  Object x(Supplier<? extends Object, ?> bar) {
+  Object x(Supplier<? extends @NonNull Object, ?> bar) {
     return bar.get();
   }
 
@@ -15,7 +16,7 @@ class Issue3754 {
     U get();
   }
 
-  Object x(Supplier2<?, ? extends Object> bar) {
+  Object x(Supplier2<?, ? extends @NonNull Object> bar) {
     return bar.get();
   }
 }
