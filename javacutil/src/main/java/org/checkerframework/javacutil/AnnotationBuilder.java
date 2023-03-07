@@ -348,7 +348,7 @@ public class AnnotationBuilder {
    * @param values the new value for the element/field
    * @return this
    */
-  public AnnotationBuilder setValue(CharSequence elementName, List<? extends Object> values) {
+  public AnnotationBuilder setValue(CharSequence elementName, List<@NonNull ?> values) {
     assertNotBuilt();
     ExecutableElement var = findElement(elementName);
     return setValue(var, values);
@@ -361,8 +361,7 @@ public class AnnotationBuilder {
    * @param values the new value for the element
    * @return this
    */
-  public AnnotationBuilder setValue(
-      ExecutableElement element, List<? extends @NonNull Object> values) {
+  public AnnotationBuilder setValue(ExecutableElement element, List<@NonNull ?> values) {
     assertNotBuilt();
     TypeMirror expectedType = element.getReturnType();
     if (expectedType.getKind() != TypeKind.ARRAY) {
