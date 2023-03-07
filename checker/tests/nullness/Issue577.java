@@ -10,18 +10,8 @@ class Banana<T extends Number> extends Apple<int[]> {
 
   class InnerBanana extends InnerApple<long[]> {
     @Override
-    <F2 extends @NonNull Object> void foo(int[] array, long[] array2, F2 param3) {}
-  }
-}
-
-class Banana2<T extends Number> extends Apple<int[]> {
-  @Override
-  void fooOuter(int[] array) {}
-
-  class InnerBanana2 extends InnerApple<long[]> {
-    @Override
     // :: error: (override.param)
-    <F2 extends @Nullable Object> void foo(int[] array, long[] array2, F2 param3) {}
+    <F2 extends @NonNull Object> void foo(int[] array, long[] array2, F2 param3) {}
   }
 }
 
@@ -49,7 +39,7 @@ class IntersectionAsMemberOf {
     F getF();
   }
 
-  <T extends @NonNull Object & MyGenericInterface<@NonNull String>> void foo(T param) {
+  <T extends Object & MyGenericInterface<@NonNull String>> void foo(T param) {
     @NonNull String s = param.getF();
   }
 }

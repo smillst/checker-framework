@@ -39,7 +39,7 @@ class IncompatibleTypes {
     lowercase2(genType.getNullableConstants());
   }
 
-  <S extends Object> void lowercase2(final S items) {}
+  <S extends @NonNull Object> void lowercase2(final S items) {}
 
   void possibleValues3(final Gen<?> genType) {
     lowercase3(genType.getConstants());
