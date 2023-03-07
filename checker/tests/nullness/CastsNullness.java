@@ -75,7 +75,7 @@ public class CastsNullness {
     @NonNull String s2 = (String) x;
   }
 
-  class Generics<T extends Object> {
+  class Generics<T extends @NonNull Object> {
     T t;
     @Nullable T nt;
 
