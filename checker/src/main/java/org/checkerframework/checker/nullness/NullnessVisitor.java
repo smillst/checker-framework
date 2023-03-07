@@ -41,6 +41,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.formatter.qual.FormatMethod;
@@ -58,6 +59,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
@@ -630,6 +632,10 @@ public class NullnessVisitor
    */
   private boolean checkForNullability(
       AnnotatedTypeMirror type, Tree tree, @CompilerMessageKey String errMsg) {
+    if (type.getKind() == TypeKind.WILDCARD
+        && ((AnnotatedWildcardType) type).isUninferredTypeArgument()) {
+      return atypeFactory.ignoreUninferredTypeArguments;
+    }
     if (!type.hasEffectiveAnnotation(NONNULL)) {
       checker.reportError(tree, errMsg, tree);
       return false;
