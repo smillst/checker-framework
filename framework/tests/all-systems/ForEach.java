@@ -18,6 +18,7 @@ public class ForEach {
     }
   }
 
+  @SuppressWarnings("nullness:dereference.of.nullable")
   <T extends Object> void m3(T p) {
     Set<T> s = new HashSet<>();
     for (T cs : s) {
@@ -25,6 +26,7 @@ public class ForEach {
     }
   }
 
+  @SuppressWarnings("nullness:dereference.of.nullable")
   <T extends Object> void m4(T p) {
     Set<T> s = new HashSet<>();
     for (Object cs : s) {

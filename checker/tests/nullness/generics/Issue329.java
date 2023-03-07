@@ -1,6 +1,7 @@
 // Test case for Issue 329:
 // https://github.com/typetools/checker-framework/issues/329
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 abstract class Issue329 {
@@ -21,8 +22,7 @@ abstract class Issue329 {
 abstract class Issue329NN {
   interface Flag<T> {}
 
-  // Explicit bound makes it NonNull
-  abstract <X extends Object> void setExtension(X value);
+  abstract <X extends @NonNull Object> void setExtension(X value);
 
   abstract <T> T getValue(Flag<T> flag);
 

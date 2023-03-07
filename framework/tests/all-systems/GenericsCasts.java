@@ -43,6 +43,7 @@ public class GenericsCasts {
     }
   }
 
+  @SuppressWarnings("nullness:argument")
   public static <T extends Object> int indexOf(T[] a) {
     return indexOfEq(a);
   }
