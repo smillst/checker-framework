@@ -8,6 +8,48 @@ annotations.  With this flag, a warning is issued if an explicitly written
 annotation on a type is the same as the default annotation.  This feature does
 not warn about all redundant annotations, only some.
 
+Change to defaulting of `T extends Object`, see immediately below.
+
+**Change to defaulting of `T extends Object`:**
+
+Previously, the Checker Framework interpreted
+`class MyClass<T extends Object>` as
+`class MyClass<T extends @DefaultType Object>`.
+Now, the Checker Framework interprets
+`class MyClass<T extends Object>` as
+`class MyClass<T extends @TopType Object>`.
+
+This means that the Checker Framework treats `class MyClass<T>` and `class
+MyClass<T extends Object>` identically:  in both cases, instantiation is
+permitted by any (annotated) client type.  This change leads to fewer
+annotations and less effort for type systems where the default type qualfier is
+not the top type qualfier (listed at
+https://checkerframework.org/manual/#default-is-not-top-type-systems).
+
+You need to update some code and annotated libraries.  If the default type
+qualfier differs from the top type qualfier, you must change `<T extends
+Object>` to `<T extends @DefaultType Object>` (for example to, `<T extends
+@NonNull Object>` or `<T extends @Signed Object>`.  If your code contains `<T
+extends Object>` where arbitrary instantiation is desirable, then your previous
+annotations were buggy and should have been `<T extends @TopType Object>`, but
+that can be written as just `<T>`.
+
+You can simplify your code and annotated libraries.  If the default type
+qualfier differs from the top type qualfier, you can change `<T extends @TopType
+Object>` (for example, `<T extends @UnknownSignedness Object>` or `<T extends
+@Nullable Object>` to just `<T>`.  This change is not required, but it is
+recommended as a matter of style.  This is only possible if the upper bound type
+qualfier is the top type qualifier for every type system; otherwise, some
+annotations must remain and so must `extends Object`.
+
+For wildcards, the same transformations apply, with one simplification:  instead
+of `? extends @BottomType Object`, you can write `@BottomType ?`, which is
+shorter and may be easier to read.
+
+No code changes are required for type systems that default explicit and implicit
+bounds the same, such as the Locking Checker.
+
+
 **Implementation details:**
 
 **Closed issues:**
