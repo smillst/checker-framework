@@ -18,6 +18,9 @@ Previously, the Checker Framework interpreted
 Now, the Checker Framework interprets
 `class MyClass<T extends Object>` as
 `class MyClass<T extends @TopType Object>`.
+There is no change when the upper bound is not `Object`;
+`class MyClass<T extends Number>` is still treated as
+`class MyClass<T extends @DefaultType Number>`.
 
 This means that the Checker Framework treats `class MyClass<T>` and `class
 MyClass<T extends Object>` identically:  in both cases, instantiation is
@@ -46,9 +49,12 @@ For wildcards, the same transformations apply, with one simplification:  instead
 of `? extends @BottomType Object`, you can write `@BottomType ?`, which is
 shorter and may be easier to read.
 
+For the Nullness Checker in particular, `T extends Object` should be changed to
+`@NonNull T` or `T extends @NonNull Object`, and `? extends Object` should be
+changed to `@NonNull ?`.
+
 No code changes are required for type systems that default explicit and implicit
 bounds the same, such as the Locking Checker.
-
 
 **Implementation details:**
 
