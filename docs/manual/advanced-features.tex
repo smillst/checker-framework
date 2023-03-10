@@ -429,23 +429,30 @@ in any way.
 Suppose a user declares a class as \code{class C<T> \ttlcb\ ...\ \ttrcb}.
 The Checker Framework assumes that the user intended to allow any
 instantiation of the class.  The Checker Framework interprets the
-declaration as \code{class C<T extends @Nullable
+declaration as \code{class C<T extends \emph{@TopType}
+  Object> \ttlcb\ ...\ \ttrcb} rather than as \code{class C<T extends
+  \emph{@DefaultType} Object> \ttlcb\ ...\ \ttrcb}.  For example, in the
+Nullness type system (Section~\ref{nullness-qualifiers}), \code{class C<T>
+\ttlcb\ ...\ \ttrcb} is interpreted as \code{class C<T extends @Nullable
   Object> \ttlcb\ ...\ \ttrcb} rather than as \code{class C<T extends
   @NonNull Object> \ttlcb\ ...\ \ttrcb}.  The latter would forbid
 instantiations such as \code{C<@Nullable String>}, or would require
-rewriting of code.  On the other hand, if a user writes an explicit bound
-such as \code{class C<T extends D> \ttlcb\ ...\ \ttrcb}, then the user
-intends some restriction on instantiation and can write a qualifier on the
-upper bound as desired.
+rewriting of code.
 
-This rule means that the upper bound of \code{class C<T>} is defaulted
-differently than the upper bound of \code{class C<T extends Object>}.
-This is a bit unfortunate, but it is the least bad option.  The
-more confusing alternative would be for ``\code{Object}'' to be defaulted
-differently in \code{class C<T extends Object>} and in an
-instantiation \code{C<Object>}, and for the upper bounds to be defaulted
-differently in \code{class C<T extends Object>}
-and \code{class C<T extends Date>}.
+An \<Object> upper bound without a type qualifier in the relevant type
+system --- for example, \code{class C<T extends Object>} --- is treated the
+same as \code{class C<T>} because Java treats them the same.  In each case,
+there is no restriction on the types a a client can use to instantiate the
+class.
+
+If a user writes an explicit bound such as \code{class C<T extends D>
+  \ttlcb\ ...\ \ttrcb} where \<D> is not \<Object>, then the upper bound
+\<D> is defaulted just like any other occurrence of \<D> in the program.
+
+These rules means that the upper bound \<Object> in \code{class C<T extends
+  Object>} is defaulted differently than the upper bound \<Date> in
+\code{class C<T extends Date>}.  This is a bit unfortunate, but it is the
+least bad option, as explained in Section~\ref{generics-defaults}.
 
 \item
 Implicit \emph{lower} bounds are defaulted to the bottom type, again to allow
