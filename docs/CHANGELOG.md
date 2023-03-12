@@ -50,9 +50,11 @@ can write `<@BottomType T>, which is shorter and may be easier to read.
 
 For wildcards, the same transformations apply.
 
-For the Nullness Checker in particular, `T extends Object` should be changed to
-`@NonNull T` or `T extends @NonNull Object`, and `? extends Object` should be
-changed to `@NonNull ?`.
+For the Nullness Checker in particular, `<T extends Object>` should be changed to
+`<@NonNull T>` or `<T extends @NonNull Object>`, and `<? extends Object>` should be
+changed to `<@NonNull ?>`.  `<T extends @Nullable Object>` and `<@Nullable T>` can be
+changed to `<T>`, and `<? extends @Nullable Object>` and `<@Nullable ?>` can be changed to
+`<?>`.
 
 No code changes are required for type systems that default explicit and implicit
 bounds the same, such as the Locking Checker.
