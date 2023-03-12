@@ -59,6 +59,13 @@ changed to `<T>`, and `<? extends @Nullable Object>` and `<@Nullable ?>` can be 
 No code changes are required for type systems that default explicit and implicit
 bounds the same, such as the Locking Checker.
 
+Here is how to find places that your code might need to be changed.  Call a
+"non-top-default type system" one of the ones at listed at
+https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider every
+occurrence of "extends" or "super":
+ * that is annotated with an annotation from a non-default-top type system
+ * that is in a file with `@AnnotatedFor` for a non-default-top type system
+
 **Implementation details:**
 
 The Checker Framework no longer builds under JDK 8.
