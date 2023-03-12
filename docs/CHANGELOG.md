@@ -45,9 +45,10 @@ recommended as a matter of style.  This is only possible if the upper bound type
 qualfier is the top type qualifier for every type system; otherwise, some
 annotations must remain and so must `extends Object`.
 
-For wildcards, the same transformations apply, with one simplification:  instead
-of `? extends @BottomType Object`, you can write `@BottomType ?`, which is
-shorter and may be easier to read.
+There is one simplification:  instead of `<T extends @BottomType Object>`, you
+can write `<@BottomType T>, which is shorter and may be easier to read.
+
+For wildcards, the same transformations apply.
 
 For the Nullness Checker in particular, `T extends Object` should be changed to
 `@NonNull T` or `T extends @NonNull Object`, and `? extends Object` should be
