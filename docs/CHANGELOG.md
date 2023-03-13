@@ -61,11 +61,13 @@ bounds the same, such as the Locking Checker.
 
 Here is how to find places that your code might need to be changed.  Call a
 "non-top-default type system" one of the ones at listed at
-https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider every
-occurrence of "`extends Object`":
- * that is in a file that contains `@AnnotatedFor` for a non-default-top type system, or
- * that is annotated with an annotation from a non-default-top type system, as in
-   `@Anno T extends Object` or `T extends @Anno Object`.
+https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider:
+ * every occurrence of "`extends Object`" without an annotation:
+    * that is in a file being typechecked by a non-default-top type system, or
+    * that contains `@AnnotatedFor` for a non-default-top type system (this is used
+      in annotated libraries).
+ * every occurrence of `@Anno T extends Object` or `T extends @Anno Object`, where
+   `@Anno` is an annotation from a non-default-top type system.
 
 **Implementation details:**
 
