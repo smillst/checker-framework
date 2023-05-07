@@ -41,8 +41,6 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.tree.JCTree.JCFieldAccess;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
-import com.sun.tools.javac.tree.JCTree.JCMemberReference;
-import com.sun.tools.javac.tree.JCTree.JCMemberReference.ReferenceKind;
 import com.sun.tools.javac.tree.TreeInfo;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,6 +86,7 @@ import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.JavaExpressionScanner;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.qual.Deterministic;
+import org.checkerframework.dataflow.qual.Impure;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.dataflow.util.PurityChecker;
@@ -140,6 +139,7 @@ import org.checkerframework.javacutil.SwitchExpressionScanner;
 import org.checkerframework.javacutil.SwitchExpressionScanner.FunctionalSwitchExpressionScanner;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TreeUtils.MemberReferenceKind;
 import org.checkerframework.javacutil.TypesUtils;
 import org.plumelib.util.ArrayMap;
 import org.plumelib.util.ArraySet;
@@ -215,6 +215,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotationBuilder.fromClass(elements, SideEffectFree.class);
   /** The @{@link Pure} annotation. */
   protected final AnnotationMirror PURE = AnnotationBuilder.fromClass(elements, Pure.class);
+
+  /** The @{@link Impure} annotation. */
+  protected final AnnotationMirror IMPURE = AnnotationBuilder.fromClass(elements, Impure.class);
 
   /** The {@code value} element/field of the @java.lang.annotation.Target annotation. */
   protected final ExecutableElement targetValueElement;
@@ -1024,7 +1027,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     if (isDeterministic) {
       if (TreeUtils.isConstructor(tree)) {
         checker.reportWarning(tree, "purity.deterministic.constructor");
-      } else if (TreeUtils.typeOf(tree.getReturnType()).getKind() == TypeKind.VOID) {
+      } else if (TreeUtils.isVoidReturn(tree)) {
         checker.reportWarning(tree, "purity.deterministic.void.method");
       }
     }
@@ -1048,34 +1051,60 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // present (because they were inferred in a previous WPI round).
         additionalKinds.removeAll(kinds);
       }
-      if (TreeUtils.isConstructor(tree)) {
+      if (TreeUtils.isConstructor(tree) || TreeUtils.isVoidReturn(tree)) {
         additionalKinds.remove(Pure.Kind.DETERMINISTIC);
       }
-      if (!additionalKinds.isEmpty()) {
-        if (infer) {
-          WholeProgramInference wpi = atypeFactory.getWholeProgramInference();
-          ExecutableElement methodElt = TreeUtils.elementFromDeclaration(tree);
-          if (additionalKinds.size() == 2) {
-            wpi.addMethodDeclarationAnnotation(methodElt, PURE);
-          } else if (additionalKinds.contains(Pure.Kind.SIDE_EFFECT_FREE)) {
-            wpi.addMethodDeclarationAnnotation(methodElt, SIDE_EFFECT_FREE);
-          } else if (additionalKinds.contains(Pure.Kind.DETERMINISTIC)) {
-            wpi.addMethodDeclarationAnnotation(methodElt, DETERMINISTIC);
-          } else {
-            throw new BugInCF("Unexpected purity kind in " + additionalKinds);
-          }
-        } else {
-          if (additionalKinds.size() == 2) {
-            checker.reportWarning(tree, "purity.more.pure", tree.getName());
-          } else if (additionalKinds.contains(Pure.Kind.SIDE_EFFECT_FREE)) {
-            checker.reportWarning(tree, "purity.more.sideeffectfree", tree.getName());
-          } else if (additionalKinds.contains(Pure.Kind.DETERMINISTIC)) {
-            checker.reportWarning(tree, "purity.more.deterministic", tree.getName());
-          } else {
-            throw new BugInCF("Unexpected purity kind in " + additionalKinds);
-          }
+      if (infer) {
+        WholeProgramInference wpi = atypeFactory.getWholeProgramInference();
+        ExecutableElement methodElt = TreeUtils.elementFromDeclaration(tree);
+        inferPurityAnno(additionalKinds, wpi, methodElt);
+        // The purity of overridden methods is impacted by the purity of this method. If a
+        // superclass method is pure, but an implementation in a subclass is not, WPI ought to treat
+        // **neither** as pure. The purity kind of the superclass method is the LUB of its own
+        // purity and the purity of all the methods that override it. Logically, this rule is the
+        // same as the WPI rule for overrides, but purity isn't a type system and therefore must be
+        // special-cased.
+        Set<? extends ExecutableElement> overriddenMethods =
+            ElementUtils.getOverriddenMethods(methodElt, types);
+        for (ExecutableElement overriddenElt : overriddenMethods) {
+          inferPurityAnno(additionalKinds, wpi, overriddenElt);
         }
+      } else if (additionalKinds.isEmpty()) {
+        // No need to suggest @Impure, since it is equivalent to no annotation.
+      } else if (additionalKinds.size() == 2) {
+        checker.reportWarning(tree, "purity.more.pure", tree.getName());
+      } else if (additionalKinds.contains(Pure.Kind.SIDE_EFFECT_FREE)) {
+        checker.reportWarning(tree, "purity.more.sideeffectfree", tree.getName());
+      } else if (additionalKinds.contains(Pure.Kind.DETERMINISTIC)) {
+        checker.reportWarning(tree, "purity.more.deterministic", tree.getName());
+      } else {
+        throw new BugInCF("Unexpected purity kind in " + additionalKinds);
       }
+    }
+  }
+
+  /**
+   * Infer a purity annotation for {@code elt} by converting {@code kinds} into a method annotation.
+   *
+   * <p>This method delegates to {@code WholeProgramInference.addMethodDeclarationAnnotation}, which
+   * special-cases purity annotations: that method lubs a purity argument with whatever purity
+   * annotation is already present on {@code elt}.
+   *
+   * @param kinds the set of purity kinds to use to infer the annotation
+   * @param wpi the whole program inference instance to use to do the inferring
+   * @param elt the element whose purity is being inferred
+   */
+  private void inferPurityAnno(
+      EnumSet<Pure.Kind> kinds, WholeProgramInference wpi, ExecutableElement elt) {
+    if (kinds.size() == 2) {
+      wpi.addMethodDeclarationAnnotation(elt, PURE, true);
+    } else if (kinds.contains(Pure.Kind.SIDE_EFFECT_FREE)) {
+      wpi.addMethodDeclarationAnnotation(elt, SIDE_EFFECT_FREE, true);
+    } else if (kinds.contains(Pure.Kind.DETERMINISTIC)) {
+      wpi.addMethodDeclarationAnnotation(elt, DETERMINISTIC, true);
+    } else {
+      assert kinds.isEmpty();
+      wpi.addMethodDeclarationAnnotation(elt, IMPURE, true);
     }
   }
 
@@ -3616,11 +3645,12 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     // The type of the expression or type use, <expression>::method or <type use>::method.
     final ExpressionTree qualifierExpression = memberReferenceTree.getQualifierExpression();
-    final ReferenceKind memRefKind = ((JCMemberReference) memberReferenceTree).kind;
+    final MemberReferenceKind memRefKind =
+        MemberReferenceKind.getMemberReferenceKind(memberReferenceTree);
     AnnotatedTypeMirror enclosingType;
     if (memberReferenceTree.getMode() == ReferenceMode.NEW
-        || memRefKind == ReferenceKind.UNBOUND
-        || memRefKind == ReferenceKind.STATIC) {
+        || memRefKind == MemberReferenceKind.UNBOUND
+        || memRefKind == MemberReferenceKind.STATIC) {
       // The "qualifier expression" is a type tree.
       enclosingType = atypeFactory.getAnnotatedTypeFromTypeTree(qualifierExpression);
     } else {
@@ -3635,7 +3665,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
 
     if (enclosingType.getKind() == TypeKind.DECLARED
         && ((AnnotatedDeclaredType) enclosingType).isUnderlyingTypeRaw()) {
-      if (memRefKind == ReferenceKind.UNBOUND) {
+      if (memRefKind == MemberReferenceKind.UNBOUND) {
         // The method reference is of the form: Type # instMethod and Type is a raw type.
         // If the first parameter of the function type, p1, is a subtype of type, then type
         // should be p1.  This has the effect of "inferring" the class type parameter.
@@ -3735,7 +3765,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             || memberReferenceTree.getTypeArguments().isEmpty())) {
       // Method type args
       requiresInference = true;
-    } else if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
+    } else if (memberReferenceTree.getMode() == ReferenceMode.NEW
+        || MemberReferenceKind.getMemberReferenceKind(memberReferenceTree).isUnbound()) {
       if (type.getKind() == TypeKind.DECLARED
           && ((AnnotatedDeclaredType) type).isUnderlyingTypeRaw()) {
         // Class type args
@@ -3867,7 +3898,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
     }
 
-    /** Checks that overrides obey behavioral subtyping. */
+    /**
+     * Checks that overrides obey behavioral subtyping, that is, postconditions must be at least as
+     * strong as the postcondition on the superclass, and preconditions must be at most as strong as
+     * the condition on the superclass.
+     */
     private void checkPreAndPostConditions() {
       String msgKey = isMethodReference ? "methodref" : "override";
       if (isMethodReference) {
@@ -3931,9 +3966,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           overriderType, overriddenType, superCPostFalse2, subCPostFalse2, postfalsemsg);
     }
 
+    /**
+     * Issue a "methodref.receiver" or "methodref.receiver.bound" error if the receiver for the
+     * method reference does not satify overriding rules.
+     *
+     * @return true if the override is legal
+     */
     private boolean checkMemberReferenceReceivers() {
-      JCTree.JCMemberReference memberTree = (JCTree.JCMemberReference) overriderTree;
-
       if (overriderType.getKind() == TypeKind.ARRAY) {
         // Assume the receiver for all method on arrays are @Top
         // This simplifies some logic because an AnnotatedExecutableType for an array method
@@ -3941,9 +3980,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         // have to compare "Array" to "String[]".
         return true;
       }
-
+      MemberReferenceTree memberTree = (MemberReferenceTree) overriderTree;
+      MemberReferenceKind methodRefKind =
+          MemberReferenceKind.getMemberReferenceKind((MemberReferenceTree) overriderTree);
       // These act like a traditional override
-      if (memberTree.kind == JCTree.JCMemberReference.ReferenceKind.UNBOUND) {
+      if (methodRefKind == MemberReferenceKind.UNBOUND) {
         AnnotatedTypeMirror overriderReceiver = overrider.getReceiverType();
         AnnotatedTypeMirror overriddenReceiver = overridden.getParameterTypes().get(0);
         boolean success =
@@ -3965,7 +4006,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       // The rest act like method invocations
       AnnotatedTypeMirror receiverDecl;
       AnnotatedTypeMirror receiverArg;
-      switch (memberTree.kind) {
+      switch (methodRefKind) {
         case UNBOUND:
           throw new BugInCF("Case UNBOUND should already be handled.");
         case SUPER:
@@ -4071,8 +4112,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       if (isMethodReference) {
         // The functional interface of an unbound member reference has an extra parameter
         // (the receiver).
-        if (((JCTree.JCMemberReference) overriderTree)
-            .hasKind(JCTree.JCMemberReference.ReferenceKind.UNBOUND)) {
+        if (MemberReferenceKind.getMemberReferenceKind((MemberReferenceTree) overriderTree)
+            == MemberReferenceKind.UNBOUND) {
           overriddenParams = new ArrayList<>(overriddenParams);
           overriddenParams.remove(0);
         }
