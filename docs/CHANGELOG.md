@@ -27,10 +27,10 @@ https://checkerframework.org/manual/#default-is-not-top-type-systems).
 You need to update some code and annotated libraries.  If the default type
 qualifier differs from the top type qualifier, you must change `<T extends
 Object>` to `<T extends @DefaultType Object>` (for example to, `<T extends
-@NonNull Object>` or `<T extends @Signed Object>`.  If your code contains `<T
+@NonNull Object>` or `<T extends @Signed Object>`).  If your code contains `<T
 extends Object>` where arbitrary instantiation is desirable, then your previous
 annotations were buggy and should have been `<T extends @TopType Object>`, but
-that can be written as just `<T>`.
+that can be written as just `<T>`, which is better style.
 
 You can simplify your code and annotated libraries.  If the default type
 qualifier differs from the top type qualifier, you can change `<T extends @TopType
@@ -62,7 +62,7 @@ https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider:
     * that contains `@AnnotatedFor` for a non-default-top type system (this is used
       in annotated libraries).
  * every occurrence of `@Anno T extends Object` or `T extends @Anno Object`, where
-   `@Anno` is an annotation from a non-default-top type system.
+   `@Anno` is an annotation from a non-top-default type system.
 
 **Implementation details:**
 
