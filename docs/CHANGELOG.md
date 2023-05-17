@@ -1,4 +1,4 @@
-Version 3.34.1 (June 1, 2023)
+Version 3.35.0 (June 1, 2023)
 ------------------------------
 
 **User-visible changes:**
@@ -65,6 +65,12 @@ https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider:
    `@Anno` is an annotation from a non-top-default type system.
 
 **Implementation details:**
+
+Methods that now return `AnnotationMirrorSet` instead of `Set<? extends AnnotationMirror>`:
+ * `getTopAnnotations()`
+ * `getBottomAnnotations()`
+ * `getDefaultTypeDeclarationBounds()`
+ * `getExceptionParameterLowerBoundAnnotations()`
 
 **Closed issues:**
 
