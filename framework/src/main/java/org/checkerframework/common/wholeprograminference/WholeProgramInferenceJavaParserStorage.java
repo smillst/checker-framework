@@ -94,6 +94,7 @@ import org.checkerframework.javacutil.Pair;
 import org.checkerframework.javacutil.TreeUtils;
 import org.plumelib.util.ArraySet;
 import org.plumelib.util.CollectionsPlume;
+import org.plumelib.util.UtilPlume;
 
 /**
  * This is an implementation of {@link WholeProgramInferenceStorage} that stores annotations
@@ -1105,7 +1106,7 @@ public class WholeProgramInferenceJavaParserStorage
               VoidVisitor<Void> visitor =
                   new DefaultPrettyPrinterVisitor(getConfiguration()) {
                     @Override
-                    public void visit(final MarkerAnnotationExpr n, final Void arg) {
+                    public void visit(MarkerAnnotationExpr n, Void arg) {
                       if (invisibleQualifierNames.contains(n.getName().toString())) {
                         return;
                       }
@@ -1113,7 +1114,7 @@ public class WholeProgramInferenceJavaParserStorage
                     }
 
                     @Override
-                    public void visit(final SingleMemberAnnotationExpr n, final Void arg) {
+                    public void visit(SingleMemberAnnotationExpr n, Void arg) {
                       if (invisibleQualifierNames.contains(n.getName().toString())) {
                         return;
                       }
@@ -1121,7 +1122,7 @@ public class WholeProgramInferenceJavaParserStorage
                     }
 
                     @Override
-                    public void visit(final NormalAnnotationExpr n, final Void arg) {
+                    public void visit(NormalAnnotationExpr n, Void arg) {
                       if (invisibleQualifierNames.contains(n.getName().toString())) {
                         return;
                       }
@@ -1203,6 +1204,7 @@ public class WholeProgramInferenceJavaParserStorage
   private static class CompilationUnitAnnos implements DeepCopyable<CompilationUnitAnnos> {
     /** Compilation unit being wrapped. */
     public final CompilationUnit compilationUnit;
+
     /** Wrappers for classes and interfaces in {@code compilationUnit}. */
     public final List<ClassOrInterfaceAnnos> types;
 
@@ -1286,8 +1288,10 @@ public class WholeProgramInferenceJavaParserStorage
      * Mapping from JVM method signatures to the wrapper containing the corresponding executable.
      */
     public Map<String, CallableDeclarationAnnos> callableDeclarations = new HashMap<>();
+
     /** Mapping from field names to wrappers for those fields. */
     public Map<String, FieldAnnos> fields = new HashMap<>(2);
+
     /** Collection of declared enum constants (empty if not an enum). */
     public Set<String> enumConstants = new HashSet<>(2);
 
@@ -1324,8 +1328,7 @@ public class WholeProgramInferenceJavaParserStorage
       ClassOrInterfaceAnnos result = new ClassOrInterfaceAnnos(className, classDeclaration);
       result.callableDeclarations = CollectionUtils.deepCopyValues(callableDeclarations);
       result.fields = CollectionUtils.deepCopyValues(fields);
-      result.enumConstants =
-          CollectionUtils.clone(enumConstants); // no deep copy: elements are strings
+      result.enumConstants = UtilPlume.clone(enumConstants); // no deep copy: elements are strings
       if (classAnnotations != null) {
         result.classAnnotations = classAnnotations.deepCopy();
       }
@@ -1406,16 +1409,19 @@ public class WholeProgramInferenceJavaParserStorage
   public class CallableDeclarationAnnos implements DeepCopyable<CallableDeclarationAnnos> {
     /** Wrapped method or constructor declaration. */
     public final CallableDeclaration<?> declaration;
+
     /**
      * Inferred annotations for the return type, if the declaration represents a method. Initialized
      * on first usage.
      */
     private @MonotonicNonNull AnnotatedTypeMirror returnType = null;
+
     /**
      * Inferred annotations for the receiver type, if the declaration represents a method.
      * Initialized on first usage.
      */
     private @MonotonicNonNull AnnotatedTypeMirror receiverType = null;
+
     /**
      * Inferred annotations for parameter types. The list is initialized the first time any
      * parameter is accessed, and each parameter is initialized the first time it's accessed.
@@ -1438,6 +1444,7 @@ public class WholeProgramInferenceJavaParserStorage
      */
     private @MonotonicNonNull Map<String, Pair<AnnotatedTypeMirror, AnnotatedTypeMirror>>
         preconditions = null;
+
     /**
      * Mapping from expression strings to pairs of (inferred postcondition, declared type). The
      * okeys are strings representing JavaExpressions, using the same format as a user would in an
@@ -1465,7 +1472,7 @@ public class WholeProgramInferenceJavaParserStorage
       }
       result.declarationAnnotations = DeepCopyable.deepCopyOrNull(this.declarationAnnotations);
 
-      if (result.paramsDeclAnnos != null) {
+      if (this.paramsDeclAnnos != null) {
         result.paramsDeclAnnos = new ArraySet<>(this.paramsDeclAnnos);
       }
       result.preconditions = deepCopyMapOfStringToPair(this.preconditions);
@@ -1835,8 +1842,10 @@ public class WholeProgramInferenceJavaParserStorage
   private static class FieldAnnos implements DeepCopyable<FieldAnnos> {
     /** Wrapped field declaration. */
     public final VariableDeclarator declaration;
+
     /** Inferred type for field, initialized the first time it's accessed. */
     private @MonotonicNonNull AnnotatedTypeMirror type = null;
+
     /** Annotations on the field declaration. */
     private @MonotonicNonNull AnnotationMirrorSet declarationAnnotations = null;
 

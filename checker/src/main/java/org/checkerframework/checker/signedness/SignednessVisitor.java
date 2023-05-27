@@ -8,7 +8,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.InterningVisitor;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
 import org.checkerframework.checker.signedness.qual.PolySigned;
@@ -139,14 +139,13 @@ public class SignednessVisitor extends BaseTypeVisitor<SignednessAnnotatedTypeFa
           AnnotationMirror leftAnno = leftOpType.getEffectiveAnnotations().iterator().next();
           AnnotationMirror rightAnno = rightOpType.getEffectiveAnnotations().iterator().next();
 
-          if (leftOpType.getKind() != TypeKind.CHAR
-              && !TypesUtils.isDeclaredOfName(leftOpType.getUnderlyingType(), "java.lang.Character")
-              && !atypeFactory.getQualifierHierarchy().isSubtype(leftAnno, atypeFactory.SIGNED)) {
+          TypeMirror leftOpTM = leftOpType.getUnderlyingType();
+          TypeMirror rightOpTM = rightOpType.getUnderlyingType();
+          if (!TypesUtils.isCharOrCharacter(leftOpTM)
+              && !qualHierarchy.isSubtype(leftAnno, atypeFactory.SIGNED)) {
             checker.reportError(leftOp, "unsigned.concat");
-          } else if (rightOpType.getKind() != TypeKind.CHAR
-              && !TypesUtils.isDeclaredOfName(
-                  rightOpType.getUnderlyingType(), "java.lang.Character")
-              && !atypeFactory.getQualifierHierarchy().isSubtype(rightAnno, atypeFactory.SIGNED)) {
+          } else if (!TypesUtils.isCharOrCharacter(rightOpTM)
+              && !qualHierarchy.isSubtype(rightAnno, atypeFactory.SIGNED)) {
             checker.reportError(rightOp, "unsigned.concat");
           }
           break;
@@ -308,13 +307,12 @@ public class SignednessVisitor extends BaseTypeVisitor<SignednessAnnotatedTypeFa
 
       case PLUS_ASSIGNMENT:
         if (TreeUtils.isStringCompoundConcatenation(tree)) {
-          if (exprType.getKind() != TypeKind.CHAR
-              && !TypesUtils.isDeclaredOfName(
-                  exprType.getUnderlyingType(), "java.lang.Character")) {
-            AnnotationMirror anno = exprType.getEffectiveAnnotations().iterator().next();
-            if (!atypeFactory.getQualifierHierarchy().isSubtype(anno, atypeFactory.SIGNED)) {
-              checker.reportError(tree.getExpression(), "unsigned.concat");
-            }
+          if (TypesUtils.isCharOrCharacter(exprType.getUnderlyingType())) {
+            break;
+          }
+          AnnotationMirror anno = exprType.getEffectiveAnnotations().iterator().next();
+          if (!qualHierarchy.isSubtype(anno, atypeFactory.SIGNED)) {
+            checker.reportError(tree.getExpression(), "unsigned.concat");
           }
           break;
         }

@@ -26,7 +26,6 @@ import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.PrimitiveTypeTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TreeVisitor;
 import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.TypeParameterTree;
@@ -118,20 +117,28 @@ public final class TreeUtils {
   // immediately below.
   /** The {@code CaseTree.getKind()} method. Null on JDK 11 and lower. */
   private static @Nullable Method caseGetCaseKind = null;
+
   /** The {@code CaseTree.CaseKind.RULE} enum value. Null on JDK 11 and lower. */
   private static @Nullable Enum<?> caseKindRule = null;
+
   /** The {@code CaseTree.getExpressions()} method. Null on JDK 11 and lower. */
   private static @Nullable Method caseGetExpressions = null;
+
   /** The {@code CaseTree.getBody()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method caseGetBody = null;
+
   /** The {@code BindingPatternTree.getVariable()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method bindingPatternGetVariable = null;
+
   /** The {@code InstanceOfTree.getPattern()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method instanceOfTreeGetPattern = null;
+
   /** The {@code SwitchExpressionTree.getExpression()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method switchExpressionGetExpression = null;
+
   /** The {@code SwitchExpressionTree.getCases()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method switchExpressionGetCases = null;
+
   /** The {@code YieldTree.getValue()} method. Null on JDK 11 and lower. */
   private static @MonotonicNonNull Method yieldGetValue = null;
 
@@ -187,7 +194,7 @@ public final class TreeUtils {
    * @param tree a tree defining the method
    * @return true iff tree describes a constructor
    */
-  public static boolean isConstructor(final MethodTree tree) {
+  public static boolean isConstructor(MethodTree tree) {
     return tree.getName().contentEquals("<init>");
   }
 
@@ -242,7 +249,7 @@ public final class TreeUtils {
    * @param tree expression tree representing an access to object member
    * @return {@code true} iff the member is a member of {@code this} instance
    */
-  public static boolean isSelfAccess(final ExpressionTree tree) {
+  public static boolean isSelfAccess(ExpressionTree tree) {
     ExpressionTree tr = TreeUtils.withoutParens(tree);
     // If method invocation check the method select
     if (tr.getKind() == Tree.Kind.ARRAY_ACCESS) {
@@ -281,8 +288,7 @@ public final class TreeUtils {
    * @return the outermost non-parenthesized tree enclosed by the given tree
    */
   @SuppressWarnings("interning:return") // polymorphism implementation
-  public static @PolyInterned ExpressionTree withoutParens(
-      final @PolyInterned ExpressionTree tree) {
+  public static @PolyInterned ExpressionTree withoutParens(@PolyInterned ExpressionTree tree) {
     ExpressionTree t = tree;
     while (t.getKind() == Tree.Kind.PARENTHESIZED) {
       t = ((ParenthesizedTree) t).getExpression();
@@ -299,7 +305,7 @@ public final class TreeUtils {
    */
   @SuppressWarnings("interning:return") // polymorphism implementation
   public static @PolyInterned ExpressionTree withoutParensOrCasts(
-      final @PolyInterned ExpressionTree tree) {
+      @PolyInterned ExpressionTree tree) {
     ExpressionTree t = withoutParens(tree);
     while (t.getKind() == Tree.Kind.TYPE_CAST) {
       t = withoutParens(((TypeCastTree) t).getExpression());
@@ -822,6 +828,7 @@ public final class TreeUtils {
     }
     return false;
   }
+
   /**
    * Returns the name of the invoked method.
    *
@@ -1072,7 +1079,7 @@ public final class TreeUtils {
 
   static {
     classAndMethodTreeKinds = EnumSet.copyOf(classTreeKinds());
-    classAndMethodTreeKinds.add(Kind.METHOD);
+    classAndMethodTreeKinds.add(Tree.Kind.METHOD);
   }
 
   /**
@@ -1655,7 +1662,7 @@ public final class TreeUtils {
    * @param method a method tree that may be an anonymous constructor
    * @return true if the given path points to an anonymous constructor, false if it does not
    */
-  public static boolean isAnonymousConstructor(final MethodTree method) {
+  public static boolean isAnonymousConstructor(MethodTree method) {
     Element e = elementFromTree(method);
     if (e == null || e.getKind() != ElementKind.CONSTRUCTOR) {
       return false;
@@ -1673,7 +1680,7 @@ public final class TreeUtils {
    * @param method a method tree that may be a compact canonical constructor
    * @return true if the given method is a compact canonical constructor
    */
-  public static boolean isCompactCanonicalRecordConstructor(final MethodTree method) {
+  public static boolean isCompactCanonicalRecordConstructor(MethodTree method) {
     Element e = elementFromTree(method);
     if (!(e instanceof Symbol)) {
       return false;
@@ -1690,7 +1697,7 @@ public final class TreeUtils {
    * @param member the {@link Tree} for a member of a record
    * @return true if the given path is generated by the compiler
    */
-  public static boolean isAutoGeneratedRecordMember(final Tree member) {
+  public static boolean isAutoGeneratedRecordMember(Tree member) {
     Element e = elementFromTree(member);
     return e != null && ElementUtils.isAutoGeneratedRecordMember(e);
   }
@@ -1746,7 +1753,7 @@ public final class TreeUtils {
       NewArrayTree tree, int level) {
 
     assert tree instanceof JCNewArray;
-    final JCNewArray newArray = ((JCNewArray) tree);
+    JCNewArray newArray = ((JCNewArray) tree);
 
     if (level == -1) {
       return annotationsFromTypeAnnotationTrees(newArray.annotations);
@@ -1893,6 +1900,7 @@ public final class TreeUtils {
       }
     }
   }
+
   /**
    * Determine whether an expression {@link ExpressionTree} has the constant value true, according
    * to the compiler logic.
