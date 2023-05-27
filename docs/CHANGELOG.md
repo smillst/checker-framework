@@ -74,8 +74,8 @@ As an example, for the Nullness Checker,
 
  * `<@NonNull T extends Object>`: change to `<@NonNull T extends @NonNull Object>`
  * `<@NonNull T extends @Nullable Object>`: change to `<@NonNull T>` for better style
- * `<@NonNull T extends @NonNull Object>`: do not change
- * `<@NonNull T>`: do not change
+ * `<@NonNull T extends @NonNull Object>`: don't change
+ * `<@NonNull T>`: don't change
 
  * `<? extends Object>`: change to `<@NonNull ?>`
  * `<? extends @Nullable Object>`: change to `<?>` for better style
@@ -90,7 +90,7 @@ As an example, for the Nullness Checker,
  * `<@NonNull ? extends Object>`: change to `<@NonNull ?>`
  * `<@NonNull ? extends @Nullable Object>`: change to `<@NonNull ?>` for better style
  * `<@NonNull ? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
- * `<@NonNull ?>`: do not change
+ * `<@NonNull ?>`: don't change
 
 
 As another example, for the Signedness Checker,
