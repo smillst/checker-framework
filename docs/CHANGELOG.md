@@ -35,30 +35,33 @@ bounds the same, such as the Locking Checker, even though its default type
 qualifer is not the top type qualifier.
 
 If the default type qualifier differs from the top type qualifier, you need to
-update some code and annotated libraries,
+update some code and annotated libraries, namely
 
-[//]: # (Comment: GitHub Markdown does not render the italics, but other Markdown engines do.)
-
- * change `<... extends Object>` to <code>&lt;... extends @<em>DefaultType</em> Object&gt;</code>.
-   If your code contains `<... extends Object>` where arbitrary instantiation is
-   desirable, then your previous annotations were buggy and should have been
-   <code>&lt;... extends @<em>TopType</em> Object&gt;</code>,
-   but that can be written as just `<T>`, which is better style.
- * optionally, change <code>&lt;T extends @<em>TopType</em> Object&gt;</code> to just `<T>`.
-   This change is not required, but it is recommended as a matter of style.
-   (If the code is annotated for two type systems, then change
-   <code>&lt;T extends @<em>TopType1 TopType2</em> Object&gt;</code> to `<T>`,
-   but leave <code>&lt;T extends @<em>TopType1 NotTopType2</em> Object&gt;</code>
-   unchanged.)
-
-For wildcards, the same transformations apply.
-
-Make these changes in:
  * every file that is typechecked by a non-default-top type system, and
  * every file that contains `@AnnotatedFor` for a non-default-top type system
    (this is used in annotated libraries).
 
+Make the following changes:
+
+[//]: # (Comment: GitHub Markdown does not render the italics, but other Markdown engines do.)
+
+ * change "`<... extends Object>`" to "<code>&lt;... extends @<em>DefaultType</em> Object&gt;</code>".
+   If your code contains "`<... extends Object>`" where arbitrary instantiation is
+   desirable, then your previous annotations were buggy and should have been
+   "<code>&lt;... extends @<em>TopType</em> Object&gt;</code>",
+   but that can be written as just "`<...>`", which is better style.
+ * optionally, remove <code>extends @<em>TopType</em> Object&gt;</code>.
+   This change is not required, but it is recommended as a matter of style.
+   (If the code is annotated for two type systems, then change
+   "<code>&lt;T extends @<em>TopType1 TopType2</em> Object&gt;</code>" to "`<T>`",
+   but leave "<code>&lt;T extends @<em>TopType1 NotTopType2</em> Object&gt;</code>"
+   unchanged.)
+
+For wildcards, the same transformations apply.
+
+
 As an example, for the Nullness Checker,
+
  * `<T extends Object>`: change to `<T extends @NonNull Object>`
  * `<T extends @Nullable Object>`: change to `<T>` for better style
  * `<T extends @NonNull Object>`: don't change
@@ -1277,11 +1280,11 @@ Version 3.3.0 (April 1, 2020)
 **User-visible changes:**
 
 New command-line options:
-  -Alint=trustArrayLenZero trust @ArrayLen(0) annotations when determining
+  `-Alint=trustArrayLenZero` trust @ArrayLen(0) annotations when determining
   the type of Collections.toArray.
 
 Renamings:
-  -AuseDefaultsForUncheckedCode to -AuseConservativeDefaultsForUncheckedCode
+  `-AuseDefaultsForUncheckedCode` to `-AuseConservativeDefaultsForUncheckedCode`
     The old name works temporarily but will be removed in a future release.
 
 For collection methods with `Object` formal parameter type, such as
