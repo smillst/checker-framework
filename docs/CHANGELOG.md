@@ -19,16 +19,16 @@ Previously, the Checker Framework interpreted
 Now, the Checker Framework interprets
 `class MyClass<T extends Object>` as
 `class MyClass<T extends @TopType Object>`.
-There is no change when the upper bound is not `Object`;
+There is no change when the upper bound is not `Object`; for example,
 `class MyClass<T extends Number>` is still treated as
 `class MyClass<T extends @DefaultType Number>`.
 
 This means that the Checker Framework now treats
-`class MyClass<T>` and `class MyClass<T extends Object>` identically:
-in both cases, instantiation is permitted by any (annotated) client type.
+`class MyClass<T>` and `class MyClass<T extends Object>` identically:  in both
+cases, instantiation is permitted by any client type, regardless of annotations.
 This change leads to fewer annotations and less effort for type systems where
 the default type qualifier is not the top type qualifier (listed at
-https://checkerframework.org/manual/#default-is-not-top-type-systems).
+<https://checkerframework.org/manual/#default-is-not-top-type-systems>).
 
 No code changes are required for type systems that default explicit and implicit
 bounds the same, such as the Locking Checker, even though its default type
