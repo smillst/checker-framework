@@ -36,6 +36,9 @@ qualifer is not the top type qualifier.
 
 If the default type qualifier differs from the top type qualifier, you need to
 update some code and annotated libraries,
+
+[//]: # (Comment: GitHub Markdown does not render the italics, but other Markdown engines do.)
+
  * change `<... extends Object>` to <code>&lt;... extends @<em>DefaultType</em> Object&gt;</code>.
    If your code contains `<... extends Object>` where arbitrary instantiation is
    desirable, then your previous annotations were buggy and should have been
@@ -3273,7 +3276,7 @@ Property File Checker (new):
 
 Signature Checker (new):
   Ensures that different string representations of a Java type (e.g.,
-  "pakkage.Outer.Inner" vs. "pakkage.Outer$Inner" vs. "Lpakkage/Outer$Inner;")
+  `"pakkage.Outer.Inner"` vs. `"pakkage.Outer$Inner"` vs. `"Lpakkage/Outer$Inner;"`)
   are not misused.
 
 Interning Checker enhancements:
