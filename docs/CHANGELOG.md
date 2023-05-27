@@ -6,6 +6,9 @@ Version 3.35.0 (June 1, 2023)
 The Checker Framework no longer issues `type.checking.not.run` errors.
 This reduces clutter in the output.
 
+Signedness Checker:
+ * The receiver type of `Object.hashCode()` is now `@UnknownSignedness`.
+
 Change to defaulting of `T extends Object`, see immediately below.
 
 **Change to defaulting of `T extends Object`:**
@@ -20,52 +23,73 @@ There is no change when the upper bound is not `Object`;
 `class MyClass<T extends Number>` is still treated as
 `class MyClass<T extends @DefaultType Number>`.
 
-This means that the Checker Framework treats `class MyClass<T>` and `class
-MyClass<T extends Object>` identically:  in both cases, instantiation is
-permitted by any (annotated) client type.  This change leads to fewer
-annotations and less effort for type systems where the default type qualifier is
-not the top type qualifier (listed at
+This means that the Checker Framework now treats
+`class MyClass<T>` and `class MyClass<T extends Object>` identically:
+in both cases, instantiation is permitted by any (annotated) client type.
+This change leads to fewer annotations and less effort for type systems where
+the default type qualifier is not the top type qualifier (listed at
 https://checkerframework.org/manual/#default-is-not-top-type-systems).
 
-You need to update some code and annotated libraries.  If the default type
-qualifier differs from the top type qualifier, you must change `<T extends
-Object>` to `<T extends @DefaultType Object>` (for example to, `<T extends
-@NonNull Object>` or `<T extends @Signed Object>`).  If your code contains `<T
-extends Object>` where arbitrary instantiation is desirable, then your previous
-annotations were buggy and should have been `<T extends @TopType Object>`, but
-that can be written as just `<T>`, which is better style.
+No code changes are required for type systems that default explicit and implicit
+bounds the same, such as the Locking Checker, even though its default type
+qualifer is not the top type qualifier.
 
-You can simplify your code and annotated libraries.  If the default type
-qualifier differs from the top type qualifier, you can change `<T extends @TopType
-Object>` (for example, `<T extends @UnknownSignedness Object>` or `<T extends
-@Nullable Object>` to just `<T>`.  This change is not required, but it is
-recommended as a matter of style.  This is only possible if the upper bound type
-qualifier is the top type qualifier for every type system; otherwise, some
-annotations must remain and so must `extends Object`.
-
-There is one simplification:  instead of `<T extends @BottomType Object>`, you
-can write `<@BottomType T>, which is shorter and may be easier to read.
+If the default type qualifier differs from the top type qualifier, you need to
+update some code and annotated libraries,
+ * change `<... extends Object>` to <code>&lt;... extends @<em>DefaultType</em> Object&gt;</code>.
+   If your code contains `<... extends Object>` where arbitrary instantiation is
+   desirable, then your previous annotations were buggy and should have been
+   <code>&lt;... extends @<em>TopType</em> Object&gt;</code>,
+   but that can be written as just `<T>`, which is better style.
+ * optionally, change <code>&lt;T extends @<em>TopType</em> Object&gt;</code> to just `<T>`.
+   This change is not required, but it is recommended as a matter of style.
+   (If the code is annotated for two type systems, then change
+   <code>&lt;T extends @<em>TopType1 TopType2</em> Object&gt;</code> to `<T>`,
+   but leave <code>&lt;T extends @<em>TopType1 NotTopType2</em> Object&gt;</code>
+   unchanged.)
 
 For wildcards, the same transformations apply.
 
-For the Nullness Checker in particular, `<T extends Object>` should be changed to
-`<@NonNull T>` or `<T extends @NonNull Object>`, and `<? extends Object>` should be
-changed to `<@NonNull ?>`.  `<T extends @Nullable Object>` and `<@Nullable T>` can be
-changed to `<T>`, and `<? extends @Nullable Object>` and `<@Nullable ?>` can be changed to
-`<?>`.
+Make these changes in:
+ * every file that is typechecked by a non-default-top type system, and
+ * every file that contains `@AnnotatedFor` for a non-default-top type system
+   (this is used in annotated libraries).
 
-No code changes are required for type systems that default explicit and implicit
-bounds the same, such as the Locking Checker.
+As an example, for the Nullness Checker,
+ * `<T extends Object>`: change to `<T extends @NonNull Object>`
+ * `<T extends @Nullable Object>`: change to `<T>` for better style
+ * `<T extends @NonNull Object>`: don't change
+ * `<T>`: don't change
 
-Here is how to find places that your code might need to be changed.  Call a
-"non-top-default type system" one of the ones at listed at
-https://checkerframework.org/manual/#default-is-not-top-type-systems.  Consider:
- * every occurrence of "`extends Object`" without an annotation:
-    * that is in a file being typechecked by a non-default-top type system, or
-    * that contains `@AnnotatedFor` for a non-default-top type system (this is used
-      in annotated libraries).
- * every occurrence of `@Anno T extends Object` or `T extends @Anno Object`, where
-   `@Anno` is an annotation from a non-top-default type system.
+ * `<@Nullable T extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Nullable T extends @Nullable Object>`: change to `<T>` for better style
+ * `<@Nullable T extends @NonNull Object>`: did not make sense, and still doesn't
+ * `<@Nullable T>`: change to `<T>` for better style
+
+ * `<@NonNull T extends Object>`: change to `<@NonNull T extends @NonNull Object>`
+ * `<@NonNull T extends @Nullable Object>`: change to `<@NonNull T>` for better style
+ * `<@NonNull T extends @NonNull Object>`: do not change
+ * `<@NonNull T>`: do not change
+
+ * `<? extends Object>`: change to `<@NonNull ?>`
+ * `<? extends @Nullable Object>`: change to `<?>` for better style
+ * `<? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
+ * `<?>`: don't change
+
+ * `<@Nullable ? extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Nullable ? extends @Nullable Object>`: change to `<?>` for better style
+ * `<@Nullable ? extends @NonNull Object>`: did not make sense, and still doesn't
+ * `<@Nullable ?>`: change to `<?>` for better style
+
+ * `<@NonNull ? extends Object>`: change to `<@NonNull ?>`
+ * `<@NonNull ? extends @Nullable Object>`: change to `<@NonNull ?>` for better style
+ * `<@NonNull ? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
+ * `<@NonNull ?>`: do not change
+
+
+As another example, for the Signedness Checker,
+[[TODO: copy, paste, and edit the above.]]
+
 
 **Implementation details:**
 
