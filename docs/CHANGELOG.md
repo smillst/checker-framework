@@ -57,7 +57,11 @@ Make the following changes:
    but leave "<code>&lt;T extends @<em>TopType1 NotTopType2</em> Object&gt;</code>"
    unchanged.)
 
-For wildcards, the same transformations apply.
+For wildcards, the same transformations apply, with one exception.  "`<@Anno ?
+extends @Anno Object>`" can be abbreviated "`<@Anno ?>`", but the same
+abbreviation does not apply to non-wildcard type variables.  That is, "`<@Anno T
+extends @Anno Object>`" cannot be abbreviated unless `@Anno` is the top type, in
+which case it is equivalent to just "`<T>`".
 
 
 As an example, for the Nullness Checker,
