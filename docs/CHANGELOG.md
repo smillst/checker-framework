@@ -61,7 +61,8 @@ For wildcards, the same transformations apply, with one exception.  "`<@Anno ?
 extends @Anno Object>`" can be abbreviated "`<@Anno ?>`", but the same
 abbreviation does not apply to non-wildcard type variables.  That is, "`<@Anno T
 extends @Anno Object>`" cannot be abbreviated unless `@Anno` is the top type, in
-which case it is equivalent to just "`<T>`".
+which case it is equivalent to "`<@Anno T>`".  "`<T>`" is equivalent to
+"<code>&lt;@<em>BottomType</em> T extends @<em>TopType</em> Object&gt;</code>".
 
 
 As an example, for the Nullness Checker,
@@ -72,14 +73,14 @@ As an example, for the Nullness Checker,
  * `<T>`: don't change
 
  * `<@Nullable T extends Object>`: did not make sense (and has a different meaning now)
- * `<@Nullable T extends @Nullable Object>`: change to `<T>` for better style
+ * `<@Nullable T extends @Nullable Object>`: change to `<@Nullable T>` for better style
  * `<@Nullable T extends @NonNull Object>`: did not make sense, and still doesn't
- * `<@Nullable T>`: change to `<T>` for better style
+ * `<@Nullable T>`: don't change
 
  * `<@NonNull T extends Object>`: change to `<@NonNull T extends @NonNull Object>`
- * `<@NonNull T extends @Nullable Object>`: change to `<@NonNull T>` for better style
- * `<@NonNull T extends @NonNull Object>`: don't change
- * `<@NonNull T>`: don't change
+ * `<@NonNull T extends @Nullable Object>`: change to `<T>` for better style
+ * `<@NonNull T extends @NonNull Object>`: change to `<T extends @NonNull Object>` for better style
+ * `<@NonNull T>`: change to `<T>`
 
  * `<? extends Object>`: change to `<@NonNull ?>`
  * `<? extends @Nullable Object>`: change to `<?>` for better style
@@ -87,12 +88,12 @@ As an example, for the Nullness Checker,
  * `<?>`: don't change
 
  * `<@Nullable ? extends Object>`: did not make sense (and has a different meaning now)
- * `<@Nullable ? extends @Nullable Object>`: change to `<?>` for better style
+ * `<@Nullable ? extends @Nullable Object>`: change to `<?>`
  * `<@Nullable ? extends @NonNull Object>`: did not make sense, and still doesn't
- * `<@Nullable ?>`: change to `<?>` for better style
+ * `<@Nullable ?>`: don't change
 
  * `<@NonNull ? extends Object>`: change to `<@NonNull ?>`
- * `<@NonNull ? extends @Nullable Object>`: change to `<@NonNull ?>` for better style
+ * `<@NonNull ? extends @Nullable Object>`: change to `<?>`
  * `<@NonNull ? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
  * `<@NonNull ?>`: don't change
 
