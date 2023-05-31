@@ -32,7 +32,7 @@ the default type qualifier is not the top type qualifier (listed at
 
 No code changes are required for type systems that default explicit and implicit
 bounds the same, such as the Locking Checker, even though its default type
-qualifer is not the top type qualifier.
+qualifier is not the top type qualifier.
 
 If the default type qualifier differs from the top type qualifier, you need to
 update some code and annotated libraries, namely
@@ -61,8 +61,7 @@ For wildcards, the same transformations apply, with one exception.  "`<@Anno ?
 extends @Anno Object>`" can be abbreviated "`<@Anno ?>`", but the same
 abbreviation does not apply to non-wildcard type variables.  That is, "`<@Anno T
 extends @Anno Object>`" cannot be abbreviated unless `@Anno` is the top type, in
-which case it is equivalent to "`<@Anno T>`".  "`<T>`" is equivalent to
-"<code>&lt;@<em>BottomType</em> T extends @<em>TopType</em> Object&gt;</code>".
+which case it is equivalent to "`<@Anno T>`".
 
 For more details about the meaning of generic types, see the manual section
 ["Syntax for upper and lower
@@ -91,7 +90,7 @@ As an example, for the Nullness Checker,
  * `<?>`: don't change
 
  * `<@Nullable ? extends Object>`: did not make sense (and has a different meaning now)
- * `<@Nullable ? extends @Nullable Object>`: change to `<?>`
+ * `<@Nullable ? extends @Nullable Object>`: change to `<@Nullable ?>`
  * `<@Nullable ? extends @NonNull Object>`: did not make sense, and still doesn't
  * `<@Nullable ?>`: don't change
 
