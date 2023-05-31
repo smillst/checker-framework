@@ -64,6 +64,9 @@ extends @Anno Object>`" cannot be abbreviated unless `@Anno` is the top type, in
 which case it is equivalent to "`<@Anno T>`".  "`<T>`" is equivalent to
 "<code>&lt;@<em>BottomType</em> T extends @<em>TopType</em> Object&gt;</code>".
 
+For more details about the meaning of generic types, see the manual section
+["Syntax for upper and lower
+bounds"](https://checkerframework.org/manual/#generics-bounds-syntax).
 
 As an example, for the Nullness Checker,
 
