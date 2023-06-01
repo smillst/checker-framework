@@ -1316,7 +1316,7 @@ Version 3.3.0 (April 1, 2020)
 **User-visible changes:**
 
 New command-line options:
-  `-Alint=trustArrayLenZero` trust @ArrayLen(0) annotations when determining
+  `-Alint=trustArrayLenZero` trust `@ArrayLen(0)` annotations when determining
   the type of Collections.toArray.
 
 Renamings:
