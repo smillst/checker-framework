@@ -101,17 +101,14 @@ As another example, for the Signedness Checker (note that not all the transforma
 
  * `<@Unsigned T extends Object>`
  * `<@Unsigned T extends @Unsigned Object>`
- * `<@Unsigned T extends @NonNull Object>`
  * `<@Unsigned T>`
 
  * `<? extends Object>`
  * `<? extends @Unsigned Object>`
- * `<? extends @NonNull Object>`
  * `<?>`
 
  * `<@Unsigned ? extends Object>`
  * `<@Unsigned ? extends @Unsigned Object>`
- * `<@Unsigned ? extends @NonNull Object>`
  * `<@Unsigned ?>`
 
 **Implementation details:**
