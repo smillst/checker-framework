@@ -93,26 +93,25 @@ As an example, for the Nullness Checker:
  * `<@NonNull ? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
  * `<@NonNull ?>`: don't change
 
-As another example, for the Signedness Checker (note that not all the transformations are the same as above, because `@NonNull` is the bottom type, `@Nullable` is the top type, and `@Unsigned` is neither):
+As another example, for the Signedness Checker (note that not all the
+transformations are the same as above, because `@NonNull` is the bottom type,
+`@Nullable` is the top type, and `@Unsigned` is neither):
 
- * `<T extends Object>`
- * `<T extends @Unsigned Object>`
- * `<T>`
+ * `<T extends Object>`: change to `<T extends @Signed Object>`
+ * `<T extends @Unsigned Object>`: don't change
+ * `<T>`: don't change
 
- * `<@Unsigned T extends Object>`
- * `<@Unsigned T extends @Unsigned Object>`
- * `<@Unsigned T extends @NonNull Object>`
- * `<@Unsigned T>`
+ * `<@Unsigned T extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Unsigned T extends @Unsigned Object>`: don't change
+ * `<@Unsigned T>`: don't change
 
- * `<? extends Object>`
- * `<? extends @Unsigned Object>`
- * `<? extends @NonNull Object>`
- * `<?>`
+ * `<? extends Object>`: change to `<? extends @Signed Object>`
+ * `<? extends @Unsigned Object>`: don't change
+ * `<?>`: don't change
 
- * `<@Unsigned ? extends Object>`
- * `<@Unsigned ? extends @Unsigned Object>`
- * `<@Unsigned ? extends @NonNull Object>`
- * `<@Unsigned ?>`
+ * `<@Unsigned ? extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Unsigned ? extends @Unsigned Object>`: change to `<@Unsigned ?>` for better style
+ * `<@Unsigned ?>`: don't change
 
 **Implementation details:**
 
@@ -1316,7 +1315,7 @@ Version 3.3.0 (April 1, 2020)
 **User-visible changes:**
 
 New command-line options:
-  `-Alint=trustArrayLenZero` trust @ArrayLen(0) annotations when determining
+  `-Alint=trustArrayLenZero` trust `@ArrayLen(0)` annotations when determining
   the type of Collections.toArray.
 
 Renamings:
