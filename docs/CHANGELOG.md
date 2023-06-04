@@ -222,13 +222,7 @@ Version 3.32.0 (March 2, 2023)
 Fixed a bug in the Nullness Checker where a call to a side-effecting method did
 not make some formal parameters possibly-null.  The Nullness Checker is likely
 to issue more warnings for your code.  For ways to eliminate the new warnings,
-<<<<<<< HEAD
-see <https://checkerframework.org/manual/#type-refinement-side-effects> .
-||||||| 2b03b28bf
-see https://checkerframework.org/manual/#type-refinement-side-effects .
-=======
 see <https://checkerframework.org/manual/#type-refinement-side-effects>.
->>>>>>> 4494b1736d5aadf95fdbd290fe660165467a7093
 
 If you supply the `-AinvocationPreservesArgumentNullness` command-line
 option, the Nullness Checker unsoundly assumes that arguments passed to
@@ -733,13 +727,7 @@ Version 3.13.0 (May 3, 2021)
 If you use the Checker Framework, please answer a 3-question survey about what
 version of Java you use.  It will take less than 1 minute to complete.  Please
 answer it at
-<<<<<<< HEAD
-<https://docs.google.com/forms/d/1Bbt34c_3nDItHsBnmEfumoyrR-Zxhvo3VTHucXwfMcQ> .
-||||||| 2b03b28bf
-https://docs.google.com/forms/d/1Bbt34c_3nDItHsBnmEfumoyrR-Zxhvo3VTHucXwfMcQ .
-=======
 <https://docs.google.com/forms/d/1Bbt34c_3nDItHsBnmEfumoyrR-Zxhvo3VTHucXwfMcQ>.
->>>>>>> 4494b1736d5aadf95fdbd290fe660165467a7093
 Thanks!
 
 **User-visible changes:**
@@ -2227,13 +2215,7 @@ Documentation:
 For type-system developers:
  * The org.checkerframework.framework.qual.TypeQualifier{s} annotations are
    now deprecated.  To indicate which annotations a checker supports, see
-<<<<<<< HEAD
-   <https://checkerframework.org/manual/#creating-indicating-supported-annotations> .
-||||||| 2b03b28bf
-   https://checkerframework.org/manual/#creating-indicating-supported-annotations .
-=======
    <https://checkerframework.org/manual/#creating-indicating-supported-annotations>.
->>>>>>> 4494b1736d5aadf95fdbd290fe660165467a7093
    Support for TypeQualifier{s} will be removed in the next release.
  * Renamed
    `org.checkerframework.framework.qual.Default{,Qualifier}ForUnannotatedCode` to
@@ -4151,13 +4133,7 @@ Manual
     8  Annotating libraries
     9  How to create a new checker plugin
   Javadoc for the Checker Framework is included in its distribution and is
-<<<<<<< HEAD
-    available online at <https://checkerframework.org/api/> .
-||||||| 2b03b28bf
-    available online at https://checkerframework.org/api/ .
-=======
     available online at <https://checkerframework.org/api/>.
->>>>>>> 4494b1736d5aadf95fdbd290fe660165467a7093
 
 
 Version 0.6.4 (9 June 2008)
