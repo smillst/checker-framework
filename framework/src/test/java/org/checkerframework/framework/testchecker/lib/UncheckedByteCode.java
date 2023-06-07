@@ -1,7 +1,5 @@
 package org.checkerframework.framework.testchecker.lib;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 public class UncheckedByteCode<CT> {
   public CT classTypeVariableField;
   public static Object nonFinalPublicField;
@@ -36,7 +34,7 @@ public class UncheckedByteCode<CT> {
 
   public static void unboundedWildcardParam(UncheckedByteCode<?> param) {}
 
-  public static void upperboundedWildcardParam(UncheckedByteCode<@NonNull ?> param) {}
+  public static void upperboundedWildcardParam(UncheckedByteCode<? extends Object> param) {}
 
   public static void lowerboundedWildcardParam(UncheckedByteCode<? super Object> param) {}
 

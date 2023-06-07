@@ -3,7 +3,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.util.*;
 
 public class GenericAlias {
@@ -20,6 +19,6 @@ public class GenericAlias {
 
   public void regularGenerics() {
     Set<?> set = new HashSet<@Odd String>();
-    Set<@NonNull ?> set2 = new HashSet<@Odd String>();
+    Set<? extends Object> set2 = new HashSet<@Odd String>();
   }
 }

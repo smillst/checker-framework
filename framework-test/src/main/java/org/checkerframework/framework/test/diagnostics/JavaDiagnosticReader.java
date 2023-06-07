@@ -37,8 +37,9 @@ public class JavaDiagnosticReader implements Iterator<TestDiagnosticLine>, Close
    * @param files the Java files to read; each is a File or a JavaFileObject
    * @return the TestDiagnostics from the input file
    */
-  // The argument has type Iterable<@NonNull ?> because Java cannot resolve the overload
-  // of two versions that take Iterable<? extends File> and Iterable<? extends JavaFileObject>.
+  // The argument has type Iterable<@NonNull ?> with upper bound "Object", because Java
+  // cannot resolve the overload of two versions that take Iterable<? extends File> and
+  // Iterable<? extends JavaFileObject>.
   public static List<TestDiagnostic> readJavaSourceFiles(Iterable<@NonNull ?> files) {
     List<TestDiagnostic> result = new ArrayList<>();
     for (Object file : files) {

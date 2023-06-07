@@ -18,7 +18,7 @@ public class Enums {
 
   <E extends Enum<E>> void mtv(Class<E> p) {}
 
-  <T extends @NonNull Object> T checkNotNull(T ref) {
+  <T> T checkNotNull(T ref) {
     return ref;
   }
 

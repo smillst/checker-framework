@@ -31,7 +31,7 @@ public class EnclosingClass<A> {
         throws Exception;
   }
 
-  public interface MyFunction<F extends @NonNull Object, G extends @NonNull Object> {}
+  public interface MyFunction<F, G> {}
 
   interface AFunction<H, I> {
     MyFuture<I> apply(H input) throws Exception;

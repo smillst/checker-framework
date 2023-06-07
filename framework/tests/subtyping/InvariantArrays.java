@@ -1,6 +1,5 @@
 import java.util.LinkedList;
 import java.util.List;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.util.*;
 
 public class InvariantArrays {
@@ -24,11 +23,11 @@ public class InvariantArrays {
     eoa = esa;
   }
 
-  List<@NonNull ?>[] loa;
+  List<?>[] loa;
   LinkedList<? extends Runnable>[] llra;
   List<? extends @Encrypted Object>[] leoa;
   LinkedList<? extends @Encrypted Runnable>[] llera;
-  @Encrypted List<@NonNull ?>[] eloa;
+  @Encrypted List<?>[] eloa;
   @Encrypted LinkedList<? extends Runnable>[] ellra;
   @Encrypted List<? extends @Encrypted Object>[] eleoa;
   @Encrypted LinkedList<? extends @Encrypted Runnable>[] ellera;

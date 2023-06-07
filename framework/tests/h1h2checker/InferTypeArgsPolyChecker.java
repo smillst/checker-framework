@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.h1h2checker.quals.*;
 
 public class InferTypeArgsPolyChecker<OUTER_SCOPE_TV> {
@@ -28,7 +27,7 @@ public class InferTypeArgsPolyChecker<OUTER_SCOPE_TV> {
 
   // ----------------------------------------------------------
   // Test Case - C
-  <C extends List<@NonNull ?>> C methodC(C c1, C c2) {
+  <C extends List<? extends Object>> C methodC(C c1, C c2) {
     return null;
   }
 

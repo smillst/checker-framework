@@ -30,7 +30,7 @@ public class Defaulting {
   // Type of x is <@H1S2 X extends @H1S1 Object>, these annotations are siblings
   // and should not be in the same bound
   // :: warning: (inconsistent.constructor.type) :: error: (bound) :: error: (super.invocation)
-  class TestUpperBound<X extends @NonNull Object> {
+  class TestUpperBound<X extends Object> {
     void m(X p) {
       @H1S1 Object l1 = p;
       // :: error: (assignment)

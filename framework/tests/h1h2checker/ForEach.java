@@ -45,29 +45,29 @@ public class ForEach {
 
   // Now with a method type variable
 
-  <T extends @NonNull Object> T garrayAccess1(T[] constants) {
+  <T extends Object> T garrayAccess1(T[] constants) {
     return constants[0];
   }
 
-  <T extends @NonNull Object> T garrayAccess1(T p) {
+  <T extends Object> T garrayAccess1(T p) {
     T constant = p;
     return constant;
   }
 
-  <T extends @NonNull Object> @H1S2 T garrayAccessBad1(@H1S1 T[] constants) {
+  <T extends Object> @H1S2 T garrayAccessBad1(@H1S1 T[] constants) {
     T constant = constants[0];
     // :: error: (return)
     return constant;
   }
 
   // Return type defaults to H1Top
-  <T extends @NonNull Object> @H2S1 T garrayAccessBad2(@H1S1 @H2S2 T[] constants) {
+  <T extends Object> @H2S1 T garrayAccessBad2(@H1S1 @H2S2 T[] constants) {
     T constant = constants[0];
     // :: error: (return)
     return constant;
   }
 
-  <T extends @NonNull Object> T giterateFor(T[] constants) {
+  <T extends Object> T giterateFor(T[] constants) {
     for (int i = 0; i < constants.length; ++i) {
       T constant = constants[i];
       return constant;
@@ -75,14 +75,14 @@ public class ForEach {
     return null;
   }
 
-  <T extends @NonNull Object> T giterateForEach(T[] constants) {
+  <T extends Object> T giterateForEach(T[] constants) {
     for (T constant : constants) {
       return constant;
     }
     return null;
   }
 
-  <T extends @NonNull Object> @H2S2 T giterateForEachBad(@H2S1 T[] constants) {
+  <T extends Object> @H2S2 T giterateForEachBad(@H2S1 T[] constants) {
     for (T constant : constants) {
       // :: error: (return)
       return constant;

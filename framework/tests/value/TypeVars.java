@@ -1,5 +1,3 @@
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 public class TypeVars<K, V> {
   private void test(K key, V value) {
     String s = "Negative size: " + key + "=" + value;
@@ -33,11 +31,11 @@ public class TypeVars<K, V> {
     }
 
     void wildCardUpperBoundImplicit() {
-      ImplicitUpperBound<@NonNull ?> bottom;
+      ImplicitUpperBound<?> bottom;
     }
 
     void wildCardUpperBoundExplicit() {
-      ExplicitUpperBound<@NonNull ? extends Object> bottom;
+      ExplicitUpperBound<? extends Object> bottom;
     }
 
     void wildCardLowerImplicit() {
