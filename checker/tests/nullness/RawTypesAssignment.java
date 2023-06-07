@@ -1,7 +1,6 @@
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class RawTypesAssignment {
   Map rawMap = new HashMap();
@@ -22,7 +21,7 @@ public class RawTypesAssignment {
   // :: warning: [unchecked] unchecked conversion
   RecursiveGeneric<MyClass> notRawRecursiveGenericRaw = new RecursiveGeneric();
 
-  class Generic<G extends @Nullable Object> {}
+  class Generic<G> {}
 
   class RecursiveGeneric<R extends Generic<R>> {}
 

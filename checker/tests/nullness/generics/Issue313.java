@@ -1,9 +1,9 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 public class Issue313 {
-  class A<@NonNull T extends @Nullable Object> {}
+  class A<T> {}
 
-  <@NonNull X extends @Nullable Object> void m() {
+  <X> void m() {
     new A<X>();
   }
 }

@@ -2,7 +2,7 @@ import java.util.Comparator;
 
 @SuppressWarnings("all") // Only testing for crashes
 public class WildcardCon<E> {
-  ComparatorClass<ComparableClass<? extends Object>> RANGE_LEX_ORDERING = null;
+  ComparatorClass<ComparableClass<?>> RANGE_LEX_ORDERING = null;
 
   WildcardCon(Comparator<? super E> comparator) {}
 

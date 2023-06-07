@@ -2,7 +2,6 @@
 // https://github.com/typetools/checker-framework/issues/557
 
 import java.util.Optional;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 @SuppressWarnings("nullness")
 class MyOpt<T> {
@@ -27,12 +26,12 @@ class MyOpt2<T extends Object> {
 }
 
 @SuppressWarnings("nullness")
-class MyOpt3<T extends @Nullable Object> {
-  static <S extends @Nullable Object> MyOpt3<S> of(S p) {
+class MyOpt3<T> {
+  static <S> MyOpt3<S> of(S p) {
     return null;
   }
 
-  static <S extends @Nullable Object> MyOpt3<S> empty() {
+  static <S> MyOpt3<S> empty() {
     return null;
   }
 }

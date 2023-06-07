@@ -507,7 +507,7 @@ public class I18nFormatterTreeUtil {
     }
 
     public boolean isValidParameter(I18nConversionCategory formatCat, TypeMirror paramType) {
-      Class<? extends Object> type = typeMirrorToClass(paramType);
+      Class<?> type = typeMirrorToClass(paramType);
       if (type == null) {
         // we did not recognize the parameter type
         return false;
@@ -517,10 +517,9 @@ public class I18nFormatterTreeUtil {
   }
 
   /** Converts a TypeMirror to a Class. */
-  private static class TypeMirrorToClassVisitor
-      extends SimpleTypeVisitor8<Class<? extends Object>, Class<Void>> {
+  private static class TypeMirrorToClassVisitor extends SimpleTypeVisitor8<Class<?>, Class<Void>> {
     @Override
-    public Class<? extends Object> visitPrimitive(PrimitiveType t, Class<Void> v) {
+    public Class<?> visitPrimitive(PrimitiveType t, Class<Void> v) {
       switch (t.getKind()) {
         case BOOLEAN:
           return Boolean.class;
@@ -544,12 +543,12 @@ public class I18nFormatterTreeUtil {
     }
 
     @Override
-    public Class<? extends Object> visitDeclared(DeclaredType dt, Class<Void> v) {
+    public Class<?> visitDeclared(DeclaredType dt, Class<Void> v) {
       return dt.asElement()
           .accept(
-              new SimpleElementVisitor8<Class<? extends Object>, Class<Void>>() {
+              new SimpleElementVisitor8<Class<?>, Class<Void>>() {
                 @Override
-                public Class<? extends Object> visitType(TypeElement e, Class<Void> v) {
+                public Class<?> visitType(TypeElement e, Class<Void> v) {
                   try {
                     @SuppressWarnings("signature") // https://tinyurl.com/cfissue/658:
                     // Name.toString should be @PolySignature
@@ -574,7 +573,7 @@ public class I18nFormatterTreeUtil {
    * @param type a TypeMirror
    * @return the class corresponding to the argument
    */
-  private static Class<? extends Object> typeMirrorToClass(TypeMirror type) {
+  private static Class<?> typeMirrorToClass(TypeMirror type) {
     return type.accept(typeMirrorToClassVisitor, Void.TYPE);
   }
 }

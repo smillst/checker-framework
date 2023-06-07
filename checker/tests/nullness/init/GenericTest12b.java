@@ -1,10 +1,9 @@
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class GenericTest12b {
-  class Cell<T1 extends @Nullable Object> {}
+  class Cell<T1> {}
 
-  class Node<CONTENT extends @Nullable Object> {
+  class Node<CONTENT> {
     public Node(Cell<CONTENT> userObject) {}
 
     void nodecall(@UnderInitialization Node<CONTENT> this, Cell<CONTENT> userObject) {}

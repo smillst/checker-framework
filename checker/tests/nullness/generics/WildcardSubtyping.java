@@ -8,16 +8,15 @@ import org.checkerframework.checker.nullness.qual.*;
 
 class Utils {
 
-  <A extends @Nullable Object> void test(List<? super A> list, A object) {
+  <A> void test(List<? super A> list, A object) {
     list.add(object);
   }
 
-  interface Consumer<A extends @Nullable Object> {
+  interface Consumer<A> {
     public void consume(A object);
   }
 
-  public static <A extends @Nullable Object> Consumer<A> cast(
-      final Consumer<@Nullable ? super A> consumer) {
+  public static <A> Consumer<A> cast(final Consumer<@Nullable ? super A> consumer) {
     return new Consumer<A>() {
       @Override
       public void consume(A object) {
@@ -26,8 +25,7 @@ class Utils {
     };
   }
 
-  public static <A extends @Nullable Object> Consumer<A> getConsumer(
-      Consumer<@Nullable Object> nullConsumer) {
+  public static <A> Consumer<A> getConsumer(Consumer<@Nullable Object> nullConsumer) {
     return Utils.<A>cast(nullConsumer);
   }
 
@@ -56,8 +54,7 @@ class UseMyGeneric {
 class MyGenericExactBounds<@NonNull T extends @NonNull Number> {}
 
 class UseMyGenericExactBounds {
-  MyGenericExactBounds<? extends @Nullable Object> wildcardOutsideUBError =
-      new MyGenericExactBounds<>();
+  MyGenericExactBounds<?> wildcardOutsideUBError = new MyGenericExactBounds<>();
   MyGenericExactBounds<? extends @NonNull Object> wildcardOutside = new MyGenericExactBounds<>();
   MyGenericExactBounds<? extends @NonNull Number> wildcardInsideUB = wildcardOutside;
 

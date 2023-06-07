@@ -12,7 +12,7 @@ interface Unbound2 {
   void apply(@Nullable MyClass my);
 }
 
-interface Supplier1<R extends @Nullable Object> {
+interface Supplier1<R> {
   R supply();
 }
 

@@ -14,7 +14,7 @@ public class NullnessBound {
     Gen2<@NonNull String> t4;
   }
 
-  class Gen1<E extends @Nullable Object> {
+  class Gen1<E> {
     public void add(E e) {}
   }
 

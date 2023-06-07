@@ -3,7 +3,7 @@
 
 import org.checkerframework.checker.nullness.qual.*;
 
-interface FunctionInit<T extends @Nullable Object, R> {
+interface FunctionInit<T, R> {
   R apply(T t);
 }
 

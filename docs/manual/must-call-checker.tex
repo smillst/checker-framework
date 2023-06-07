@@ -183,7 +183,7 @@ For example, consider the following example (from
 interface with explicit upper bounds and a client with implicit upper
 bounds:
 \begin{Verbatim}
-  interface Partition<ELEMENT extends @Nullable Object, CLASS extends @Nullable Object> {}
+  interface Partition<ELEMENT, CLASS> {}
 
   class MultiRandSelector<T> {
     private Partition<T, T> eq;

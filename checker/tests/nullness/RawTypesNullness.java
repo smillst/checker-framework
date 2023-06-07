@@ -2,7 +2,7 @@
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-class Generic<G extends @Nullable Object> {}
+class Generic<G> {}
 
 class MyClass extends Generic<MyClass> {}
 

@@ -42,7 +42,7 @@ public class Wellformed {
     }
   }
 
-  class Gen4<T extends @Nullable Object> {
+  class Gen4<T> {
     // :: error: (initialization.field.uninitialized)
     @NonNull T f;
 
@@ -53,7 +53,7 @@ public class Wellformed {
     void set(@NonNull T p) {}
   }
 
-  class Gen5a<T extends @Nullable Object> {}
+  class Gen5a<T> {}
 
   class Gen5b<S> extends Gen5a<@Nullable Object> {}
 

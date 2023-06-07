@@ -6,11 +6,11 @@ interface Noop {
   void noop();
 }
 
-interface FunctionNull<T extends @Nullable Object, R> {
+interface FunctionNull<T, R> {
   R apply(T t);
 }
 
-interface Supplier<R extends @Nullable Object> {
+interface Supplier<R> {
   R supply();
 }
 

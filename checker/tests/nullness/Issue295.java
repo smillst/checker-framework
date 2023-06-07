@@ -36,11 +36,11 @@ abstract class Issue295 {
     Box<? extends @Nullable MT4> v = load(f);
   }
 
-  <MT5 extends @Nullable Object> void f5(Factory<Box<MT5>> f) {
+  <MT5> void f5(Factory<Box<MT5>> f) {
     Box<MT5> v = load(f);
   }
 
-  <MT6 extends @Nullable Object> void f6(Factory<Box<MT6>> f) {
+  <MT6> void f6(Factory<Box<MT6>> f) {
     Box<? extends MT6> v = load(f);
   }
 

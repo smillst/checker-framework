@@ -155,7 +155,7 @@ public enum ConversionCategory {
    * @param c a class
    * @return the unwrapped primitive, or null
    */
-  private static @Nullable Class<? extends Object> unwrapPrimitive(Class<?> c) {
+  private static @Nullable Class<?> unwrapPrimitive(Class<?> c) {
     if (c == Byte.class) {
       return byte.class;
     }

@@ -58,7 +58,7 @@ public class DefaultAnnotation {
       return null; // error
     }
 
-    public <T extends @Nullable Object> T getNull(T t) {
+    public <T> T getNull(T t) {
       // :: error: (return)
       return null; // invalid
     }
@@ -117,7 +117,7 @@ public class DefaultAnnotation {
     }
   }
 
-  class List<E extends @Nullable Object> {
+  class List<E> {
     public E get(int i) {
       throw new RuntimeException();
     }

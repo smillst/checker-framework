@@ -2,7 +2,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class RawTypesUses {
-  class Generic<G extends @Nullable Object> {
+  class Generic<G> {
     G foo() {
       throw new RuntimeException();
     }

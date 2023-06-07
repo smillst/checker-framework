@@ -3,14 +3,13 @@
 
 import java.util.List;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class Issue314 {
   <T extends @NonNull Object> List<T> m1(List<@NonNull T> l1) {
     return l1;
   }
 
-  <T extends @Nullable Object> List<T> m2(List<@NonNull T> l1) {
+  <T> List<T> m2(List<@NonNull T> l1) {
     // :: error: (return)
     return l1;
   }

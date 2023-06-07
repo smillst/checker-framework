@@ -89,7 +89,7 @@ public class FlowLoop {
     opt_doc1.getInterfaces();
     Class<?> opt_doc2 = null;
     // :: error: (dereference.of.nullable)
-    for (Class<? extends @Nullable Object> fd : opt_doc2.getInterfaces()) {
+    for (Class<?> fd : opt_doc2.getInterfaces()) {
       // empty loop body
     }
   }

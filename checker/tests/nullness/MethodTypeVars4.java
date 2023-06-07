@@ -10,7 +10,7 @@ public class MethodTypeVars4 {
 
     <T> List<T> doit2();
 
-    <T extends @Nullable Object> T doit3();
+    <T> T doit3();
   }
 
   void f1(I i) {

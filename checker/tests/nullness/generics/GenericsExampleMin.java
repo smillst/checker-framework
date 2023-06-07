@@ -56,7 +56,7 @@ public class GenericsExampleMin {
     }
   }
 
-  class MyList3<T extends @Nullable Object> {
+  class MyList3<T> {
     T t;
     @Nullable T nble;
     @NonNull T nn;

@@ -3,7 +3,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.*;
 
-class Cell<T extends @Nullable Object> {
+class Cell<T> {
   void add(T arg) {}
 }
 
@@ -13,7 +13,7 @@ public class GenericArgs2 {
     collection.add(null); // should fail
   }
 
-  static <F extends @Nullable Object> void test2(Cell<F> collection) {
+  static <F> void test2(Cell<F> collection) {
     // :: error: (argument)
     collection.add(null); // should fail
   }
@@ -41,5 +41,5 @@ public class GenericArgs2 {
     this.filter_map2 = filter_map2;
   }
 
-  class MyMap<K extends @Nullable Object, V extends @Nullable Object> {}
+  class MyMap<K, V> {}
 }

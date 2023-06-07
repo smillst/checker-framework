@@ -10,7 +10,7 @@ public class TernaryGenerics {
     }
   }
 
-  class Generic2<T extends @Nullable Object> {
+  class Generic2<T> {
     void cond(boolean b, T p) {
       // :: error: (assignment)
       @NonNull T r1 = b ? p : null;

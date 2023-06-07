@@ -23,7 +23,7 @@ public class Wildcards {
   public static void client3(Iterator<String> itor) {
     Iterator<?> parts1 = itor;
     Iterator<? extends Object> parts2 = itor;
-    Iterator<? extends @Nullable Object> parts3 = itor;
+    Iterator<?> parts3 = itor;
     Iterator<? extends @NonNull Object> parts4 = itor;
   }
 
@@ -31,7 +31,7 @@ public class Wildcards {
 
   static void join2(Iterator<? extends Object> parts) {}
 
-  static void join3(Iterator<? extends @Nullable Object> parts) {}
+  static void join3(Iterator<?> parts) {}
 
   static void join4(Iterator<? extends @NonNull Object> parts) {}
 }

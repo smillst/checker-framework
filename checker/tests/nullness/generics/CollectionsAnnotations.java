@@ -1,7 +1,7 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 // This is how I propose the Collection interface be annotated:
-interface Collection1<E extends @Nullable Object> {
+interface Collection1<E> {
   public void add(E elt);
 }
 
@@ -43,7 +43,7 @@ class Methods {
   }
 
   // If the types are parameterized (as they should be)
-  static <@Nullable E extends @Nullable Object> void addNull2(Collection1<E> l) {
+  static <@Nullable E> void addNull2(Collection1<E> l) {
     l.add(null);
   }
 

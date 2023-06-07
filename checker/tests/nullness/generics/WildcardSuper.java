@@ -29,7 +29,7 @@ public class WildcardSuper {
     cell.get().toString();
   }
 
-  class Cell<E extends @Nullable Object> {
+  class Cell<E> {
     E get() {
       throw new RuntimeException();
     }

@@ -551,21 +551,19 @@ MyList<@Regex(5) ? extends @Regex(1) Object> listOfRegexes;
 \end{Verbatim}
 
 Note, this copying of annotations for a wildcard's bounds applies only to
-unbounded wildcards.  The two wildcards in the
+unbounded wildcards or those bounded by \<Object>.  The two wildcards in the
 following example are equivalent.
 
 \begin{Verbatim}
-class MyList<@NonNull T extends @Nullable Object> {}
+class MyList<T> {}
 
-MyList<? extends Object> listOfNonNulls;
-MyList<@NonNull ? extends @NonNull Object> listOfNonNulls2;
+MyList<? extends Date> listOfNonNulls;
+MyList<@NonNull ? extends @NonNull Date> listOfNonNulls2;
 \end{Verbatim}
 
 Note, the upper bound of the wildcard \code{?~extends Object} is defaulted to
 \code{@NonNull} using the CLIMB-to-top rule (see Section~\ref{climb-to-top}).
-Also note that the \code{MyList} class declaration could have been more succinctly
-written as: \code{class MyList<T extends @Nullable Object>} where the lower bound
-is implicitly the bottom annotation: \code {@NonNull}.
+
 
 \subsectionAndLabel{Default qualifiers for \<.class> files (library defaults)}{defaults-classfile}
 

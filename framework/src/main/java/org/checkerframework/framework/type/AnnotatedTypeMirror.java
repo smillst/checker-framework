@@ -1697,7 +1697,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     // bottomtype" but be converted into "X extends @NonNull Y super @NonNull bottomtype".
     //
     // In addition, ensure consistency of annotations on type variables
-    // and the upper bound. Assume class C<X extends @Nullable Object>.
+    // and the upper bound. Assume class C<X>.
     // The type of "@Nullable X" has to be "@Nullable X extends @Nullable Object",
     // because otherwise the annotations are inconsistent.
     private void fixupBoundAnnotations() {

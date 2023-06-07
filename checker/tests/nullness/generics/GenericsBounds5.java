@@ -1,7 +1,7 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 public class GenericsBounds5 {
-  class Collection1<E extends @Nullable Object> {
+  class Collection1<E> {
     public void add(E elt) {
       // This call is forbidden, because elt might be null.
       // :: error: (dereference.of.nullable)
@@ -9,7 +9,7 @@ public class GenericsBounds5 {
     }
   }
 
-  <@Nullable F extends @Nullable Object> void addNull1(Collection1<F> l) {
+  <@Nullable F> void addNull1(Collection1<F> l) {
     // This call is allowed, because F is definitely @Nullable.
     l.add(null);
   }
@@ -17,12 +17,12 @@ public class GenericsBounds5 {
   // Effectively, this should be the same signature as above.
   // TODO: the type "@Nullable ?" is "@Nullable ? extends @NonNull Object",
   // with the wrong extends bound.
-  void addNull2(Collection1<@Nullable ? extends @Nullable Object> l) {
+  void addNull2(Collection1<@Nullable ?> l) {
     // This call has to pass, like above.
     l.add(null);
   }
 
-  <@Nullable F extends @Nullable Object> void addNull3(Collection1<F> l, F p) {
+  <@Nullable F> void addNull3(Collection1<F> l, F p) {
     // This call is allowed, because F is definitely @Nullable.
     l.add(null);
     l.add(p);

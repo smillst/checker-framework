@@ -11,7 +11,7 @@ public class GetClassTest {
     Class<?> a = i.getClass();
     // Type arguments don't match
     @SuppressWarnings("fenum:assignment")
-    Class<? extends Object> b = i.getClass();
+    Class<?> b = i.getClass();
     @SuppressWarnings({
       "fenum:assignment", // Type arguments don't match
       "signedness:assignment" // Type arguments don't match

@@ -18,8 +18,7 @@ public class KeyForChecked {
 
   interface KFMap<@KeyForBottom K extends @NonNull Object, V extends @NonNull Object> {
     @Covariant(0)
-    public static interface Entry<
-        @KeyForBottom K1 extends @Nullable Object, V1 extends @Nullable Object> {
+    public static interface Entry<@KeyForBottom K1, V1> {
       K1 getKey();
 
       V1 getValue();
@@ -70,7 +69,7 @@ public class KeyForChecked {
   }
 
   @Covariant(0)
-  class KFIterator<@KeyForBottom E extends @Nullable Object> {}
+  class KFIterator<@KeyForBottom E> {}
 
   void incorrect1(Object map) {
     String nonkey = "";

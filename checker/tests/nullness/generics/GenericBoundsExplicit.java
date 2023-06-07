@@ -2,7 +2,7 @@ package nullness.generics;
 
 import org.checkerframework.checker.nullness.qual.*;
 
-public class GenericBoundsExplicit<@NonNull T extends @Nullable Object> {
+public class GenericBoundsExplicit<T> {
 
   @SuppressWarnings("initialization.field.uninitialized")
   T t;
@@ -18,7 +18,7 @@ public class GenericBoundsExplicit<@NonNull T extends @Nullable Object> {
   }
 }
 
-class GenericBoundsExplicit2<@NonNull TT extends @Nullable Object> {
+class GenericBoundsExplicit2<TT> {
   @Nullable TT tt1;
   // :: error: (initialization.field.uninitialized)
   @NonNull TT tt2;

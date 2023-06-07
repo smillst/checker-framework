@@ -65,7 +65,7 @@ class Entry<K, V> implements Map.Entry<K, V> {
   }
 }
 
-interface Function<F, T extends @Nullable Object> {
+interface Function<F, T> {
   T apply(@Nullable F from);
 
   @Pure

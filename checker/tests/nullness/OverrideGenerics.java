@@ -1,6 +1,6 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-class OGSuper<S extends @Nullable Object> {
+class OGSuper<S> {
   public void m(S p) {}
 }
 

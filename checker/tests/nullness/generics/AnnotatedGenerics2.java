@@ -3,7 +3,7 @@ import org.checkerframework.checker.nullness.qual.*;
 public class AnnotatedGenerics2 {
   // Top-level class to ensure that both classes are processed.
 
-  class AnnotatedGenerics2Nble<T extends @Nullable Object> {
+  class AnnotatedGenerics2Nble<T> {
     // :: error: (initialization.field.uninitialized)
     @NonNull T myFieldNN;
     @Nullable T myFieldNble;

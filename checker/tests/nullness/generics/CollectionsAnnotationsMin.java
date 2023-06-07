@@ -1,7 +1,7 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 public class CollectionsAnnotationsMin {
-  static class Collection1<E extends @Nullable Object> {
+  static class Collection1<E> {
     public void add(E elt) {
       // :: error: (dereference.of.nullable)
       elt.hashCode();
@@ -16,7 +16,7 @@ public class CollectionsAnnotationsMin {
   }
 
   // This is allowed, as "null" cannot be added to f1
-  static Collection1<? extends @Nullable Object> f1 = new PriorityQueue1<@NonNull Object>();
+  static Collection1<?> f1 = new PriorityQueue1<@NonNull Object>();
 
   // :: error: (assignment)
   static Collection1<@Nullable Object> f2 = new PriorityQueue1<@NonNull Object>();
@@ -26,19 +26,19 @@ public class CollectionsAnnotationsMin {
   }
 
   // The upper bound on E is implicitly from Collection1
-  static <E extends @Nullable Object> void addNull2(Collection1<E> l) {
+  static <E> void addNull2(Collection1<E> l) {
     // :: error: (argument)
     l.add(null);
   }
 
   // The upper bound on E is implicitly from Collection1
-  static <E extends @Nullable Object> E addNull2b(Collection1<E> l, E p) {
+  static <E> E addNull2b(Collection1<E> l, E p) {
     // :: error: (argument)
     l.add(null);
     return p;
   }
 
-  static <@Nullable E extends @Nullable Object> void addNull3(Collection1<E> l) {
+  static <@Nullable E> void addNull3(Collection1<E> l) {
     l.add(null);
   }
 

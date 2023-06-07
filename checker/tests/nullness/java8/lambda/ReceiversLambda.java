@@ -7,7 +7,7 @@ interface SupplierR {
   @NonNull ReceiverTest supply();
 }
 
-interface FunctionRT<T extends @Nullable Object, R> {
+interface FunctionRT<T, R> {
   R apply(T t);
 }
 

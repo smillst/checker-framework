@@ -1,17 +1,16 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-interface Consumer<A extends @Nullable Object> {
+interface Consumer<A> {
   public void consume(A object);
 }
 
 class Utils {
 
-  public static <B extends @Nullable Object> Consumer<B> cast(
-      final @Nullable Consumer<? super B> consumer) {
+  public static <B> Consumer<B> cast(final @Nullable Consumer<? super B> consumer) {
     throw new RuntimeException();
   }
 
-  public static <C extends @Nullable Object> Consumer<C> getConsumer() {
+  public static <C> Consumer<C> getConsumer() {
     // null for simplicity, but could be anything
     Consumer<@Nullable Object> nullConsumer = null;
 

@@ -3,7 +3,7 @@
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-class MixTypeAndDeclAnno<T extends @Nullable Object> {
+class MixTypeAndDeclAnno<T> {
   @NonNull T t;
   @android.annotation.NonNull T tdecl;
   // :: error: (conflicting.annos)

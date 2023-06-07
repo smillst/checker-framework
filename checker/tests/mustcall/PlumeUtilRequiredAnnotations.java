@@ -35,7 +35,7 @@ class PlumeUtilRequiredAnnotations {
     private Partitioner3<R, R> eqR3;
   }
 
-  interface Partitioner<ELEMENT extends @Nullable Object, CLASS extends @Nullable Object> {
+  interface Partitioner<ELEMENT, CLASS> {
     CLASS assignToBucket(ELEMENT obj);
   }
 

@@ -1,37 +1,34 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-class APair<S extends @Nullable Object, T extends @Nullable Object> {
-  static <U extends @Nullable Object, V extends @Nullable Object> APair<U, V> of(U p1, V p2) {
+class APair<S, T> {
+  static <U, V> APair<U, V> of(U p1, V p2) {
     return new APair<U, V>();
   }
 
-  static <U extends @Nullable Object, V extends @Nullable Object> APair<U, V> of2(U p1, V p2) {
+  static <U, V> APair<U, V> of2(U p1, V p2) {
     return new APair<>();
   }
 }
 
-class PairSub<SS extends @Nullable Object, TS extends @Nullable Object> extends APair<SS, TS> {
-  static <US extends @Nullable Object, VS extends @Nullable Object> PairSub<US, VS> of(
-      US p1, VS p2) {
+class PairSub<SS, TS> extends APair<SS, TS> {
+  static <US, VS> PairSub<US, VS> of(US p1, VS p2) {
     return new PairSub<US, VS>();
   }
 }
 
-class PairSubSwitching<SS extends @Nullable Object, TS extends @Nullable Object>
-    extends APair<TS, SS> {
-  static <US extends @Nullable Object, VS extends @Nullable Object> PairSubSwitching<US, VS> ofPSS(
-      US p1, VS p2) {
+class PairSubSwitching<SS, TS> extends APair<TS, SS> {
+  static <US, VS> PairSubSwitching<US, VS> ofPSS(US p1, VS p2) {
     return new PairSubSwitching<US, VS>();
   }
 }
 
-class Test1<X extends @Nullable Object> {
+class Test1<X> {
   APair<@Nullable X, @Nullable X> test1(@Nullable X p) {
     return APair.<@Nullable X, @Nullable X>of(p, (X) null);
   }
 }
 
-class Test2<X extends @Nullable Object> {
+class Test2<X> {
   APair<@Nullable X, @Nullable X> test1(@Nullable X p) {
     return APair.of(p, (@Nullable X) null);
   }
@@ -43,7 +40,7 @@ class Test2<X extends @Nullable Object> {
   */
 }
 
-class Test3<X extends @Nullable Object> {
+class Test3<X> {
   APair<@NonNull X, @NonNull X> test1(@Nullable X p) {
     // :: error: (return)
     return APair.of(p, (X) null);

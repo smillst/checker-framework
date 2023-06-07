@@ -1,9 +1,7 @@
 // @above-java17-jdk-skip-test TODO: reinstate, false positives may be due to issue #979
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 class Issue3754 {
-  interface Supplier<T extends @Nullable Object, U extends T> {
+  interface Supplier<T, U extends T> {
     U get();
   }
 
@@ -11,7 +9,7 @@ class Issue3754 {
     return bar.get();
   }
 
-  interface Supplier2<U extends T, T extends @Nullable Object> {
+  interface Supplier2<U extends T, T> {
     U get();
   }
 

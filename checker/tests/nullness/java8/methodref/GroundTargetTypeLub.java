@@ -4,7 +4,7 @@ interface Supplier<T extends @NonNull Object> {
   T supply();
 }
 
-interface Supplier2<T extends @Nullable Object> {
+interface Supplier2<T> {
   T supply();
 }
 
@@ -14,7 +14,7 @@ class GroundTargetType {
     return null;
   }
 
-  Supplier<? extends @Nullable Object> fn = GroundTargetType::myMethod;
+  Supplier<?> fn = GroundTargetType::myMethod;
   // :: error: (methodref.return)
   Supplier<? extends @NonNull Object> fn2 = GroundTargetType::myMethod;
 

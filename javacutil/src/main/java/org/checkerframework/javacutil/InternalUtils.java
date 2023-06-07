@@ -32,7 +32,7 @@ public class InternalUtils {
    * @return the class loader used to {@code clazz}, or the system class loader, or null if both are
    *     unavailable
    */
-  public static ClassLoader getClassLoaderForClass(Class<? extends Object> clazz) {
+  public static ClassLoader getClassLoaderForClass(Class<?> clazz) {
     ClassLoader classLoader = clazz.getClassLoader();
     return classLoader == null ? ClassLoader.getSystemClassLoader() : classLoader;
   }

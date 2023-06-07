@@ -1,6 +1,6 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-interface FunctionBC<T extends @Nullable Object, R> {
+interface FunctionBC<T, R> {
   R apply(T t);
 }
 

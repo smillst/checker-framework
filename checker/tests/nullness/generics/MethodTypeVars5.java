@@ -1,7 +1,7 @@
 import org.checkerframework.checker.nullness.qual.*;
 
 public class MethodTypeVars5 {
-  class B<S extends @Nullable Object> {
+  class B<S> {
     S t;
 
     B(S t) {
@@ -19,7 +19,7 @@ public class MethodTypeVars5 {
     return doit1(b);
   }
 
-  <U extends @Nullable Object> U doit1(B<U> x) {
+  <U> U doit1(B<U> x) {
     return x.get();
   }
 
@@ -29,7 +29,7 @@ public class MethodTypeVars5 {
     return doit2(b, null);
   }
 
-  <T extends @Nullable Object> T doit2(B<T> x, @Nullable String y) {
+  <T> T doit2(B<T> x, @Nullable String y) {
     return x.get();
   }
 
@@ -65,7 +65,7 @@ public class MethodTypeVars5 {
     String s = doit3(new B<>("Hi"));
   }
 
-  <T extends @Nullable Object> T doit3(@Nullable B<T> x) {
+  <T> T doit3(@Nullable B<T> x) {
     if (x != null) {
       return x.get();
     } else {
@@ -83,7 +83,7 @@ public class MethodTypeVars5 {
     return doit4("Ha!", null);
   }
 
-  <T extends @Nullable Object> T doit4(T x, T y) {
+  <T> T doit4(T x, T y) {
     return x;
   }
 }

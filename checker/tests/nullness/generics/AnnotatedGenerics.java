@@ -3,7 +3,7 @@ import org.checkerframework.dataflow.qual.*;
 
 public class AnnotatedGenerics {
   public static void testNullableTypeVariable() {
-    class Test<T extends @Nullable Object> {
+    class Test<T> {
       // :: error: (initialization.field.uninitialized)
       T f;
 
@@ -17,7 +17,7 @@ public class AnnotatedGenerics {
   }
 
   public static void testNonNullTypeVariable() {
-    class Test<T extends @Nullable Object> {
+    class Test<T> {
       @NonNull T get() {
         throw new RuntimeException();
       }
@@ -75,7 +75,7 @@ public class AnnotatedGenerics {
     throw new Error();
   }
 
-  public interface MyIterator<E extends @Nullable Object> {
+  public interface MyIterator<E> {
     boolean hasNext();
 
     E next();

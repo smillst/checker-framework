@@ -10,7 +10,7 @@ public class AnnotatedJdkTest {
   //     public static <T> List<T> asList(T... a);
   //   }
   // That JDK annotation should be equivalent to
-  //     public static <T extends @Nullable Object> List<T> asList(T... a);
+  //     public static <T> List<T> asList(T... a);
   // because of the CLIMB-to-top defaulting rule.
 
   List<@Nullable String> lns = Arrays.asList("foo", null, "bar");

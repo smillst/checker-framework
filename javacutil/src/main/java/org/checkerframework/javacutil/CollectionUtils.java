@@ -57,7 +57,7 @@ public class CollectionUtils {
     "nullness" // generics problem
   })
   @Deprecated // 2023-06-02
-  public static <T extends @Nullable Object, C extends @Nullable Collection<T>> @PolyNull C cloneElements(@PolyNull C orig) {
+  public static <T, C extends @Nullable Collection<T>> @PolyNull C cloneElements(@PolyNull C orig) {
     if (orig == null) {
       return null;
     }

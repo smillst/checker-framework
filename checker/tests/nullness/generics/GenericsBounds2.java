@@ -3,7 +3,7 @@ import org.checkerframework.checker.nullness.qual.*;
 /*
  * Illustrate a problem with annotations on type variables.
  */
-public class GenericsBounds2<X extends @Nullable Object> {
+public class GenericsBounds2<X> {
   void m1(X @NonNull [] a1, @Nullable X @NonNull [] a2) {
     // :: error: (assignment)
     a1 = null;

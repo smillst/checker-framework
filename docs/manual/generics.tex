@@ -117,8 +117,8 @@ be instantiated with \<@Regex(1) String> through \<@Regex(5) String>.
 To specify an exact bound, place the same annotation on both bounds.  For example:
 
 \begin{Verbatim}
-  class MyListOfNonNulls<@NonNull T extends @NonNull Object> { ... }
-  class MyListOfNullables<@Nullable T extends @Nullable Object> { ... }
+  class MyListOfNonNulls<T extends @NonNull Object> { ... }
+  class MyListOfNullables<@Nullable T> { ... }
 
   MyListOfNonNulls<@NonNull Number> v1;      // OK
   MyListOfNonNulls<@Nullable Number> v2;     // error
@@ -366,7 +366,8 @@ Most of the following types mean different things:
   class MyList1a<@Nullable T extends @Nullable Object> { ... } // same as MyList1
   class MyList2<@NonNull T extends @NonNull Object> { ... }
   class MyList2a<T extends @NonNull Object> { ... } // same as MyList2
-  class MyList3<T extends @Nullable Object> { ... }
+  class MyList3<T> { ... }
+  class MyList3a<T extends @Nullable Object> { ... } // same as MyList3
 \end{Verbatim}
 
 \<MyList1> and \<MyList1a> must be instantiated with a nullable type.
@@ -809,8 +810,8 @@ Of course, it would be better style to use a generic method, as in either
 of these signatures:
 
 \begin{Verbatim}
- public static <T extends @Nullable Object> int indexOf(T[] a, @Nullable Object elt) { ... }
- public static <T extends @Nullable Object> int indexOf(T[] a, T elt) { ... }
+ public static <T> int indexOf(T[] a, @Nullable Object elt) { ... }
+ public static <T> int indexOf(T[] a, T elt) { ... }
 \end{Verbatim}
 
 

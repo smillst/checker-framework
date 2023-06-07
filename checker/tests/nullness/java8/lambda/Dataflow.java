@@ -15,6 +15,6 @@ public class Dataflow {
   }
 }
 
-interface FunctionDF<T extends @Nullable Object, R> {
+interface FunctionDF<T, R> {
   R apply(T t);
 }

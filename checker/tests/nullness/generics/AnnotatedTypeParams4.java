@@ -2,7 +2,7 @@ import org.checkerframework.checker.nullness.qual.*;
 
 public class AnnotatedTypeParams4 {
 
-  class Test1<CONTENT extends @Nullable Object> {
+  class Test1<CONTENT> {
     CONTENT a;
 
     // To prevent the warning about un-initialized fields.
@@ -20,7 +20,7 @@ public class AnnotatedTypeParams4 {
     }
   }
 
-  class Test2<CONTENT extends @Nullable Object> {
+  class Test2<CONTENT> {
     @NonNull CONTENT a;
 
     // To prevent the warning about un-initialized fields.
@@ -52,7 +52,7 @@ public class AnnotatedTypeParams4 {
   }
   */
 
-  class Test4<CONTENT extends @Nullable Object> {
+  class Test4<CONTENT> {
     private MyPair<CONTENT, CONTENT> userObject;
 
     Test4(MyPair<CONTENT, CONTENT> p) {
@@ -64,7 +64,7 @@ public class AnnotatedTypeParams4 {
       return userObject.a;
     }
 
-    public class MyPair<T1 extends @Nullable Object, T2 extends @Nullable Object> {
+    public class MyPair<T1, T2> {
       public T1 a;
       public T2 b;
 

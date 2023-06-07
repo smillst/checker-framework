@@ -4,7 +4,7 @@ public class VoidUse {
 
   private Class<?> main_class1 = Void.TYPE;
 
-  private Class<? extends @Nullable Object> main_class2 = Void.TYPE;
+  private Class<?> main_class2 = Void.TYPE;
 
   public Void voidReturn(Void p) {
     voidReturn(null);
@@ -35,11 +35,11 @@ public class VoidUse {
   }
 
   // Test case for issue #230
-  Class<? extends @Nullable Object> voidClass() {
+  Class<?> voidClass() {
     return void.class;
   }
 
-  Class<? extends @Nullable Object> VoidClass() {
+  Class<?> VoidClass() {
     return Void.class;
   }
 

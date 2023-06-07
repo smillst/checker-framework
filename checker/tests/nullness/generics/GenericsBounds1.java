@@ -1,6 +1,6 @@
 import org.checkerframework.checker.nullness.qual.*;
 
-interface GBList<E extends @Nullable Object> {
+interface GBList<E> {
   void add(E p);
 }
 
@@ -9,7 +9,7 @@ interface GBList<E extends @Nullable Object> {
  * The annotation on the upper bound of a type variable is confused with an
  * annotation on the type variable itself.
  */
-public class GenericsBounds1<X extends @Nullable Object> {
+public class GenericsBounds1<X> {
   void m1(@NonNull GBList<X> g1, @NonNull GBList<@Nullable X> g2) {
     // :: error: (assignment)
     g1 = null;

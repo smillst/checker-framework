@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  * <p>Here is an example use:
  *
  * <pre>{@code @Covariant(0)
- * public interface Iterator<E extends @Nullable Object> { ... }
+ * public interface Iterator<E> { ... }
  * }</pre>
  *
  * @checker_framework.manual #covariant-type-parameters Covariant type parameters

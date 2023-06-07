@@ -38,7 +38,7 @@ public class GenericsExample {
     }
   }
 
-  class MyList1a<@Nullable T extends @Nullable Object> {
+  class MyList1a<@Nullable T> {
     T t;
     @Nullable T nble;
     @NonNull T nn;
@@ -141,7 +141,7 @@ public class GenericsExample {
     }
   }
 
-  class MyList3<T extends @Nullable Object> {
+  class MyList3<T> {
     T t;
     @Nullable T nble;
     @NonNull T nn;

@@ -146,8 +146,7 @@ public class FormatterTreeUtil {
     for (int i = 0; i < convs.size(); ++i) {
       Node conv = convs.get(i);
       if (conv instanceof FieldAccessNode) {
-        Class<? extends Object> clazz =
-            TypesUtils.getClassFromType(((FieldAccessNode) conv).getType());
+        Class<?> clazz = TypesUtils.getClassFromType(((FieldAccessNode) conv).getType());
         if (clazz == ConversionCategory.class) {
           res[i] = ConversionCategory.valueOf(((FieldAccessNode) conv).getFieldName());
           continue; /* avoid returning null */
@@ -377,7 +376,7 @@ public class FormatterTreeUtil {
       if (argType.getKind() == TypeKind.NULL || isArgumentNull(argType)) {
         return true;
       }
-      Class<? extends Object> type = TypesUtils.getClassFromType(argType);
+      Class<?> type = TypesUtils.getClassFromType(argType);
       return formatCat.isAssignableFrom(type);
     }
 

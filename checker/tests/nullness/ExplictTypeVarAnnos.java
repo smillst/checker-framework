@@ -1,15 +1,14 @@
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class ExplictTypeVarAnnos<E extends @Nullable Object, @Nullable F> {
-  interface Consumer<A extends @Nullable Object> {}
+public class ExplictTypeVarAnnos<E, @Nullable F> {
+  interface Consumer<A> {}
 
-  public static <B extends @Nullable Object> Consumer<B> cast(
-      final @Nullable Consumer<? super B> consumer) {
+  public static <B> Consumer<B> cast(final @Nullable Consumer<? super B> consumer) {
     throw new RuntimeException();
   }
 
-  public static <C extends @Nullable Object> Consumer<C> getConsumer0() {
+  public static <C> Consumer<C> getConsumer0() {
     Consumer<@Nullable Object> nullConsumer = null;
     Consumer<C> result = ExplictTypeVarAnnos.<C>cast(nullConsumer);
     return result;

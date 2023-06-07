@@ -27,7 +27,7 @@ Check for redundant annotations in the following locations
 
 @NonNull class RedundantAnnotation<
     // TODO :: warning: (redundant.anno)
-    T extends @Nullable Object> {
+    T> {
 
   enum InnerEnum {
     // TODO :: warning: (redundant.anno)
