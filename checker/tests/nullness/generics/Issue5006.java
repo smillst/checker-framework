@@ -7,7 +7,7 @@ public class Issue5006 {
   }
 
   interface X {
-    C<? extends Object> get();
+    C<@NonNull ?> get();
   }
 
   interface Y extends X {

@@ -185,9 +185,9 @@ public class AnnotatedTypes {
    * these arguments. If in the converted type (i.e. the subtype as super) is missing type arguments
    * AND those type arguments should come from the original subtype's type arguments then we copy
    * the original type arguments to the converted type. e.g. We have a type W, that "wasRaw" {@code
-   * ArrayList<? extends Object>} When W is converted to type A, List, using asSuper it no longer
-   * has its type argument. But since the type argument to List should be the same as that to
-   * ArrayList we copy over the type argument of W to A. A becomes {@code List<? extends Object>}
+   * ArrayList<@NonNull ?>} When W is converted to type A, List, using asSuper it no longer has its
+   * type argument. But since the type argument to List should be the same as that to ArrayList we
+   * copy over the type argument of W to A. A becomes {@code List<@NonNull ?>}
    *
    * @param originalSubtype the subtype before being converted by asSuper
    * @param asSuperType he subtype after being converted by asSuper

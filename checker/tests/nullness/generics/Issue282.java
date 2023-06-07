@@ -22,7 +22,7 @@ abstract class Ordering<T> implements Comparator<T> {
 }
 
 abstract class Example {
-  private static <@NonNull T extends @NonNull Object> ImmutableSortedSet<T> setSortedByToString(
+  private static <T extends @NonNull Object> ImmutableSortedSet<T> setSortedByToString(
       Collection<T> set) {
     return ImmutableSortedSet.copyOf(Ordering.usingToString(), set);
   }

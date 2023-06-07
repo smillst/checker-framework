@@ -31,11 +31,11 @@ public class TypeVars<K, V> {
     }
 
     void wildCardUpperBoundImplicit() {
-      ImplicitUpperBound<? extends Object> bottom;
+      ImplicitUpperBound<@NonNull ?> bottom;
     }
 
     void wildCardUpperBoundExplicit() {
-      ExplicitUpperBound<? extends Object> bottom;
+      ExplicitUpperBound<@NonNull ?> bottom;
     }
 
     void wildCardLowerImplicit() {

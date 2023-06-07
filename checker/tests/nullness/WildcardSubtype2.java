@@ -23,13 +23,13 @@ public class WildcardSubtype2 {
     Visitor<?, ?> visitor2 = nonNullMyClassVisitor;
 
     // :: error: (assignment)
-    Visitor<? extends @NonNull Object, ? extends @NonNull Object> visitor3 = myClassVisitor;
-    Visitor<? extends @NonNull Object, ? extends @NonNull Object> visitor4 = nonNullMyClassVisitor;
+    Visitor<@NonNull ?, @NonNull ?> visitor3 = myClassVisitor;
+    Visitor<@NonNull ?, @NonNull ?> visitor4 = nonNullMyClassVisitor;
 
-    Visitor<? extends @NonNull Object, ? extends @NonNull Object> visitor5 =
+    Visitor<@NonNull ?, @NonNull ?> visitor5 =
         // :: error: (assignment)
         new MyClassVisitor();
-    Visitor<? extends @NonNull Object, ? extends @NonNull Object> visitor6 =
+    Visitor<@NonNull ?, @NonNull ?> visitor6 =
         // :: error: (assignment)
         new MyClassVisitor();
     // :: error: (argument)
@@ -38,7 +38,7 @@ public class WildcardSubtype2 {
     take(new MyClassVisitor());
   }
 
-  void take(Visitor<@NonNull ? extends @NonNull Object, @NonNull ? extends @NonNull Object> v) {}
+  void take(Visitor<@NonNull ?, @NonNull ?> v) {}
 
   void bar() {
     // :: error: (argument)

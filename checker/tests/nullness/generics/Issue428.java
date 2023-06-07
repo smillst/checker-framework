@@ -6,7 +6,7 @@ import java.util.List;
 public interface Issue428<T extends Number> {}
 
 class Test428 {
-  void m(List<Issue428<? extends Object>> is) {
+  void m(List<Issue428<@NonNull ?>> is) {
     Issue428<?> i = is.get(0);
   }
 }

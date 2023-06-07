@@ -17,7 +17,7 @@ class CommandResponse {
     data.putAll(m);
   }
 
-  public void putAll2(Map<? extends String, ? extends Object> m) {
+  public void putAll2(Map<? extends String, @NonNull ?> m) {
     data.putAll(m);
   }
 }

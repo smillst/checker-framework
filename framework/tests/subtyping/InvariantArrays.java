@@ -23,11 +23,11 @@ public class InvariantArrays {
     eoa = esa;
   }
 
-  List<? extends Object>[] loa;
+  List<@NonNull ?>[] loa;
   LinkedList<? extends Runnable>[] llra;
   List<? extends @Encrypted Object>[] leoa;
   LinkedList<? extends @Encrypted Runnable>[] llera;
-  @Encrypted List<? extends Object>[] eloa;
+  @Encrypted List<@NonNull ?>[] eloa;
   @Encrypted LinkedList<? extends Runnable>[] ellra;
   @Encrypted List<? extends @Encrypted Object>[] eleoa;
   @Encrypted LinkedList<? extends @Encrypted Runnable>[] ellera;

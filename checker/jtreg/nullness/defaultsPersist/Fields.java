@@ -165,7 +165,7 @@ public class Fields {
         genericLocation = {3, 0}),
   })
   public String wildcards1() {
-    return "java.util.List<? extends Object> f = new java.util.ArrayList<>();";
+    return "java.util.List<@NonNull ?> f = new java.util.ArrayList<>();";
   }
 
   @TADescriptions({

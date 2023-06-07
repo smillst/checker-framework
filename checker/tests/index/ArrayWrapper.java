@@ -33,17 +33,17 @@ public class ArrayWrapper<T> {
     return (T) delegate[index];
   }
 
-  public static void clearIndex1(ArrayWrapper<? extends Object> a, @IndexFor("#1") int i) {
+  public static void clearIndex1(ArrayWrapper<@NonNull ?> a, @IndexFor("#1") int i) {
     a.set(i, null);
   }
 
-  public static void clearIndex2(ArrayWrapper<? extends Object> a, int i) {
+  public static void clearIndex2(ArrayWrapper<@NonNull ?> a, int i) {
     if (0 <= i && i < a.size()) {
       a.set(i, null);
     }
   }
 
-  public static void clearIndex3(ArrayWrapper<? extends Object> a, @NonNegative int i) {
+  public static void clearIndex3(ArrayWrapper<@NonNull ?> a, @NonNegative int i) {
     if (i < a.size()) {
       a.set(i, null);
     }
@@ -53,13 +53,13 @@ public class ArrayWrapper<T> {
   // user-defined sequence types.
 
   public static Object testSameLen(
-      @SameLen("#2") ArrayWrapper<? extends Object> a,
-      @SameLen("#1") ArrayWrapper<? extends Object> b,
+      @SameLen("#2") ArrayWrapper<@NonNull ?> a,
+      @SameLen("#1") ArrayWrapper<@NonNull ?> b,
       @IndexFor("#1") int i) {
     return b.get(i);
   }
 
-  public static Object testMinLen(@MinLen(3) ArrayWrapper<? extends Object> a) {
+  public static Object testMinLen(@MinLen(3) ArrayWrapper<@NonNull ?> a) {
     return a.get(2);
   }
 }

@@ -17,7 +17,7 @@ public class GenericArgs {
     strings.add("foo");
   }
 
-  static class X<@NonNull T extends @NonNull Object> {
+  static class X<T extends @NonNull Object> {
     T value() {
       // :: error: (return)
       return null;
@@ -29,7 +29,7 @@ public class GenericArgs {
     Object o = new X<Object>().value();
   }
 
-  static <@NonNull Z extends @NonNull Object> void test3(Z z) {}
+  static <Z extends @NonNull Object> void test3(Z z) {}
 
   void test4() {
     // :: error: (type.argument)
@@ -39,7 +39,7 @@ public class GenericArgs {
   }
 
   static class GenericConstructor {
-    <@NonNull T extends @NonNull Object> GenericConstructor(T t) {}
+    <T extends @NonNull Object> GenericConstructor(T t) {}
   }
 
   void test5() {

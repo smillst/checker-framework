@@ -22,16 +22,16 @@ public class Wildcards {
 
   public static void client3(Iterator<String> itor) {
     Iterator<?> parts1 = itor;
-    Iterator<? extends Object> parts2 = itor;
+    Iterator<@NonNull ?> parts2 = itor;
     Iterator<?> parts3 = itor;
-    Iterator<? extends @NonNull Object> parts4 = itor;
+    Iterator<@NonNull ?> parts4 = itor;
   }
 
   static void join1(Iterator<?> parts) {}
 
-  static void join2(Iterator<? extends Object> parts) {}
+  static void join2(Iterator<@NonNull ?> parts) {}
 
   static void join3(Iterator<?> parts) {}
 
-  static void join4(Iterator<? extends @NonNull Object> parts) {}
+  static void join4(Iterator<@NonNull ?> parts) {}
 }

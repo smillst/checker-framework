@@ -16,9 +16,9 @@ class GroundTargetType {
 
   Supplier<?> fn = GroundTargetType::myMethod;
   // :: error: (methodref.return)
-  Supplier<? extends @NonNull Object> fn2 = GroundTargetType::myMethod;
+  Supplier<@NonNull ?> fn2 = GroundTargetType::myMethod;
 
   // Supplier2
   // :: error: (methodref.return)
-  Supplier2<? extends @NonNull Object> fn3 = GroundTargetType::myMethod;
+  Supplier2<@NonNull ?> fn3 = GroundTargetType::myMethod;
 }

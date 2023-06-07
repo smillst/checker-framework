@@ -68,7 +68,7 @@ Check for redundant annotations in the following locations
     }
 
     // TODO :: warning: (redundant.anno) warning on the upper bound
-    List<? extends @NonNull Object> l;
+    List<@NonNull ?> l;
 
     // TODO :: warning: (redundant.anno) warning on the lower bound
     // :: error: (super.wildcard)

@@ -364,7 +364,7 @@ Most of the following types mean different things:
 \begin{Verbatim}
   class MyList1<@Nullable T> { ... }
   class MyList1a<@Nullable T extends @Nullable Object> { ... } // same as MyList1
-  class MyList2<@NonNull T extends @NonNull Object> { ... }
+  class MyList2<T extends @NonNull Object> { ... }
   class MyList2a<T extends @NonNull Object> { ... } // same as MyList2
   class MyList3<T> { ... }
   class MyList3a<T extends @Nullable Object> { ... } // same as MyList3

@@ -27,7 +27,7 @@ public class InferTypeArgsPolyChecker<OUTER_SCOPE_TV> {
 
   // ----------------------------------------------------------
   // Test Case - C
-  <C extends List<? extends Object>> C methodC(C c1, C c2) {
+  <C extends List<@NonNull ?>> C methodC(C c1, C c2) {
     return null;
   }
 

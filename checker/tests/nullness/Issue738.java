@@ -33,7 +33,7 @@ public class Issue738 {
 
   <T> void methodB2(T paramA, @NonNull T paramB) {}
 
-  <@NonNull T extends @NonNull Object> void methodB3(T paramA, T paramB) {}
+  <T extends @NonNull Object> void methodB3(T paramA, T paramB) {}
 
   <T extends @NonNull Cloneable> void methodB4(T paramA, T paramB) {}
 }

@@ -37,7 +37,7 @@ class GenericBoundsExplicit2<TT> {
 }
 
 @SuppressWarnings("initialization.field.uninitialized")
-class GenericBoundsExplicit3<@NonNull TTT extends @NonNull Object> {
+class GenericBoundsExplicit3<TTT extends @NonNull Object> {
   @Nullable TTT ttt1;
   @NonNull TTT ttt2;
   TTT ttt3;

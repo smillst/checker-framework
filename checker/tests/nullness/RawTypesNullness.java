@@ -40,9 +40,9 @@ class TestBounded {
   @SuppressWarnings("unchecked") // only needed on JDK 17 and lower
   void useBoundedWildCard() {
     BoundedGeneric rawLocal = new BoundedGeneric<String>();
-    BoundedGeneric<? extends Object> generic1 = rawReturn();
-    BoundedGeneric<? extends Object> generic2 = rawField;
-    BoundedGeneric<? extends Object> generic3 = rawLocal;
+    BoundedGeneric<@NonNull ?> generic1 = rawReturn();
+    BoundedGeneric<@NonNull ?> generic2 = rawField;
+    BoundedGeneric<@NonNull ?> generic3 = rawLocal;
   }
 
   void useBoundedWildCard2() {

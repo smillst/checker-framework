@@ -13,7 +13,7 @@ public class InferTypeArgsConditionalExpression {
     bar(flag ? real : other);
   }
 
-  <@NonNull Q extends @NonNull Object> void bar(Generic<? extends Q> parm) {}
+  <Q extends @NonNull Object> void bar(Generic<? extends Q> parm) {}
 
   interface Generic<F> {}
 }

@@ -792,11 +792,11 @@ the length of a sequence like \code{arr.length} for arrays and
 With these annotations, client code like the following typechecks with no
 warnings:
 \begin{Verbatim}
-    public static void clearIndex1(ArrayWrapper<? extends Object> a, @IndexFor("#1") int i) {
+    public static void clearIndex1(ArrayWrapper<@NonNull ?> a, @IndexFor("#1") int i) {
         a.set(i, null);
     }
 
-    public static void clearIndex2(ArrayWrapper<? extends Object> a, int i) {
+    public static void clearIndex2(ArrayWrapper<@NonNull ?> a, int i) {
         if (0 <= i && i < a.size()) {
             a.set(i, null);
         }

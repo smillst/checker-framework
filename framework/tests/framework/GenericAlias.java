@@ -19,6 +19,6 @@ public class GenericAlias {
 
   public void regularGenerics() {
     Set<?> set = new HashSet<@Odd String>();
-    Set<? extends Object> set2 = new HashSet<@Odd String>();
+    Set<@NonNull ?> set2 = new HashSet<@Odd String>();
   }
 }

@@ -5,7 +5,7 @@ class Issue3754 {
     U get();
   }
 
-  Object x(Supplier<? extends Object, ?> bar) {
+  Object x(Supplier<@NonNull ?, ?> bar) {
     return bar.get();
   }
 
@@ -13,7 +13,7 @@ class Issue3754 {
     U get();
   }
 
-  Object x(Supplier2<?, ? extends Object> bar) {
+  Object x(Supplier2<?, @NonNull ?> bar) {
     return bar.get();
   }
 }

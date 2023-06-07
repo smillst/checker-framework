@@ -34,7 +34,7 @@ public class UncheckedByteCode<CT> {
 
   public static void unboundedWildcardParam(UncheckedByteCode<?> param) {}
 
-  public static void upperboundedWildcardParam(UncheckedByteCode<? extends Object> param) {}
+  public static void upperboundedWildcardParam(UncheckedByteCode<@NonNull ?> param) {}
 
   public static void lowerboundedWildcardParam(UncheckedByteCode<? super Object> param) {}
 

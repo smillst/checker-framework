@@ -71,7 +71,7 @@ public class GenericsExample {
     }
   }
 
-  class MyList2<@NonNull T extends @NonNull Object> {
+  class MyList2<T extends @NonNull Object> {
     T t;
     @Nullable T nble;
     @NonNull T nn;

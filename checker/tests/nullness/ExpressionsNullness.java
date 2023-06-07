@@ -49,7 +49,7 @@ public class ExpressionsNullness {
     o.getClass(); // valid
   }
 
-  void test4(List<? extends @NonNull Object> o) {
+  void test4(List<@NonNull ?> o) {
     o.get(0).getClass(); // valid
   }
 

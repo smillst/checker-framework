@@ -43,7 +43,7 @@ class UseMyGeneric {
   MyGeneric<?> wildcardUnbounded = new MyGeneric<>();
 
   // :: error: (assignment)
-  MyGeneric<? extends @NonNull Object> wildcardOutsideUB = wildcardUnbounded;
+  MyGeneric<@NonNull ?> wildcardOutsideUB = wildcardUnbounded;
   MyGeneric<? extends @NonNull Number> wildcardInsideUB = wildcardOutsideUB;
   // :: error: (assignment)
   MyGeneric<? extends @NonNull Number> wildcardInsideUB2 = wildcardUnbounded;
@@ -55,7 +55,7 @@ class MyGenericExactBounds<@NonNull T extends @NonNull Number> {}
 
 class UseMyGenericExactBounds {
   MyGenericExactBounds<?> wildcardOutsideUBError = new MyGenericExactBounds<>();
-  MyGenericExactBounds<? extends @NonNull Object> wildcardOutside = new MyGenericExactBounds<>();
+  MyGenericExactBounds<@NonNull ?> wildcardOutside = new MyGenericExactBounds<>();
   MyGenericExactBounds<? extends @NonNull Number> wildcardInsideUB = wildcardOutside;
 
   MyGenericExactBounds<?> wildcardOutsideUB = wildcardOutside;

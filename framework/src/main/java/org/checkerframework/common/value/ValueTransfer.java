@@ -10,6 +10,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.common.value.qual.ArrayLen;
 import org.checkerframework.common.value.qual.ArrayLenRange;
 import org.checkerframework.common.value.qual.StringVal;
@@ -222,7 +223,7 @@ public class ValueTransfer extends CFTransfer {
     }
 
     // @IntVal, @IntRange, @DoubleVal, @BoolVal (have to be converted to string)
-    List<? extends Object> values;
+    List<@NonNull ?> values;
     if (annoName.equals(ValueAnnotatedTypeFactory.BOOLVAL_NAME)) {
       values = getBooleanValues(subNode, p);
     } else if (subNode.getType().getKind() == TypeKind.CHAR) {

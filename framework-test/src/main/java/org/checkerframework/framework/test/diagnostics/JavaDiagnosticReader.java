@@ -14,6 +14,7 @@ import org.checkerframework.checker.calledmethods.qual.EnsuresCalledMethods;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.mustcall.qual.Owning;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.checkerframework.dataflow.qual.Pure;
@@ -36,9 +37,9 @@ public class JavaDiagnosticReader implements Iterator<TestDiagnosticLine>, Close
    * @param files the Java files to read; each is a File or a JavaFileObject
    * @return the TestDiagnostics from the input file
    */
-  // The argument has type Iterable<? extends Object> because Java cannot resolve the overload
+  // The argument has type Iterable<@NonNull ?> because Java cannot resolve the overload
   // of two versions that take Iterable<? extends File> and Iterable<? extends JavaFileObject>.
-  public static List<TestDiagnostic> readJavaSourceFiles(Iterable<? extends Object> files) {
+  public static List<TestDiagnostic> readJavaSourceFiles(Iterable<@NonNull ?> files) {
     List<TestDiagnostic> result = new ArrayList<>();
     for (Object file : files) {
       if (file instanceof JavaFileObject) {
