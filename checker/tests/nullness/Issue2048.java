@@ -25,7 +25,7 @@ public class Issue2048 {
     useNbl.foo(nnFooer);
   }
 
-  class UseNN<T extends Object> {
+  class UseNN<T extends @NonNull Object> {
     void foo(Fooer<? extends T> fooer) {}
   }
 }

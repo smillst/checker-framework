@@ -23,7 +23,7 @@ class Apple<T> {
   }
 }
 
-class Pineapple<E extends Object> extends Apple<E> {
+class Pineapple<E extends @NonNull Object> extends Apple<E> {
   @Override
   void fooOuter(E array) {}
 

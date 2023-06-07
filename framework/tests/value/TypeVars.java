@@ -12,7 +12,7 @@ public class TypeVars<K, V> {
   public class TypeVarDefaults {
     class ImplicitUpperBound<T> {}
 
-    class ExplicitUpperBound<T extends Object> {}
+    class ExplicitUpperBound<T extends @NonNull Object> {}
 
     void useImplicit() {
       ImplicitUpperBound<Object> bottom;

@@ -8,7 +8,7 @@ class Cell<T> {
 }
 
 public class GenericArgs2 {
-  static <F extends Object> void test1(Cell<F> collection) {
+  static <F extends @NonNull Object> void test1(Cell<F> collection) {
     // :: error: (argument)
     collection.add(null); // should fail
   }

@@ -426,26 +426,31 @@ refined, so writing the top annotation is not the same as writing no annotation.
 Implicit upper bounds are defaulted to top to allow them to be instantiated
 in any way.
 
-Suppose a user declares a class as \code{class C<T> \ttlcb\ ...\ \ttrcb}.
-The Checker Framework assumes that the user intended to allow any
-instantiation of the class.  The Checker Framework interprets the
+If the Java code permits every instantiation, then every qualifier is also
+permitted.
+Suppose a user declares a class as \code{class C<T> \ttlcb\ ...\ \ttrcb}
+\textbf{or} as \code{class C<T extends Object> \ttlcb\ ...\ \ttrcb}.
+Java allows any
+instantiation of the class.  To also apply no restrictions,
+the Checker Framework interprets the
 declaration as \code{class C<T extends @Nullable
-  Object> \ttlcb\ ...\ \ttrcb} rather than as \code{class C<T extends
-  @NonNull Object> \ttlcb\ ...\ \ttrcb}.  The latter would forbid
+  Object> \ttlcb\ ...\ \ttrcb}.  (Treating it as \code{class C<T extends
+  @NonNull Object> \ttlcb\ ...\ \ttrcb} would forbid
 instantiations such as \code{C<@Nullable String>}, or would require
-rewriting of code.  On the other hand, if a user writes an explicit bound
-such as \code{class C<T extends D> \ttlcb\ ...\ \ttrcb}, then the user
-intends some restriction on instantiation and can write a qualifier on the
-upper bound as desired.
+rewriting of code.)
 
-This rule means that the upper bound of \code{class C<T>} is defaulted
-differently than the upper bound of \code{class C<T extends Object>}.
-This is a bit unfortunate, but it is the least bad option.  The
-more confusing alternative would be for ``\code{Object}'' to be defaulted
-differently in \code{class C<T extends Object>} and in an
-instantiation \code{C<Object>}, and for the upper bounds to be defaulted
-differently in \code{class C<T extends Object>}
-and \code{class C<T extends Date>}.
+On the other hand, if a user writes an explicit bound \emph{other than \<Object>},
+such as \code{class C<T extends MyClass> \ttlcb\ ...\ \ttrcb}, then the upper bound
+\<MyClass> is defaulted normally.  In the case of the Nullness Checker,
+the declaration is treated as
+\code{class C<T extends @NonNull MyClass> \ttlcb\ ...\ \ttrcb}.
+
+% TODO: This paragraph is no longer correct, I think.
+This rule means that the upper bound of \code{class C<T extends Object>} is defaulted
+differently than the upper bound of \code{class C<T extends MyClass>}.
+This is a bit unfortunate, but it is the least bad option, because it
+ensures that \code{class C<T>} and \code{class C<T extends Object>}, which
+are identical in Java, are treated identically by the Checker Framework.
 
 \item
 Implicit \emph{lower} bounds are defaulted to the bottom type, again to allow

@@ -2,7 +2,7 @@
 // errors
 public class InferNullType {
 
-  <T extends Object> T toInfer(T input) {
+  <T extends @NonNull Object> T toInfer(T input) {
     return input;
   }
 

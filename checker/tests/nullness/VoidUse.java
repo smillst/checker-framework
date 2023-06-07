@@ -12,11 +12,11 @@ public class VoidUse {
   }
 
   // Void is treated as Nullable.  Is there a value on having it be NonNull?
-  public abstract static class VoidTestNode<T extends Object> {}
+  public abstract static class VoidTestNode<T extends @NonNull Object> {}
 
   public static class VoidTestInvNode extends VoidTestNode<@NonNull Void> {}
 
-  class Scanner<P extends Object> {
+  class Scanner<P extends @NonNull Object> {
     public void scan(Object tree, P p) {}
   }
 

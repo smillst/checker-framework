@@ -2,7 +2,7 @@
 
 import java.util.Set;
 
-public abstract class TwoCtorGenericAbstract<T extends Object> implements Set<T> {
+public abstract class TwoCtorGenericAbstract<T extends @NonNull Object> implements Set<T> {
   protected T value;
 
   protected TwoCtorGenericAbstract() {

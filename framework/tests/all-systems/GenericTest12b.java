@@ -2,7 +2,7 @@
 public class GenericTest12b {
   class Cell<T1 extends Object> {}
 
-  class Node<CONTENT extends Object> {
+  class Node<CONTENT extends @NonNull Object> {
     public Node(Cell<CONTENT> userObject) {}
 
     void nodecall(Cell<CONTENT> userObject) {}

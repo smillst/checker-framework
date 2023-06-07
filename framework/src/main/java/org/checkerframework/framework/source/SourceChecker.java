@@ -291,7 +291,7 @@ import org.plumelib.util.UtilPlume;
   "printAllQualifiers",
 
   // Whether to print [] around a set of type parameters in order to clearly see where they end
-  // e.g.  <E extends F, F extends Object>
+  // e.g.  <E extends F, F extends @NonNull Object>
   // without this option the E is printed: E extends F extends Object
   // with this option:                     E [ extends F [ extends Object super Void ] super Void ]
   // when multiple type variables are used this becomes useful very quickly

@@ -16,7 +16,7 @@ class PlumeUtilRequiredAnnotations {
   // annotation itself is immaterial - what's important is that the bound
   // must be explicit rather than implicit (see that the eqR field never issue errors,
   // just like the eqS fields).
-  class MultiRandSelector<T, S extends @Nullable @MustCall Object, R extends Object> {
+  class MultiRandSelector<T, S extends @Nullable @MustCall Object, R extends @NonNull Object> {
     // :: error: (type.argument)
     private Partitioner<T, T> eqT;
     private Partitioner<S, S> eqS;

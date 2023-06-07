@@ -18,21 +18,21 @@ public class ForEach {
     }
   }
 
-  <T extends Object> void m3(T p) {
+  <T extends @NonNull Object> void m3(T p) {
     Set<T> s = new HashSet<>();
     for (T cs : s) {
       cs.toString();
     }
   }
 
-  <T extends Object> void m4(T p) {
+  <T extends @NonNull Object> void m4(T p) {
     Set<T> s = new HashSet<>();
     for (Object cs : s) {
       cs.toString();
     }
   }
 
-  public static <T extends Object> List<T> removeDuplicates(List<T> l) {
+  public static <T extends @NonNull Object> List<T> removeDuplicates(List<T> l) {
     // There are shorter solutions that do not maintain order.
     HashSet<T> hs = new HashSet<>(l.size());
     List<T> result = new ArrayList<>();

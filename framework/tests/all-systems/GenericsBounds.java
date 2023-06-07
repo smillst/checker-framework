@@ -27,7 +27,7 @@ class Lower2 extends Upper2<Long, List<Long>, LinkedList<Long>> {}
 
 class GenericGetClass {
 
-  <U extends Object> Class<? extends U> getClass(Class<?> orig, Class<U> cast) {
+  <U extends @NonNull Object> Class<? extends U> getClass(Class<?> orig, Class<U> cast) {
     return orig.asSubclass(cast);
   }
 }

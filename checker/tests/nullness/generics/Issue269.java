@@ -14,7 +14,7 @@ class Issue269 {
   }
 
   // Implicitly H has bound @NonNull Object
-  interface CallbackNN<H extends Object> {
+  interface CallbackNN<H extends @NonNull Object> {
     public boolean handler(H arg);
   }
 

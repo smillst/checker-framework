@@ -28,7 +28,7 @@ public class Ternary<F> {
     String s = b ? p : null;
   }
 
-  class Generic<T extends Object> {
+  class Generic<T extends @NonNull Object> {
     void cond(boolean b, T p1, T p2) {
       p1 = b ? p1 : p2;
     }

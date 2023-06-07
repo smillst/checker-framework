@@ -21,7 +21,7 @@ public class AnonymousClasses {
     GenInter<T> gi = new GenInter<T>() {};
   }
 
-  class Gen<F extends Object> {
+  class Gen<F extends @NonNull Object> {
     public Gen() {}
   }
 

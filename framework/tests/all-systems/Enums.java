@@ -18,11 +18,11 @@ public class Enums {
 
   <E extends Enum<E>> void mtv(Class<E> p) {}
 
-  <T extends Object> T checkNotNull(T ref) {
+  <T extends @NonNull Object> T checkNotNull(T ref) {
     return ref;
   }
 
-  <T extends Object, S extends Object> T checkNotNull2(T ref, S ref2) {
+  <T extends @NonNull Object, S extends @NonNull Object> T checkNotNull2(T ref, S ref2) {
     return ref;
   }
 
@@ -31,14 +31,14 @@ public class Enums {
       checkNotNull(p);
     }
 
-    public <SSS extends Object> SSS firstNonNull(SSS first, SSS second) {
+    public <SSS extends @NonNull Object> SSS firstNonNull(SSS first, SSS second) {
       @SuppressWarnings("nullness:nulltest.redundant")
       SSS res = first != null ? first : checkNotNull(second);
       return res;
     }
   }
 
-  class Unbound<X extends Object> {}
+  class Unbound<X extends @NonNull Object> {}
 
   class Test2<T extends Unbound<S>, S extends Unbound<T>> {
     void m(Class<T> p, Class<S> q) {

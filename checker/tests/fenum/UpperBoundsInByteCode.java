@@ -23,5 +23,5 @@ public class UpperBoundsInByteCode {
   // :: error: (type.argument)
   SourceCode<@Fenum("Foo") String> foo2;
 
-  class SourceCode<T extends Object> {}
+  class SourceCode<T extends @NonNull Object> {}
 }

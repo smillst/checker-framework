@@ -815,7 +815,7 @@ public class QualifierDefaults {
       Local type variables are defaulted to top when flow is turned on
       We only want to default the top level type variable (and not type variables that are nested
       in its bounds). E.g.,
-        <T extends List<E>, E extends Object> void method() {
+        <T extends List<E>, E extends @NonNull Object> void method() {
            T t;
         }
       We would like t to have its primary annotation defaulted but NOT the E inside its upper bound.

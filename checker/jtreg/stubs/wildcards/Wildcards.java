@@ -9,7 +9,7 @@
 public class Wildcards {
   NonN<?> f = new NonN<Object>();
 
-  class LocalNonN<T extends Object> {}
+  class LocalNonN<T extends @NonNull Object> {}
 
   LocalNonN<?> g = new LocalNonN<Object>();
 }

@@ -1454,7 +1454,7 @@ rules (Section~\ref{climb-to-top}):
 
 \begin{Verbatim}
 class MyClass<T> { ... }
-class MyClass<T extends Object> { ... }
+class MyClass<T extends @NonNull Object> { ... }
 \end{Verbatim}
 
 The difference is the annotation on the upper bound of the type argument
@@ -1462,7 +1462,8 @@ The difference is the annotation on the upper bound of the type argument
 
 \begin{Verbatim}
 class MyClass<T>                 ==  class MyClass<T extends @TOPTYPEANNO Object>
-class MyClass<T extends Object>  ==  class MyClass<T extends @DEFAULTANNO Object>
+class MyClass<T extends Object>  ==  class MyClass<T extends @TOPTYPEANNO Object>
+class MyClass<T extends MyClass> ==  class MyClass<T extendsf @DEFAULTANNO MyClass>
 \end{Verbatim}
 
 \noindent
@@ -1505,7 +1506,7 @@ Here are some style guidelines:
   When you write an \<Object> upper bound, give an explicit type annotation.
   That is, write \code{class C<T extends @DEFAULTANNO Object>
     \ttlcb\ ... \ttrcb} even though it is equivalent to writing
-  \code{class C<T extends Object> \ttlcb\ ... \ttrcb}.
+  \code{class C<T extends @NonNull Object> \ttlcb\ ... \ttrcb}.
 
   If you write just \<extends Object>, then someone who is reading the code
   might think that it is irrelevant (which it is in plain Java).  Also,
@@ -1535,12 +1536,12 @@ using nullness annotations for concreteness.
 
   It is equivalent to \code{<T>}, as noted above.
 
-\item[\code{<T extends Object>}]
+\item[\code{<T extends @NonNull Object>}]
   \code{T} can be instantiated by any type whose qualifier is \code{@NonNull}.
 
   The default annotation is \code{@NonNull}, and annotation defaults apply
   to type uses such as \code{Object} but not to type variables such as
-  \code{T}.  Therefore, \code{<T extends Object>} is equivalent to
+  \code{T}.  Therefore, \code{<T extends @NonNull Object>} is equivalent to
   \code{<T extends @NonNull Object>}.  It permits any type argument that is
   a subtype of \code{@NonNull Object}, which is any type argument whose
   qualifier is \code{@NonNull} since \code{@NonNull} is the bottom type
@@ -1549,7 +1550,7 @@ using nullness annotations for concreteness.
 \item[\code{<T extends @NonNull Object>}]
   \code{T} can be instantiated by any type whose qualifier is \code{@NonNull}.
 
-  It is equivalent to \code{<T extends Object>}, as noted above.
+  It is equivalent to \code{<T extends @NonNull Object>}, as noted above.
 
 \item[\code{<@Nullable T>}]
   \code{T} can be instantiated by any type whose qualifier is \code{@Nullable}.

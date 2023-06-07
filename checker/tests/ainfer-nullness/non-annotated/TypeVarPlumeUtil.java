@@ -3,7 +3,7 @@
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class TypeVarPlumeUtil<V extends Object> {
+public class TypeVarPlumeUtil<V extends @NonNull Object> {
   @SuppressWarnings({
     "nullness" // only check for crashes. Also, was present in the original source file (so the
     // annotations in this code were preserved by RemoveAnnotationsForInference).

@@ -1,5 +1,5 @@
 public class ForEach {
-  <T extends Object> T iterate(T[] constants) {
+  <T extends @NonNull Object> T iterate(T[] constants) {
     for (T constant : constants) {
       return constant;
     }

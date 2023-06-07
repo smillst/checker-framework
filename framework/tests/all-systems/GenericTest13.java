@@ -2,15 +2,15 @@
 // https://github.com/typetools/checker-framework/issues/142
 
 public class GenericTest13 {
-  interface Entry<K extends Object, V extends Object> {
+  interface Entry<K extends @NonNull Object, V extends @NonNull Object> {
     V getValue();
   }
 
-  interface Iterator<E extends Object> {
+  interface Iterator<E extends @NonNull Object> {
     E next();
   }
 
-  <S extends Object> S call(Iterator<? extends Entry<?, S>> entryIterator) {
+  <S extends @NonNull Object> S call(Iterator<? extends Entry<?, S>> entryIterator) {
     return entryIterator.next().getValue();
   }
 }

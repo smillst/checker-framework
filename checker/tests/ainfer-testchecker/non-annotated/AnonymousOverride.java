@@ -12,7 +12,7 @@ class AnonymousOverride {
         .start();
   }
 
-  private static class SpecialThread<T extends Object> extends Thread {
+  private static class SpecialThread<T extends @NonNull Object> extends Thread {
     public T t;
   }
 }

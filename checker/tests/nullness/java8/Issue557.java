@@ -15,12 +15,12 @@ class MyOpt<T> {
 }
 
 @SuppressWarnings("nullness")
-class MyOpt2<T extends Object> {
-  static <S extends Object> MyOpt2<S> of(S p) {
+class MyOpt2<T extends @NonNull Object> {
+  static <S extends @NonNull Object> MyOpt2<S> of(S p) {
     return null;
   }
 
-  static <S extends Object> MyOpt2<S> empty() {
+  static <S extends @NonNull Object> MyOpt2<S> empty() {
     return null;
   }
 }

@@ -63,7 +63,7 @@ class UnionAsMemberOf {
   }
 }
 
-final class Issue577Outer<K extends Object> {
+final class Issue577Outer<K extends @NonNull Object> {
   private Inner createInner(ReferenceQueue<? super K> q) {
     return new Inner(q);
   }

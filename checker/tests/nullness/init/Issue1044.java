@@ -49,23 +49,23 @@ public class Issue1044 {
     Inner8() {}
   }
 
-  static class Inner9<V extends Object> {
+  static class Inner9<V extends @NonNull Object> {
     // :: error: (initialization.field.uninitialized)
     V f;
   }
 
-  static class Inner10<V extends Object> {
+  static class Inner10<V extends @NonNull Object> {
     V f;
 
     // :: error: (initialization.fields.uninitialized)
     Inner10() {}
   }
 
-  static class Inner11<V extends Object> {
+  static class Inner11<V extends @NonNull Object> {
     @Nullable V f;
   }
 
-  static class Inner12<V extends Object> {
+  static class Inner12<V extends @NonNull Object> {
     @Nullable V f;
 
     Inner12() {}

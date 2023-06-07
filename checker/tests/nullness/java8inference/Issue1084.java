@@ -3,7 +3,7 @@
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-class MyOpt<T extends Object> {
+class MyOpt<T extends @NonNull Object> {
   static <S> MyOpt<@NonNull S> empty() {
     throw new RuntimeException();
   }

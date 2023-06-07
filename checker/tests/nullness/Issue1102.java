@@ -9,7 +9,8 @@ interface Issue1102Itf {}
 class Issue1102Base {}
 
 class Issue1102Decl extends Issue1102Base {
-  static <S extends Object, T extends Issue1102Base & Issue1102Itf> Issue1102Decl newInstance(T s) {
+  static <S extends @NonNull Object, T extends Issue1102Base & Issue1102Itf>
+      Issue1102Decl newInstance(T s) {
     return new Issue1102Decl();
   }
 }

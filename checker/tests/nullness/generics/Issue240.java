@@ -9,7 +9,7 @@ class I<A> {}
 // bound of I is "@Nullable Object"
 class Use extends I<@Nullable String> {}
 
-class I2<A extends Object> {}
+class I2<A extends @NonNull Object> {}
 
 // This use must be an error.
 // :: error: (type.argument)

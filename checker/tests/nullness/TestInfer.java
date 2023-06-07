@@ -5,7 +5,7 @@ import java.util.List;
 import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
 public class TestInfer {
-  <T extends Object> T getValue(List<T> l) {
+  <T extends @NonNull Object> T getValue(List<T> l) {
     return l.get(0);
   }
 
