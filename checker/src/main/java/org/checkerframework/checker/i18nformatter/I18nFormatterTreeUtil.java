@@ -525,6 +525,10 @@ public class I18nFormatterTreeUtil {
 
   /** Converts a TypeMirror to a Class. */
   private static class TypeMirrorToClassVisitor extends SimpleTypeVisitor8<Class<?>, Class<Void>> {
+
+    /** Creates a new TypeMirrorToClassVisitor. */
+    TypeMirrorToClassVisitor() {}
+
     @Override
     public Class<?> visitPrimitive(PrimitiveType t, Class<Void> v) {
       switch (t.getKind()) {
