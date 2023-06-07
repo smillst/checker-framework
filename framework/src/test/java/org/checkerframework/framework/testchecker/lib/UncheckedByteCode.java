@@ -1,5 +1,7 @@
 package org.checkerframework.framework.testchecker.lib;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public class UncheckedByteCode<CT> {
   public CT classTypeVariableField;
   public static Object nonFinalPublicField;

@@ -506,6 +506,13 @@ public class I18nFormatterTreeUtil {
       return res;
     }
 
+    /**
+     * Returns true if the given conversion category and parameter type are compatible.
+     *
+     * @param formatCat a conversion category
+     * @param paramType the type of the argument
+     * @return true if the argument can be formatted by the conversion category
+     */
     public boolean isValidParameter(I18nConversionCategory formatCat, TypeMirror paramType) {
       Class<?> type = typeMirrorToClass(paramType);
       if (type == null) {
