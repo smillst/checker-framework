@@ -1,5 +1,7 @@
 // @above-java17-jdk-skip-test TODO: reinstate, false positives may be due to issue #979
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 class Issue3754 {
   interface Supplier<T, U extends T> {
     U get();

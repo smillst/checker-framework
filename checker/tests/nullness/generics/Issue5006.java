@@ -1,3 +1,5 @@
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public class Issue5006 {
 
   static class C<T> {

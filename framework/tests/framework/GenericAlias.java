@@ -3,6 +3,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.util.*;
 
 public class GenericAlias {

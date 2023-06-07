@@ -1,4 +1,5 @@
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class EisopIssue270 {
   // In annotated jdk, the package-info of java.util defines KeyForBottom as the

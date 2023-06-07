@@ -1,5 +1,6 @@
 import java.util.LinkedList;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.util.*;
 
 public class InvariantArrays {

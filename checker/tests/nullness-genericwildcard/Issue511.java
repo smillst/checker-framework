@@ -1,5 +1,8 @@
 // Additional test case for issue #511:
 // https://github.com/typetools/checker-framework/issues/511
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 class MyGeneric<T extends Number> {}
 
 class MySuperClass {

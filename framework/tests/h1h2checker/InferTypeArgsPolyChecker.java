@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.testchecker.h1h2checker.quals.*;
 
 public class InferTypeArgsPolyChecker<OUTER_SCOPE_TV> {
