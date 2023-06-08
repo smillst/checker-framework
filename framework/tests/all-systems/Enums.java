@@ -1,4 +1,5 @@
 import java.lang.annotation.ElementType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 class MyEnumSet<E extends Enum<E>> {}
 

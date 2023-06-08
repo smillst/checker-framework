@@ -1,3 +1,5 @@
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 @SuppressWarnings("nullness") // Don't want to depend on @Nullable
 public class GenericTest12b {
   class Cell<T1 extends Object> {}

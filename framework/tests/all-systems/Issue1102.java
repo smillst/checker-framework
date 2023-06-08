@@ -2,6 +2,8 @@
 // https://github.com/typetools/checker-framework/issues/1102
 // Additional test in checker/tests/nullness/Issue1102.java
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 interface Issue1102Itf {}
 
 class Issue1102Base {}

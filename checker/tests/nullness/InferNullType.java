@@ -1,4 +1,7 @@
 // Version of framework/tests/all-systems/InferNullType.java with expected Nullness Checker warnings
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public class InferNullType {
 
   <T extends @NonNull Object> T toInfer(T input) {

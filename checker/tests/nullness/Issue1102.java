@@ -2,6 +2,7 @@
 // https://github.com/typetools/checker-framework/issues/1102
 // Additional test in framework/tests/all-systems/Issue1102.java
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 interface Issue1102Itf {}

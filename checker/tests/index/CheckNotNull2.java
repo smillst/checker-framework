@@ -1,4 +1,4 @@
-public class CheckNotNull2<T extends @NonNull Object> {
+public class CheckNotNull2<T> {
   T checkNotNull(T ref) {
     return ref;
   }

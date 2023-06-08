@@ -1,3 +1,5 @@
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public abstract class VarInfoName {
 
   public abstract <T extends @NonNull Object> T accept(Visitor<T> v);

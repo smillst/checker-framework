@@ -20,8 +20,14 @@ public class UpperBoundsInByteCode {
     UncheckedByteCode.upperboundedWildcardParam(foo);
   }
 
+  SourceCode1<@Fenum("Foo") String> foo2;
+  SourceCode2<@Fenum("Foo") String> foo2;
   // :: error: (type.argument)
-  SourceCode<@Fenum("Foo") String> foo2;
+  SourceCode3<@Fenum("Foo") String> foo2;
 
-  class SourceCode<T extends @NonNull Object> {}
+  class SourceCode1<T> {}
+
+  class SourceCode2<T extends Object> {}
+
+  class SourceCode2<T extends String> {}
 }

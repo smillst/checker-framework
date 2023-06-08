@@ -6,7 +6,7 @@ public class TypeVariable<X> {
     return null;
   }
 
-  <Y extends @NonNull Object> Y bar() {
+  <Y> Y bar() {
     return null;
   }
 }

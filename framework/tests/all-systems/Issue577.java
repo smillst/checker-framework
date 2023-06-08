@@ -1,6 +1,9 @@
 // Test case for issue #577:
 // Test with expected errors: checker/tests/nullness/Issue577.java
 // https://github.com/typetools/checker-framework/issues/577
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 class Banana<T extends Number> extends Apple<int[]> {
   @Override
   void fooIssue577Outer(int[] array) {}

@@ -1,6 +1,7 @@
 // Test case for Issue 329:
 // https://github.com/typetools/checker-framework/issues/329
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 abstract class Issue329 {

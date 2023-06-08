@@ -1,4 +1,5 @@
 import java.lang.ref.WeakReference;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class Ternary<F> {
   void m1(boolean b) {

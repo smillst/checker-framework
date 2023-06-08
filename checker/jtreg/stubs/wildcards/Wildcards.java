@@ -6,6 +6,8 @@
  * @compile -XDrawDiagnostics -processor org.checkerframework.checker.nullness.NullnessChecker -Astubs=NonN.astub Wildcards.java  -Werror
  */
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 public class Wildcards {
   NonN<?> f = new NonN<Object>();
 

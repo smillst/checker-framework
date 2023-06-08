@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class GenericsCasts {
   // Cast from a raw type to a generic type
