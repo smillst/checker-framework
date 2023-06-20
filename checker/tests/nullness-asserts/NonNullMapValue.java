@@ -24,7 +24,7 @@ public class NonNullMapValue {
   // system), since it can always return null no matter whether the map values are non-null:
   //   V get(Object key) { ... return null; }
   // The Nullness Checker does not use the signature as written.  It has hard-coded rules for the
-  // get() method.  It checks that the passed key to has type @KeyFor("theMap").
+  // get() method.  It checks whether the passed key has type @KeyFor("theMap").
 
   Map<String, @NonNull String> myMap;
 
@@ -47,12 +47,12 @@ public class NonNullMapValue {
       value = myMap.get(keyInMap);
     }
     for (Map.Entry<@KeyFor("myMap") String, @NonNull String> entry : myMap.entrySet()) {
-      String keyInMap = entry.getKey();
+      @NonNull String keyInMap = entry.getKey();
       value = entry.getValue();
     }
     for (Iterator<@KeyFor("myMap") String> iter = myMap.keySet().iterator(); iter.hasNext(); ) {
-      String keyInMap = iter.next();
-      // value = myMap.get(keyInMap);
+      @NonNull String keyInMap = iter.next();
+      value = myMap.get(keyInMap);
     }
     value = myMap.containsKey(key) ? myMap.get(key) : "hello";
   }

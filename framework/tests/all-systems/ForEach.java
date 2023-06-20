@@ -19,14 +19,16 @@ public class ForEach {
     }
   }
 
-  <T extends @NonNull Object> void m3(T p) {
+  @SuppressWarnings("nullness:dereference.of.nullable")
+  <T extends Object> void m3(T p) {
     Set<T> s = new HashSet<>();
     for (T cs : s) {
       cs.toString();
     }
   }
 
-  <T extends @NonNull Object> void m4(T p) {
+  @SuppressWarnings("nullness:dereference.of.nullable")
+  <T extends Object> void m4(T p) {
     Set<T> s = new HashSet<>();
     for (Object cs : s) {
       cs.toString();

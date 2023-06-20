@@ -1312,7 +1312,7 @@ public class AnnotationUtils {
    * @param newQual the element to add to the given key's value
    * @param <T> the key type
    */
-  public static <T extends @NonNull Object> void updateMappingToImmutableSet(
+  public static <@NonNull T> void updateMappingToImmutableSet(
       Map<T, AnnotationMirrorSet> map, T key, AnnotationMirrorSet newQual) {
 
     AnnotationMirrorSet result = new AnnotationMirrorSet();

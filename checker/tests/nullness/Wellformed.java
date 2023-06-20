@@ -20,8 +20,7 @@ public class Wellformed {
 
   class Gen2a<@Nullable T> {}
 
-  // :: error: (bound)
-  class Gen2b<@Nullable T extends @NonNull Object> {}
+  class Gen2b<@Nullable T extends Object> {}
 
   // :: error: (bound)
   class Gen2c<@Nullable T extends @NonNull Object> {}

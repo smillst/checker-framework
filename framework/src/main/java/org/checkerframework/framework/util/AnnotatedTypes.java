@@ -9,6 +9,7 @@ import com.sun.tools.javac.code.Attribute;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.code.Type.WildcardType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1538,7 +1539,11 @@ public class AnnotatedTypes {
    * @return true if the given card is an unbounded wildcard
    */
   public static boolean hasNoExplicitBound(AnnotatedTypeMirror wildcard) {
-    return ((Type.WildcardType) wildcard.getUnderlyingType()).kind == BoundKind.UNBOUND;
+    if (((Type.WildcardType) wildcard.getUnderlyingType()).kind == BoundKind.UNBOUND) {
+      return true;
+    }
+    return ((Type.WildcardType) wildcard.getUnderlyingType()).isExtendsBound()
+        && TypesUtils.isObject(((WildcardType) wildcard.getUnderlyingType()).getExtendsBound());
   }
 
   /**
@@ -1584,7 +1589,8 @@ public class AnnotatedTypes {
    */
   public static boolean hasExplicitExtendsBound(AnnotatedTypeMirror wildcardType) {
     return ((Type.WildcardType) wildcardType.getUnderlyingType()).isExtendsBound()
-        && ((Type.WildcardType) wildcardType.getUnderlyingType()).kind != BoundKind.UNBOUND;
+        && !TypesUtils.isObject(
+            ((WildcardType) wildcardType.getUnderlyingType()).getExtendsBound());
   }
 
   /**

@@ -7,7 +7,6 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import java.util.Arrays;
@@ -23,7 +22,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.interning.qual.FindDistinct;
@@ -1156,61 +1154,10 @@ public class QualifierDefaults {
    * @return the bound type of the input typeVar
    */
   private BoundType getTypeVarBoundType(AnnotatedTypeVariable typeVar) {
-    return getTypeVarBoundType((TypeParameterElement) typeVar.getUnderlyingType().asElement());
-  }
-
-  /**
-   * Returns the boundType (UPPER or UNBOUNDED) of the declaration of typeParamElem.
-   *
-   * @param typeParamElem the type parameter element
-   * @return the boundType (UPPER or UNBOUNDED) of the declaration of typeParamElem
-   */
-  // Results are cached in {@link elementToBoundType}.
-  private BoundType getTypeVarBoundType(TypeParameterElement typeParamElem) {
-    BoundType prev = elementToBoundType.get(typeParamElem);
-    if (prev != null) {
-      return prev;
+    if (TypesUtils.isObject(typeVar.getUnderlyingType().getUpperBound())) {
+      return BoundType.UNBOUNDED;
     }
-
-    TreePath declaredTypeVarEle = atypeFactory.getTreeUtils().getPath(typeParamElem);
-    Tree typeParamDecl = declaredTypeVarEle == null ? null : declaredTypeVarEle.getLeaf();
-
-    final BoundType boundType;
-    if (typeParamDecl == null) {
-      // This is not only for elements from binaries, but also
-      // when the compilation unit is no-longer available.
-      if (typeParamElem.getBounds().size() == 1
-          && TypesUtils.isObject(typeParamElem.getBounds().get(0))) {
-        // If the bound was Object, then it may or may not have been explicitly written.
-        // Assume that it was not.
-        boundType = BoundType.UNBOUNDED;
-      } else {
-        // The bound is not Object, so it must have been explicitly written and thus the
-        // type variable has an upper bound.
-        boundType = BoundType.UPPER;
-      }
-
-    } else {
-      if (typeParamDecl.getKind() == Tree.Kind.TYPE_PARAMETER) {
-        TypeParameterTree tptree = (TypeParameterTree) typeParamDecl;
-
-        List<? extends Tree> bnds = tptree.getBounds();
-        if (bnds != null && !bnds.isEmpty()) {
-          boundType = BoundType.UPPER;
-        } else {
-          boundType = BoundType.UNBOUNDED;
-        }
-      } else {
-        throw new BugInCF(
-            StringsPlume.joinLines(
-                "Unexpected tree type for typeVar Element:",
-                "typeParamElem=" + typeParamElem,
-                typeParamDecl));
-      }
-    }
-
-    elementToBoundType.put(typeParamElem, boundType);
-    return boundType;
+    return BoundType.UPPER;
   }
 
   /**
@@ -1223,12 +1170,7 @@ public class QualifierDefaults {
    */
   public BoundType getWildcardBoundType(AnnotatedWildcardType wildcardType) {
     if (AnnotatedTypes.hasNoExplicitBound(wildcardType)) {
-      TypeParameterElement e = TypesUtils.wildcardToTypeParam(wildcardType.getUnderlyingType());
-      if (e != null) {
-        return getTypeVarBoundType(e);
-      } else {
-        return BoundType.UNBOUNDED;
-      }
+      return BoundType.UNBOUNDED;
     } else if (AnnotatedTypes.hasExplicitSuperBound(wildcardType)) {
       return BoundType.LOWER;
     } else {

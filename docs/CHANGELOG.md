@@ -1,10 +1,120 @@
 Version 3.36.0 (July 5, 2023)
------------------------------
+------------------------------
 
 **User-visible changes:**
 
 The Initialization Checker issues a `cast.unsafe` warning instead of an
 `initialization.cast` error.
+
+Change to defaulting of `T extends Object`, see immediately below.
+
+**Change to defaulting of `T extends Object`:**
+
+Previously, the Checker Framework interpreted
+`class MyClass<T extends Object>` as
+`class MyClass<T extends @DefaultType Object>`.
+Now, the Checker Framework interprets
+`class MyClass<T extends Object>` as
+`class MyClass<T extends @TopType Object>`.
+There is no change when the upper bound is not `Object`; for example,
+`class MyClass<T extends Number>` is still treated as
+`class MyClass<T extends @DefaultType Number>`.
+
+This means that the Checker Framework now treats
+`class MyClass<T>` and `class MyClass<T extends Object>` identically:  in both
+cases, instantiation is permitted by any client type, regardless of annotations.
+This change leads to fewer annotations and less effort for type systems where
+the default type qualifier is not the top type qualifier (listed at
+<https://checkerframework.org/manual/#default-is-not-top-type-systems>).
+
+If the default type qualifier differs from the top type qualifier, you need to
+update some code and annotated libraries, namely
+
+ * every file that is typechecked by a non-default-top type system, and
+ * every file that contains `@AnnotatedFor` for a non-default-top type system
+   (this is used in annotated libraries).
+
+(However, no code changes are required for type systems that default explicit
+and implicit bounds the same, such as the Locking Checker, even though its
+default type qualifier is not the top type qualifier.)
+
+Make the following changes:
+
+[//]: # (Comment: GitHub Markdown does not render the italics, but other Markdown engines do.)
+
+ * change "`<... extends Object>`" to "<code>&lt;... extends @<em>DefaultType</em> Object&gt;</code>".
+   If your code contains "`<... extends Object>`" where arbitrary instantiation is
+   desirable, then your previous annotations were buggy and should have been
+   "<code>&lt;... extends @<em>TopType</em> Object&gt;</code>",
+   but that can be written as just "`<...>`", which is better style.
+ * optionally, remove <code>extends @<em>TopType</em> Object&gt;</code>.
+   This change is not required, but it is recommended as a matter of style.
+   (If the code is annotated for two type systems, then change
+   "<code>&lt;T extends @<em>TopType1 TopType2</em> Object&gt;</code>" to "`<T>`",
+   but leave "<code>&lt;T extends @<em>TopType1 NotTopType2</em> Object&gt;</code>"
+   unchanged.)
+
+For wildcards, the same transformations apply, with one exception.  "`<@Anno ?
+extends @Anno Object>`" can be abbreviated "`<@Anno ?>`", but the same
+abbreviation does not apply to non-wildcard type variables.  That is, "`<@Anno T
+extends @Anno Object>`" cannot be abbreviated unless `@Anno` is the top type, in
+which case it is equivalent to "`<@Anno T>`".
+
+For more details about the meaning of generic types, see the manual section
+["Syntax for upper and lower
+bounds"](https://checkerframework.org/manual/#generics-bounds-syntax).
+
+As an example, for the Nullness Checker:
+
+ * `<T extends Object>`: change to `<T extends @NonNull Object>`
+ * `<T extends @Nullable Object>`: change to `<T>` for better style
+ * `<T extends @NonNull Object>`: don't change
+ * `<T>`: don't change
+
+ * `<@Nullable T extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Nullable T extends @Nullable Object>`: change to `<@Nullable T>` for better style
+ * `<@Nullable T extends @NonNull Object>`: did not make sense, and still doesn't
+ * `<@Nullable T>`: don't change
+
+ * `<@NonNull T extends Object>`: change to `<@NonNull T extends @NonNull Object>`
+ * `<@NonNull T extends @Nullable Object>`: change to `<T>` for better style
+ * `<@NonNull T extends @NonNull Object>`: change to `<T extends @NonNull Object>` for better style
+ * `<@NonNull T>`: change to `<T>`
+
+ * `<? extends Object>`: change to `<@NonNull ?>`
+ * `<? extends @Nullable Object>`: change to `<?>` for better style
+ * `<? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
+ * `<?>`: don't change
+
+ * `<@Nullable ? extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Nullable ? extends @Nullable Object>`: change to `<@Nullable ?>`
+ * `<@Nullable ? extends @NonNull Object>`: did not make sense, and still doesn't
+ * `<@Nullable ?>`: don't change
+
+ * `<@NonNull ? extends Object>`: change to `<@NonNull ?>`
+ * `<@NonNull ? extends @Nullable Object>`: change to `<?>`
+ * `<@NonNull ? extends @NonNull Object>`: change to `<@NonNull ?>` for better style
+ * `<@NonNull ?>`: don't change
+
+As another example, for the Signedness Checker (note that not all the
+transformations are the same as above, because `@NonNull` is the bottom type,
+`@Nullable` is the top type, and `@Unsigned` is neither):
+
+ * `<T extends Object>`: change to `<T extends @Signed Object>`
+ * `<T extends @Unsigned Object>`: don't change
+ * `<T>`: don't change
+
+ * `<@Unsigned T extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Unsigned T extends @Unsigned Object>`: don't change
+ * `<@Unsigned T>`: don't change
+
+ * `<? extends Object>`: change to `<? extends @Signed Object>`
+ * `<? extends @Unsigned Object>`: don't change
+ * `<?>`: don't change
+
+ * `<@Unsigned ? extends Object>`: did not make sense (and has a different meaning now)
+ * `<@Unsigned ? extends @Unsigned Object>`: change to `<@Unsigned ?>` for better style
+ * `<@Unsigned ?>`: don't change
 
 **Implementation details:**
 

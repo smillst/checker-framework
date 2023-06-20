@@ -44,7 +44,8 @@ public class GenericsCasts {
     }
   }
 
-  public static <T extends @NonNull Object> int indexOf(T[] a) {
+  @SuppressWarnings("nullness:argument")
+  public static <T extends Object> int indexOf(T[] a) {
     return indexOfEq(a);
   }
 

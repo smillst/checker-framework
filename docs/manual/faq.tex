@@ -73,7 +73,7 @@ fully-qualified type name?
 
 \faqtocpara{\ref{faq-semantics-section}: Semantics of type annotations}
 \\ \ref{faq-typestate}: How can I handle typestate, or phases of my program with different data properties?
-\\ \ref{faq-implicit-bounds}: Why are explicit and implicit bounds defaulted differently?
+\\ \ref{faq-implicit-bounds}: How are implicit bounds defaulted?
 \\ \ref{faq-writing-generics}: How should I annotate code that uses generics?
 \\ \ref{faq-runtime-retention}: Why are type annotations declared with \<@Retention(RetentionPolicy.RUNTIME)>?
 
@@ -1446,19 +1446,23 @@ You can also use a typestate checker (see
 tested.
 
 
-\subsectionAndLabel{Why are explicit and implicit bounds defaulted differently?}{faq-implicit-bounds}
+\subsectionAndLabel{How are implicit bounds defaulted?}{faq-implicit-bounds}
 
-The following two bits of code have the same semantics under Java, but are
-treated differently by the Checker Framework's CLIMB-to-top defaulting
-rules (Section~\ref{climb-to-top}):
+The following two bits of code have the same semantics under Java; they
+permit any instantiation:
 
 \begin{Verbatim}
 class MyClass<T> { ... }
 class MyClass<T extends @NonNull Object> { ... }
 \end{Verbatim}
 
-The difference is the annotation on the upper bound of the type argument
-\<T>.  They are treated in the following way.
+\noindent
+They are also treated the same by the Checker Framework: it permits any
+instantiation, by giving the upper bound the top type qualifier (see
+Section~\ref{climb-to-top}).
+
+By contrast, a non-\<Object> upper bound without a type qualifier is
+defaulted like any other ocurrence of the type.  That is, in
 
 \begin{Verbatim}
 class MyClass<T>                 ==  class MyClass<T extends @TOPTYPEANNO Object>
@@ -1467,51 +1471,11 @@ class MyClass<T extends MyClass> ==  class MyClass<T extendsf @DEFAULTANNO MyCla
 \end{Verbatim}
 
 \noindent
-\<@TOPTYPEANNO> is the top annotation in the type qualifier hierarchy.  For
-example, for the nullness type system, the top type annotation is
-\<@Nullable>, as shown in Figure~\ref{fig-nullness-hierarchy}.
-\<@DEFAULTANNO> is the default annotation for the type system.  For
-example, for the nullness type system, the default type annotation is
-\<@NonNull>.
+\<Date> is defaulted like any other occurrence of \<Date>, which might not
+be the top type qualifier.
 
-In some type systems, the top qualifier and the default are the same.  For
-such type systems, the two code snippets shown above are treated the same.
-An example is the regular expression type system; see
-Figure~\ref{fig-regex-hierarchy}.
-
-The CLIMB-to-top rule reduces the code edits required to annotate an
-existing program, and it treats types written in the program consistently.
-
-When a user writes no upper bound, as in
-\code{class C<T> \ttlcb\ ... \ttrcb},
-then Java permits the class to be instantiated with any type parameter.
-The Checker Framework behaves exactly the same, no matter what the default
-is for a particular type system --- and no matter whether the user has
-changed the default locally.
-
-When a user writes an upper bound, as in
-\code{class C<T extends OtherClass> \ttlcb\ ... \ttrcb},
-then the Checker Framework treats this occurrence of \<OtherClass> exactly
-like any other occurrence, and applies the usual defaulting rules.  Use of
-\<Object> is treated consistently with all other types in this location and
-all other occurrences of \<Object> in the program.
-
-Here are some style guidelines:
-\begin{itemize}
-\item
-  Omit the \<extends> clause when possible.  To indicate no constraints on
-  type qualifiers, write \code{class MyClass<T>} rather than \code{class
-    MyClass<T extends @TOPTYPEANNO Object>}.
-\item
-  When you write an \<Object> upper bound, give an explicit type annotation.
-  That is, write \code{class C<T extends @DEFAULTANNO Object>
-    \ttlcb\ ... \ttrcb} even though it is equivalent to writing
-  \code{class C<T extends @NonNull Object> \ttlcb\ ... \ttrcb}.
-
-  If you write just \<extends Object>, then someone who is reading the code
-  might think that it is irrelevant (which it is in plain Java).  Also,
-  some IDEs will suggest removing it.
-\end{itemize}
+This discrepancy is unfortunate, but is better than other alternatives; see
+Section~\ref{generics-defaults}.
 
 
 \subsectionAndLabel{How should I annotate code that uses generics?}{faq-writing-generics}

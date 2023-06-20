@@ -22,7 +22,6 @@ abstract class Issue329 {
 abstract class Issue329NN {
   interface Flag<T> {}
 
-  // Explicit bound makes it NonNull
   abstract <X extends @NonNull Object> void setExtension(X value);
 
   abstract <T> T getValue(Flag<T> flag);
