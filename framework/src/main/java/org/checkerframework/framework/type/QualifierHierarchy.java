@@ -397,9 +397,9 @@ public interface QualifierHierarchy {
    * @param result the result collection
    */
   static void assertSameSize(
-      @MustCallUnknown Collection<? extends @MustCallUnknown Object> c1,
-      @MustCallUnknown Collection<? extends @MustCallUnknown Object> c2,
-      @MustCallUnknown Collection<? extends @MustCallUnknown Object> result) {
+      @MustCallUnknown Collection<?> c1,
+      @MustCallUnknown Collection<?> c2,
+      @MustCallUnknown Collection<?> result) {
     if (c1.size() != result.size() || c2.size() != result.size()) {
       throw new BugInCF(
           "inconsistent sizes (%d, %d, %d):%n  %s%n  %s%n  %s",
