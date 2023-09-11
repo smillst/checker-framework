@@ -141,8 +141,6 @@ allprojects {
     annotationProcessor.exclude group:'org.checkerframework', module:'checker-qual'
   }
   dependencies {
-    errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")
-
     allProjects subprojects
   }
 
