@@ -306,7 +306,10 @@ allprojects {
       // compilationTask.source = compilationTask.source.sort()
 
       // This makes the class files Java 11, and then the Checker Framework does not run under Java 8.
-      options.release.set(11)
+      sourceCompatibility = 11
+      targetCompatibility = 11
+      // options.release.set(11) can't be used because the following error will be issued:
+      // error: exporting a package from system module jdk.compiler is not allowed with --release
       options.compilerArgs += [
         '--add-exports',
         'jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
