@@ -134,9 +134,6 @@ allprojects {
   }
 
   configurations {
-    // This is required to run the Checker Framework on JDK 8.
-    javacJar
-
     // Holds the combined classpath of all subprojects including the subprojects themselves.
     allProjects
 
@@ -144,8 +141,6 @@ allprojects {
     annotationProcessor.exclude group:'org.checkerframework', module:'checker-qual'
   }
   dependencies {
-    javacJar group: 'com.google.errorprone', name: 'javac', version: "9+181-r4173-1"
-
     errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")
 
     allProjects subprojects

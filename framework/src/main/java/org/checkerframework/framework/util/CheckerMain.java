@@ -67,9 +67,6 @@ public class CheckerMain {
     System.exit(exitStatus);
   }
 
-  /** The path to the javacJar to use. */
-  protected final File javacJar;
-
   /** The path to the jar containing CheckerMain.class (i.e. checker.jar). */
   protected final File checkerJar;
 
@@ -115,12 +112,6 @@ public class CheckerMain {
   public static final String CHECKER_UTIL_PATH_OPT = "-checkerUtilJar";
 
   /**
-   * Option name for specifying an alternative javac.jar location. The accompanying value MUST be
-   * the path to the jar file (NOT the path to its encompassing directory)
-   */
-  public static final String JAVAC_PATH_OPT = "-javacJar";
-
-  /**
    * Option name for specifying an alternative jdk.jar location. The accompanying value MUST be the
    * path to the jar file (NOT the path to its encompassing directory)
    */
@@ -144,8 +135,6 @@ public class CheckerMain {
     this.checkerUtilJar =
         extractFileArg(CHECKER_UTIL_PATH_OPT, new File(searchPath, "checker-util.jar"), args);
 
-    this.javacJar = extractFileArg(JAVAC_PATH_OPT, new File(searchPath, "javac.jar"), args);
-
     this.compilationBootclasspath = createCompilationBootclasspath(args);
     this.runtimeClasspath = createRuntimeClasspath(args);
     this.jvmOpts = extractJvmOpts(args);
@@ -159,11 +148,7 @@ public class CheckerMain {
 
   /** Assert that required jars exist. */
   protected void assertValidState() {
-    if (SystemUtil.jreVersion == 8) {
-      assertFilesExist(javacJar, checkerJar, checkerQualJar, checkerUtilJar);
-    } else {
-      assertFilesExist(checkerJar, checkerQualJar, checkerUtilJar);
-    }
+    assertFilesExist(checkerJar, checkerQualJar, checkerUtilJar);
   }
 
   public void addToClasspath(List<String> cpOpts) {
@@ -179,7 +164,7 @@ public class CheckerMain {
   }
 
   protected List<String> createRuntimeClasspath(List<String> argsList) {
-    return new ArrayList<>(Arrays.asList(javacJar.getAbsolutePath()));
+    return new ArrayList<>(argsList);
   }
 
   /**
