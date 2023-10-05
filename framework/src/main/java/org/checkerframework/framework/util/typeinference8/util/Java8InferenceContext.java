@@ -64,6 +64,9 @@ public class Java8InferenceContext {
   /** Number of capture variables. */
   private int captureVariableCount = 1;
 
+  /** Number of qualifier variables. */
+  private int qualifierVarCount = 1;
+
   /** TypeMirror for java.lang.RuntimeException. */
   public final TypeMirror runtimeEx;
 
@@ -117,6 +120,15 @@ public class Java8InferenceContext {
    */
   public int getNextCaptureVariableId() {
     return captureVariableCount++;
+  }
+
+  /**
+   * Returns the next number to use as the id for a qualifier variable.
+   *
+   * @return the next number to use as the id for a qualifier variable
+   */
+  public int getNextQualifierVariableId() {
+    return qualifierVarCount++;
   }
 
   /**
