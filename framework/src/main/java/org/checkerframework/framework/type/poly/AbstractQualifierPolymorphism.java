@@ -180,12 +180,6 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     if (polyQuals.isEmpty() || !hasPolymorphicQualifiers(type)) {
       return;
     }
-    if (needsInference(tree.getArguments(), atypeFactory.getPath(tree))) {
-      // TODO: This is a work around.  We need to implement a way to resolve polymorphic in this
-      // case.
-      completer.visit(type);
-      return;
-    }
 
     // javac produces enum super calls with zero arguments even though the
     // method element requires two.

@@ -191,7 +191,8 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
 
   /** Treat non-owning method parameters as @MustCallUnknown (top) when the method is called. */
   @Override
-  public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
+  public void methodFromUsePreSubstitution(
+      ExpressionTree tree, AnnotatedExecutableType type, boolean resolvePolyQuals) {
     ExecutableElement declaration;
     if (tree instanceof MethodInvocationTree) {
       declaration = TreeUtils.elementFromUse((MethodInvocationTree) tree);
@@ -201,7 +202,7 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
       throw new TypeSystemError("unexpected type of method tree: " + tree.getKind());
     }
     changeNonOwningParameterTypesToTop(declaration, type);
-    super.methodFromUsePreSubstitution(tree, type);
+    super.methodFromUsePreSubstitution(tree, type, resolvePolyQuals);
   }
 
   @Override

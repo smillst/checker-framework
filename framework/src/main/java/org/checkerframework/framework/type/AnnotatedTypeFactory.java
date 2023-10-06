@@ -2426,7 +2426,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     AnnotatedExecutableType memberTypeWithOverrides =
         applyFakeOverrides(receiverType, methodElt, memberTypeWithoutOverrides);
     memberTypeWithOverrides = applyRecordTypesToAccessors(methodElt, memberTypeWithOverrides);
-    methodFromUsePreSubstitution(tree, memberTypeWithOverrides);
+    methodFromUsePreSubstitution(tree, memberTypeWithOverrides, inferTypeArgs);
 
     AnnotatedExecutableType methodType =
         AnnotatedTypes.asMemberOf(types, this, receiverType, methodElt, memberTypeWithOverrides);
@@ -2515,7 +2515,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree either a method invocation or a member reference tree
    * @param type declared method type before type variable substitution
    */
-  protected void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
+  protected void methodFromUsePreSubstitution(
+      ExpressionTree tree, AnnotatedExecutableType type, boolean resolvePolyQuals) {
     assert tree instanceof MethodInvocationTree || tree instanceof MemberReferenceTree;
   }
 

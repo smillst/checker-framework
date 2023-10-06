@@ -2136,9 +2136,10 @@ public abstract class GenericAnnotatedTypeFactory<
   }
 
   @Override
-  public void methodFromUsePreSubstitution(ExpressionTree tree, AnnotatedExecutableType type) {
-    super.methodFromUsePreSubstitution(tree, type);
-    if (tree instanceof MethodInvocationTree) {
+  public void methodFromUsePreSubstitution(
+      ExpressionTree tree, AnnotatedExecutableType type, boolean resolvePolyQuals) {
+    super.methodFromUsePreSubstitution(tree, type, resolvePolyQuals);
+    if (tree instanceof MethodInvocationTree && resolvePolyQuals) {
       poly.resolve((MethodInvocationTree) tree, type);
     }
   }
