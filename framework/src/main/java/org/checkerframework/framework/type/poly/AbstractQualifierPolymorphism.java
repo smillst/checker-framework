@@ -159,13 +159,8 @@ public abstract class AbstractQualifierPolymorphism implements QualifierPolymorp
     polyInstantiationForQualifierParameter.clear();
   }
 
-  /**
-   * Returns true if {@code type} has any polymorphic qualifiers
-   *
-   * @param type a type that might have polymorphic qualifiers
-   * @return true if {@code type} has any polymorphic qualifiers
-   */
-  protected boolean hasPolymorphicQualifiers(AnnotatedTypeMirror type) {
+  @Override
+  public boolean hasPolymorphicQualifiers(AnnotatedTypeMirror type) {
     return polyScanner.visit(type);
   }
 

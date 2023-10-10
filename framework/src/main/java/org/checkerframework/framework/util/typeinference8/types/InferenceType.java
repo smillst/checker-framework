@@ -86,6 +86,7 @@ public class InferenceType extends AbstractType {
     if (map == null) {
       return new ProperType(type, typeMirror, context);
     }
+
     if (typeMirror.getKind() == TypeKind.TYPEVAR && map.containsKey(type.getUnderlyingType())) {
       return new UseOfVariable(
           (AnnotatedTypeVariable) type, map.get(type.getUnderlyingType()), context);

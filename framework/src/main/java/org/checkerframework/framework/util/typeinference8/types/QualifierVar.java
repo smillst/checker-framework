@@ -5,7 +5,7 @@ import java.util.Objects;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 
-public class QualifierVar {
+public class QualifierVar extends AbstractQualifier {
   /** Identification number. Used only to make debugging easier. */
   protected final int id;
 
