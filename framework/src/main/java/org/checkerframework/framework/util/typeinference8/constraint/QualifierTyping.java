@@ -1,8 +1,9 @@
 package org.checkerframework.framework.util.typeinference8.constraint;
 
-import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.framework.util.typeinference8.types.AbstractQualifier;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
+import org.checkerframework.framework.util.typeinference8.types.Qualifier;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.javacutil.BugInCF;
 
@@ -18,11 +19,11 @@ import org.checkerframework.javacutil.BugInCF;
  */
 public class QualifierTyping implements Constraint {
 
-  /** The qualifiers on the left hand side of the constraint. */
-  private final Set<AnnotationMirror> Q;
+  /** The qualifier on the left hand side of the constraint. */
+  private final AbstractQualifier Q;
 
-  /** The qualifiers on the right hand side of the constraint. */
-  private final Set<AnnotationMirror> R;
+  /** The qualifier on the right hand side of the constraint. */
+  private final AbstractQualifier R;
 
   /**
    * Kind of constraint. One of: {@link Kind#QUALIFIER_SUBTYPE} or {@link Kind#QUALIFIER_EQUALITY}.
@@ -36,7 +37,7 @@ public class QualifierTyping implements Constraint {
    * @param R the qualifiers on the right hand side of the constraint
    * @param kind the kind of qualifier constraint
    */
-  public QualifierTyping(Set<AnnotationMirror> Q, Set<AnnotationMirror> R, Kind kind) {
+  public QualifierTyping(AbstractQualifier Q, AbstractQualifier R, Kind kind) {
     assert Q != null && R != null;
     switch (kind) {
       case QUALIFIER_SUBTYPE:
@@ -74,11 +75,16 @@ public class QualifierTyping implements Constraint {
    * @return the result of reducing this constraint
    */
   private ReductionResult reduceSubtyping(Java8InferenceContext context) {
-    if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(Q, R)
-        && context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(R, Q)) {
-      return ConstraintSet.TRUE;
+    if (Q instanceof Qualifier && R instanceof Qualifier) {
+      AnnotationMirror qAnno = ((Qualifier) Q).getAnnotation();
+      AnnotationMirror rAnno = ((Qualifier) R).getAnnotation();
+      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)
+          && context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)) {
+        return ConstraintSet.TRUE;
+      }
+      return ConstraintSet.TRUE_ANNO_FAIL;
     }
-    return ConstraintSet.TRUE_ANNO_FAIL;
+    throw new RuntimeException("Not implemented");
   }
 
   /**
@@ -88,10 +94,15 @@ public class QualifierTyping implements Constraint {
    * @return the result of reducing this constraint
    */
   private ReductionResult reduceEquality(Java8InferenceContext context) {
-    if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(Q, R)) {
-      return ConstraintSet.TRUE;
+    if (Q instanceof Qualifier && R instanceof Qualifier) {
+      AnnotationMirror qAnno = ((Qualifier) Q).getAnnotation();
+      AnnotationMirror rAnno = ((Qualifier) R).getAnnotation();
+      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)) {
+        return ConstraintSet.TRUE;
+      }
+      return ConstraintSet.TRUE_ANNO_FAIL;
     }
-    return ConstraintSet.TRUE_ANNO_FAIL;
+    throw new RuntimeException("Not implemented");
   }
 
   @Override

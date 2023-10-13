@@ -50,7 +50,7 @@ public class VariableBounds {
    * a set of {@link AnnotationMirror}s. A qualifier bound is a bound on the primary annotation of
    * this variable.
    */
-  public final EnumMap<BoundKind, Set<Set<AnnotationMirror>>> qualifierBounds =
+  public final EnumMap<BoundKind, Set<AbstractQualifier>> qualifierBounds =
       new EnumMap<>(BoundKind.class);
 
   /** Constraints implied by complementary pairs of bounds found during incorporation. */
@@ -63,7 +63,7 @@ public class VariableBounds {
   public EnumMap<BoundKind, LinkedHashSet<AbstractType>> savedBounds = null;
 
   /** Saved qualifier bounds used in the event the first attempt at resolution fails. */
-  public EnumMap<BoundKind, LinkedHashSet<Set<AnnotationMirror>>> savedQualifierBounds = null;
+  public EnumMap<BoundKind, LinkedHashSet<AbstractQualifier>> savedQualifierBounds = null;
 
   /**
    * Creates bounds for {@code variable}.
@@ -171,10 +171,10 @@ public class VariableBounds {
    * @param kind the kind of bound
    * @param qualifiers the qualifiers
    */
-  public void addQualifierBound(BoundKind kind, Set<AnnotationMirror> qualifiers) {
+  public void addQualifierBound(BoundKind kind, Set<AbstractQualifier> qualifiers) {
     addConstraintsFromComplementaryQualifierBounds(kind, qualifiers);
     addConstraintsFromComplementaryBounds(kind, qualifiers);
-    qualifierBounds.get(kind).add(qualifiers);
+    qualifierBounds.get(kind).addAll(qualifiers);
   }
 
   /**
@@ -185,9 +185,9 @@ public class VariableBounds {
    */
   @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public void addConstraintsFromComplementaryQualifierBounds(
-      BoundKind kind, Set<AnnotationMirror> s) {
+      BoundKind kind, Set<AbstractQualifier> s) {
     if (kind == BoundKind.EQUAL) {
-      for (Set<AnnotationMirror> t : qualifierBounds.get(BoundKind.EQUAL)) {
+      for (AbstractQualifier t : qualifierBounds.get(BoundKind.EQUAL)) {
         if (s != t) {
           constraints.add(new QualifierTyping(s, t, Kind.QUALIFIER_EQUALITY));
         }
@@ -289,7 +289,7 @@ public class VariableBounds {
    * @param kind kind of bound
    * @param s qualifiers
    */
-  public void addConstraintsFromComplementaryBounds(BoundKind kind, Set<AnnotationMirror> s) {
+  public void addConstraintsFromComplementaryBounds(BoundKind kind, Set<AbstractQualifier> s) {
     // Copy bound to equal variables
     for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
       if (t.isUseOfVariable()) {
