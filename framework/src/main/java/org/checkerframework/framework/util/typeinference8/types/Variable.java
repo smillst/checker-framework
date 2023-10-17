@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.source.tree.ExpressionTree;
 import java.util.Iterator;
+import java.util.Set;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -127,8 +128,8 @@ import org.checkerframework.javacutil.TypesUtils;
         break;
     }
 
-    variableBounds.addQualifierBound(
-        BoundKind.LOWER, typeVariable.getLowerBound().getPrimaryAnnotations());
+    Set<AbstractQualifier> quals = AbstractQualifier.create(typeVariable.getLowerBound());
+    variableBounds.addQualifierBound(BoundKind.LOWER, quals);
   }
 
   /**

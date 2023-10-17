@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
+import org.checkerframework.framework.util.typeinference8.types.AbstractQualifier;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
@@ -157,7 +158,7 @@ public class Typing extends TypeConstraint {
     } else if (S.getTypeKind() == TypeKind.NULL) {
       if (T.isUseOfVariable()) {
         UseOfVariable tUseOf = (UseOfVariable) T;
-        tUseOf.addQualifierBound(BoundKind.LOWER, S.getAnnotatedType().getPrimaryAnnotations());
+        tUseOf.addQualifierBound(BoundKind.LOWER, AbstractQualifier.create(S));
       }
       return ConstraintSet.TRUE;
     } else if (T.getTypeKind() == TypeKind.NULL) {

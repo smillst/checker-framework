@@ -158,8 +158,8 @@ public class VariableBounds {
     }
     if (bounds.get(kind).add(otherType)) {
       addConstraintsFromComplementaryBounds(kind, otherType);
-      addConstraintsFromComplementaryQualifierBounds(
-          kind, otherType.getAnnotatedType().getEffectiveAnnotations());
+      Set<AbstractQualifier> aQuals = AbstractQualifier.create(otherType);
+      addConstraintsFromComplementaryQualifierBounds(kind, aQuals);
       return true;
     }
     return false;
@@ -181,43 +181,35 @@ public class VariableBounds {
    * Add constraints created via incorporation of the bound. See JLS 18.3.1.
    *
    * @param kind the kind of bound
-   * @param s the qualifiers
+   * @param setS the qualifiers
    */
   @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public void addConstraintsFromComplementaryQualifierBounds(
-      BoundKind kind, Set<AbstractQualifier> s) {
+      BoundKind kind, Set<AbstractQualifier> setS) {
+    Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
     if (kind == BoundKind.EQUAL) {
-      for (AbstractQualifier t : qualifierBounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new QualifierTyping(s, t, Kind.QUALIFIER_EQUALITY));
-        }
-      }
+      addConstraint(equalBounds, setS, Kind.QUALIFIER_EQUALITY);
     } else if (kind == BoundKind.LOWER) {
-      for (Set<AnnotationMirror> t : qualifierBounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new QualifierTyping(s, t, Kind.QUALIFIER_SUBTYPE));
-        }
-      }
+      addConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
     } else { // UPPER
-      for (Set<AnnotationMirror> t : qualifierBounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new QualifierTyping(t, s, Kind.QUALIFIER_SUBTYPE));
-        }
-      }
+      addConstraint(setS,equalBounds, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
-      for (Set<AnnotationMirror> t : qualifierBounds.get(BoundKind.LOWER)) {
-        if (s != t) {
-          constraints.add(new QualifierTyping(t, s, Kind.QUALIFIER_SUBTYPE));
-        }
-      }
+      addConstraint(qualifierBounds.get(BoundKind.LOWER), setS, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
-      for (Set<AnnotationMirror> t : qualifierBounds.get(BoundKind.UPPER)) {
-        if (s != t) {
-          constraints.add(new QualifierTyping(s, t, Kind.QUALIFIER_SUBTYPE));
+      addConstraint(qualifierBounds.get(BoundKind.UPPER), setS, Kind.QUALIFIER_SUBTYPE);
+    }
+  }
+
+  private void addConstraint(Set<AbstractQualifier> setT, Set<AbstractQualifier> setS,
+      Kind kind) {
+    for (AbstractQualifier t : setT) {
+      for (AbstractQualifier s : setS) {
+        if (s != t && s.sameHierarchy(t)) {
+          constraints.add(new QualifierTyping(s, t, kind));
         }
       }
     }
@@ -294,7 +286,7 @@ public class VariableBounds {
     for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
       if (t.isUseOfVariable()) {
         VariableBounds otherBounds = ((UseOfVariable) t).getVariable().getBounds();
-        otherBounds.qualifierBounds.get(kind).add(s);
+        otherBounds.qualifierBounds.get(kind).addAll(s);
       }
     }
 
@@ -302,7 +294,7 @@ public class VariableBounds {
       for (AbstractType t : bounds.get(BoundKind.LOWER)) {
         if (t.isUseOfVariable()) {
           VariableBounds otherBounds = ((UseOfVariable) t).getVariable().getBounds();
-          otherBounds.qualifierBounds.get(BoundKind.UPPER).add(s);
+          otherBounds.qualifierBounds.get(BoundKind.UPPER).addAll(s);
         }
       }
     }
@@ -311,7 +303,7 @@ public class VariableBounds {
       for (AbstractType t : bounds.get(BoundKind.UPPER)) {
         if (t.isUseOfVariable()) {
           VariableBounds otherBounds = ((UseOfVariable) t).getVariable().getBounds();
-          otherBounds.qualifierBounds.get(BoundKind.LOWER).add(s);
+          otherBounds.qualifierBounds.get(BoundKind.LOWER).addAll(s);
         }
       }
     }
