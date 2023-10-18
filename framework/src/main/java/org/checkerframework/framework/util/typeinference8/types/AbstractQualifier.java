@@ -1,10 +1,12 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.checker.interning.qual.Interned;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 public class AbstractQualifier {
@@ -18,14 +20,26 @@ public class AbstractQualifier {
     return hierarchyName == t.hierarchyName;
   }
 
-  public static Set<AbstractQualifier> create(AbstractType type) {
+  public static Set<AbstractQualifier> create(Set<AnnotationMirror> annos, AnnotationMirrorMap<QualifierVar> qualifierVars, Java8InferenceContext context) {
+    if(qualifierVars.isEmpty()) {
+      return create(annos, context);
+    }
+
     Set<AbstractQualifier> quals = new HashSet<>();
-
-
+    for(AnnotationMirror anno: annos){
+      if(qualifierVars.containsKey(anno)) {
+        quals.add(qualifierVars.get(anno));
+      } else {
+        quals.add(new Qualifier(anno, context));
+      }
+    }
+    return quals;
   }
-
-  public static AbstractQualifier create(AnnotationMirror anno) {
-
-
+  public static Set<AbstractQualifier> create(Set<AnnotationMirror> annos, Java8InferenceContext context) {
+    Set<AbstractQualifier> quals = new HashSet<>();
+    for(AnnotationMirror anno:annos){
+      quals.add(new Qualifier(anno, context));
+    }
+    return quals;
   }
 }

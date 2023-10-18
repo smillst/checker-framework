@@ -27,6 +27,7 @@ public class QualifierVar extends AbstractQualifier {
    */
   public QualifierVar(
       ExpressionTree invocation, AnnotationMirror polyQualifier, Java8InferenceContext context) {
+    super(polyQualifier, context);
     this.id = context.getNextVariableId();
     this.invocation = invocation;
     this.polyQualifier = polyQualifier;

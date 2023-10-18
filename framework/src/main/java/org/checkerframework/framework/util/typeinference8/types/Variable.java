@@ -128,7 +128,7 @@ import org.checkerframework.javacutil.TypesUtils;
         break;
     }
 
-    Set<AbstractQualifier> quals = AbstractQualifier.create(typeVariable.getLowerBound());
+    Set<? extends AbstractQualifier> quals = AbstractQualifier.create(typeVariable.getLowerBound().getPrimaryAnnotations(), context);
     variableBounds.addQualifierBound(BoundKind.LOWER, quals);
   }
 

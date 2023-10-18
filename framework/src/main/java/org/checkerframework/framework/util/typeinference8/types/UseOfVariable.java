@@ -12,6 +12,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVari
 import org.checkerframework.framework.type.QualifierHierarchy;
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 
 /**
@@ -35,6 +36,8 @@ public class UseOfVariable extends AbstractType {
   /** The annotated type variable for this use. */
   private final AnnotatedTypeVariable type;
 
+  private final AnnotationMirrorMap<QualifierVar> qualifierVars;
+
   /**
    * Creates a use of a variable.
    *
@@ -43,9 +46,10 @@ public class UseOfVariable extends AbstractType {
    * @param context the context
    */
   public UseOfVariable(
-      AnnotatedTypeVariable type, Variable variable, Java8InferenceContext context) {
+      AnnotatedTypeVariable type, Variable variable, AnnotationMirrorMap<QualifierVar> qualifierVars, Java8InferenceContext context) {
     super(context);
     QualifierHierarchy qh = context.typeFactory.getQualifierHierarchy();
+    this.qualifierVars = qualifierVars;
     this.variable = variable;
     this.type = type.deepCopy();
     this.hasPrimaryAnno = !type.getPrimaryAnnotations().isEmpty();
@@ -61,7 +65,7 @@ public class UseOfVariable extends AbstractType {
 
   @Override
   public AbstractType create(AnnotatedTypeMirror atm, TypeMirror type) {
-    return InferenceType.create(atm, type, variable.map, context);
+    return InferenceType.create(atm, type, variable.map, qualifierVars, context);
   }
 
   @Override
@@ -173,6 +177,15 @@ public class UseOfVariable extends AbstractType {
         boundCopy.getAnnotatedType().replaceAnnotations(bots);
         variable.getBounds().addBound(BoundKind.LOWER, boundCopy);
       }
+    }
+  }
+  @Override
+  public Set<AbstractQualifier> getQualifiers() {
+    if(hasPrimaryAnno) {
+      return AbstractQualifier.create(getAnnotatedType().getPrimaryAnnotations(), qualifierVars,
+          context);
+    } else {
+      return Collections.emptySet();
     }
   }
 

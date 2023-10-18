@@ -158,7 +158,7 @@ public class VariableBounds {
     }
     if (bounds.get(kind).add(otherType)) {
       addConstraintsFromComplementaryBounds(kind, otherType);
-      Set<AbstractQualifier> aQuals = AbstractQualifier.create(otherType);
+      Set<AbstractQualifier> aQuals = otherType.getQualifiers();
       addConstraintsFromComplementaryQualifierBounds(kind, aQuals);
       return true;
     }
@@ -171,7 +171,7 @@ public class VariableBounds {
    * @param kind the kind of bound
    * @param qualifiers the qualifiers
    */
-  public void addQualifierBound(BoundKind kind, Set<AbstractQualifier> qualifiers) {
+  public void addQualifierBound(BoundKind kind, Set<? extends AbstractQualifier> qualifiers) {
     addConstraintsFromComplementaryQualifierBounds(kind, qualifiers);
     addConstraintsFromComplementaryBounds(kind, qualifiers);
     qualifierBounds.get(kind).addAll(qualifiers);
@@ -185,7 +185,7 @@ public class VariableBounds {
    */
   @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public void addConstraintsFromComplementaryQualifierBounds(
-      BoundKind kind, Set<AbstractQualifier> setS) {
+      BoundKind kind, Set<? extends AbstractQualifier> setS) {
     Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
     if (kind == BoundKind.EQUAL) {
       addConstraint(equalBounds, setS, Kind.QUALIFIER_EQUALITY);
@@ -204,7 +204,7 @@ public class VariableBounds {
     }
   }
 
-  private void addConstraint(Set<AbstractQualifier> setT, Set<AbstractQualifier> setS,
+  private void addConstraint(Set<? extends AbstractQualifier> setT, Set<? extends AbstractQualifier> setS,
       Kind kind) {
     for (AbstractQualifier t : setT) {
       for (AbstractQualifier s : setS) {
@@ -281,7 +281,7 @@ public class VariableBounds {
    * @param kind kind of bound
    * @param s qualifiers
    */
-  public void addConstraintsFromComplementaryBounds(BoundKind kind, Set<AbstractQualifier> s) {
+  public void addConstraintsFromComplementaryBounds(BoundKind kind, Set<? extends AbstractQualifier> s) {
     // Copy bound to equal variables
     for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
       if (t.isUseOfVariable()) {

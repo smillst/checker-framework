@@ -158,7 +158,7 @@ public class Typing extends TypeConstraint {
     } else if (S.getTypeKind() == TypeKind.NULL) {
       if (T.isUseOfVariable()) {
         UseOfVariable tUseOf = (UseOfVariable) T;
-        tUseOf.addQualifierBound(BoundKind.LOWER, AbstractQualifier.create(S));
+        tUseOf.addQualifierBound(BoundKind.LOWER, S.getQualifiers());
       }
       return ConstraintSet.TRUE;
     } else if (T.getTypeKind() == TypeKind.NULL) {
