@@ -279,9 +279,17 @@ public class ControlFlowGraph implements UniqueId {
     return result;
   }
 
+  /**
+   * Returns the set of all basic blocks in this control flow graph except those that are only
+   * reachable via an exception whose type is ignored by {@code shouldIgnoreException}.
+   *
+   * @param shouldIgnoreException returns true if the passed {@code TypeMirror} should be ignored
+   * @return the set of all basic blocks in this control flow graph except those that are only
+   *     reachable via an exception whose type is ignored by {@code shouldIgnoreException}
+   */
   public Set<Block> getAllBlocks(
       @UnknownInitialization(ControlFlowGraph.class) ControlFlowGraph this,
-      Function<TypeMirror, Boolean> f) {
+      Function<TypeMirror, Boolean> shouldIgnoreException) {
     Set<Block> visited = new LinkedHashSet<>();
     // worklist is always a subset of visited; any block in worklist is also in visited.
     Queue<Block> worklist = new ArrayDeque<>();
@@ -299,7 +307,7 @@ public class ControlFlowGraph implements UniqueId {
             .getExceptionalSuccessors()
             .forEach(
                 (key, value) -> {
-                  if (!f.apply(key)) {
+                  if (!shouldIgnoreException.apply(key)) {
                     for (Block b : value) {
                       if (visited.add(b)) {
                         worklist.add(b);
@@ -325,11 +333,19 @@ public class ControlFlowGraph implements UniqueId {
     return visited;
   }
 
+  /**
+   * Returns the list of all nodes in this control flow graph except those that are only reachable
+   * via an exception whose type is ignored by {@code shouldIgnoreException}.
+   *
+   * @param shouldIgnoreException returns true if the passed {@code TypeMirror} should be ignored
+   * @return the list of all nodes in this control flow graph except those that are only reachable
+   *     via an exception whose type is ignored by {@code shouldIgnoreException}
+   */
   public List<Node> getAllNodes(
       @UnknownInitialization(ControlFlowGraph.class) ControlFlowGraph this,
-      Function<TypeMirror, Boolean> f) {
+      Function<TypeMirror, Boolean> shouldIgnoreException) {
     List<Node> result = new ArrayList<>();
-    for (Block b : getAllBlocks(f)) {
+    for (Block b : getAllBlocks(shouldIgnoreException)) {
       result.addAll(b.getNodes());
     }
     return result;
