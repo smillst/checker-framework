@@ -4,6 +4,8 @@ import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.framework.util.typeinference8.types.AbstractQualifier;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
 import org.checkerframework.framework.util.typeinference8.types.Qualifier;
+import org.checkerframework.framework.util.typeinference8.types.QualifierVar;
+import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.javacutil.BugInCF;
 
@@ -84,7 +86,19 @@ public class QualifierTyping implements Constraint {
       }
       return ConstraintSet.TRUE_ANNO_FAIL;
     }
-    throw new RuntimeException("Not implemented");
+
+    if (Q instanceof QualifierVar) {
+      // Q <: R
+      QualifierVar var = (QualifierVar) Q;
+      var.addBound(BoundKind.UPPER, R);
+    }
+    if (R instanceof QualifierVar) {
+      // Q <: R
+      QualifierVar var = (QualifierVar) R;
+      var.addBound(BoundKind.LOWER, Q);
+  }
+    return ConstraintSet.TRUE;
+
   }
 
   /**
@@ -102,7 +116,17 @@ public class QualifierTyping implements Constraint {
       }
       return ConstraintSet.TRUE_ANNO_FAIL;
     }
-    throw new RuntimeException("Not implemented");
+    if (Q instanceof QualifierVar) {
+      // Q <: R
+      QualifierVar var = (QualifierVar) Q;
+      var.addBound(BoundKind.EQUAL, R);
+    }
+    if (R instanceof QualifierVar) {
+      // Q <: R
+      QualifierVar var = (QualifierVar) R;
+      var.addBound(BoundKind.EQUAL, Q);
+    }
+    return ConstraintSet.TRUE;
   }
 
   @Override

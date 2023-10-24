@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.types;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import org.checkerframework.checker.interning.qual.Interned;
@@ -18,6 +19,15 @@ public class AbstractQualifier {
 
   public boolean sameHierarchy(AbstractQualifier t) {
     return hierarchyName == t.hierarchyName;
+  }
+
+  Set<AnnotationMirror> lub(Set<AbstractQualifier> quals) {
+    Map<String, AbstractQualifier> m;
+
+    for(AbstractQualifier qual:quals){
+
+    }
+
   }
 
   public static Set<AbstractQualifier> create(Set<AnnotationMirror> annos, AnnotationMirrorMap<QualifierVar> qualifierVars, Java8InferenceContext context) {

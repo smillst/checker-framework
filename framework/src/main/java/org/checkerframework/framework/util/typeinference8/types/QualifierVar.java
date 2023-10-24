@@ -1,8 +1,12 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.source.tree.ExpressionTree;
+import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 
 public class QualifierVar extends AbstractQualifier {
@@ -31,6 +35,9 @@ public class QualifierVar extends AbstractQualifier {
     this.id = context.getNextVariableId();
     this.invocation = invocation;
     this.polyQualifier = polyQualifier;
+    qualifierBounds.put(BoundKind.EQUAL, new LinkedHashSet<>());
+    qualifierBounds.put(BoundKind.UPPER, new LinkedHashSet<>());
+    qualifierBounds.put(BoundKind.LOWER, new LinkedHashSet<>());
   }
 
   @Override
@@ -56,4 +63,10 @@ public class QualifierVar extends AbstractQualifier {
   public String toString() {
     return "@P" + id;
   }
+
+  public void addBound(BoundKind boundKind, AbstractQualifier r) {
+  qualifierBounds.get(boundKind).add(r);
+  }
+  public final EnumMap<BoundKind, Set<AbstractQualifier>> qualifierBounds =
+      new EnumMap<>(BoundKind.class);
 }
