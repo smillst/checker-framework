@@ -2776,8 +2776,8 @@ public final class TreeUtils {
     }
     MemberReferenceTree memberReferenceTree = (MemberReferenceTree) tree;
     if (TreeUtils.MemberReferenceKind.getMemberReferenceKind(memberReferenceTree).isUnbound()) {
-      TypeMirror qualifierExpressionType = typeOf(memberReferenceTree.getQualifierExpression());
-      return TypesUtils.isRaw(qualifierExpressionType);
+      TypeMirror preColonTreeType = typeOf(memberReferenceTree.getQualifierExpression());
+      return TypesUtils.isRaw(preColonTreeType);
     }
     return false;
   }
