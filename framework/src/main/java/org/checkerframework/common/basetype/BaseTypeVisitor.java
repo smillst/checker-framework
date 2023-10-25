@@ -1533,8 +1533,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     AnnotatedTypeMirror variableType = atypeFactory.getAnnotatedTypeLhs(tree);
 
     atypeFactory.getDependentTypesHelper().checkTypeForErrorExpressions(variableType, tree);
-    Element varEle = TreeUtils.elementFromDeclaration(tree);
-    if (varEle.getKind() == ElementKind.ENUM_CONSTANT) {
+    Element varElt = TreeUtils.elementFromDeclaration(tree);
+    if (varElt.getKind() == ElementKind.ENUM_CONSTANT) {
       commonAssignmentCheck(tree, tree.getInitializer(), "enum.declaration");
     } else if (tree.getInitializer() != null) {
       // If there's no assignment in this variable declaration, skip it.
@@ -3563,7 +3563,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * like var args.
    *
    * @see #checkVarargs(AnnotatedTypeMirror.AnnotatedExecutableType, Tree)
-   * @param requiredArgs the required types. This may differ from the formal parameter types,
+   * @param requiredTypes the required types. This may differ from the formal parameter types,
    *     because it replaces a varargs parameter by multiple parameters with the vararg's element
    *     type.
    * @param passedArgs the expressions passed to the corresponding types
@@ -3571,14 +3571,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * @param paramNames the names of the callee's formal parameters
    */
   protected void checkArguments(
-      List<? extends AnnotatedTypeMirror> requiredArgs,
+      List<? extends AnnotatedTypeMirror> requiredTypes,
       List<? extends ExpressionTree> passedArgs,
       CharSequence executableName,
       List<?> paramNames) {
-    int size = requiredArgs.size();
+    int size = requiredTypes.size();
     assert size == passedArgs.size()
-        : "mismatch between required args ("
-            + requiredArgs
+        : "size mismatch between required args ("
+            + requiredTypes
             + ") and passed args ("
             + passedArgs
             + ")";
@@ -3590,13 +3590,13 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             size,
             passedArgs.size(),
             paramNames.size(),
-            listToString(requiredArgs),
+            listToString(requiredTypes),
             listToString(passedArgs),
             executableName,
             listToString(paramNames));
 
     for (int i = 0; i < size; ++i) {
-      AnnotatedTypeMirror requiredType = requiredArgs.get(i);
+      AnnotatedTypeMirror requiredType = requiredTypes.get(i);
       ExpressionTree passedArg = passedArgs.get(i);
       Object paramName = paramNames.get(Math.min(i, maxParamNamesIndex));
 
@@ -3799,8 +3799,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         MemberReferenceKind.getMemberReferenceKind(memberReferenceTree);
     AnnotatedTypeMirror enclosingType;
     if (TreeUtils.isLikeDiamondMemberReference(memberReferenceTree)) {
-      TypeElement typeEle = TypesUtils.getTypeElement(TreeUtils.typeOf(preColonTree));
-      enclosingType = atypeFactory.getAnnotatedType(typeEle);
+      TypeElement typeElt = TypesUtils.getTypeElement(TreeUtils.typeOf(preColonTree));
+      enclosingType = atypeFactory.getAnnotatedType(typeElt);
     } else if (memberReferenceTree.getMode() == ReferenceMode.NEW
         || memRefKind == MemberReferenceKind.UNBOUND
         || memRefKind == MemberReferenceKind.STATIC) {

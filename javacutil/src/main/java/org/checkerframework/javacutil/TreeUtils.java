@@ -2648,24 +2648,24 @@ public final class TreeUtils {
    * Returns all expressions that might be the result of {@code lambda}.
    *
    * @param lambda a lambda with or without a body
-   * @return a list of expressions are returned by {@code lambda}
+   * @return a list of expressions that are returned by {@code lambda}
    */
   public static List<ExpressionTree> getReturnedExpressions(LambdaExpressionTree lambda) {
     if (lambda.getBodyKind() == BodyKind.EXPRESSION) {
       return Collections.singletonList((ExpressionTree) lambda.getBody());
     }
 
-    List<ExpressionTree> list = new ArrayList<>();
+    List<ExpressionTree> returnExpressions = new ArrayList<>();
     TreeScanner<Void, Void> scanner =
         new TreeScanner<Void, Void>() {
           @Override
           public Void visitReturn(ReturnTree tree, Void o) {
-            list.add(tree.getExpression());
+            returnExpressions.add(tree.getExpression());
             return super.visitReturn(tree, o);
           }
         };
     scanner.scan(lambda, null);
-    return list;
+    return returnExpressions;
   }
 
   /**
@@ -2674,7 +2674,7 @@ public final class TreeUtils {
    * <p>From JLS 15.13.1 "If there is only one possible compile-time declaration with only one
    * possible invocation, it is said to be exact."
    *
-   * @param ref method reference
+   * @param ref a method reference
    * @return whether or not {@code ref} is an exact method reference
    */
   public static boolean isExactMethodReference(MemberReferenceTree ref) {
@@ -2721,9 +2721,9 @@ public final class TreeUtils {
    *
    * <p>This isn't the same as {@link ExecutableElement#isVarArgs()}. That method returns true if
    * the method accepts a variable number of arguments. This method returns true if the method
-   * invocation actually used that fact to invoke that method.
+   * invocation actually used that fact to invoke the method.
    *
-   * @param methodInvocation method or constructor invocation
+   * @param methodInvocation a method or constructor invocation
    * @return whether applicability by variable arity invocation necessary to determine the method
    *     signature
    */
@@ -2739,9 +2739,7 @@ public final class TreeUtils {
 
   /**
    * Is the tree a reference to a constructor of a generic class whose type argument isn't
-   * specified?
-   *
-   * <p>For example, {@code HashSet::new)}.
+   * specified? For example, {@code HashSet::new)}.
    *
    * @param tree may or may not be a {@link MemberReferenceTree}
    * @return true if tree is a reference to a constructor of a generic class whose type argument
@@ -2754,8 +2752,8 @@ public final class TreeUtils {
     MemberReferenceTree memRef = (MemberReferenceTree) tree;
     TypeMirror type = TreeUtils.typeOf(memRef.getQualifierExpression());
     if (memRef.getMode() == ReferenceMode.NEW && type.getKind() == TypeKind.DECLARED) {
-      TypeElement classEle = (TypeElement) ((Type) type).asElement();
-      DeclaredType classTypeMirror = (DeclaredType) classEle.asType();
+      TypeElement classElt = (TypeElement) ((Type) type).asElement();
+      DeclaredType classTypeMirror = (DeclaredType) classElt.asType();
       return !classTypeMirror.getTypeArguments().isEmpty()
           && ((Type) type).getTypeArguments().isEmpty();
     }
@@ -2763,12 +2761,11 @@ public final class TreeUtils {
   }
 
   /**
-   * Return whether {@code tree} is a method reference that with a raw type to the left of {@code
-   * ::}. For example, {@code Class::getName}.
+   * Return whether {@code tree} is a method reference with a raw type to the left of {@code ::}.
+   * For example, {@code Class::getName}.
    *
    * @param tree a tree
-   * @return whether {@code tree} is a method reference that with a raw type to the left of {@code
-   *     ::}
+   * @return whether {@code tree} is a method reference with a raw type to the left of {@code ::}
    */
   public static boolean isLikeDiamondMemberReference(ExpressionTree tree) {
     if (tree.getKind() != Tree.Kind.MEMBER_REFERENCE) {
