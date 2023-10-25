@@ -46,7 +46,10 @@ public class UseOfVariable extends AbstractType {
    * @param context the context
    */
   public UseOfVariable(
-      AnnotatedTypeVariable type, Variable variable, AnnotationMirrorMap<QualifierVar> qualifierVars, Java8InferenceContext context) {
+      AnnotatedTypeVariable type,
+      Variable variable,
+      AnnotationMirrorMap<QualifierVar> qualifierVars,
+      Java8InferenceContext context) {
     super(context);
     QualifierHierarchy qh = context.typeFactory.getQualifierHierarchy();
     this.qualifierVars = qualifierVars;
@@ -179,11 +182,12 @@ public class UseOfVariable extends AbstractType {
       }
     }
   }
+
   @Override
   public Set<AbstractQualifier> getQualifiers() {
-    if(hasPrimaryAnno) {
-      return AbstractQualifier.create(getAnnotatedType().getPrimaryAnnotations(), qualifierVars,
-          context);
+    if (hasPrimaryAnno) {
+      return AbstractQualifier.create(
+          getAnnotatedType().getPrimaryAnnotations(), qualifierVars, context);
     } else {
       return Collections.emptySet();
     }

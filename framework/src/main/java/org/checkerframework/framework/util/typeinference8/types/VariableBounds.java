@@ -192,7 +192,7 @@ public class VariableBounds {
     } else if (kind == BoundKind.LOWER) {
       addConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
     } else { // UPPER
-      addConstraint(setS,equalBounds, Kind.QUALIFIER_SUBTYPE);
+      addConstraint(setS, equalBounds, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
@@ -204,8 +204,8 @@ public class VariableBounds {
     }
   }
 
-  private void addConstraint(Set<? extends AbstractQualifier> setT, Set<? extends AbstractQualifier> setS,
-      Kind kind) {
+  private void addConstraint(
+      Set<? extends AbstractQualifier> setT, Set<? extends AbstractQualifier> setS, Kind kind) {
     for (AbstractQualifier t : setT) {
       for (AbstractQualifier s : setS) {
         if (s != t && s.sameHierarchy(t)) {
@@ -223,24 +223,28 @@ public class VariableBounds {
    */
   @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public void addConstraintsFromComplementaryBounds(BoundKind kind, AbstractType s) {
-    if (kind == BoundKind.EQUAL) {
-      for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new Typing(s, t, Kind.TYPE_EQUALITY));
+    switch (kind) {
+      case EQUAL:
+        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new Typing(s, t, Kind.TYPE_EQUALITY));
+          }
         }
-      }
-    } else if (kind == BoundKind.LOWER) {
-      for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new Typing(s, t, Kind.SUBTYPE));
+        break;
+      case LOWER:
+        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new Typing(s, t, Kind.SUBTYPE));
+          }
         }
-      }
-    } else { // UPPER
-      for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
-        if (s != t) {
-          constraints.add(new Typing(t, s, Kind.SUBTYPE));
+        break;
+      case UPPER:
+        for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new Typing(t, s, Kind.SUBTYPE));
+          }
         }
-      }
+        break;
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
@@ -281,7 +285,8 @@ public class VariableBounds {
    * @param kind kind of bound
    * @param s qualifiers
    */
-  public void addConstraintsFromComplementaryBounds(BoundKind kind, Set<? extends AbstractQualifier> s) {
+  public void addConstraintsFromComplementaryBounds(
+      BoundKind kind, Set<? extends AbstractQualifier> s) {
     // Copy bound to equal variables
     for (AbstractType t : bounds.get(BoundKind.EQUAL)) {
       if (t.isUseOfVariable()) {

@@ -16,7 +16,6 @@ import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import org.checkerframework.afu.scenelib.el.AMethod;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
@@ -71,20 +70,21 @@ public class InvocationType {
     this.context = context;
     this.typeFactory = context.typeFactory;
 
-    SimpleAnnotatedTypeScanner<Void, Set<AnnotationMirror>> s = new SimpleAnnotatedTypeScanner<>(
-        (type, polys) -> {
-          for (AnnotationMirror a : type.getPrimaryAnnotations()) {
-            if (typeFactory.getQualifierHierarchy().isPolymorphicQualifier(a)) {
-              polys.add(a);
-            }
-          }
-          return null;
-        });
+    SimpleAnnotatedTypeScanner<Void, Set<AnnotationMirror>> s =
+        new SimpleAnnotatedTypeScanner<>(
+            (type, polys) -> {
+              for (AnnotationMirror a : type.getPrimaryAnnotations()) {
+                if (typeFactory.getQualifierHierarchy().isPolymorphicQualifier(a)) {
+                  polys.add(a);
+                }
+              }
+              return null;
+            });
     Set<AnnotationMirror> polys = new AnnotationMirrorSet();
     s.visit(annotatedExecutableType, polys);
     AnnotationMirrorMap<QualifierVar> qualifierVars = new AnnotationMirrorMap<>();
-    for(AnnotationMirror poly:polys) {
-      qualifierVars.put(poly,new QualifierVar(invocation, poly, context));
+    for (AnnotationMirror poly : polys) {
+      qualifierVars.put(poly, new QualifierVar(invocation, poly, context));
     }
     this.qualifierVars = qualifierVars;
   }

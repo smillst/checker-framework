@@ -22,7 +22,6 @@ import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds;
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
-import org.checkerframework.javacutil.AnnotationMirrorSet;
 
 /**
  * Resolution finds an instantiation for each variable in a given set of variables. It does this
@@ -283,8 +282,7 @@ public class Resolution {
           ai.getBounds().qualifierBounds.get(BoundKind.LOWER);
       if (!qualifierLowerBounds.isEmpty()) {
         QualifierHierarchy qh = context.typeFactory.getQualifierHierarchy();
-        Set<AnnotationMirror> lubAnnos =
-            new AnnotationMirrorSet(qh.leastUpperBoundsQualifiersOnly(qualifierLowerBounds));
+        Set<AnnotationMirror> lubAnnos = AbstractQualifier.lub(qualifierLowerBounds, context);
         if (lubProperType.getAnnotatedType().getKind() != TypeKind.TYPEVAR) {
           Set<? extends AnnotationMirror> newLubAnnos =
               qh.leastUpperBoundsQualifiersOnly(
@@ -363,8 +361,7 @@ public class Resolution {
           ai.getBounds().qualifierBounds.get(BoundKind.LOWER);
       if (!qualifierLowerBounds.isEmpty()) {
         QualifierHierarchy qh = context.typeFactory.getQualifierHierarchy();
-        lowerBoundAnnos =
-            new AnnotationMirrorSet(qh.leastUpperBoundsQualifiersOnly(qualifierLowerBounds));
+        lowerBoundAnnos = AbstractQualifier.lub(qualifierLowerBounds, context);
         if (lowerBound != null) {
           if (lowerBound.getAnnotatedType().getKind() != TypeKind.TYPEVAR) {
             Set<? extends AnnotationMirror> newLubAnnos =
@@ -391,11 +388,7 @@ public class Resolution {
       Set<AbstractQualifier> qualifierUpperBounds =
           ai.getBounds().qualifierBounds.get(BoundKind.UPPER);
       if (!qualifierUpperBounds.isEmpty()) {
-        upperBoundAnnos =
-            context
-                .typeFactory
-                .getQualifierHierarchy()
-                .greatestLowerBoundsQualifiersOnly(qualifierUpperBounds);
+        upperBoundAnnos = AbstractQualifier.glb(qualifierUpperBounds, context);
         if (upperBound != null) {
           upperBoundAnnos =
               context

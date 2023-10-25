@@ -15,4 +15,9 @@ public class Qualifier extends AbstractQualifier {
   public AnnotationMirror getAnnotation() {
     return annotation;
   }
+
+  @Override
+  public AnnotationMirror resolve() {
+    return annotation;
+  }
 }

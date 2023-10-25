@@ -39,10 +39,14 @@ public class ProperType extends AbstractType {
    */
   public ProperType(
       AnnotatedTypeMirror type, TypeMirror properType, Java8InferenceContext context) {
-    this(type,properType,AnnotationMirrorMap.emptyMap(), context);
+    this(type, properType, AnnotationMirrorMap.emptyMap(), context);
   }
-      public ProperType(
-        AnnotatedTypeMirror type, TypeMirror properType, AnnotationMirrorMap<QualifierVar> qualifierVars,Java8InferenceContext context) {
+
+  public ProperType(
+      AnnotatedTypeMirror type,
+      TypeMirror properType,
+      AnnotationMirrorMap<QualifierVar> qualifierVars,
+      Java8InferenceContext context) {
     super(context);
     this.properType = properType;
     this.type = type;
@@ -252,7 +256,8 @@ public class ProperType extends AbstractType {
 
   @Override
   public Set<AbstractQualifier> getQualifiers() {
-    return  AbstractQualifier.create(getAnnotatedType().getPrimaryAnnotations(), qualifierVars, context);
+    return AbstractQualifier.create(
+        getAnnotatedType().getPrimaryAnnotations(), qualifierVars, context);
   }
 
   @Override

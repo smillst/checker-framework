@@ -188,8 +188,9 @@ public class AnnotationMirrorMap<V> implements Map<@KeyFor("this") AnnotationMir
    * @param annos the annotation mirrors that will constitute the new unmodifable set
    * @return an unmodifiable AnnotationMirrorSet with the given elements
    */
-  public static <T> AnnotationMirrorMap<T> unmodifiableSet(Map<AnnotationMirror,? extends T> annos) {
-    AnnotationMirrorMap<T>  result = new AnnotationMirrorMap<>(annos);
+  public static <T> AnnotationMirrorMap<T> unmodifiableSet(
+      Map<AnnotationMirror, ? extends T> annos) {
+    AnnotationMirrorMap<T> result = new AnnotationMirrorMap<>(annos);
     result.makeUnmodifiable();
     return result;
   }
@@ -203,6 +204,7 @@ public class AnnotationMirrorMap<V> implements Map<@KeyFor("this") AnnotationMir
   public static <T> AnnotationMirrorMap<T> emptyMap() {
     return (AnnotationMirrorMap<T>) emptyMap;
   }
+
   /**
    * Make this set unmodifiable.
    *

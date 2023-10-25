@@ -80,25 +80,24 @@ public class QualifierTyping implements Constraint {
     if (Q instanceof Qualifier && R instanceof Qualifier) {
       AnnotationMirror qAnno = ((Qualifier) Q).getAnnotation();
       AnnotationMirror rAnno = ((Qualifier) R).getAnnotation();
-      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)
-          && context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)) {
+      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)) {
         return ConstraintSet.TRUE;
       }
       return ConstraintSet.TRUE_ANNO_FAIL;
     }
 
+    ConstraintSet constraintSet = new ConstraintSet();
     if (Q instanceof QualifierVar) {
       // Q <: R
       QualifierVar var = (QualifierVar) Q;
-      var.addBound(BoundKind.UPPER, R);
+      constraintSet.addAll(var.addBound(BoundKind.UPPER, R));
     }
     if (R instanceof QualifierVar) {
       // Q <: R
       QualifierVar var = (QualifierVar) R;
-      var.addBound(BoundKind.LOWER, Q);
-  }
-    return ConstraintSet.TRUE;
-
+      constraintSet.addAll(var.addBound(BoundKind.LOWER, Q));
+    }
+    return constraintSet;
   }
 
   /**
@@ -111,22 +110,24 @@ public class QualifierTyping implements Constraint {
     if (Q instanceof Qualifier && R instanceof Qualifier) {
       AnnotationMirror qAnno = ((Qualifier) Q).getAnnotation();
       AnnotationMirror rAnno = ((Qualifier) R).getAnnotation();
-      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)) {
+      if (context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(qAnno, rAnno)
+          && context.typeFactory.getQualifierHierarchy().isSubtypeQualifiersOnly(rAnno, qAnno)) {
         return ConstraintSet.TRUE;
       }
       return ConstraintSet.TRUE_ANNO_FAIL;
     }
+    ConstraintSet constraintSet = new ConstraintSet();
     if (Q instanceof QualifierVar) {
-      // Q <: R
+      // Q == R
       QualifierVar var = (QualifierVar) Q;
-      var.addBound(BoundKind.EQUAL, R);
+      constraintSet.addAll(var.addBound(BoundKind.EQUAL, R));
     }
     if (R instanceof QualifierVar) {
-      // Q <: R
+      // Q == R
       QualifierVar var = (QualifierVar) R;
-      var.addBound(BoundKind.EQUAL, Q);
+      constraintSet.addAll(var.addBound(BoundKind.EQUAL, Q));
     }
-    return ConstraintSet.TRUE;
+    return constraintSet;
   }
 
   @Override

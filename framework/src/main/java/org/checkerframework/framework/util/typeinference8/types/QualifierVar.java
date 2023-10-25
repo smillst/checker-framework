@@ -6,6 +6,9 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
+import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
+import org.checkerframework.framework.util.typeinference8.constraint.QualifierTyping;
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 
@@ -21,6 +24,11 @@ public class QualifierVar extends AbstractQualifier {
 
   /** The polymorphic qualifier associated with this var. */
   protected final AnnotationMirror polyQualifier;
+
+  public final EnumMap<BoundKind, Set<AbstractQualifier>> qualifierBounds =
+      new EnumMap<>(BoundKind.class);
+
+  protected AnnotationMirror instantiation;
 
   /**
    * Creates a {@link QualifierVar}.
@@ -64,9 +72,100 @@ public class QualifierVar extends AbstractQualifier {
     return "@P" + id;
   }
 
-  public void addBound(BoundKind boundKind, AbstractQualifier r) {
-  qualifierBounds.get(boundKind).add(r);
+  public ConstraintSet addBound(BoundKind kind, AbstractQualifier otherQual) {
+    if (otherQual == this) {
+      return ConstraintSet.TRUE;
+    }
+    if (kind == BoundKind.EQUAL && otherQual instanceof Qualifier) {
+      instantiation = ((Qualifier) otherQual).getAnnotation();
+    }
+    if (qualifierBounds.get(kind).add(otherQual)) {
+      return addConstraintsFromComplementaryBounds(kind, otherQual);
+    }
+    return ConstraintSet.TRUE;
   }
-  public final EnumMap<BoundKind, Set<AbstractQualifier>> qualifierBounds =
-      new EnumMap<>(BoundKind.class);
+
+  public ConstraintSet addConstraintsFromComplementaryBounds(BoundKind kind, AbstractQualifier s) {
+    ConstraintSet constraints = new ConstraintSet();
+    switch (kind) {
+      case EQUAL:
+        for (AbstractQualifier t : qualifierBounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new QualifierTyping(s, t, Kind.TYPE_EQUALITY));
+          }
+        }
+        break;
+      case LOWER:
+        for (AbstractQualifier t : qualifierBounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new QualifierTyping(s, t, Kind.SUBTYPE));
+          }
+        }
+        break;
+      case UPPER:
+        for (AbstractQualifier t : qualifierBounds.get(BoundKind.EQUAL)) {
+          if (s != t) {
+            constraints.add(new QualifierTyping(t, s, Kind.SUBTYPE));
+          }
+        }
+        break;
+    }
+
+    if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
+      for (AbstractQualifier t : qualifierBounds.get(BoundKind.LOWER)) {
+        if (s != t) {
+          constraints.add(new QualifierTyping(t, s, Kind.SUBTYPE));
+        }
+      }
+    }
+
+    if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
+      for (AbstractQualifier t : qualifierBounds.get(BoundKind.UPPER)) {
+        if (s != t) {
+          constraints.add(new QualifierTyping(s, t, Kind.SUBTYPE));
+        }
+      }
+    }
+    return constraints;
+  }
+
+  @Override
+  AnnotationMirror resolve() {
+    if (instantiation == null) {
+      AnnotationMirror lub = null;
+      for (AbstractQualifier lower : qualifierBounds.get(BoundKind.LOWER)) {
+        if (lower instanceof Qualifier) {
+          if (lub != null) {
+            lub =
+                context
+                    .typeFactory
+                    .getQualifierHierarchy()
+                    .leastUpperBoundQualifiersOnly(lub, ((Qualifier) lower).getAnnotation());
+          } else {
+            lub = ((Qualifier) lower).getAnnotation();
+          }
+        }
+      }
+      if (lub != null) {
+        instantiation = lub;
+        return instantiation;
+      }
+      AnnotationMirror glb = null;
+      for (AbstractQualifier upper : qualifierBounds.get(BoundKind.UPPER)) {
+        if (upper instanceof Qualifier) {
+          if (glb != null) {
+            glb =
+                context
+                    .typeFactory
+                    .getQualifierHierarchy()
+                    .greatestLowerBoundQualifiersOnly(glb, ((Qualifier) upper).getAnnotation());
+          } else {
+            glb = ((Qualifier) upper).getAnnotation();
+          }
+        }
+      }
+      return glb;
+    }
+    return instantiation;
+  }
 }
