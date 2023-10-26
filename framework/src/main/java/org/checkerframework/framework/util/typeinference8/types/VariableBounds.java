@@ -188,11 +188,11 @@ public class VariableBounds {
       BoundKind kind, Set<? extends AbstractQualifier> setS) {
     Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
     if (kind == BoundKind.EQUAL) {
-      addConstraint(equalBounds, setS, Kind.QUALIFIER_EQUALITY);
+      addConstraint(setS, equalBounds, Kind.QUALIFIER_EQUALITY);
     } else if (kind == BoundKind.LOWER) {
-      addConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
-    } else { // UPPER
       addConstraint(setS, equalBounds, Kind.QUALIFIER_SUBTYPE);
+    } else { // UPPER
+      addConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
@@ -200,7 +200,7 @@ public class VariableBounds {
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
-      addConstraint(qualifierBounds.get(BoundKind.UPPER), setS, Kind.QUALIFIER_SUBTYPE);
+      addConstraint(setS, qualifierBounds.get(BoundKind.UPPER), Kind.QUALIFIER_SUBTYPE);
     }
   }
 
@@ -209,7 +209,7 @@ public class VariableBounds {
     for (AbstractQualifier t : setT) {
       for (AbstractQualifier s : setS) {
         if (s != t && s.sameHierarchy(t)) {
-          constraints.add(new QualifierTyping(s, t, kind));
+          constraints.add(new QualifierTyping(t, s, kind));
         }
       }
     }

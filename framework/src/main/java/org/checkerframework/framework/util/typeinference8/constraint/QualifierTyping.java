@@ -62,9 +62,9 @@ public class QualifierTyping implements Constraint {
   public ReductionResult reduce(Java8InferenceContext context) {
     switch (getKind()) {
       case QUALIFIER_EQUALITY:
-        return reduceSubtyping(context);
-      case QUALIFIER_SUBTYPE:
         return reduceEquality(context);
+      case QUALIFIER_SUBTYPE:
+        return reduceSubtyping(context);
       default:
         throw new BugInCF("Unexpected kind: " + getKind());
     }
