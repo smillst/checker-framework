@@ -1,7 +1,5 @@
 package org.checkerframework.javacutil;
 
-import static org.plumelib.util.CollectionsPlume.mapList;
-
 import com.sun.source.tree.AnnotatedTypeTree;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ArrayAccessTree;
