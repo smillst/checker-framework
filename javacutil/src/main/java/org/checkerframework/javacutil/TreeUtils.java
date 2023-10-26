@@ -2846,7 +2846,8 @@ public final class TreeUtils {
         || memberReferenceTree.getTypeArguments().isEmpty()) {
       return type;
     }
-    List<TypeMirror> args = mapList(TreeUtils::typeOf, memberReferenceTree.getTypeArguments());
+    List<TypeMirror> args =
+        CollectionsPlume.mapList(TreeUtils::typeOf, memberReferenceTree.getTypeArguments());
     return (ExecutableType) TypesUtils.substitute(type, type.getTypeVariables(), args, env);
   }
 }
