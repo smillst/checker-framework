@@ -204,6 +204,7 @@ public class VariableBounds {
     }
   }
 
+  @SuppressWarnings("interning:not.interned") // Checking for exact object.
   private void addConstraint(
       Set<? extends AbstractQualifier> setT, Set<? extends AbstractQualifier> setS, Kind kind) {
     for (AbstractQualifier t : setT) {

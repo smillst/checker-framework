@@ -215,10 +215,10 @@ public class MustCallAnnotatedTypeFactory extends BaseAnnotatedTypeFactory
 
   @Override
   protected void constructorFromUsePreSubstitution(
-      NewClassTree tree, AnnotatedExecutableType type) {
+      NewClassTree tree, AnnotatedExecutableType type, boolean resolvePolyQuals) {
     ExecutableElement declaration = TreeUtils.elementFromUse(tree);
     changeNonOwningParameterTypesToTop(declaration, type);
-    super.constructorFromUsePreSubstitution(tree, type);
+    super.constructorFromUsePreSubstitution(tree, type, resolvePolyQuals);
   }
 
   /**

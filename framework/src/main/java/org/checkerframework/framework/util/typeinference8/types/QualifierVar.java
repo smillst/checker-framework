@@ -85,6 +85,7 @@ public class QualifierVar extends AbstractQualifier {
     return ConstraintSet.TRUE;
   }
 
+  @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public ConstraintSet addConstraintsFromComplementaryBounds(BoundKind kind, AbstractQualifier s) {
     ConstraintSet constraints = new ConstraintSet();
     switch (kind) {
