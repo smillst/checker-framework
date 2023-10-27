@@ -997,17 +997,16 @@ public final class TreeUtils {
    * @param tree a new class tree
    * @return the type arguments to the given new class tree
    */
-  public static List<? extends Tree> getTypeArgumentsToNewClassTree(Tree tree) {
-    switch (tree.getKind()) {
-      case ANNOTATED_TYPE:
-        return getTypeArgumentsToNewClassTree(((AnnotatedTypeTree) tree).getUnderlyingType());
-      case PARAMETERIZED_TYPE:
-        return ((ParameterizedTypeTree) tree).getTypeArguments();
-      case NEW_CLASS:
-        return getTypeArgumentsToNewClassTree(((NewClassTree) tree).getIdentifier());
-      default:
-        return new ArrayList<>();
+  public static List<? extends Tree> getTypeArgumentsToNewClassTree(NewClassTree tree) {
+    Tree typeTree = tree.getIdentifier();
+    if (typeTree.getKind() == Kind.ANNOTATED_TYPE) {
+      typeTree = ((AnnotatedTypeTree) typeTree).getUnderlyingType();
     }
+
+    if (typeTree.getKind() == Kind.PARAMETERIZED_TYPE) {
+      return ((ParameterizedTypeTree) typeTree).getTypeArguments();
+    }
+    return Collections.emptyList();
   }
 
   /**
@@ -2637,7 +2636,7 @@ public final class TreeUtils {
    * explicitly typed lambda. (See JLS 15.27.1)
    *
    * @param tree any kind of tree
-   * @return true iff {@code tree} is an implicitly typed lambda.
+   * @return true iff {@code tree} is an implicitly typed lambda
    */
   public static boolean isExplicitlyTypeLambda(Tree tree) {
     return tree.getKind() == Tree.Kind.LAMBDA_EXPRESSION
@@ -2648,24 +2647,24 @@ public final class TreeUtils {
    * Returns all expressions that might be the result of {@code lambda}.
    *
    * @param lambda a lambda with or without a body
-   * @return a list of expressions are returned by {@code lambda}
+   * @return a list of expressions that are returned by {@code lambda}
    */
   public static List<ExpressionTree> getReturnedExpressions(LambdaExpressionTree lambda) {
     if (lambda.getBodyKind() == BodyKind.EXPRESSION) {
       return Collections.singletonList((ExpressionTree) lambda.getBody());
     }
 
-    List<ExpressionTree> list = new ArrayList<>();
+    List<ExpressionTree> returnExpressions = new ArrayList<>();
     TreeScanner<Void, Void> scanner =
         new TreeScanner<Void, Void>() {
           @Override
           public Void visitReturn(ReturnTree tree, Void o) {
-            list.add(tree.getExpression());
+            returnExpressions.add(tree.getExpression());
             return super.visitReturn(tree, o);
           }
         };
     scanner.scan(lambda, null);
-    return list;
+    return returnExpressions;
   }
 
   /**
@@ -2674,7 +2673,7 @@ public final class TreeUtils {
    * <p>From JLS 15.13.1 "If there is only one possible compile-time declaration with only one
    * possible invocation, it is said to be exact."
    *
-   * @param ref method reference
+   * @param ref a method reference
    * @return whether or not {@code ref} is an exact method reference
    */
   public static boolean isExactMethodReference(MemberReferenceTree ref) {
@@ -2721,10 +2720,10 @@ public final class TreeUtils {
    *
    * <p>This isn't the same as {@link ExecutableElement#isVarArgs()}. That method returns true if
    * the method accepts a variable number of arguments. This method returns true if the method
-   * invocation actually used that fact to invoke that method.
+   * invocation actually used that fact to invoke the method.
    *
-   * @param methodInvocation method or constructor invocation
-   * @return whether applicability by variable arity invocation necessary to determine the method
+   * @param methodInvocation a method or constructor invocation
+   * @return whether applicability by variable arity invocation is necessary to determine the method
    *     signature
    */
   public static boolean isVarArgMethodCall(ExpressionTree methodInvocation) {
@@ -2739,9 +2738,7 @@ public final class TreeUtils {
 
   /**
    * Is the tree a reference to a constructor of a generic class whose type argument isn't
-   * specified?
-   *
-   * <p>For example, {@code HashSet::new)}.
+   * specified? For example, {@code HashSet::new)}.
    *
    * @param tree may or may not be a {@link MemberReferenceTree}
    * @return true if tree is a reference to a constructor of a generic class whose type argument
@@ -2754,8 +2751,9 @@ public final class TreeUtils {
     MemberReferenceTree memRef = (MemberReferenceTree) tree;
     TypeMirror type = TreeUtils.typeOf(memRef.getQualifierExpression());
     if (memRef.getMode() == ReferenceMode.NEW && type.getKind() == TypeKind.DECLARED) {
-      TypeElement classEle = (TypeElement) ((Type) type).asElement();
-      DeclaredType classTypeMirror = (DeclaredType) classEle.asType();
+      // No need to check array::new because the generic arrays can't be created.
+      TypeElement classElt = (TypeElement) ((Type) type).asElement();
+      DeclaredType classTypeMirror = (DeclaredType) classElt.asType();
       return !classTypeMirror.getTypeArguments().isEmpty()
           && ((Type) type).getTypeArguments().isEmpty();
     }
@@ -2763,12 +2761,11 @@ public final class TreeUtils {
   }
 
   /**
-   * Return whether {@code tree} is a method reference that with a raw type to the left of {@code
-   * ::}. For example, {@code Class::getName}.
+   * Return whether {@code tree} is a method reference with a raw type to the left of {@code ::}.
+   * For example, {@code Class::getName}.
    *
    * @param tree a tree
-   * @return whether {@code tree} is a method reference that with a raw type to the left of {@code
-   *     ::}
+   * @return whether {@code tree} is a method reference with a raw type to the left of {@code ::}
    */
   public static boolean isLikeDiamondMemberReference(ExpressionTree tree) {
     if (tree.getKind() != Tree.Kind.MEMBER_REFERENCE) {
@@ -2794,67 +2791,9 @@ public final class TreeUtils {
       return true;
     }
 
-    ExecutableElement compileTimeDeclaration =
-        (ExecutableElement) TreeUtils.elementFromUse(memberReferenceTree);
-    if (!compileTimeDeclaration.getTypeParameters().isEmpty()) {
-      return memberReferenceTree.getTypeArguments() == null
-          || memberReferenceTree.getTypeArguments().isEmpty();
-    }
-    return false;
-  }
-
-  /**
-   * JLS 15.13.1: "The compile-time declaration of a method reference is the method to which the
-   * expression refers."
-   *
-   * @param memberReferenceTree method reference
-   * @param targetType target type
-   * @param env processing environment
-   * @return method to which the expression refers
-   */
-  public static ExecutableType compileTimeDeclarationType(
-      MemberReferenceTree memberReferenceTree, TypeMirror targetType, ProcessingEnvironment env) {
-    // The compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
-    // However, to get the correct type, the declaration has to be modified based on the use.
-    ExecutableElement ctDecl = (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
-    if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
-      if (isDiamondMemberReference(memberReferenceTree)) {
-        DeclaredType receiver =
-            (DeclaredType) TreeUtils.typeOf(memberReferenceTree.getQualifierExpression());
-        return (ExecutableType) env.getTypeUtils().asMemberOf(receiver, ctDecl);
-      }
-      return (ExecutableType) ctDecl.asType();
-    }
-    JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
-    Types types = Types.instance(javacEnv.getContext());
-
-    ExecutableType type;
-    switch (((JCMemberReference) memberReferenceTree).kind) {
-      case UNBOUND: // ref is of form: Type :: instance method
-        ExecutableType functionType = TypesUtils.findFunctionType(targetType, env);
-        TypeMirror receiver = functionType.getParameterTypes().get(0);
-        type = (ExecutableType) types.memberType((Type) receiver, (Symbol) ctDecl);
-        break;
-      case BOUND: // ref is of form: expression :: method
-      case SUPER: // ref is of form: super :: method
-        TypeMirror expr = TreeUtils.typeOf(((JCMemberReference) memberReferenceTree).expr);
-        type = (ExecutableType) types.memberType((Type) expr, (Symbol) ctDecl);
-        break;
-      case STATIC: // ref is of form: Type :: static method
-        type = (ExecutableType) ctDecl.asType();
-        break;
-      default:
-        throw new RuntimeException();
-    }
-
-    if (memberReferenceTree.getTypeArguments() == null
-        || memberReferenceTree.getTypeArguments().isEmpty()) {
-      return type;
-    }
-    List<TypeMirror> args = new ArrayList<>();
-    for (ExpressionTree tree : memberReferenceTree.getTypeArguments()) {
-      args.add(TreeUtils.typeOf(tree));
-    }
-    return (ExecutableType) TypesUtils.substitute(type, type.getTypeVariables(), args, env);
+    ExecutableElement element = (ExecutableElement) TreeUtils.elementFromUse(memberReferenceTree);
+    return !element.getTypeParameters().isEmpty()
+        && (memberReferenceTree.getTypeArguments() == null
+            || memberReferenceTree.getTypeArguments().isEmpty());
   }
 }

@@ -142,7 +142,7 @@ public class ConstraintSet implements ReductionResult {
   /**
    * Remove all constraints in {@code subset} from this constraint set.
    *
-   * @param subset set of constraints to remove from this set
+   * @param subset the set of constraints to remove from this set
    */
   @SuppressWarnings("interning:not.interned")
   public void remove(ConstraintSet subset) {
@@ -296,7 +296,7 @@ public class ConstraintSet implements ReductionResult {
    * Reduce one constraint in this set.
    *
    * @param context the context
-   * @return the result of reducing one constraint in this set.
+   * @return the result of reducing one constraint in this set
    */
   public BoundSet reduceOneStep(Java8InferenceContext context) {
     boolean alreadyFailed = this.annotationFailure;

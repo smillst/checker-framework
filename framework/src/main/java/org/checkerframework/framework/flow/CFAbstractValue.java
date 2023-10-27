@@ -96,7 +96,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
    * Returns true if the set has an annotation from every hierarchy (or if it doesn't need to);
    * returns false if the set is missing an annotation from some hierarchy.
    *
-   * @param annos set of annotations
+   * @param annos a set of annotations
    * @param typeMirror where the annotations are written
    * @param atypeFactory the type factory
    * @return true if no annotations are missing
@@ -367,7 +367,7 @@ public abstract class CFAbstractValue<V extends CFAbstractValue<V>> implements A
      *
      * @param qual1 a qualifier
      * @param qual2 a qualifier
-     * @return the qualifier that is the lowest in the hierarchy.
+     * @return the qualifier that is the lowest in the hierarchy
      */
     private final AnnotationMirror lowestQualifier(AnnotationMirror qual1, AnnotationMirror qual2) {
       if (qualHierarchy.isSubtypeQualifiersOnly(qual1, qual2)) {

@@ -114,7 +114,6 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedIntersec
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedUnionType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.AnnotatedTypeParameterBounds;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -1533,8 +1532,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     AnnotatedTypeMirror variableType = atypeFactory.getAnnotatedTypeLhs(tree);
 
     atypeFactory.getDependentTypesHelper().checkTypeForErrorExpressions(variableType, tree);
-    Element varEle = TreeUtils.elementFromDeclaration(tree);
-    if (varEle.getKind() == ElementKind.ENUM_CONSTANT) {
+    Element varElt = TreeUtils.elementFromDeclaration(tree);
+    if (varElt.getKind() == ElementKind.ENUM_CONSTANT) {
       commonAssignmentCheck(tree, tree.getInitializer(), "enum.declaration");
     } else if (tree.getInitializer() != null) {
       // If there's no assignment in this variable declaration, skip it.
@@ -1752,10 +1751,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     if (shouldSkipUses(tree)) {
       return super.visitMethodInvocation(tree, p);
     }
-    ParameterizedExecutableType preI = atypeFactory.methodFromUseWithoutTypeArgInference(tree);
-    if (!preI.executableType.getElement().getTypeParameters().isEmpty()
-        && preI.typeArgs.isEmpty()) {
-      if (checkTypeArgumentInference(tree, preI.executableType)) {
+    ParameterizedExecutableType preInference =
+        atypeFactory.methodFromUseWithoutTypeArgInference(tree);
+    if (!preInference.executableType.getElement().getTypeParameters().isEmpty()
+        && preInference.typeArgs.isEmpty()) {
+      if (!checkTypeArgumentInference(tree, preInference.executableType)) {
         return null;
       }
     }
@@ -1808,32 +1808,26 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   }
 
   /**
-   * Reports a "type.arguments.not.inferred" error if type argument inference fails.
+   * Reports a "type.arguments.not.inferred" error if type argument inference fails and returns
+   * false if inference fails.
    *
    * @param tree a tree that requires type argument inference
    * @param methodType the type of the method before type argument substitution
-   * @return whether type argument inference succeeds.
+   * @return whether type argument inference succeeds
    */
   private boolean checkTypeArgumentInference(
       ExpressionTree tree, AnnotatedExecutableType methodType) {
     InferenceResult args =
         atypeFactory.getTypeArgumentInference().inferTypeArgs(atypeFactory, tree, methodType);
     if (args != null && !args.inferenceFailed()) {
-      return false;
+      return true;
     }
-    String error;
-    if (args != null) {
-      error = args.getErrorMsg();
-    } else {
-      error = "";
-    }
-
     checker.reportError(
         tree,
         "type.arguments.not.inferred",
         ElementUtils.getSimpleDescription(methodType.getElement()),
-        error);
-    return true;
+        args == null ? "" : args.getErrorMsg());
+    return false;
   }
 
   /**
@@ -2090,10 +2084,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       return super.visitNewClass(tree, p);
     }
 
-    ParameterizedExecutableType preI = atypeFactory.constructorFromUseWithoutTypeArgInference(tree);
-    if (!preI.executableType.getElement().getTypeParameters().isEmpty()
+    ParameterizedExecutableType preInference =
+        atypeFactory.constructorFromUseWithoutTypeArgInference(tree);
+    if (!preInference.executableType.getElement().getTypeParameters().isEmpty()
         || TreeUtils.isDiamondTree(tree)) {
-      if (checkTypeArgumentInference(tree, preI.executableType)) {
+      if (!checkTypeArgumentInference(tree, preInference.executableType)) {
         return null;
       }
     }
@@ -3382,8 +3377,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotatedTypeMirror typeArg = typeargs.get(i);
 
       if (atypeFactory.ignoreRawTypeArguments
-          && bounds.getUpperBound().getKind() == TypeKind.WILDCARD
-          && ((AnnotatedWildcardType) bounds.getUpperBound()).isTypeArgOfRawType()) {
+          && AnnotatedTypes.isTypeArgOfRawType(bounds.getUpperBound())) {
         continue;
       }
 
@@ -3568,7 +3562,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * like var args.
    *
    * @see #checkVarargs(AnnotatedTypeMirror.AnnotatedExecutableType, Tree)
-   * @param requiredArgs the required types. This may differ from the formal parameter types,
+   * @param requiredTypes the required types. This may differ from the formal parameter types,
    *     because it replaces a varargs parameter by multiple parameters with the vararg's element
    *     type.
    * @param passedArgs the expressions passed to the corresponding types
@@ -3576,14 +3570,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * @param paramNames the names of the callee's formal parameters
    */
   protected void checkArguments(
-      List<? extends AnnotatedTypeMirror> requiredArgs,
+      List<? extends AnnotatedTypeMirror> requiredTypes,
       List<? extends ExpressionTree> passedArgs,
       CharSequence executableName,
       List<?> paramNames) {
-    int size = requiredArgs.size();
+    int size = requiredTypes.size();
     assert size == passedArgs.size()
-        : "mismatch between required args ("
-            + requiredArgs
+        : "size mismatch between required args ("
+            + requiredTypes
             + ") and passed args ("
             + passedArgs
             + ")";
@@ -3595,39 +3589,42 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
             size,
             passedArgs.size(),
             paramNames.size(),
-            listToString(requiredArgs),
+            listToString(requiredTypes),
             listToString(passedArgs),
             executableName,
             listToString(paramNames));
 
     for (int i = 0; i < size; ++i) {
-      if (passedArgs.get(i).getKind() == Kind.CONDITIONAL_EXPRESSION) {
-        ConditionalExpressionTree condExprTree = (ConditionalExpressionTree) passedArgs.get(i);
+      AnnotatedTypeMirror requiredType = requiredTypes.get(i);
+      ExpressionTree passedArg = passedArgs.get(i);
+      Object paramName = paramNames.get(Math.min(i, maxParamNamesIndex));
+
+      if (passedArg.getKind() == Kind.CONDITIONAL_EXPRESSION) {
+        ConditionalExpressionTree condExprTree = (ConditionalExpressionTree) passedArg;
         commonAssignmentCheck(
-            requiredArgs.get(i),
+            requiredType,
             condExprTree.getTrueExpression(),
             "argument",
             // TODO: for expanded varargs parameters, maybe adjust the name
-            paramNames.get(Math.min(i, maxParamNamesIndex)),
+            paramName,
             executableName);
         commonAssignmentCheck(
-            requiredArgs.get(i),
+            requiredType,
             condExprTree.getFalseExpression(),
             "argument",
             // TODO: for expanded varargs parameters, maybe adjust the name
-            paramNames.get(Math.min(i, maxParamNamesIndex)),
+            paramName,
             executableName);
-
       } else {
         commonAssignmentCheck(
-            requiredArgs.get(i),
-            passedArgs.get(i),
+            requiredType,
+            passedArg,
             "argument",
             // TODO: for expanded varargs parameters, maybe adjust the name
-            paramNames.get(Math.min(i, maxParamNamesIndex)),
+            paramName,
             executableName);
       }
-      scan(passedArgs.get(i), null);
+      scan(passedArg, null);
     }
   }
 
@@ -3801,8 +3798,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         MemberReferenceKind.getMemberReferenceKind(memberReferenceTree);
     AnnotatedTypeMirror enclosingType;
     if (TreeUtils.isLikeDiamondMemberReference(memberReferenceTree)) {
-      TypeElement typeEle = TypesUtils.getTypeElement(TreeUtils.typeOf(qualifierExpression));
-      enclosingType = atypeFactory.getAnnotatedType(typeEle);
+      TypeElement typeElt = TypesUtils.getTypeElement(TreeUtils.typeOf(qualifierExpression));
+      enclosingType = atypeFactory.getAnnotatedType(typeElt);
     } else if (memberReferenceTree.getMode() == ReferenceMode.NEW
         || memRefKind == MemberReferenceKind.UNBOUND
         || memRefKind == MemberReferenceKind.STATIC) {
@@ -3818,11 +3815,11 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     ExecutableElement compileTimeDeclaration =
         (ExecutableElement) TreeUtils.elementFromUse(memberReferenceTree);
 
-    ParameterizedExecutableType preI =
+    ParameterizedExecutableType preInference =
         atypeFactory.methodFromUseWithoutTypeArgInference(
             memberReferenceTree, compileTimeDeclaration, enclosingType);
     if (TreeUtils.needsTypeArgInference(memberReferenceTree)) {
-      if (checkTypeArgumentInference(memberReferenceTree, preI.executableType)) {
+      if (!checkTypeArgumentInference(memberReferenceTree, preInference.executableType)) {
         return true;
       }
     }
@@ -4801,7 +4798,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    */
   protected final boolean shouldSkipUses(ExpressionTree exprTree) {
     // System.out.printf("shouldSkipUses: %s: %s%n", exprTree.getClass(), exprTree);
-
+    if (atypeFactory.isUnreachable(exprTree)) {
+      return true;
+    }
     Element elm = TreeUtils.elementFromTree(exprTree);
     return checker.shouldSkipUses(elm);
   }

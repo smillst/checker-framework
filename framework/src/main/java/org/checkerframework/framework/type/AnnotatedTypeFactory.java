@@ -2018,7 +2018,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /**
    * Creates and returns an AnnotatedNullType qualified with {@code annotations}.
    *
-   * @param annotations set of AnnotationMirrors to qualify the returned type with
+   * @param annotations the set of AnnotationMirrors to qualify the returned type with
    * @return AnnotatedNullType qualified with {@code annotations}
    */
   public AnnotatedNullType getAnnotatedNullType(Set<? extends AnnotationMirror> annotations) {
@@ -2307,7 +2307,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * expression.
    *
    * @param tree the method invocation tree
-   * @return the method type being invoked with tree and the (inferred) type arguments
+   * @return the type of the invoked method and any (explict or inferred) type arguments
    */
   public final ParameterizedExecutableType methodFromUse(MethodInvocationTree tree) {
     return methodFromUse(tree, true);
@@ -2318,7 +2318,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * arguments.
    *
    * @param tree a method invocation tree
-   * @return the method type being invoked with tree without inferring type arguments.
+   * @return the type of the invoked method and any explicit type arguments
    */
   public ParameterizedExecutableType methodFromUseWithoutTypeArgInference(
       MethodInvocationTree tree) {
@@ -2331,7 +2331,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    *
    * @param tree a method invocation tree
    * @param inferTypeArgs whether type arguments should be inferred
-   * @return the method type being invoked with tree
+   * @return the type of the invoked method, any explicit type arguments, and if {@code
+   *     inferTypeArgs} is true, any inferred type arguments
    */
   protected ParameterizedExecutableType methodFromUse(
       MethodInvocationTree tree, boolean inferTypeArgs) {
@@ -2354,8 +2355,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     AnnotatedExecutableType method = result.executableType;
-    if (method.getReturnType().getKind() == TypeKind.WILDCARD
-        && ((AnnotatedWildcardType) method.getReturnType()).isTypeArgOfRawType()) {
+    if (AnnotatedTypes.isTypeArgOfRawType(method.getReturnType())) {
       // Get the correct Java type from the tree and use it as the upper bound of the
       // wildcard.
       TypeMirror tm = TreeUtils.typeOf(tree);
@@ -2383,7 +2383,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree either a MethodInvocationTree or a MemberReferenceTree
    * @param methodElt the element of the referenced method
    * @param receiverType the type of the receiver
-   * @return the method type being invoked with tree and the (inferred) type arguments
+   * @return the type of the method being invoked with tree and the (inferred) type arguments
    * @see #methodFromUse(MethodInvocationTree)
    */
   public final ParameterizedExecutableType methodFromUse(
@@ -2398,7 +2398,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree either a MethodInvocationTree or a MemberReferenceTree
    * @param methodElt the element of the referenced method
    * @param receiverType the type of the receiver
-   * @return the method type being invoked with tree without inferring type arguments.
+   * @return the type of the method being invoked with tree without inferring type arguments
    */
   public final ParameterizedExecutableType methodFromUseWithoutTypeArgInference(
       ExpressionTree tree, ExecutableElement methodElt, AnnotatedTypeMirror receiverType) {
@@ -2414,7 +2414,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param methodElt the element of the referenced method
    * @param receiverType the type of the receiver
    * @param inferTypeArgs whether type arguments should be inferred
-   * @return the method type being invoked with tree
+   * @return the type of the invoked method
    */
   protected ParameterizedExecutableType methodFromUse(
       ExpressionTree tree,
@@ -4004,7 +4004,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * super types of {@code typeMirror}. (Both superclasses and superinterfaces.)
    *
    * @param typeMirror type
-   * @param results set of AnnotationMirrors to which this method adds declarations annotations
+   * @param results the set of AnnotationMirrors to which this method adds declarations annotations
    */
   private void inheritOverriddenDeclAnnosFromTypeDecl(
       TypeMirror typeMirror, AnnotationMirrorSet results) {
@@ -4443,10 +4443,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
           false);
 
   /**
-   * Whether the {@code type} contains any captured type variables.
+   * Returns true if {@code type} contains any captured type variables.
    *
    * @param type type to check
-   * @return whether the {@code type} contains any captured type variables.
+   * @return true if {@code type} contains any captured type variables
    */
   public boolean containsCapturedTypes(AnnotatedTypeMirror type) {
     return containsCapturedTypes.visit(type);
@@ -4499,7 +4499,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   public IPair<AnnotatedTypeMirror, AnnotatedExecutableType> getFnInterfaceFromTree(Tree tree) {
 
     // Functional interface
-    // This is the target type of "tree"
+    // This is the target type of `tree`.
     AnnotatedTypeMirror functionalInterfaceType = getFunctionalInterfaceType(tree);
     if (functionalInterfaceType.getKind() == TypeKind.DECLARED) {
       functionalInterfaceType =
@@ -4816,8 +4816,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     for (AnnotatedTypeMirror typeArg : uncapturedType.getTypeArguments()) {
-      if (typeArg.getKind() == TypeKind.WILDCARD
-          && ((AnnotatedWildcardType) typeArg).isTypeArgOfRawType()) {
+      if (AnnotatedTypes.isTypeArgOfRawType(typeArg)) {
         return false;
       }
     }
@@ -4884,8 +4883,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       boolean fromRawType = false;
       AnnotatedDeclaredType uncapturedType = (AnnotatedDeclaredType) type;
       for (AnnotatedTypeMirror typeArg : uncapturedType.getTypeArguments()) {
-        if (typeArg.getKind() == TypeKind.WILDCARD
-            && ((AnnotatedWildcardType) typeArg).isTypeArgOfRawType()) {
+        if (AnnotatedTypes.isTypeArgOfRawType(typeArg)) {
           fromRawType = true;
           break;
         }
