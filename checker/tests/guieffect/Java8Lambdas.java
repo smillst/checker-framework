@@ -112,6 +112,7 @@ public class Java8Lambdas {
     // :: error: (call.ui)
     uiPolymorphicLambdaRunner.doEither(
         e -> e.repaint()); // Safe at runtime, but not by the type system!
+    // :: error: (call.ui)
     uiPolymorphicLambdaRunner.doEither(e -> e.dangerous());
     PolymorphicFunctionalInterface<UIElement> func1 = e -> e.repaint();
     // :: error: (assignment)
