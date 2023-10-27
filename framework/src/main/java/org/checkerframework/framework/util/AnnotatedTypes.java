@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -391,7 +390,7 @@ public class AnnotatedTypes {
             member,
             memberType);
       case WILDCARD:
-        if (((AnnotatedWildcardType) receiverType).isTypeArgOfRawType()) {
+        if (AnnotatedTypes.isTypeArgOfRawType(receiverType)) {
           return substituteTypeArgsFromRawTypes(atypeFactory, member, memberType);
         }
         return asMemberOf(
@@ -595,11 +594,12 @@ public class AnnotatedTypes {
         AnnotatedDeclaredType enclosingType = atypeFactory.getAnnotatedType(enclosingClassOfMember);
         AnnotatedDeclaredType erasedEnclosingType =
             atypeFactory.getAnnotatedType(enclosingClassOfMember);
-        Iterator<AnnotatedTypeMirror> erasedTypeArgsIterator =
-            erasedEnclosingType.getTypeArguments().iterator();
-        for (AnnotatedTypeMirror type : enclosingType.getTypeArguments()) {
+        List<AnnotatedTypeMirror> typeArguments = enclosingType.getTypeArguments();
+        for (int i = 0; i < typeArguments.size(); i++) {
+          AnnotatedTypeMirror type = typeArguments.get(i);
+          AnnotatedTypeMirror enclosedTypeArg = erasedEnclosingType.getTypeArguments().get(i);
           AnnotatedTypeVariable typeParameter = (AnnotatedTypeVariable) type;
-          mappings.put(typeParameter.getUnderlyingType(), erasedTypeArgsIterator.next());
+          mappings.put(typeParameter.getUnderlyingType(), enclosedTypeArg);
         }
       }
       enclosingClassOfMember =
@@ -694,6 +694,14 @@ public class AnnotatedTypes {
   }
 
   /**
+   * A pair of an empty map and false. Used in {@link #findTypeArguments(AnnotatedTypeFactory,
+   * ExpressionTree, ExecutableElement, AnnotatedExecutableType, boolean)}.
+   */
+  private static final IPair<Map<TypeVariable, AnnotatedTypeMirror>, Boolean> emptyFalsePair =
+      IPair.of(Collections.emptyMap(), false);
+  ;
+
+  /**
    * Given a method or constructor invocation, return a mapping of the type variables to their type
    * arguments, if any exist.
    *
@@ -721,7 +729,7 @@ public class AnnotatedTypes {
     if (expr.getKind() != Kind.MEMBER_REFERENCE
         && elt.getTypeParameters().isEmpty()
         && !TreeUtils.isDiamondTree(expr)) {
-      return IPair.of(Collections.emptyMap(), false);
+      return emptyFalsePair;
     }
 
     List<? extends Tree> targs;
@@ -740,7 +748,7 @@ public class AnnotatedTypes {
       }
       targs = memRef.getTypeArguments();
       if (memRef.getTypeArguments() == null) {
-        return IPair.of(Collections.emptyMap(), false);
+        return emptyFalsePair;
       }
     } else {
       // This case should never happen.
@@ -751,7 +759,7 @@ public class AnnotatedTypes {
       DeclaredType receiverTypeMirror = preType.getReceiverType().getUnderlyingType();
       if (TypesUtils.isRaw(receiverTypeMirror)
           && elt.getEnclosingElement().equals(receiverTypeMirror.asElement())) {
-        return IPair.of(Collections.emptyMap(), false);
+        return emptyFalsePair;
       }
     }
 
@@ -760,7 +768,7 @@ public class AnnotatedTypes {
       List<? extends AnnotatedTypeVariable> tvars = preType.getTypeVariables();
       if (tvars.isEmpty()) {
         // This happens when the method is invoked with a raw receiver.
-        return IPair.of(Collections.emptyMap(), false);
+        return emptyFalsePair;
       }
 
       Map<TypeVariable, AnnotatedTypeMirror> typeArguments = new HashMap<>();
@@ -780,7 +788,7 @@ public class AnnotatedTypes {
             inferenceResult.getTypeArgumentsForExpression(expr),
             inferenceResult.isUncheckedConversion());
       } else {
-        return IPair.of(Collections.emptyMap(), false);
+        return emptyFalsePair;
       }
     }
   }
@@ -1716,5 +1724,10 @@ public class AnnotatedTypes {
       annotatedDeclaredType = annotatedDeclaredType.getEnclosingType();
       underlyingTypeMirror = ((DeclaredType) underlyingTypeMirror).getEnclosingType();
     }
+  }
+
+  public static boolean isTypeArgOfRawType(AnnotatedTypeMirror typeArg) {
+    return typeArg.getKind() == TypeKind.WILDCARD
+        && ((AnnotatedWildcardType) typeArg).isTypeArgOfRawType();
   }
 }

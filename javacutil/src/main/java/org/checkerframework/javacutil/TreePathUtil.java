@@ -311,17 +311,17 @@ public final class TreePathUtil {
         return getContextForPolyExpression(parentPath, isLambdaOrMethodRef);
       default:
         if (TreeUtils.isYield(parent)) {
-          // A yield statement is only legal within a switch expression.
-          parentPath = parentPath.getParentPath();
-          // The first parent is a case statement.
-          parentPath = parentPath.getParentPath();
+          // A yield statement is only legal within a switch expression. Walk up the path to the
+          // case tree instead of the switch expression
+          // tree so the code remains backward compatible.
+          parentPath = pathTillOfKind(parentPath, Kind.CASE).getParentPath();
           parent = parentPath.getLeaf();
         }
         if (TreeUtils.isSwitchExpression(parent)) {
           @SuppressWarnings("interning:not.interned") // AST node comparison
           boolean switchIsLeaf = SwitchExpressionUtils.getExpression(parent) == treePath.getLeaf();
           if (switchIsLeaf) {
-            // The assignment context for the switch(ex) is simply boolean.
+            // The assignment context for the switch selector expression is simply boolean.
             // No point in going on.
             return null;
           }

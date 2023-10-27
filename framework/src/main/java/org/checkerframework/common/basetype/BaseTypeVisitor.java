@@ -114,7 +114,6 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedIntersec
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedUnionType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.AnnotatedTypeParameterBounds;
 import org.checkerframework.framework.type.GenericAnnotatedTypeFactory;
 import org.checkerframework.framework.type.QualifierHierarchy;
@@ -1756,7 +1755,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         atypeFactory.methodFromUseWithoutTypeArgInference(tree);
     if (!preInference.executableType.getElement().getTypeParameters().isEmpty()
         && preInference.typeArgs.isEmpty()) {
-      if (checkTypeArgumentInference(tree, preInference.executableType)) {
+      if (!checkTypeArgumentInference(tree, preInference.executableType)) {
         return null;
       }
     }
@@ -1809,7 +1808,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   }
 
   /**
-   * Reports a "type.arguments.not.inferred" error if type argument inference fails.
+   * Reports a "type.arguments.not.inferred" error if type argument inference fails and returns
+   * false if inference fails.
    *
    * @param tree a tree that requires type argument inference
    * @param methodType the type of the method before type argument substitution
@@ -1820,14 +1820,14 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     InferenceResult args =
         atypeFactory.getTypeArgumentInference().inferTypeArgs(atypeFactory, tree, methodType);
     if (args != null && !args.inferenceFailed()) {
-      return false;
+      return true;
     }
     checker.reportError(
         tree,
         "type.arguments.not.inferred",
         ElementUtils.getSimpleDescription(methodType.getElement()),
         args == null ? "" : args.getErrorMsg());
-    return true;
+    return false;
   }
 
   /**
@@ -2088,7 +2088,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         atypeFactory.constructorFromUseWithoutTypeArgInference(tree);
     if (!preInference.executableType.getElement().getTypeParameters().isEmpty()
         || TreeUtils.isDiamondTree(tree)) {
-      if (checkTypeArgumentInference(tree, preInference.executableType)) {
+      if (!checkTypeArgumentInference(tree, preInference.executableType)) {
         return null;
       }
     }
@@ -3377,8 +3377,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       AnnotatedTypeMirror typeArg = typeargs.get(i);
 
       if (atypeFactory.ignoreRawTypeArguments
-          && bounds.getUpperBound().getKind() == TypeKind.WILDCARD
-          && ((AnnotatedWildcardType) bounds.getUpperBound()).isTypeArgOfRawType()) {
+          && AnnotatedTypes.isTypeArgOfRawType(bounds.getUpperBound())) {
         continue;
       }
 
@@ -3820,7 +3819,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
         atypeFactory.methodFromUseWithoutTypeArgInference(
             memberReferenceTree, compileTimeDeclaration, enclosingType);
     if (TreeUtils.needsTypeArgInference(memberReferenceTree)) {
-      if (checkTypeArgumentInference(memberReferenceTree, preInference.executableType)) {
+      if (!checkTypeArgumentInference(memberReferenceTree, preInference.executableType)) {
         return true;
       }
     }

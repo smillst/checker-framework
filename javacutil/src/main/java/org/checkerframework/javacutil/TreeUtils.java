@@ -997,17 +997,16 @@ public final class TreeUtils {
    * @param tree a new class tree
    * @return the type arguments to the given new class tree
    */
-  public static List<? extends Tree> getTypeArgumentsToNewClassTree(Tree tree) {
-    switch (tree.getKind()) {
-      case ANNOTATED_TYPE:
-        return getTypeArgumentsToNewClassTree(((AnnotatedTypeTree) tree).getUnderlyingType());
-      case PARAMETERIZED_TYPE:
-        return ((ParameterizedTypeTree) tree).getTypeArguments();
-      case NEW_CLASS:
-        return getTypeArgumentsToNewClassTree(((NewClassTree) tree).getIdentifier());
-      default:
-        return new ArrayList<>();
+  public static List<? extends Tree> getTypeArgumentsToNewClassTree(NewClassTree tree) {
+    Tree typeTree = tree.getIdentifier();
+    if (typeTree.getKind() == Kind.ANNOTATED_TYPE) {
+      typeTree = ((AnnotatedTypeTree) typeTree).getUnderlyingType();
     }
+
+    if (typeTree.getKind() == Kind.PARAMETERIZED_TYPE) {
+      return ((ParameterizedTypeTree) typeTree).getTypeArguments();
+    }
+    return Collections.emptyList();
   }
 
   /**
@@ -2724,7 +2723,7 @@ public final class TreeUtils {
    * invocation actually used that fact to invoke the method.
    *
    * @param methodInvocation a method or constructor invocation
-   * @return whether applicability by variable arity invocation necessary to determine the method
+   * @return whether applicability by variable arity invocation is necessary to determine the method
    *     signature
    */
   public static boolean isVarArgMethodCall(ExpressionTree methodInvocation) {
@@ -2752,6 +2751,7 @@ public final class TreeUtils {
     MemberReferenceTree memRef = (MemberReferenceTree) tree;
     TypeMirror type = TreeUtils.typeOf(memRef.getQualifierExpression());
     if (memRef.getMode() == ReferenceMode.NEW && type.getKind() == TypeKind.DECLARED) {
+      // No need to check array::new because the generic arrays can't be created.
       TypeElement classElt = (TypeElement) ((Type) type).asElement();
       DeclaredType classTypeMirror = (DeclaredType) classElt.asType();
       return !classTypeMirror.getTypeArguments().isEmpty()
@@ -2791,63 +2791,9 @@ public final class TreeUtils {
       return true;
     }
 
-    ExecutableElement compileTimeDeclaration =
-        (ExecutableElement) TreeUtils.elementFromUse(memberReferenceTree);
-    return !compileTimeDeclaration.getTypeParameters().isEmpty()
+    ExecutableElement element = (ExecutableElement) TreeUtils.elementFromUse(memberReferenceTree);
+    return !element.getTypeParameters().isEmpty()
         && (memberReferenceTree.getTypeArguments() == null
             || memberReferenceTree.getTypeArguments().isEmpty());
-  }
-
-  /**
-   * JLS 15.13.1: "The compile-time declaration of a method reference is the method to which the
-   * expression refers."
-   *
-   * @param memberReferenceTree a method reference
-   * @param targetType the target type
-   * @param env the processing environment
-   * @return the method to which the expression refers
-   */
-  public static ExecutableType compileTimeDeclarationType(
-      MemberReferenceTree memberReferenceTree, TypeMirror targetType, ProcessingEnvironment env) {
-    // The compile-time declaration is ((JCMemberReference) memberReferenceTree).sym.
-    // However, to get the correct type, the declaration has to be modified based on the use.
-    ExecutableElement ctDecl = (ExecutableElement) ((JCMemberReference) memberReferenceTree).sym;
-    if (memberReferenceTree.getMode() == ReferenceMode.NEW) {
-      if (isDiamondMemberReference(memberReferenceTree)) {
-        DeclaredType receiverType =
-            (DeclaredType) TreeUtils.typeOf(memberReferenceTree.getQualifierExpression());
-        return (ExecutableType) env.getTypeUtils().asMemberOf(receiverType, ctDecl);
-      }
-      return (ExecutableType) ctDecl.asType();
-    }
-    JavacProcessingEnvironment javacEnv = (JavacProcessingEnvironment) env;
-    Types types = Types.instance(javacEnv.getContext());
-
-    ExecutableType type;
-    switch (((JCMemberReference) memberReferenceTree).kind) {
-      case UNBOUND: // ref is of form: Type :: instanceMethod
-        ExecutableType functionType = TypesUtils.findFunctionType(targetType, env);
-        TypeMirror receiver = functionType.getParameterTypes().get(0);
-        type = (ExecutableType) types.memberType((Type) receiver, (Symbol) ctDecl);
-        break;
-      case BOUND: // ref is of form: expression :: method
-      case SUPER: // ref is of form: super :: method
-        TypeMirror expr = TreeUtils.typeOf(((JCMemberReference) memberReferenceTree).expr);
-        type = (ExecutableType) types.memberType((Type) expr, (Symbol) ctDecl);
-        break;
-      case STATIC: // ref is of form: Type :: static method
-        type = (ExecutableType) ctDecl.asType();
-        break;
-      default:
-        throw new RuntimeException();
-    }
-
-    if (memberReferenceTree.getTypeArguments() == null
-        || memberReferenceTree.getTypeArguments().isEmpty()) {
-      return type;
-    }
-    List<TypeMirror> args =
-        CollectionsPlume.mapList(TreeUtils::typeOf, memberReferenceTree.getTypeArguments());
-    return (ExecutableType) TypesUtils.substitute(type, type.getTypeVariables(), args, env);
   }
 }
