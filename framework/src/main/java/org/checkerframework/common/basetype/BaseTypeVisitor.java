@@ -1021,7 +1021,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       checkContractsAtMethodDeclaration(tree, methodElement, formalParamNames, abstractMethod);
 
       // Infer postconditions
-      if (atypeFactory.getWholeProgramInference() != null) {
+      if (shouldPerformContractInference()) {
         assert ElementUtils.isElementFromSourceCode(methodElement);
 
         // TODO: Infer conditional postconditions too.
@@ -1041,6 +1041,18 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     } finally {
       methodTree = preMT;
     }
+  }
+
+  /**
+   * Should Whole Program Inference attempt to infer contract annotations? Typically, the answer is
+   * "yes" whenever WPI is enabled, but this method exists to allow subclasses to customize that
+   * behavior.
+   *
+   * @return true if contract inference should be performed, false if it should be disabled (even
+   *     when WPI is enabled)
+   */
+  protected boolean shouldPerformContractInference() {
+    return atypeFactory.getWholeProgramInference() != null;
   }
 
   /**
@@ -3792,22 +3804,22 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     // enclosing method.
     // That is handled separately in method receiver check.
 
-    // The type of the expression or type use, <expression>::method or <type use>::method.
-    ExpressionTree qualifierExpression = memberReferenceTree.getQualifierExpression();
+    // The tree before :: is an expression or type use.
+    ExpressionTree preColonTree = memberReferenceTree.getQualifierExpression();
     MemberReferenceKind memRefKind =
         MemberReferenceKind.getMemberReferenceKind(memberReferenceTree);
     AnnotatedTypeMirror enclosingType;
     if (TreeUtils.isLikeDiamondMemberReference(memberReferenceTree)) {
-      TypeElement typeElt = TypesUtils.getTypeElement(TreeUtils.typeOf(qualifierExpression));
+      TypeElement typeElt = TypesUtils.getTypeElement(TreeUtils.typeOf(preColonTree));
       enclosingType = atypeFactory.getAnnotatedType(typeElt);
     } else if (memberReferenceTree.getMode() == ReferenceMode.NEW
         || memRefKind == MemberReferenceKind.UNBOUND
         || memRefKind == MemberReferenceKind.STATIC) {
-      // The "qualifier expression" is a type tree.
-      enclosingType = atypeFactory.getAnnotatedTypeFromTypeTree(qualifierExpression);
+      // The tree before :: is a type tree.
+      enclosingType = atypeFactory.getAnnotatedTypeFromTypeTree(preColonTree);
     } else {
-      // The "qualifier expression" is an expression.
-      enclosingType = atypeFactory.getAnnotatedType(qualifierExpression);
+      // The tree before :: is an expression.
+      enclosingType = atypeFactory.getAnnotatedType(preColonTree);
     }
 
     // ========= Overriding Executable =========
