@@ -48,6 +48,7 @@ public class InvocationType {
   /** The annotated type factory. */
   private final AnnotatedTypeFactory typeFactory;
 
+  /** A mapping from polymorphic annotation to {@link QualifierVar} */
   private final AnnotationMirrorMap<QualifierVar> qualifierVars;
 
   /**

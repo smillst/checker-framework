@@ -13,6 +13,7 @@ import org.checkerframework.framework.util.typeinference8.types.AbstractType.Kin
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.framework.util.typeinference8.util.Theta;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -129,7 +130,10 @@ import org.checkerframework.javacutil.TypesUtils;
     }
 
     Set<? extends AbstractQualifier> quals =
-        AbstractQualifier.create(typeVariable.getLowerBound().getPrimaryAnnotations(), context);
+        AbstractQualifier.create(
+            typeVariable.getLowerBound().getPrimaryAnnotations(),
+            AnnotationMirrorMap.emptyMap(),
+            context);
     variableBounds.addQualifierBound(BoundKind.LOWER, quals);
   }
 

@@ -36,6 +36,7 @@ public class UseOfVariable extends AbstractType {
   /** The annotated type variable for this use. */
   private final AnnotatedTypeVariable type;
 
+  /** A mapping from polymorphic annotation to {@link QualifierVar}. */
   private final AnnotationMirrorMap<QualifierVar> qualifierVars;
 
   /**
@@ -43,6 +44,7 @@ public class UseOfVariable extends AbstractType {
    *
    * @param type annotated type variable for this use
    * @param variable variable that this is a use of
+   * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
    * @param context the context
    */
   public UseOfVariable(

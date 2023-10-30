@@ -613,6 +613,11 @@ public abstract class AbstractType {
     }
   }
 
+  /**
+   * Returns the primary qualifiers on this type.
+   *
+   * @return the primary qualifiers on this type
+   */
   public abstract Set<AbstractQualifier> getQualifiers();
 
   @Override

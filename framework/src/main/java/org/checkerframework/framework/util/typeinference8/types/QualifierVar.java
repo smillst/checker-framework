@@ -13,6 +13,7 @@ import org.checkerframework.framework.util.typeinference8.types.VariableBounds.B
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 
 public class QualifierVar extends AbstractQualifier {
+
   /** Identification number. Used only to make debugging easier. */
   protected final int id;
 
@@ -131,7 +132,7 @@ public class QualifierVar extends AbstractQualifier {
   }
 
   @Override
-  AnnotationMirror resolve() {
+  AnnotationMirror getInstantiation() {
     if (instantiation == null) {
       AnnotationMirror lub = null;
       for (AbstractQualifier lower : qualifierBounds.get(BoundKind.LOWER)) {

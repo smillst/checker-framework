@@ -44,6 +44,7 @@ public class InferenceType extends AbstractType {
   /** A mapping of type variables to inference variables. */
   private final Theta map;
 
+  /** A mapping from polymorphic annotation to {@link QualifierVar}. */
   private final AnnotationMirrorMap<QualifierVar> qualifierVars;
 
   /**
@@ -51,6 +52,7 @@ public class InferenceType extends AbstractType {
    *
    * @param type the annotated type mirror
    * @param typeMirror the type mirror
+   * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
    * @param map a mapping from type variable to inference variablef
    * @param context the context
    */
@@ -105,6 +107,7 @@ public class InferenceType extends AbstractType {
    * @param type the annotated type mirror
    * @param typeMirror the java type
    * @param map a mapping from type variable to inference variable
+   * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
    * @param context the context
    * @return the abstract type for the given TypeMirror and AnnotatedTypeMirror
    */
@@ -139,6 +142,7 @@ public class InferenceType extends AbstractType {
    * @param types the annotated type mirrors
    * @param typeMirrors the java types
    * @param map a mapping from type variable to inference variable
+   * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
    * @param context the context
    * @return the abstract type for the given TypeMirror and AnnotatedTypeMirror
    */

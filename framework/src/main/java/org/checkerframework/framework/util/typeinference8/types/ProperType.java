@@ -28,6 +28,7 @@ public class ProperType extends AbstractType {
   /** The Java type. */
   private final TypeMirror properType;
 
+  /** A mapping from polymorphic annotation to {@link QualifierVar}. */
   private final AnnotationMirrorMap<QualifierVar> qualifierVars;
 
   /**
@@ -42,6 +43,14 @@ public class ProperType extends AbstractType {
     this(type, properType, AnnotationMirrorMap.emptyMap(), context);
   }
 
+  /**
+   * Creates a proper type.
+   *
+   * @param type the annotated type
+   * @param properType the java type
+   * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
+   * @param context the context
+   */
   public ProperType(
       AnnotatedTypeMirror type,
       TypeMirror properType,

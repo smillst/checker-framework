@@ -17,7 +17,7 @@ public class Qualifier extends AbstractQualifier {
   }
 
   @Override
-  public AnnotationMirror resolve() {
+  public AnnotationMirror getInstantiation() {
     return annotation;
   }
 
