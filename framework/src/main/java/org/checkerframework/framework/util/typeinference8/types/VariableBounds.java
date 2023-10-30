@@ -187,24 +187,32 @@ public class VariableBounds {
       BoundKind kind, Set<? extends AbstractQualifier> setS) {
     Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
     if (kind == BoundKind.EQUAL) {
-      addConstraint(setS, equalBounds, Kind.QUALIFIER_EQUALITY);
+      addQualifierConstraint(setS, equalBounds, Kind.QUALIFIER_EQUALITY);
     } else if (kind == BoundKind.LOWER) {
-      addConstraint(setS, equalBounds, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(setS, equalBounds, Kind.QUALIFIER_SUBTYPE);
     } else { // UPPER
-      addConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
-      addConstraint(qualifierBounds.get(BoundKind.LOWER), setS, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(qualifierBounds.get(BoundKind.LOWER), setS, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
-      addConstraint(setS, qualifierBounds.get(BoundKind.UPPER), Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(setS, qualifierBounds.get(BoundKind.UPPER), Kind.QUALIFIER_SUBTYPE);
     }
   }
 
+  /**
+   * Add a {@link QualifierTyping} constraint for a qualifier in {@code setT} and the qualifier in
+   * {@code setS} in the same hierarchy.
+   *
+   * @param setT a set of abstract qualifiers on the left side of the constraint
+   * @param setS a set of abstract qualifiers on the right side of the constraint
+   * @param kind the kind of constraint
+   */
   @SuppressWarnings("interning:not.interned") // Checking for exact object.
-  private void addConstraint(
+  private void addQualifierConstraint(
       Set<? extends AbstractQualifier> setT, Set<? extends AbstractQualifier> setS, Kind kind) {
     for (AbstractQualifier t : setT) {
       for (AbstractQualifier s : setS) {
