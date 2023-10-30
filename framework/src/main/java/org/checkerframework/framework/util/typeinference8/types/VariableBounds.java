@@ -183,7 +183,6 @@ public class VariableBounds {
    * @param kind the kind of bound
    * @param setS the qualifiers
    */
-  @SuppressWarnings("interning:not.interned") // Checking for exact object.
   public void addConstraintsFromComplementaryQualifierBounds(
       BoundKind kind, Set<? extends AbstractQualifier> setS) {
     Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
