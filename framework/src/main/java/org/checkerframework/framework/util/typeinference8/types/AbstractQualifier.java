@@ -140,11 +140,11 @@ public abstract class AbstractQualifier {
   }
 
   /**
-   * Creates new {@code Qualifier} is added for each annotation in {@code anno}.
+   * Creates new {@code Qualifier} is added for each annotation in {@code annos}.
    *
    * @param annos a set of annotation mirrors
    * @param context a context
-   * @return new {@code Qualifier} is added for each annotation in {@code anno}
+   * @return new {@code Qualifier} is added for each annotation in {@code annos}
    */
   private static Set<AbstractQualifier> create(
       Set<AnnotationMirror> annos, Java8InferenceContext context) {
