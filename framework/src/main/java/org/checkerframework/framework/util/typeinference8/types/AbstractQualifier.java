@@ -15,7 +15,7 @@ import org.checkerframework.javacutil.AnnotationUtils;
 /**
  * This is the super class for a qualifier, {@link Qualifier} or a qualifier variable, {@link
  * QualifierVar}. A {@link Qualifier} is a wrapper around {@code AnnotationMirror}. A {@code
- * QualifierVar} is a variable for a polymorphic qualifier that needs to be view-point adapted at a
+ * QualifierVar} is a variable for a polymorphic qualifier that needs to be viewpoint adapted at a
  * call site.
  */
 public abstract class AbstractQualifier {

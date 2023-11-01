@@ -188,25 +188,6 @@ public class InferenceFactory {
     }
   }
 
-  //  AbstractType convertPoly(MethodInvocationTree invocation, AnnotatedExecutableType methodType,
-  // ProperType r, Java8InferenceContext context){
-  //
-  // if(!((GenericAnnotatedTypeFactory<?,?,?,?>)context.typeFactory).getQualifierPolymorphism().hasPolymorphicQualifiers(r.getAnnotatedType()){
-  //      return r;
-  //    }
-  //    for(AnnotationMirror poly:r.getAnnotatedType().getPrimaryAnnotations()) {
-  //      if (context.typeFactory.getQualifierHierarchy().isPolymorphicQualifier(poly)) {
-  //        new QualifierVar(invocation, poly, context);
-  //      }
-  //    }
-  //    for(ExpressionTree arg: invocation.getArguments()) {
-  //      AnnotatedTypeMirror argType = context.typeFactory.getAnnotatedType(arg);
-  //
-  //    }
-  //
-  //
-  //  }
-
   /**
    * If the variable's type is a type variable, return getAnnotatedTypeLhsNoTypeVarDefault(tree).
    * Rational:
