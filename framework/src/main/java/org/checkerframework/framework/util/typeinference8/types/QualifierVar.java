@@ -76,7 +76,7 @@ public class QualifierVar extends AbstractQualifier {
 
   @Override
   public String toString() {
-    return "@P" + id;
+    return "@QV" + id;
   }
 
   /**

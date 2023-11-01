@@ -109,9 +109,9 @@ public abstract class AbstractQualifier {
   }
 
   /**
-   * Creates {@code AbstractQualifiers} for each {@code AnnotationMirror} in {@code annos}. If an
-   * annotation mirror polymorphic qualifier in {@code qualifierVars}, the {@code QualifierVar} it
-   * maps to in {@code qualifierVars} is added to the returned set. Otherwise, a new {@code
+   * Creates an {@code AbstractQualifier} for each {@code AnnotationMirror} in {@code annos}. If an
+   * annotation mirror is a polymorphic qualifier in {@code qualifierVars}, the {@code QualifierVar}
+   * it maps to in {@code qualifierVars} is added to the returned set. Otherwise, a new {@code
    * Qualifier} is added.
    *
    * @param annos a set of annotation mirrors
