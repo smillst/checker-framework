@@ -181,25 +181,27 @@ public class VariableBounds {
    * Add constraints created via incorporation of the bound. See JLS 18.3.1.
    *
    * @param kind the kind of bound
-   * @param setS the qualifiers
+   * @param qualifiers the qualifiers
    */
   public void addConstraintsFromComplementaryQualifierBounds(
-      BoundKind kind, Set<? extends AbstractQualifier> setS) {
+      BoundKind kind, Set<? extends AbstractQualifier> qualifiers) {
     Set<AbstractQualifier> equalBounds = qualifierBounds.get(BoundKind.EQUAL);
     if (kind == BoundKind.EQUAL) {
-      addQualifierConstraint(setS, equalBounds, Kind.QUALIFIER_EQUALITY);
+      addQualifierConstraint(qualifiers, equalBounds, Kind.QUALIFIER_EQUALITY);
     } else if (kind == BoundKind.LOWER) {
-      addQualifierConstraint(setS, equalBounds, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(qualifiers, equalBounds, Kind.QUALIFIER_SUBTYPE);
     } else { // UPPER
-      addQualifierConstraint(equalBounds, setS, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(equalBounds, qualifiers, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.UPPER) {
-      addQualifierConstraint(qualifierBounds.get(BoundKind.LOWER), setS, Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(
+          qualifierBounds.get(BoundKind.LOWER), qualifiers, Kind.QUALIFIER_SUBTYPE);
     }
 
     if (kind == BoundKind.EQUAL || kind == BoundKind.LOWER) {
-      addQualifierConstraint(setS, qualifierBounds.get(BoundKind.UPPER), Kind.QUALIFIER_SUBTYPE);
+      addQualifierConstraint(
+          qualifiers, qualifierBounds.get(BoundKind.UPPER), Kind.QUALIFIER_SUBTYPE);
     }
   }
 
