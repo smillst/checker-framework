@@ -30,7 +30,8 @@ import org.checkerframework.javacutil.TypesUtils;
 
   /**
    * The expression for which this variable is being solved. Used to differentiate inference
-   * variables for two different invocations of the same method.
+   * variables for two different invocations of the same method or constructor. This is set during
+   * inference.
    */
   protected final ExpressionTree invocation;
 
