@@ -1,0 +1,10 @@
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
+
+public class Issue6421C {
+  private static String[] getParameterNames(Constructor<?> constructor) {
+    Parameter[] parameters = constructor.getParameters();
+    return Arrays.stream(parameters).map(Parameter::getName).toArray(String[]::new);
+  }
+}
