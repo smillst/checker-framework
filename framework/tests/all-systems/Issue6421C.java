@@ -1,6 +1,8 @@
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
+import java.util.stream.Stream;
+
 
 public class Issue6421C {
   private static String[] getParameterNames(Constructor<?> constructor) {
