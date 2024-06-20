@@ -650,6 +650,13 @@ public class InvocationTypeInference {
     while (!c.isEmpty()) {
 
       ConstraintSet subset = c.getClosedSubset(b3.getDependencies(newVariables));
+      if (subset.hasAA()) {
+        c.remove(subset);
+        ConstraintSet r = ((AdditionalArgument) subset.pop()).reduce(context);
+        c.addAll(r);
+        newVariables = c.getAllInferenceVariables();
+        continue;
+      }
       Set<Variable> alphas = subset.getAllInputVariables();
       if (!alphas.isEmpty()) {
         // First resolve only the variables with proper bounds.

@@ -187,6 +187,11 @@ public class ConstraintSet implements ReductionResult {
     }
 
     if (!subset.isEmpty()) {
+      for (Constraint c : subset.list) {
+        if (c.getKind() == Kind.ADDITIONAL_ARG) {
+          return new ConstraintSet(c);
+        }
+      }
       return subset;
     }
 
@@ -333,5 +338,14 @@ public class ConstraintSet implements ReductionResult {
       }
     }
     return boundSet;
+  }
+
+  public boolean hasAA() {
+    for (Constraint c : list) {
+      if (c.getKind() == Kind.ADDITIONAL_ARG) {
+        return true;
+      }
+    }
+    return false;
   }
 }
