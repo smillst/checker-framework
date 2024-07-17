@@ -18,7 +18,10 @@ import java.lang.annotation.Target;
  * the {@code t} varargs argument before the method returns.
  *
  * <p>This annotation is not checked. An error will always be issued when it is used.
+ *
+ * @deprecated Use {@link EnsuresCalledMethodsVarargs}.
  */
+@Deprecated // 2024-07-03
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface EnsuresCalledMethodsVarArgs {
 
