@@ -341,8 +341,8 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
 
     // We have a ParameterizedTypeTree -> visit it, if it's not declared with var and therefore is
     // a synthetically created type.
-    if (tree.getKind() == Kind.VARIABLE
-        && !TreeUtils.isVariableTreeDeclaredUsingVar((VariableTree) tree)) {
+    if (tree.getKind() != Kind.VARIABLE
+        || !TreeUtils.isVariableTreeDeclaredUsingVar((VariableTree) tree)) {
       visitParameterizedType(type, typeArgTree);
     }
 
