@@ -8,6 +8,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeParameterTree;
 import com.sun.source.tree.VariableTree;
 import java.util.Collections;
@@ -338,9 +339,12 @@ public class BaseTypeValidator extends AnnotatedTypeScanner<Void, Tree> implemen
     // to detect that we've already visited type and to immediately return.
     visitedNodes.put(type, null);
 
-    // We have a ParameterizedTypeTree -> visit it.
-
-    visitParameterizedType(type, typeArgTree);
+    // We have a ParameterizedTypeTree -> visit it, if it's not declared with var and therefore is
+    // a synthetically created type.
+    if (tree.getKind() == Kind.VARIABLE
+        && !TreeUtils.isVariableTreeDeclaredUsingVar((VariableTree) tree)) {
+      visitParameterizedType(type, typeArgTree);
+    }
 
     /*
      * Instead of calling super with the unchanged "tree", adapt the
