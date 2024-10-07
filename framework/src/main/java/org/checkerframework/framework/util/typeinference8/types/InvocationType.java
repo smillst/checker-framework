@@ -6,7 +6,6 @@ import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -116,9 +115,8 @@ public class InvocationType {
    */
   public List<? extends AbstractType> getThrownTypes(Theta map) {
     List<AbstractType> thrown = new ArrayList<>();
-    Iterator<? extends TypeMirror> iter = methodType.getThrownTypes().iterator();
     for (AnnotatedTypeMirror t : annotatedExecutableType.getThrownTypes()) {
-      thrown.add(InferenceType.create(t, iter.next(), map, context));
+      thrown.add(InferenceType.create(t, map, context));
     }
     return thrown;
   }
@@ -130,12 +128,10 @@ public class InvocationType {
    * @return the return type
    */
   public AbstractType getReturnType(Theta map) {
-    TypeMirror returnTypeJava;
     AnnotatedTypeMirror returnType;
 
     if (TreeUtils.isDiamondTree(invocation)) {
       Element e = ElementUtils.enclosingTypeElement(TreeUtils.elementFromUse(invocation));
-      returnTypeJava = e.asType();
       returnType = typeFactory.getAnnotatedType(e);
     } else if (invocation.getKind() == Tree.Kind.METHOD_INVOCATION
         || invocation.getKind() == Tree.Kind.MEMBER_REFERENCE) {
@@ -144,21 +140,18 @@ public class InvocationType {
         returnType =
             context.typeFactory.getResultingTypeOfConstructorMemberReference(
                 (MemberReferenceTree) invocation, annotatedExecutableType);
-        returnTypeJava = returnType.getUnderlyingType();
       } else {
-        returnTypeJava = methodType.getReturnType();
         returnType = annotatedExecutableType.getReturnType();
       }
 
     } else {
-      returnTypeJava = TreeUtils.typeOf(invocation);
       returnType = typeFactory.getAnnotatedType(invocation);
     }
 
     if (map == null) {
-      return new ProperType(returnType, returnTypeJava, context);
+      return new ProperType(returnType, context);
     }
-    return InferenceType.create(returnType, returnTypeJava, map, context);
+    return InferenceType.create(returnType, map, context);
   }
 
   /**
@@ -194,7 +187,7 @@ public class InvocationType {
       params.add(0, annotatedExecutableType.getReceiverType());
       paramsJava.add(0, annotatedExecutableType.getReceiverType().getUnderlyingType());
     }
-    return InferenceType.create(params, paramsJava, map, qualifierVars, context);
+    return InferenceType.create(params, map, qualifierVars, context);
   }
 
   /**

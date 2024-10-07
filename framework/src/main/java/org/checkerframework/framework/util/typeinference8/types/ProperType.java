@@ -5,17 +5,15 @@ import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Type;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
 import org.checkerframework.framework.util.typeinference8.constraint.ReductionResult;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.javacutil.AnnotationMirrorMap;
-import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** A type that does not contain any inference variables. */
@@ -24,9 +22,6 @@ public class ProperType extends AbstractType {
   /** The annotated type mirror. */
   private final AnnotatedTypeMirror type;
 
-  /** The Java type. */
-  private final TypeMirror properType;
-
   /** A mapping from polymorphic annotation to {@link QualifierVar}. */
   private final AnnotationMirrorMap<QualifierVar> qualifierVars;
 
@@ -34,32 +29,26 @@ public class ProperType extends AbstractType {
    * Creates a proper type.
    *
    * @param type the annotated type
-   * @param properType the java type
    * @param context the context
    */
-  public ProperType(
-      AnnotatedTypeMirror type, TypeMirror properType, Java8InferenceContext context) {
-    this(type, properType, AnnotationMirrorMap.emptyMap(), context);
+  public ProperType(AnnotatedTypeMirror type, Java8InferenceContext context) {
+    this(type, AnnotationMirrorMap.emptyMap(), context);
   }
 
   /**
    * Creates a proper type.
    *
    * @param type the annotated type
-   * @param properType the java type
    * @param qualifierVars a mapping from polymorphic annotation to {@link QualifierVar}
    * @param context the context
    */
   public ProperType(
       AnnotatedTypeMirror type,
-      TypeMirror properType,
       AnnotationMirrorMap<QualifierVar> qualifierVars,
       Java8InferenceContext context) {
     super(context);
-    this.properType = properType;
     this.type = type;
     this.qualifierVars = qualifierVars;
-    verifyTypeKinds(type, properType);
   }
 
   /**
@@ -71,9 +60,7 @@ public class ProperType extends AbstractType {
   public ProperType(ExpressionTree tree, Java8InferenceContext context) {
     super(context);
     this.type = context.typeFactory.getAnnotatedType(tree);
-    this.properType = type.getUnderlyingType();
     this.qualifierVars = AnnotationMirrorMap.emptyMap();
-    verifyTypeKinds(type, properType);
   }
 
   /**
@@ -85,24 +72,7 @@ public class ProperType extends AbstractType {
   public ProperType(VariableTree varTree, Java8InferenceContext context) {
     super(context);
     this.type = context.typeFactory.getAnnotatedType(varTree);
-    this.properType = TreeUtils.typeOf(varTree);
     this.qualifierVars = AnnotationMirrorMap.emptyMap();
-    verifyTypeKinds(type, properType);
-  }
-
-  /**
-   * Asserts that the underlying type of {@code atm} is the same kind as {@code typeMirror}.
-   *
-   * @param atm annotated type mirror
-   * @param typeMirror java type
-   */
-  private static void verifyTypeKinds(AnnotatedTypeMirror atm, TypeMirror typeMirror) {
-    assert typeMirror != null && typeMirror.getKind() != TypeKind.VOID && atm != null;
-
-    if (typeMirror.getKind() != atm.getKind()) {
-      //      throw new BugInCF("type: %s annotated type: %s", typeMirror,
-      // atm.getUnderlyingType());
-    }
   }
 
   @Override
@@ -111,8 +81,8 @@ public class ProperType extends AbstractType {
   }
 
   @Override
-  public AbstractType create(AnnotatedTypeMirror atm, TypeMirror type) {
-    return new ProperType(atm, type, qualifierVars, context);
+  public AbstractType create(AnnotatedTypeMirror atm) {
+    return new ProperType(atm, qualifierVars, context);
   }
 
   /**
@@ -123,11 +93,9 @@ public class ProperType extends AbstractType {
    *     exists
    */
   public ProperType boxType() {
-    if (properType.getKind().isPrimitive()) {
+    if (type.getKind().isPrimitive()) {
       return new ProperType(
-          typeFactory.getBoxedType((AnnotatedPrimitiveType) getAnnotatedType()),
-          context.types.boxedClass((Type) properType).asType(),
-          context);
+          typeFactory.getBoxedType((AnnotatedPrimitiveType) getAnnotatedType()), context);
     }
     return this;
   }
@@ -205,7 +173,6 @@ public class ProperType extends AbstractType {
     }
   }
 
-  @SuppressWarnings("interning:not.interned") // Checking for exact object.
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -214,33 +181,29 @@ public class ProperType extends AbstractType {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
-    ProperType otherProperType = (ProperType) o;
-
-    if (!type.equals(otherProperType.type)) {
+    if (!super.equals(o)) {
       return false;
     }
-    if (properType.getKind() == TypeKind.TYPEVAR) {
-      if (otherProperType.properType.getKind() == TypeKind.TYPEVAR) {
-        return TypesUtils.areSame(
-            (TypeVariable) properType, (TypeVariable) otherProperType.properType);
-      }
+
+    ProperType that = (ProperType) o;
+
+    if (!type.equals(that.type)) {
       return false;
     }
-    return properType == otherProperType.properType // faster
-        || context.env.getTypeUtils().isSameType(properType, otherProperType.properType); // slower
+    return Objects.equals(qualifierVars, that.qualifierVars);
   }
 
   @Override
   public int hashCode() {
-    int result = properType.toString().hashCode();
-    result = 31 * result + Kind.PROPER.hashCode();
+    int result = super.hashCode();
+    result = 31 * result + type.hashCode();
+    result = 31 * result + (qualifierVars != null ? qualifierVars.hashCode() : 0);
     return result;
   }
 
   @Override
   public TypeMirror getJavaType() {
-    return properType;
+    return type.getUnderlyingType();
   }
 
   @Override
@@ -250,7 +213,7 @@ public class ProperType extends AbstractType {
 
   @Override
   public boolean isObject() {
-    return TypesUtils.isObject(properType);
+    return TypesUtils.isObject(type.getUnderlyingType());
   }
 
   @Override

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
@@ -69,8 +68,8 @@ public class UseOfVariable extends AbstractType {
   }
 
   @Override
-  public AbstractType create(AnnotatedTypeMirror atm, TypeMirror type) {
-    return InferenceType.create(atm, type, variable.map, qualifierVars, context);
+  public AbstractType create(AnnotatedTypeMirror atm) {
+    return InferenceType.create(atm, variable.map, qualifierVars, context);
   }
 
   @Override
@@ -173,7 +172,7 @@ public class UseOfVariable extends AbstractType {
         variable.getBounds().addBound(kind, bound);
       } else {
         AnnotatedTypeMirror copyATM = bound.getAnnotatedType().deepCopy();
-        AbstractType boundCopy = bound.create(copyATM, bound.getJavaType());
+        AbstractType boundCopy = bound.create(copyATM);
 
         bound.getAnnotatedType().replaceAnnotations(tops);
         variable.getBounds().addBound(BoundKind.UPPER, bound);

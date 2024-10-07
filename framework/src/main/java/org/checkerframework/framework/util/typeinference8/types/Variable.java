@@ -1,9 +1,7 @@
 package org.checkerframework.framework.util.typeinference8.types;
 
 import com.sun.source.tree.ExpressionTree;
-import java.util.Iterator;
 import java.util.Set;
-import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.checkerframework.checker.interning.qual.Interned;
@@ -116,16 +114,13 @@ import org.checkerframework.javacutil.TypesUtils;
     // dependencies), then the bound {@literal al <: Object} also appears in the set.
     switch (upperBound.getKind()) {
       case INTERSECTION:
-        Iterator<? extends TypeMirror> iter =
-            ((IntersectionType) upperBound).getBounds().iterator();
         for (AnnotatedTypeMirror bound : typeVariable.getUpperBound().directSupertypes()) {
-          AbstractType t1 = InferenceType.create(bound, iter.next(), map, context);
+          AbstractType t1 = InferenceType.create(bound, map, context);
           variableBounds.addBound(BoundKind.UPPER, t1);
         }
         break;
       default:
-        AbstractType t1 =
-            InferenceType.create(typeVariable.getUpperBound(), upperBound, map, context);
+        AbstractType t1 = InferenceType.create(typeVariable.getUpperBound(), map, context);
         variableBounds.addBound(BoundKind.UPPER, t1);
         break;
     }

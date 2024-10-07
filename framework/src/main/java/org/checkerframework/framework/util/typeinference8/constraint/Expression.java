@@ -7,7 +7,6 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -78,7 +77,7 @@ public class Expression extends TypeConstraint {
         s = new ProperType(expression, context);
       } else {
         AnnotatedTypeMirror atm = context.typeFactory.getAnnotatedType(expression);
-        s = getT().create(atm, atm.getUnderlyingType());
+        s = getT().create(atm);
       }
       return new Typing(s, T, TypeConstraint.Kind.TYPE_COMPATIBILITY);
     }
@@ -187,12 +186,12 @@ public class Expression extends TypeConstraint {
         AbstractType referenceType;
         if (context.isLambdaParam(preColonTree)) {
           AnnotatedTypeMirror atm = context.typeFactory.getAnnotatedType(preColonTree);
-          referenceType = T.create(atm, atm.getUnderlyingType());
+          referenceType = T.create(atm);
         } else {
           if (MemberReferenceKind.getMemberReferenceKind(memRef).isUnbound()) {
             AnnotatedTypeMirror atm =
                 context.typeFactory.getAnnotatedTypeFromTypeTree(preColonTree);
-            referenceType = new ProperType(atm, atm.getUnderlyingType(), context);
+            referenceType = new ProperType(atm, context);
           } else {
             referenceType = new ProperType(preColonTree, context);
           }
@@ -389,7 +388,7 @@ public class Expression extends TypeConstraint {
     // alpham>, where alpha1, ..., alpham are fresh inference variables.
     Theta map = context.inferenceTypeFactory.createThetaForLambda(lambda, t);
     List<Variable> alphas = new ArrayList<>(map.values());
-    AbstractType tprime = InferenceType.create(t.getAnnotatedType(), t.getJavaType(), map, context);
+    AbstractType tprime = InferenceType.create(t.getAnnotatedType(), map, context);
 
     List<AbstractType> qs = tprime.getFunctionTypeParameterTypes();
     assert qs.size() == ps.size();
