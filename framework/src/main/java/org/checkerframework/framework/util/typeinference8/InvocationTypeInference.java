@@ -396,8 +396,8 @@ public class InvocationTypeInference {
         ConstraintSet constraintSet =
             new ConstraintSet(new Typing(u, target, Kind.TYPE_COMPATIBILITY));
         BoundSet newBounds = constraintSet.reduce(context);
-        resolve.incorporateToFixedPoint(newBounds);
-        return resolve;
+        b2.incorporateToFixedPoint(newBounds);
+        return b2;
       }
       if (target.isProper() && target.getJavaType().getKind().isPrimitive()) {
         // From the JLS:
