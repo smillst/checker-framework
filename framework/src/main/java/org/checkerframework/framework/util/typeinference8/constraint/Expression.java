@@ -7,7 +7,6 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -160,8 +159,8 @@ public class Expression extends TypeConstraint {
         context.inferenceTypeFactory.getTypeOfMethodAdaptedToUse(expressionTree);
     Theta map =
         context.inferenceTypeFactory.createThetaForInvocation(expressionTree, methodType, context);
-    BoundSet b2 = context.inference.createB2(methodType, args, map);
-    return context.inference.createB3(b2, expressionTree, methodType, T, map);
+    BoundSet b2 = context.inference.createBoundsFromArguments(b0, methodType, args, map);
+    return context.inference.addTargetTypeConstraints(b2, expressionTree, methodType, T, map);
   }
 
   /**
@@ -238,7 +237,7 @@ public class Expression extends TypeConstraint {
       BoundSet b2 =
           context.inference.createB2MethodRef(
               compileTimeDecl, T.getFunctionTypeParameterTypes(), map);
-      return context.inference.createB3(b2, memRef, compileTimeDecl, r, map);
+      return context.inference.addTargetTypeConstraints(b2, memRef, compileTimeDecl, r, map);
     }
 
     // https://docs.oracle.com/javase/specs/jls/se8/html/jls-18.html#jls-18.2.1-300-D-B-C

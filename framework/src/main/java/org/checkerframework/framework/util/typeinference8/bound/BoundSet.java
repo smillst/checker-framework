@@ -2,6 +2,7 @@ package org.checkerframework.framework.util.typeinference8.bound;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,8 +56,17 @@ public class BoundSet implements ReductionResult {
    * @param context the context
    */
   public BoundSet(Java8InferenceContext context) {
+    this(context, Collections.emptySet());
+  }
+
+  /**
+   * Creates a bound set.
+   *
+   * @param context the context
+   */
+  public BoundSet(Java8InferenceContext context, Collection<Variable> variables) {
     assert context != null;
-    this.variables = new LinkedHashSet<>();
+    this.variables = new LinkedHashSet<>(variables);
     this.captures = new LinkedHashSet<>();
     this.context = context;
     this.containsFalse = false;
@@ -94,20 +104,6 @@ public class BoundSet implements ReductionResult {
     for (Variable v : variables) {
       v.restore();
     }
-  }
-
-  /**
-   * Creates a new bound set for the variables in theta. (The initial bounds for the variables were
-   * added to the variables when theta was created.)
-   *
-   * @param theta a Map from type variable to inference variable
-   * @param context inference context
-   * @return initial bounds
-   */
-  public static BoundSet initialBounds(Theta theta, Java8InferenceContext context) {
-    BoundSet boundSet = new BoundSet(context);
-    boundSet.variables.addAll(theta.values());
-    return boundSet;
   }
 
   /**

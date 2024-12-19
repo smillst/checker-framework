@@ -155,12 +155,17 @@ public class InvocationTypeInference {
       args = ((NewClassTree) invocation).getArguments();
     }
 
+    // Creates
+
+
+    // Creates the inference variables and initializes their bounds based on the type parameter declaration. Initial bounds from the bounds of the type parameters. (This is called B0 in the JLS)
     Theta map =
         context.inferenceTypeFactory.createThetaForInvocation(invocation, invocationType, context);
-    BoundSet b2 = createB2(invocationType, args, map);
-    BoundSet b3;
+    // Adds any bounds implied by the throws clause of {@code invocationType}. (This is called B1 in the JLS.)
+    addThrowsBounds(invocationType, map);
+    BoundSet boundSet = createBoundsFromArguments(invocationType, args, map);
     if (target != null && TreeUtils.isPolyExpression(invocation)) {
-      b3 = createB3(b2, invocation, invocationType, target, map);
+      b3 = addTargetTypeConstraints(boundSet, invocation, invocationType, target, map);
     } else {
       b3 = b2;
     }
@@ -209,7 +214,7 @@ public class InvocationTypeInference {
     if (r == null || r.getTypeKind() == TypeKind.VOID) {
       b3 = b2;
     } else {
-      b3 = createB3(b2, invocation, compileTimeDecl, r, map);
+      b3 = addTargetTypeConstraints(b2, invocation, compileTimeDecl, r, map);
     }
 
     List<Variable> thetaPrime = b3.resolve();
@@ -226,37 +231,23 @@ public class InvocationTypeInference {
    * <p>It does this by:
    *
    * <ol>
-   *   <li value="1">Creating the inference variables and initializing their bounds based on the
-   *       type parameter declaration.
-   *   <li value="2">Adding any bounds implied by the throws clause of {@code methodType}.
-   *   <li value="3">Constructing constraints between formal parameters and arguments that are
+   *   <li value="1">Constructing constraints between formal parameters and arguments that are
    *       "pertinent to applicability" (See <a
    *       href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-15.html#jls-15.12.2.2">JLS
    *       Section 15.12.2.2</a>). Generally, all arguments are applicable except: inexact method
    *       reference, implicitly typed lambdas, or explicitly typed lambda whose return
    *       expression(s) are not pertinent.
-   *   <li value="4">Reducing and incorporating those constraints which finally produces B2.
+   *   <li value="2">Reducing and incorporating those constraints which finally produces B2.
    * </ol>
    *
    * @param methodType the type of the method or constructor invoked
-   * @param args argument expression tress
-   * @param map map of type variables to (inference) variables
+   * @param args       argument expression tress
+   * @param map        map of type variables to (inference) variables
    * @return bound set used to determine whether a method is applicable
    */
-  public BoundSet createB2(
+  public BoundSet createBoundsFromArguments(
       InvocationType methodType, List<? extends ExpressionTree> args, Theta map) {
-    BoundSet b0 = BoundSet.initialBounds(map, context);
 
-    // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
-    // alphai is implied. These bounds, if any, are incorporated with B0 to produce a new bound
-    // set, B1.
-    for (AbstractType thrownType : methodType.getThrownTypes(map)) {
-      if (thrownType.isUseOfVariable()) {
-        ((UseOfVariable) thrownType).setHasThrowsBound(true);
-      }
-    }
-
-    BoundSet b1 = b0;
     ConstraintSet c = new ConstraintSet();
     List<AbstractType> formals = methodType.getParameterTypes(map, args.size());
 
@@ -269,15 +260,26 @@ public class InvocationTypeInference {
       }
     }
 
-    BoundSet newBounds = c.reduce(context);
-    assert !newBounds.containsFalse();
-    b1.incorporateToFixedPoint(newBounds);
+    BoundSet bounds = c.reduce(context);
+    assert !bounds.containsFalse();
+    bounds.incorporateToFixedPoint(new BoundSet(context, map.values()));
 
-    return b1;
+    return bounds;
+  }
+
+  private static void addThrowsBounds(InvocationType methodType, Theta map) {
+    // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
+    // alphai is implied. These bounds, if any, are incorporated with B0 to produce a new bound
+    // set, B1.
+    for (AbstractType thrownType : methodType.getThrownTypes(map)) {
+      if (thrownType.isUseOfVariable()) {
+        ((UseOfVariable) thrownType).setHasThrowsBound(true);
+      }
+    }
   }
 
   /**
-   * Same as {@link #createB2(InvocationType, List, Theta)}, but for method references. A list of
+   * Same as {@link #createBoundsFromArguments(BoundSet, InvocationType, List, Theta)}, but for method references. A list of
    * types is used instead of a list of arguments. These types are the types of the formal
    * parameters of function type of target type of the method reference.
    *
@@ -292,11 +294,7 @@ public class InvocationTypeInference {
     // For all i (1 <= i <= p), if Pi appears in the throws clause of m, then the bound throws
     // alphai is implied. These bounds, if any, are incorporated with B0 to produce a new bound
     // set, B1.
-    for (AbstractType thrownType : methodType.getThrownTypes(map)) {
-      if (thrownType.isUseOfVariable()) {
-        ((UseOfVariable) thrownType).setHasThrowsBound(true);
-      }
-    }
+    addThrowsBounds(methodType, map);
 
     BoundSet b1 = b0;
     ConstraintSet c = new ConstraintSet();
@@ -331,14 +329,14 @@ public class InvocationTypeInference {
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-18.html#jls-18.5.2.1">JLS
    * 18.5.2.1</a>.)
    *
-   * @param b2 BoundSet created by {@link #createB2(InvocationType, List, Theta)}
+   * @param b2 BoundSet created by {@link #createBoundsFromArguments(InvocationType, List, Theta)}
    * @param invocation a method or constructor invocation
    * @param methodType the type of the method or constructor invoked by expression
    * @param target target type of the invocation
    * @param map map of type variables to (inference) variables
    * @return bound set created by constraints against the target type of the invocation
    */
-  public BoundSet createB3(
+  public BoundSet addTargetTypeConstraints(
       BoundSet b2,
       ExpressionTree invocation,
       InvocationType methodType,
@@ -353,8 +351,6 @@ public class InvocationTypeInference {
           new ConstraintSet(new Typing(r.getErased(), target, Kind.TYPE_COMPATIBILITY))
               .reduce(context);
       b2.incorporateToFixedPoint(b);
-      return b2;
-
     } else if (r.isWildcardParameterizedType()) {
       // Otherwise, if r is a parameterized type, G<A1, ..., An>, and one of A1, ...,
       // An is a wildcard, then, for fresh inference variables B1, ..., Bn, the constraint
@@ -363,7 +359,6 @@ public class InvocationTypeInference {
       BoundSet b =
           CaptureBound.createAndIncorporateCaptureConstraint(r, target, invocation, context);
       b2.incorporateToFixedPoint(b);
-      return b2;
     } else if (r.isUseOfVariable()) {
       Variable alpha = ((UseOfVariable) r).getVariable();
       // Should a type compatibility constraint be added?
