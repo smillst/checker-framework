@@ -172,13 +172,13 @@ import org.checkerframework.javacutil.TypesUtils;
 
   @Override
   public String toString() {
-    return String.format("%s from %s", typeVariableJava, invocation);
+    //    return String.format("%s from %s", typeVariableJava, invocation);
 
-    // Uncomment for easier to read names for debugging.
-    // if (variableBounds.hasInstantiation()) {
-    //    return "a" + id + " := " + variableBounds.getInstantiation();
-    //  }
-    //  return "a" + id;
+    //     Uncomment for easier to read names for debugging.
+    if (variableBounds.hasInstantiation()) {
+      return "a" + id + " := " + variableBounds.getInstantiation();
+    }
+    return "a" + id;
   }
 
   /**

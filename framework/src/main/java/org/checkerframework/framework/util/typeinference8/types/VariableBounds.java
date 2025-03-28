@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint;
 import org.checkerframework.framework.util.typeinference8.constraint.Constraint.Kind;
 import org.checkerframework.framework.util.typeinference8.constraint.ConstraintSet;
@@ -631,13 +632,14 @@ public class VariableBounds {
    *
    * @param Ai the captured type argument
    * @param Bi the bound of the type variable
-   * @return constraints generated when incorporating a capture bound
+   * @return constraints generated when incorporating a capture bound or {@code null} if false is
+   *     implied
    */
-  public ConstraintSet getWildcardConstraints(AbstractType Ai, AbstractType Bi) {
+  public @Nullable ConstraintSet getWildcardConstraints(AbstractType Ai, AbstractType Bi) {
     ConstraintSet constraintSet = new ConstraintSet();
     String source = "Constraint from wildcard bound.";
 
-    // Only concerned with bounds against proper types or inference types.
+    // Get the bounds of this that are not inference variables.
     List<AbstractType> upperBoundsNonVar = new ArrayList<>();
     for (AbstractType bound : bounds.get(VariableBounds.BoundKind.UPPER)) {
       if (bound.isProper() || bound.isInferenceType()) {
@@ -659,11 +661,18 @@ public class VariableBounds {
     }
 
     if (Ai.isUnboundWildcard()) {
+      // var = R implies the bound false
+      // This case is handled above.
+
+      // var <: R implies the constraint formula <Bi theta <: R>
+      for (AbstractType r : upperBoundsNonVar) {
+        constraintSet.add(new Typing(source, Bi, r, TypeConstraint.Kind.SUBTYPE));
+      }
+
       // R <: var implies the bound false
       if (!lowerBoundsNonVar.isEmpty()) {
         return null;
       }
-      // var <: R implies the constraint formula <Bi theta <: R>
     } else if (Ai.isUpperBoundedWildcard()) {
       // R <: var implies the bound false
       if (!lowerBoundsNonVar.isEmpty()) {
