@@ -1009,6 +1009,7 @@ subprojects {
         dependsOn('inferenceTests-part1', 'inferenceTests-part1')
       }
     }
+
     tasks.register('inferenceTests-part1') {
       group('Verification')
       description = 'Run inference tests (part 1).'
@@ -1016,6 +1017,7 @@ subprojects {
         dependsOn('ainferTest', 'wpiManyTest')
       }
     }
+
     tasks.register('inferenceTests-part2') {
       group('Verification')
       description = 'Run inference tests (part 2).'
@@ -1032,11 +1034,13 @@ subprojects {
       description = 'Run the Checker Framework on itself'
       dependsOn('typecheck-part1', 'typecheck-part2')
     }
+
     tasks.register('typecheck-part1') {
       group('Verification')
       description = 'Run the Checker Framework on itself (part 1)'
       dependsOn('checkFormatter', 'checkInterning', 'checkOptional', 'checkPurity')
     }
+
     tasks.register('typecheck-part2') {
       group('Verification')
       description = 'Run the Checker Framework on itself (part 2)'
