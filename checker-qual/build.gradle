@@ -16,7 +16,7 @@ sourceSets {
   }
 }
 
-task compileJava9(type: JavaCompile) {
+tasks.register('compileJava9', JavaCompile) {
   source = sourceSets.module_info.java
   destinationDirectory = sourceSets.main.output.classesDirs[0]
   classpath = configurations.allProjects
