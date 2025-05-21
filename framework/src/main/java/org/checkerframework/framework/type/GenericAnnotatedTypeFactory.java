@@ -1562,7 +1562,23 @@ public abstract class GenericAnnotatedTypeFactory<
       boolean updateInitializationStore,
       boolean isStatic,
       @Nullable Store capturedStore) {
+
     ControlFlowGraph cfg = CFCFGBuilder.build(root, ast, checker, this, processingEnv);
+    // add lambdas declared in CFG
+    for (LambdaExpressionTree lambda : cfg.getDeclaredLambdas()) {
+      lambdaQueue.add(IPair.of(lambda, getStoreBefore(lambda)));
+      MethodTree mt = (MethodTree) TreePathUtil.enclosingOfKind(getPath(lambda), Tree.Kind.METHOD);
+      analyze(
+          classQueue,
+          lambdaQueue,
+          new CFGLambda(lambda, currentClass, mt),
+          fieldValues,
+          currentClass,
+          false,
+          false,
+          false,
+          getStoreBefore(lambda));
+    }
     cfg.getAllNodes(this::isIgnoredExceptionType)
         .forEach(
             node -> {
@@ -1639,10 +1655,6 @@ public abstract class GenericAnnotatedTypeFactory<
     // add classes declared in CFG
     for (ClassTree cls : cfg.getDeclaredClasses()) {
       classQueue.add(IPair.of(cls, getStoreBefore(cls)));
-    }
-    // add lambdas declared in CFG
-    for (LambdaExpressionTree lambda : cfg.getDeclaredLambdas()) {
-      lambdaQueue.add(IPair.of(lambda, getStoreBefore(lambda)));
     }
 
     postAnalyze(cfg);
