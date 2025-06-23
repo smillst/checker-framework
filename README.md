@@ -1,11 +1,11 @@
-# The Checker Framework:  pluggable type-checking for Java
+# If/Else Merge Branch
+I included a test case that is failing and should not be.
 
-Please see the Checker Framework manual
-([HTML](https://checkerframework.org/manual/),
-[PDF](https://checkerframework.org/manual/checker-framework-manual.pdf)).
+Run `gradlew allResourceLeakTests`. Exactly one test should fail:
 
-The history of releases and changes is in file
-[docs/CHANGELOG.md](docs/CHANGELOG.md).
+`java.lang.AssertionError: 28 out of 28 expected diagnostics were found.
+ 1 unexpected diagnostic was found:
+  LoopIfElseMergeTest.java:22: error: (unfulfilled.collection.obligations)`
 
-Documentation for Checker Framework developers
-is in directory `docs/developer/`.
+The LoopIfElseMergeTest.java file describes the issue and likely fix, which
+requires adding a merge store in the cfg translation of loops.
