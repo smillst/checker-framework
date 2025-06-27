@@ -24,6 +24,9 @@ JAVA_VER=$(java -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^1\./s///' | cut
 if [ "${JAVA_VER}" != "8" ] && [ "${JAVA_VER}" != "11" ]; then
   ./gradlew spotlessCheck --console=plain --warning-mode=all
 fi
+
+./gradlew printJavaVersion
+
 if grep -n -r --exclude-dir=build --exclude-dir=examples --exclude-dir=jtreg --exclude-dir=tests --exclude="*.astub" --exclude="*.tex" '^\(import static \|import .*\*;$\)'; then
   echo "Don't use static import or wildcard import"
   exit 1
