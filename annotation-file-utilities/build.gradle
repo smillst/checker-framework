@@ -42,7 +42,7 @@ dependencies {
 
 
 shadowJar {
-  destinationDirectory = projectDir
+  destinationDirectory = file("${projectDir}/dist")
   includeEmptyDirs = false
   archiveFileName = 'annotation-file-utilities-all.jar'
   // Don't include any class from the Checker Framework.
@@ -214,7 +214,7 @@ task cleanManual(type: Exec) {
 
 clean {
   dependsOn(cleanTestAnnotator, cleanManual)
-  delete('annotation-file-utilities.jar','annotation-file-utilities-all.jar', 'annotation-tools.zip')
+  delete('distannotation-file-utilities.jar','annotation-file-utilities-all.jar', 'annotation-tools.zip')
   delete "annotation-file-format.aux"
   delete "annotation-file-format.dvi"
   delete "annotation-file-format.haux"
@@ -319,7 +319,7 @@ task cloneAndPrepDirectoryForZipfile(type: Exec) {
       include "annotation-file-format.html"
       include "annotation-file-format.pdf"
       include "annotation-file-utilities.jar"
-      include "annotation-file-utilities-all.jar"
+      include "dist/annotation-file-utilities-all.jar"
     }
   }
 }
