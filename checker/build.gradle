@@ -362,10 +362,6 @@ task ainferTestCheckerGenerateStubs(type: Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
 
-  doFirst {
-    delete('tests/ainfer-testchecker/annotated')
-    delete("${buildDir}/ainfer-testchecker/")
-  }
   outputs.upToDateWhen { false }
   include '**/AinferTestCheckerStubsGenerationTest.class'
   testLogging {
@@ -375,6 +371,11 @@ task ainferTestCheckerGenerateStubs(type: Test) {
     // Show the found unexpected diagnostics and the expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-testchecker/annotated')
+    delete("${buildDir}/ainfer-testchecker/")
   }
 
   doLast {
@@ -427,10 +428,6 @@ task ainferTestCheckerGenerateAjava(type: Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
 
-  doFirst {
-    delete('tests/ainfer-testchecker/annotated')
-    delete("${buildDir}/ainfer-testchecker/")
-  }
   outputs.upToDateWhen { false }
   include '**/AinferTestCheckerAjavaGenerationTest.class'
   testLogging {
@@ -440,6 +437,11 @@ task ainferTestCheckerGenerateAjava(type: Test) {
     // Show the found unexpected diagnostics and the expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-testchecker/annotated')
+    delete("${buildDir}/ainfer-testchecker/")
   }
 
   doLast {
@@ -538,9 +540,7 @@ task ainferTestCheckerGenerateJaifs(type: Test) {
   dependsOn(':checker-qual:jar')  // For the Value Checker annotations.
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
-  doFirst {
-    delete('tests/ainfer-testchecker/annotated')
-  }
+
   outputs.upToDateWhen { false }
   include '**/AinferTestCheckerJaifsGenerationTest.class'
   testLogging {
@@ -550,6 +550,10 @@ task ainferTestCheckerGenerateJaifs(type: Test) {
     // Show the found unexpected diagnostics and expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-testchecker/annotated')
   }
 
   doLast {
@@ -615,10 +619,7 @@ task ainferIndexGenerateAjava(type: Test) {
   dependsOn(compileTestJava)
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
-  doFirst {
-    delete('tests/ainfer-index/annotated')
-    delete("${layout.buildDir}/ainfer-index/")
-  }
+
   outputs.upToDateWhen { false }
   include '**/AinferIndexAjavaGenerationTest.class'
   testLogging {
@@ -628,6 +629,11 @@ task ainferIndexGenerateAjava(type: Test) {
     // Show the found unexpected diagnostics and the expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-index/annotated')
+    delete("${layout.buildDir}/ainfer-index/")
   }
 
   doLast {
@@ -666,10 +672,6 @@ task ainferNullnessGenerateAjava(type: Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
 
-  doFirst {
-    delete('tests/ainfer-nullness/annotated')
-    delete("${buildDir}/ainfer-nullness/")
-  }
   outputs.upToDateWhen { false }
   include '**/AinferNullnessAjavaGenerationTest.class'
   testLogging {
@@ -679,6 +681,11 @@ task ainferNullnessGenerateAjava(type: Test) {
     // Show the found unexpected diagnostics and the expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-nullness/annotated')
+    delete("${buildDir}/ainfer-nullness/")
   }
 
   doLast {
@@ -718,10 +725,6 @@ task ainferResourceLeakGenerateAjava(type: Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
 
-  doFirst {
-    delete('tests/ainfer-resourceleak/annotated')
-    delete("${buildDir}/ainfer-resourceleak/")
-  }
   outputs.upToDateWhen { false }
   include '**/AinferResourceLeakAjavaGenerationTest.class'
   testLogging {
@@ -731,6 +734,11 @@ task ainferResourceLeakGenerateAjava(type: Test) {
     // Show the found unexpected diagnostics and the expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-resourceleak/annotated')
+    delete("${buildDir}/ainfer-resourceleak/")
   }
 
   doLast {
@@ -770,9 +778,6 @@ task ainferNullnessGenerateJaifs(type: Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
 
-  doFirst {
-    delete('tests/ainfer-nullness/annotated')
-  }
   outputs.upToDateWhen { false }
   include '**/AinferNullnessJaifsGenerationTest.class'
   testLogging {
@@ -782,6 +787,10 @@ task ainferNullnessGenerateJaifs(type: Test) {
     // Show the found unexpected diagnostics and expected diagnostics not found.
     exceptionFormat = 'full'
     events 'passed', 'skipped', 'failed'
+  }
+
+  doFirst {
+    delete('tests/ainfer-nullness/annotated')
   }
 
   doLast {
@@ -856,16 +865,6 @@ task wpiManyTest(type: Exec, group: 'Verification') {
 
   def projectDir = project.projectDir
 
-  doFirst {
-    delete("${projectDir}/build/wpi-many-tests-results/")
-    // wpi-many.sh is run in skip mode so that logs are preserved, but
-    // we don't actually want to skip previously-failing tests when we
-    // re-run the tests locally.
-    delete fileTree("${projectDir}/build/wpi-many-tests") {
-      include '**/.cannot-run-wpi'
-    }
-  }
-
   environment CHECKERFRAMEWORK: "${projectDir}/.."
   commandLine 'bin/wpi-many.sh',
       '-i', "${projectDir}/tests/wpi-many/testin.txt",
@@ -875,6 +874,16 @@ task wpiManyTest(type: Exec, group: 'Verification') {
       '--extraJavacArgs=-AenableWpiForRlc'
 
   ignoreExitValue = true
+
+  doFirst {
+    delete("${projectDir}/build/wpi-many-tests-results/")
+    // wpi-many.sh is run in skip mode so that logs are preserved, but
+    // we don't actually want to skip previously-failing tests when we
+    // re-run the tests locally.
+    delete fileTree("${projectDir}/build/wpi-many-tests") {
+      include '**/.cannot-run-wpi'
+    }
+  }
 
   def typecheckFilesDir = "${projectDir}/build/wpi-many-tests-results"
   doLast {

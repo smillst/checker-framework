@@ -84,17 +84,19 @@ task testExample(type: JavaExec, dependsOn: compileTestJava, group: 'Verificatio
   classpath = files(sourceSets.test.java.classesDirectory)
   classpath += sourceSets.test.compileClasspath
   mainClass = 'org.checkerframework.afu.scenelib.test.executable.Example'
+
+  args = [
+    "${resourceDir}/example-input.jaif",
+    "foo.Bar",
+    "${outputDir}/example-output.jaif"
+  ]
+
   doFirst {
     file(outputDir).mkdir()
     new File("${outputDir}/example-stdout.jaif").createNewFile()
 
     standardOutput = new FileOutputStream("${outputDir}/example-stdout.jaif")
   }
-  args = [
-    "${resourceDir}/example-input.jaif",
-    "foo.Bar",
-    "${outputDir}/example-output.jaif"
-  ]
 
   doLast {
 
@@ -297,15 +299,18 @@ ext.tmpAnnotationTools = "${layout.buildDirectory.get()}/tmp-annotation-tools"
 task cloneAndPrepDirectoryForZipfile(type: Exec) {
   dependsOn(assemble, makeAnnotationFileFormat)
   description = 'Copy files from repository to temporary directory from which they will be packaged up.'
-  doFirst {
-    delete tmpAnnotationTools
-  }
+
   executable 'git'
   args = [
     'clone',
     '../',
     "${tmpAnnotationTools}"
   ]
+
+  doFirst {
+    delete tmpAnnotationTools
+  }
+
   doLast {
     delete "${tmpAnnotationTools}/scene-lib.orig-hand-annos"
     delete "${tmpAnnotationTools}/.git"
@@ -383,6 +388,16 @@ task releaseBuild(type: GradleBuild) {
 
 task releaseBuildWithoutTest(type: GradleBuild) {
   description = 'Build everything required for a release, without cleaning first.'
+
+  startParameter.projectProperties += gradle.startParameter.projectProperties
+  startParameter.projectProperties += [release: true.toString()]
+
+  tasks = [
+    'clean',
+    'zipfile',
+    'copyToDeployDir'
+  ]
+
   doFirst {
     if (!project.hasProperty('deploy-dir')) {
       println project.properties.entrySet()*.toString().sort().toString().replaceAll(", ","\n")
@@ -393,13 +408,4 @@ task releaseBuildWithoutTest(type: GradleBuild) {
       throw new RuntimeException("You must specify an afu.version, such as 3.6.22")
     }
   }
-
-  startParameter.projectProperties += gradle.startParameter.projectProperties
-  startParameter.projectProperties += [release: true.toString()]
-
-  tasks = [
-    'clean',
-    'zipfile',
-    'copyToDeployDir'
-  ]
 }
