@@ -42,7 +42,7 @@ dependencies {
   // If you add an external dependency, you must shadow its packages.
   // See the comment in ../build.gradle in the shadowJar block.
 
-  implementation ("org.plumelib:reflection-util:${versions.reflectionUtil}")
+  implementation("org.plumelib:reflection-util:${versions.reflectionUtil}")
   implementation "org.plumelib:plume-util:${versions.plumeUtil}"
 
   // Dependencies added to "shadow" appear as dependencies in Maven Central.
@@ -173,7 +173,7 @@ tasks.register('checkerJar', ShadowJar) {
 jar {
   dependsOn(checkerJar)
   // Never build the skinny jar.
-  onlyIf {false}
+  onlyIf { false }
   archiveClassifier = 'skinny'
 }
 
@@ -182,7 +182,7 @@ shadowJar {
   archiveClassifier = 'all'
   // To see what files are incorporated into the shadow jar file:
   // doFirst { println sourceSets.main.runtimeClasspath.asPath }
-  doLast{
+  doLast {
     copy {
       from archiveFile.get()
       into file("${projectDir}/dist")
@@ -516,8 +516,7 @@ void copyNonannotatedToAnnotatedDirectory(String testdir) {
       (line.contains('// :: error:')
           // Don't remove unchecked cast warnings, because they're genuinely expected in some all-systems
           // tests, such as GenericsCasts.java.
-          || (line.contains('// :: warning:') && !line.contains('// :: warning: [unchecked]')))
-          ? null : line
+          || (line.contains('// :: warning:') && !line.contains('// :: warning: [unchecked]'))) ? null : line
     }
   }
   // The only file for which expected errors are maintained is ExpectedErrors.java, so we copy it over.
@@ -923,8 +922,7 @@ tasks.register('wpiManyTest', Exec) {
     def expectedTypecheckFileCount = testinLines.size()
     def actualTypecheckFileCount = typecheckFiles.size()
     if (actualTypecheckFileCount != expectedTypecheckFileCount) {
-      println("Failure: Too few *-typecheck.out files in ${typecheckFilesDir}: " +
-          "found ${actualTypecheckFileCount} but expected ${expectedTypecheckFileCount}.")
+      println("Failure: Too few *-typecheck.out files in ${typecheckFilesDir}: " + "found ${actualTypecheckFileCount} but expected ${expectedTypecheckFileCount}.")
       println("========= Found ${actualTypecheckFileCount} *-typecheck.out files in ${typecheckFilesDir} ========")
       new File(typecheckFilesDir).list().each { println it }
       println("========= The ${expectedTypecheckFileCount} expected files are in ${typecheckFilesDir}/tests/wpi-many/testin.txt ========")
@@ -953,8 +951,7 @@ tasks.register('wpiManyTest', Exec) {
         details.getFile().eachLine { line -> println(line) }
         println("======== end of contents of ${filename} ========")
       }
-      throw new GradleException("Failure: Too few *-typecheck.out files in ${typecheckFilesDir}: " +
-      "found ${actualTypecheckFileCount} but expected ${expectedTypecheckFileCount}.")
+      throw new GradleException("Failure: Too few *-typecheck.out files in ${typecheckFilesDir}: " + "found ${actualTypecheckFileCount} but expected ${expectedTypecheckFileCount}.")
     }
 
     // check that WPI causes the expected builds to succeed
@@ -977,21 +974,16 @@ tasks.register('wpiManyTest', Exec) {
             // Ignore warning about using -source; should use --release instead.
             || line.equals("warning: [options] system modules path not set in conjunction with -source 11")
             // Ignore the summary line that reports the total number of warnings (which can be single or plural).
-            || line.endsWith(' warning')
-            || line.endsWith(' warnings')
-            || line.startsWith('warning: No processor claimed any of these annotations: ')
+            || line.endsWith(' warning') || line.endsWith(' warnings') || line.startsWith('warning: No processor claimed any of these annotations: ')
             // Ignore debugging output with the prefix "DEBUG: ".
-            || line.startsWith('DEBUG: ')
-            || line.startsWith('warning: DEBUG: ')
-            || line.contains('warning: [DEBUG: ')) {
-          return;
+            || line.startsWith('DEBUG: ') || line.startsWith('warning: DEBUG: ') || line.contains('warning: [DEBUG: ')) {
+          return
         }
         if (!line.trim().equals('')) {
           println("======== start of contents of ${filename}, which is TYPECHECKING output, not WPI output ========")
           details.getFile().eachLine { l -> println(l) }
           println("======== end of contents of ${filename} ========")
-          throw new GradleException('Failure: WPI scripts produced an unexpected output in ' + filename + '. ' +
-          'Failing line is the following: ' + line)
+          throw new GradleException('Failure: WPI scripts produced an unexpected output in ' + filename + '. ' + 'Failing line is the following: ' + line)
         }
       }
     }
@@ -1020,8 +1012,7 @@ final checkerPom(publication) {
   // Don't use publication.from components.java which would publish the skinny jar as checker.jar.
   publication.pom {
     name = 'Checker Framework'
-    description =
-        String.join(System.lineSeparator(),
+    description = String.join(System.lineSeparator(),
         'The Checker Framework enhances Java\'s type system to',
         'make it more powerful and useful. This lets software developers',
         'detect and prevent errors in their Java programs.',
