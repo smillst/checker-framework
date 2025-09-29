@@ -61,6 +61,7 @@ import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGLambda;
 import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGMethod;
 import org.checkerframework.dataflow.cfg.UnderlyingAST.CFGStatement;
+import org.checkerframework.dataflow.cfg.UnderlyingAST.Kind;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.ObjectCreationNode;
@@ -1589,43 +1590,27 @@ public abstract class GenericAnnotatedTypeFactory<
 
     // store result
     flowResult.combine(result);
-    if (ast.getKind() == UnderlyingAST.Kind.METHOD) {
-      // store exit store (for checking postconditions)
-      CFGMethod mast = (CFGMethod) ast;
-      MethodTree method = mast.getMethod();
-      Store regularExitStore = analysis.getRegularExitStore();
-      if (regularExitStore != null) {
-        regularExitStores.put(method, regularExitStore);
-      }
-      Store exceptionalExitStore = analysis.getExceptionalExitStore();
-      if (exceptionalExitStore != null) {
-        exceptionalExitStores.put(method, exceptionalExitStore);
-      }
-      returnStatementStores.put(method, analysis.getReturnStatementStores());
-    } else if (ast.getKind() == UnderlyingAST.Kind.ARBITRARY_CODE) {
-      CFGStatement block = (CFGStatement) ast;
-      Store regularExitStore = analysis.getRegularExitStore();
-      if (regularExitStore != null) {
-        regularExitStores.put(block.getCode(), regularExitStore);
-      }
-      Store exceptionalExitStore = analysis.getExceptionalExitStore();
-      if (exceptionalExitStore != null) {
-        exceptionalExitStores.put(block.getCode(), exceptionalExitStore);
-      }
-    } else if (ast.getKind() == UnderlyingAST.Kind.LAMBDA) {
-      // TODO: Postconditions?
+    Tree code;
+    switch (ast.getKind()) {
+      case METHOD:
+        code = ((CFGMethod) ast).getMethod();
+        returnStatementStores.put((MethodTree) code, analysis.getReturnStatementStores());
+        break;
+      case ARBITRARY_CODE:
+      case LAMBDA:
+        code = ast.getCode();
+        break;
+      default:
+        throw new BugInCF("Unexpected AST kind: " + ast.getKind());
+    }
 
-      CFGLambda block = (CFGLambda) ast;
-      Store regularExitStore = analysis.getRegularExitStore();
-      if (regularExitStore != null) {
-        regularExitStores.put(block.getCode(), regularExitStore);
-      }
-      Store exceptionalExitStore = analysis.getExceptionalExitStore();
-      if (exceptionalExitStore != null) {
-        exceptionalExitStores.put(block.getCode(), exceptionalExitStore);
-      }
-    } else {
-      assert false : "Unexpected AST kind: " + ast.getKind();
+    Store regularExitStore = analysis.getRegularExitStore();
+    if (regularExitStore != null) {
+      regularExitStores.put(code, regularExitStore);
+    }
+    Store exceptionalExitStore = analysis.getExceptionalExitStore();
+    if (exceptionalExitStore != null) {
+      exceptionalExitStores.put(code, exceptionalExitStore);
     }
 
     if (isInitializationCode && updateInitializationStore) {
