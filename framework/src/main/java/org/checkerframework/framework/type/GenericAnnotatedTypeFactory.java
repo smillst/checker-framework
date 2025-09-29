@@ -1544,8 +1544,15 @@ public abstract class GenericAnnotatedTypeFactory<
     boolean anyLambdaResultChanged = true;
     Map<LambdaExpressionTree, List<AnnotationMirrorSet>> lambdaResultTypeMap = new HashMap<>();
     Map<LambdaExpressionTree, ControlFlowGraph> lambdaToCFG = new HashMap<>();
-    ControlFlowGraph methodCFG = null;
-    boolean breakAfterMethod = false;
+    ControlFlowGraph methodCFG = getControlFlowGraph(met);
+    Set<LambdaExpressionTree> noMethodVarLambdas = new HashSet<>();
+    for(LambdaExpressionTree lambda : methodCFG.getDeclaredLambdas()){
+      if(!lambdaUseMethodVar(lambda)){
+        noMethodVarLambdas.add(lambda);
+        analyzeLambda(lambda, classTree, met.getMethod());
+      }
+    }
+
     while (anyLambdaResultChanged) {
       Queue<IPair<ClassTree, Store>> classQueueInMethod = new ArrayDeque<>();
       Queue<IPair<LambdaExpressionTree, @Nullable Store>> lambdaQueueForMet = new ArrayDeque<>();
@@ -1611,33 +1618,7 @@ public abstract class GenericAnnotatedTypeFactory<
         if (lambdaResultTypeMap.get(lambda).isEmpty()) {
           // Don't reanalyze.
         } else {
-          List<VariableElement> paramsElements = new ArrayList<>();
-          TreeScanner<Boolean, List<VariableElement>> s =
-              new TreeScanner<Boolean, List<VariableElement>>() {
-                @Override
-                public Boolean visitIdentifier(
-                    IdentifierTree idTree, List<VariableElement> variableElements) {
-                  Element e = TreeUtils.elementFromTree(idTree);
-                  if (e.getKind() == ElementKind.LOCAL_VARIABLE
-                      || e.getKind() == ElementKind.PARAMETER) {
-                    return !variableElements.contains(e);
-                  }
-                  return false;
-                }
-
-                @Override
-                public Boolean visitVariable(
-                    VariableTree node, List<VariableElement> variableElements) {
-                  variableElements.add(TreeUtils.elementFromDeclaration(node));
-                  return super.visitVariable(node, variableElements);
-                }
-
-                @Override
-                public Boolean reduce(Boolean r1, Boolean r2) {
-                  return (r1 != null && r1) || (r2 != null && r2);
-                }
-              };
-          breakAfterMethod = !s.scan(lambda, paramsElements);
+          breakAfterMethod = lambdaUseMethodVar(lambda);
         }
       }
 
@@ -1654,6 +1635,85 @@ public abstract class GenericAnnotatedTypeFactory<
     }
     postAnalyze(methodCFG);
     lambdaToCFG.values().forEach(this::postAnalyze);
+  }
+
+  private void analyzeLambda(LambdaExpressionTree lambda, ClassTree classTree,
+      @Nullable MethodTree mt) {
+    ControlFlowGraph lambdaCFG = getControlFlowGraph(lambda, classTree, mt);
+    List<FieldInitialValue<Value>> fieldValues;
+
+    for(LambdaExpressionTree subLambda : lambdaCFG.getDeclaredLambdas()){
+      analyzeLambda(subLambda, classTree, mt);
+    }
+    analyze(
+        classQueueInMethod,
+        lambdaQueueForMet,
+        new CFGLambda(lambda, classTree, mt),
+        fieldValues,
+        classTree,
+        lambdaCFG,
+        false,
+        false,
+        false,
+        null);
+  }
+
+  private ControlFlowGraph getControlFlowGraph(LambdaExpressionTree lambda, ClassTree classTree,
+      @Nullable MethodTree mt) {
+    ControlFlowGraph methodCFG = CFCFGBuilder.build(root, new CFGLambda(lambda, classTree, mt), checker, this, processingEnv);
+    methodCFG.getAllNodes(this::isIgnoredExceptionType)
+        .forEach(
+            node -> {
+              if (node.getTree() != null) {
+                reachableNodes.add(node.getTree());
+              }
+            });
+    return methodCFG;
+  }
+
+  private ControlFlowGraph getControlFlowGraph(CFGMethod met) {
+    ControlFlowGraph methodCFG = CFCFGBuilder.build(root, met, checker, this, processingEnv);
+    methodCFG.getAllNodes(this::isIgnoredExceptionType)
+        .forEach(
+            node -> {
+              if (node.getTree() != null) {
+                reachableNodes.add(node.getTree());
+              }
+            });
+    return methodCFG;
+  }
+
+  private static boolean lambdaUseMethodVar(LambdaExpressionTree lambda) {
+    List<VariableElement> paramsElements = new ArrayList<>();
+
+    boolean breakAfterMethod;
+    TreeScanner<Boolean, List<VariableElement>> s =
+        new TreeScanner<Boolean, List<VariableElement>>() {
+          @Override
+          public Boolean visitIdentifier(
+              IdentifierTree idTree, List<VariableElement> variableElements) {
+            Element e = TreeUtils.elementFromTree(idTree);
+            if (e.getKind() == ElementKind.LOCAL_VARIABLE
+                || e.getKind() == ElementKind.PARAMETER) {
+              return !variableElements.contains(e);
+            }
+            return false;
+          }
+
+          @Override
+          public Boolean visitVariable(
+              VariableTree node, List<VariableElement> variableElements) {
+            variableElements.add(TreeUtils.elementFromDeclaration(node));
+            return super.visitVariable(node, variableElements);
+          }
+
+          @Override
+          public Boolean reduce(Boolean r1, Boolean r2) {
+            return (r1 != null && r1) || (r2 != null && r2);
+          }
+        };
+    breakAfterMethod = !s.scan(lambda, paramsElements);
+    return breakAfterMethod;
   }
 
   /** Sorts a list of trees with the variables first. */
@@ -1764,6 +1824,94 @@ public abstract class GenericAnnotatedTypeFactory<
     } else {
       assert false : "Unexpected AST kind: " + ast.getKind();
     }
+
+    if (isInitializationCode && updateInitializationStore) {
+      Store newInitStore = analysis.getRegularExitStore();
+      if (!isStatic) {
+        initializationStore = newInitStore;
+      } else {
+        initializationStaticStore = newInitStore;
+      }
+    }
+
+    // add classes declared in CFG
+    for (ClassTree cls : cfg.getDeclaredClasses()) {
+      classQueue.add(IPair.of(cls, getStoreBefore(cls)));
+    }
+    // add lambdas declared in CFG
+    for (LambdaExpressionTree lambda : cfg.getDeclaredLambdas()) {
+      lambdaQueue.add(IPair.of(lambda, getStoreBefore(lambda)));
+    }
+    return cfg;
+  }
+
+  /**
+   * Analyze the AST {@code ast} and store the result. Additional operations that should be
+   * performed after analysis should be implemented in {@link #postAnalyze(ControlFlowGraph)}.
+   *
+   * @param classQueue the queue for encountered class trees and their initial stores
+   * @param lambdaQueue the queue for encountered lambda expression trees and their initial stores
+   * @param ast the AST to analyze
+   * @param fieldValues the abstract values for all fields of the same class
+   * @param currentClass the class we are currently looking at
+   * @param cfg control flow graph to use; if null, one will be created and returned
+   * @param isInitializationCode are we analyzing a (static/non-static) initializer block of a class
+   * @param updateInitializationStore should the initialization store be updated
+   * @param isStatic are we analyzing a static construct
+   * @param capturedStore the input Store to use for captured variables, e.g. in a lambda
+   * @return control flow graph for {@code ast}
+   * @see #postAnalyze(org.checkerframework.dataflow.cfg.ControlFlowGraph)
+   */
+  protected ControlFlowGraph analyzeLambda(
+      Queue<IPair<ClassTree, Store>> classQueue,
+      Queue<IPair<LambdaExpressionTree, Store>> lambdaQueue,
+      UnderlyingAST ast,
+      List<FieldInitialValue<Value>> fieldValues,
+      ClassTree currentClass,
+      @Nullable ControlFlowGraph cfg,
+      boolean isInitializationCode,
+      boolean updateInitializationStore,
+      boolean isStatic,
+      @Nullable Store capturedStore) {
+    if (cfg == null) {
+      cfg = CFCFGBuilder.build(root, ast, checker, this, processingEnv);
+      cfg.getAllNodes(this::isIgnoredExceptionType)
+          .forEach(
+              node -> {
+                if (node.getTree() != null) {
+                  reachableNodes.add(node.getTree());
+                }
+              });
+    }
+    if (isInitializationCode) {
+      Store initStore = !isStatic ? initializationStore : initializationStaticStore;
+      if (initStore != null) {
+        // we have already seen initialization code and analyzed it, and
+        // the analysis ended with the store initStore.
+        // use it to start the next analysis.
+        transfer.setFixedInitialStore(initStore);
+      } else {
+        transfer.setFixedInitialStore(capturedStore);
+      }
+    } else {
+      transfer.setFixedInitialStore(capturedStore);
+    }
+    analysis.performAnalysis(cfg, fieldValues);
+    AnalysisResult<Value, Store> result = analysis.getResult();
+
+    // store result
+    flowResult.combine(result);
+      // TODO: Postconditions?
+
+      CFGLambda block = (CFGLambda) ast;
+      Store regularExitStore = analysis.getRegularExitStore();
+      if (regularExitStore != null) {
+        regularExitStores.put(block.getCode(), regularExitStore);
+      }
+      Store exceptionalExitStore = analysis.getExceptionalExitStore();
+      if (exceptionalExitStore != null) {
+        exceptionalExitStores.put(block.getCode(), exceptionalExitStore);
+      }
 
     if (isInitializationCode && updateInitializationStore) {
       Store newInitStore = analysis.getRegularExitStore();
