@@ -1449,7 +1449,8 @@ public abstract class GenericAnnotatedTypeFactory<
                         true,
                         true,
                         isStatic,
-                        capturedStore, true);
+                        capturedStore,
+                        true);
                 postAnalyze(cfg);
                 Value initializerValue = flowResult.getValue(initializer);
                 if (initializerValue != null) {
@@ -1473,7 +1474,8 @@ public abstract class GenericAnnotatedTypeFactory<
                       true,
                       true,
                       b.isStatic(),
-                      capturedStore, true);
+                      capturedStore,
+                      true);
               postAnalyze(cfg);
               break;
             default:
@@ -1504,7 +1506,8 @@ public abstract class GenericAnnotatedTypeFactory<
                   false,
                   false,
                   false,
-                  lambdaPair.second, true);
+                  lambdaPair.second,
+                  true);
           postAnalyze(cfg);
         }
 
@@ -1546,12 +1549,13 @@ public abstract class GenericAnnotatedTypeFactory<
     Map<LambdaExpressionTree, ControlFlowGraph> lambdaToCFG = new HashMap<>();
     ControlFlowGraph methodCFG = getControlFlowGraph(met);
     Set<LambdaExpressionTree> noMethodVarLambdas = new HashSet<>();
-    for(LambdaExpressionTree lambda : methodCFG.getDeclaredLambdas()){
-      if(!lambdaUseMethodVar(lambda)){
+    for (LambdaExpressionTree lambda : methodCFG.getDeclaredLambdas()) {
+      if (!lambdaUseMethodVar(lambda)) {
         noMethodVarLambdas.add(lambda);
         Queue<IPair<ClassTree, Store>> classQueueInMethod = new ArrayDeque<>();
         Queue<IPair<LambdaExpressionTree, @Nullable Store>> lambdaQueueForMet = new ArrayDeque<>();
-        analyzeLambda(lambda,
+        analyzeLambda(
+            lambda,
             classQueueInMethod,
             lambdaQueueForMet,
             met.getMethod(),
@@ -1576,11 +1580,13 @@ public abstract class GenericAnnotatedTypeFactory<
               TreeUtils.isConstructor(met.getMethod()),
               false,
               false,
-              capturedStore, false);
+              capturedStore,
+              false);
       anyLambdaResultChanged = false;
       if (noLambdas) {
         break;
       }
+
       while (!lambdaQueueForMet.isEmpty()) {
         IPair<LambdaExpressionTree, @Nullable Store> lambdaPair = lambdaQueueForMet.poll();
         LambdaExpressionTree lambda = lambdaPair.first;
@@ -1598,7 +1604,8 @@ public abstract class GenericAnnotatedTypeFactory<
                 false,
                 false,
                 false,
-                lambdaPair.second, false);
+                lambdaPair.second,
+                false);
         lambdaToCFG.put(lambda, cfgLambda);
 
         List<AnnotationMirrorSet> returnedExpressionTypes = new ArrayList<>();
@@ -1623,14 +1630,6 @@ public abstract class GenericAnnotatedTypeFactory<
         lambdaResultTypeMap.put(lambda, returnedExpressionTypes);
       }
 
-      for (LambdaExpressionTree lambda : lambdaToCFG.keySet()) {
-        if (lambdaResultTypeMap.get(lambda).isEmpty()) {
-          // Don't reanalyze.
-        } else {
-          breakAfterMethod = lambdaUseMethodVar(lambda);
-        }
-      }
-
       if (anyLambdaResultChanged) {
         if (fromExpressionTreeCache != null) {
           // If one cache is not null, then neither are the others.
@@ -1646,14 +1645,26 @@ public abstract class GenericAnnotatedTypeFactory<
     lambdaToCFG.values().forEach(this::postAnalyze);
   }
 
-  private void analyzeLambda(LambdaExpressionTree lambda, Queue<IPair<ClassTree,Store>> classQueueInMethod,
-      Queue<IPair<LambdaExpressionTree,@Nullable Store>> lambdaQueueForMet, MethodTree met, List<FieldInitialValue<Value>> fieldValues,
-      ClassTree classTree, Store capturedStore) {
+  private void analyzeLambda(
+      LambdaExpressionTree lambda,
+      Queue<IPair<ClassTree, Store>> classQueueInMethod,
+      Queue<IPair<LambdaExpressionTree, @Nullable Store>> lambdaQueueForMet,
+      MethodTree met,
+      List<FieldInitialValue<Value>> fieldValues,
+      ClassTree classTree,
+      Store capturedStore) {
 
     ControlFlowGraph lambdaCFG = getControlFlowGraph(lambda, classTree, met);
 
-    for(LambdaExpressionTree subLambda : lambdaCFG.getDeclaredLambdas()){
-      analyzeLambda(subLambda, classQueueInMethod, lambdaQueueForMet, met, fieldValues, classTree, capturedStore);
+    for (LambdaExpressionTree subLambda : lambdaCFG.getDeclaredLambdas()) {
+      analyzeLambda(
+          subLambda,
+          classQueueInMethod,
+          lambdaQueueForMet,
+          met,
+          fieldValues,
+          classTree,
+          capturedStore);
     }
     analyzeLambda(
         classQueueInMethod,
@@ -1664,10 +1675,13 @@ public abstract class GenericAnnotatedTypeFactory<
         capturedStore);
   }
 
-  private ControlFlowGraph getControlFlowGraph(LambdaExpressionTree lambda, ClassTree classTree,
-      @Nullable MethodTree mt) {
-    ControlFlowGraph methodCFG = CFCFGBuilder.build(root, new CFGLambda(lambda, classTree, mt), checker, this, processingEnv);
-    methodCFG.getAllNodes(this::isIgnoredExceptionType)
+  private ControlFlowGraph getControlFlowGraph(
+      LambdaExpressionTree lambda, ClassTree classTree, @Nullable MethodTree mt) {
+    ControlFlowGraph methodCFG =
+        CFCFGBuilder.build(
+            root, new CFGLambda(lambda, classTree, mt), checker, this, processingEnv);
+    methodCFG
+        .getAllNodes(this::isIgnoredExceptionType)
         .forEach(
             node -> {
               if (node.getTree() != null) {
@@ -1679,7 +1693,8 @@ public abstract class GenericAnnotatedTypeFactory<
 
   private ControlFlowGraph getControlFlowGraph(CFGMethod met) {
     ControlFlowGraph methodCFG = CFCFGBuilder.build(root, met, checker, this, processingEnv);
-    methodCFG.getAllNodes(this::isIgnoredExceptionType)
+    methodCFG
+        .getAllNodes(this::isIgnoredExceptionType)
         .forEach(
             node -> {
               if (node.getTree() != null) {
@@ -1698,16 +1713,14 @@ public abstract class GenericAnnotatedTypeFactory<
           public Boolean visitIdentifier(
               IdentifierTree idTree, List<VariableElement> variableElements) {
             Element e = TreeUtils.elementFromTree(idTree);
-            if (e.getKind() == ElementKind.LOCAL_VARIABLE
-                || e.getKind() == ElementKind.PARAMETER) {
+            if (e.getKind() == ElementKind.LOCAL_VARIABLE || e.getKind() == ElementKind.PARAMETER) {
               return !variableElements.contains(e);
             }
             return false;
           }
 
           @Override
-          public Boolean visitVariable(
-              VariableTree node, List<VariableElement> variableElements) {
+          public Boolean visitVariable(VariableTree node, List<VariableElement> variableElements) {
             variableElements.add(TreeUtils.elementFromDeclaration(node));
             return super.visitVariable(node, variableElements);
           }
@@ -1738,21 +1751,16 @@ public abstract class GenericAnnotatedTypeFactory<
    * Analyze the AST {@code ast} and store the result. Additional operations that should be
    * performed after analysis should be implemented in {@link #postAnalyze(ControlFlowGraph)}.
    *
-   * @param classQueue                the queue for encountered class trees and their initial
-   *                                  stores
-   * @param lambdaQueue               the queue for encountered lambda expression trees and their
-   *                                  initial stores
-   * @param ast                       the AST to analyze
-   * @param fieldValues               the abstract values for all fields of the same class
-   * @param currentClass              the class we are currently looking at
-   * @param cfg                       control flow graph to use; if null, one will be created and
-   *                                  returned
-   * @param isInitializationCode      are we analyzing a (static/non-static) initializer block of a
-   *                                  class
+   * @param classQueue the queue for encountered class trees and their initial stores
+   * @param lambdaQueue the queue for encountered lambda expression trees and their initial stores
+   * @param ast the AST to analyze
+   * @param fieldValues the abstract values for all fields of the same class
+   * @param currentClass the class we are currently looking at
+   * @param cfg control flow graph to use; if null, one will be created and returned
+   * @param isInitializationCode are we analyzing a (static/non-static) initializer block of a class
    * @param updateInitializationStore should the initialization store be updated
-   * @param isStatic                  are we analyzing a static construct
-   * @param capturedStore             the input Store to use for captured variables, e.g. in a
-   *                                  lambda
+   * @param isStatic are we analyzing a static construct
+   * @param capturedStore the input Store to use for captured variables, e.g. in a lambda
    * @param saveLambdas
    * @return control flow graph for {@code ast}
    * @see #postAnalyze(org.checkerframework.dataflow.cfg.ControlFlowGraph)
@@ -1767,7 +1775,8 @@ public abstract class GenericAnnotatedTypeFactory<
       boolean isInitializationCode,
       boolean updateInitializationStore,
       boolean isStatic,
-      @Nullable Store capturedStore, boolean saveLambdas) {
+      @Nullable Store capturedStore,
+      boolean saveLambdas) {
     if (cfg == null) {
       cfg = CFCFGBuilder.build(root, ast, checker, this, processingEnv);
       cfg.getAllNodes(this::isIgnoredExceptionType)
@@ -1832,11 +1841,12 @@ public abstract class GenericAnnotatedTypeFactory<
     for (ClassTree cls : cfg.getDeclaredClasses()) {
       classQueue.add(IPair.of(cls, getStoreBefore(cls)));
     }
-    if(saveLambdas){
-    // add lambdas declared in CFG
-    for (LambdaExpressionTree lambda : cfg.getDeclaredLambdas()) {
-      lambdaQueue.add(IPair.of(lambda, getStoreBefore(lambda)));
-    }}
+    if (saveLambdas) {
+      // add lambdas declared in CFG
+      for (LambdaExpressionTree lambda : cfg.getDeclaredLambdas()) {
+        lambdaQueue.add(IPair.of(lambda, getStoreBefore(lambda)));
+      }
+    }
     return cfg;
   }
 
@@ -1868,14 +1878,14 @@ public abstract class GenericAnnotatedTypeFactory<
     // store result
     flowResult.combine(result);
 
-      Store regularExitStore = analysis.getRegularExitStore();
-      if (regularExitStore != null) {
-        regularExitStores.put(ast.getCode(), regularExitStore);
-      }
-      Store exceptionalExitStore = analysis.getExceptionalExitStore();
-      if (exceptionalExitStore != null) {
-        exceptionalExitStores.put(ast.getCode(), exceptionalExitStore);
-      }
+    Store regularExitStore = analysis.getRegularExitStore();
+    if (regularExitStore != null) {
+      regularExitStores.put(ast.getCode(), regularExitStore);
+    }
+    Store exceptionalExitStore = analysis.getExceptionalExitStore();
+    if (exceptionalExitStore != null) {
+      exceptionalExitStores.put(ast.getCode(), exceptionalExitStore);
+    }
   }
 
   /**
@@ -1890,11 +1900,14 @@ public abstract class GenericAnnotatedTypeFactory<
 
   /**
    * Perform any additional operations on a CFG. Called once per CFG, after the CFG has been
-   * analyzed by {@link #analyze(Queue, Queue, UnderlyingAST, List, ClassTree, ControlFlowGraph, boolean, boolean, boolean, CFAbstractStore, boolean)}. This method can be used to initialize additional
-   * state or to perform any analyzes that are easier to perform on the CFG instead of the AST.
+   * analyzed by {@link #analyze(Queue, Queue, UnderlyingAST, List, ClassTree, ControlFlowGraph,
+   * boolean, boolean, boolean, CFAbstractStore, boolean)}. This method can be used to initialize
+   * additional state or to perform any analyzes that are easier to perform on the CFG instead of
+   * the AST.
    *
    * @param cfg the CFG
-   * @see #analyze(Queue, Queue, UnderlyingAST, List, ClassTree, ControlFlowGraph, boolean, boolean, boolean, CFAbstractStore, boolean)
+   * @see #analyze(Queue, Queue, UnderlyingAST, List, ClassTree, ControlFlowGraph, boolean, boolean,
+   *     boolean, CFAbstractStore, boolean)
    */
   protected void postAnalyze(ControlFlowGraph cfg) {
     handleCFGViz(cfg);
