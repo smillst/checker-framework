@@ -4,6 +4,7 @@ import com.sun.source.tree.ConditionalExpressionTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -201,7 +202,7 @@ public abstract class TypeConstraint implements Constraint {
         inputs.addAll(getInputVariablesForExpression(conditional.getFalseExpression(), T));
         return inputs;
       default:
-        if (TreeUtils.isSwitchExpression(tree)) {
+        if (tree instanceof SwitchExpressionTree switchExpressionTree) {
           List<Variable> inputs2 = new ArrayList<>();
 
           SwitchExpressionScanner<Boolean, Void> scanner =
@@ -209,7 +210,7 @@ public abstract class TypeConstraint implements Constraint {
                   (ExpressionTree exTree, Void unused) ->
                       inputs2.addAll(getInputVariablesForExpression(exTree, T)),
                   (r1, r2) -> null);
-          scanner.scanSwitchExpression(tree, null);
+          scanner.scanSwitchExpression(switchExpressionTree, null);
           return inputs2;
         }
         return Collections.emptyList();

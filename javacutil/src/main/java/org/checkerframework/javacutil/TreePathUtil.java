@@ -11,6 +11,7 @@ import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParenthesizedTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.VariableTree;
@@ -22,7 +23,6 @@ import java.util.StringJoiner;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.javacutil.TreeUtilsAfterJava11.SwitchExpressionUtils;
 import org.plumelib.util.IPair;
 
 /**
@@ -334,9 +334,9 @@ public final class TreePathUtil {
           parentPath = pathToCase.getParentPath();
           parent = parentPath.getLeaf();
         }
-        if (TreeUtils.isSwitchExpression(parent)) {
+        if (parent instanceof SwitchExpressionTree switchExpressionTree) {
           @SuppressWarnings("interning:not.interned") // AST node comparison
-          boolean switchIsLeaf = SwitchExpressionUtils.getExpression(parent) == treePath.getLeaf();
+          boolean switchIsLeaf = switchExpressionTree.getExpression() == treePath.getLeaf();
           if (switchIsLeaf) {
             // The assignment context for the switch selector expression is simply
             // boolean.

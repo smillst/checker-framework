@@ -5,6 +5,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import java.util.ArrayDeque;
@@ -201,10 +202,10 @@ public class DefaultTypeArgumentInference implements TypeArgumentInference {
           parentPath = parentPath.getParentPath();
           parentTree = parentPath.getLeaf();
         }
-        if (TreeUtils.isSwitchExpression(parentTree)) {
+        if (parentTree instanceof SwitchExpressionTree switchExpressionTree) {
           // case SWITCH_EXPRESSION:
           ExpressionTree outerTree =
-              outerInference((ExpressionTree) parentTree, parentPath.getParentPath());
+              outerInference(switchExpressionTree, parentPath.getParentPath());
           if (outerTree == parentTree) {
             return tree;
           }

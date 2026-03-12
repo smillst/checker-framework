@@ -6,6 +6,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.VariableTree;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -110,7 +111,7 @@ public class Expression extends TypeConstraint {
       case MEMBER_REFERENCE:
         return reduceMethodRef(context);
       default:
-        if (TreeUtils.isSwitchExpression(expression)) {
+        if (expression instanceof SwitchExpressionTree switchExpressionTree) {
           ConstraintSet set = new ConstraintSet();
           SwitchExpressionScanner<Void, Void> scanner =
               new FunctionalSwitchExpressionScanner<>(
@@ -120,7 +121,7 @@ public class Expression extends TypeConstraint {
                     return null;
                   },
                   (c1, c2) -> null);
-          scanner.scanSwitchExpression(expression, null);
+          scanner.scanSwitchExpression(switchExpressionTree, null);
           return set;
         }
         throw new BugInCF(

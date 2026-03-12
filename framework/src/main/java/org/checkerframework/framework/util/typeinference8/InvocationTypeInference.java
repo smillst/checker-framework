@@ -6,6 +6,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import java.util.ArrayList;
@@ -525,7 +526,7 @@ public class InvocationTypeInference {
         c.addAll(createAdditionalArgConstraints(conditional.getFalseExpression(), fi, map));
         break;
       default:
-        if (TreeUtils.isSwitchExpression(ei)) {
+        if (ei instanceof SwitchExpressionTree switchExpressionTree) {
           SwitchExpressionScanner<Void, Void> scanner =
               new FunctionalSwitchExpressionScanner<>(
                   (ExpressionTree tree, Void unused) -> {
@@ -533,7 +534,7 @@ public class InvocationTypeInference {
                     return null;
                   },
                   (c1, c2) -> null);
-          scanner.scanSwitchExpression(ei, null);
+          scanner.scanSwitchExpression(switchExpressionTree, null);
         }
         // no constraints
     }
@@ -584,7 +585,7 @@ public class InvocationTypeInference {
         c.addAll(createAdditionalArgConstraintsNoLambda(conditional.getFalseExpression()));
         break;
       default:
-        if (TreeUtils.isSwitchExpression(expression)) {
+        if (expression instanceof SwitchExpressionTree switchExpressionTree) {
           SwitchExpressionScanner<Void, Void> scanner =
               new FunctionalSwitchExpressionScanner<>(
                   (ExpressionTree tree, Void unused) -> {
@@ -592,7 +593,7 @@ public class InvocationTypeInference {
                     return null;
                   },
                   (c1, c2) -> null);
-          scanner.scanSwitchExpression(expression, null);
+          scanner.scanSwitchExpression(switchExpressionTree, null);
         }
         // no constraints
     }
@@ -646,14 +647,14 @@ public class InvocationTypeInference {
         return notPertinentToApplicability(conditional.getTrueExpression(), formalParameterType)
             || notPertinentToApplicability(conditional.getFalseExpression(), formalParameterType);
       default:
-        if (TreeUtils.isSwitchExpression(expressionTree)) {
+        if (expressionTree instanceof SwitchExpressionTree switchExpressionTree) {
           SwitchExpressionScanner<Boolean, Void> scanner =
               new FunctionalSwitchExpressionScanner<>(
                   (ExpressionTree tree, Void unused) ->
                       notPertinentToApplicability(tree, formalParameterType),
                   (r1, r2) -> (r1 != null && r1) || (r2 != null && r2));
           ;
-          return scanner.scanSwitchExpression(expressionTree, null);
+          return scanner.scanSwitchExpression(switchExpressionTree, null);
         }
         return false;
     }

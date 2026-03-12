@@ -9,6 +9,8 @@ import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
+import com.sun.source.tree.ConstantCaseLabelTree;
+import com.sun.source.tree.DefaultCaseLabelTree;
 import com.sun.source.tree.ExpressionStatementTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
@@ -24,9 +26,11 @@ import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ParameterizedTypeTree;
 import com.sun.source.tree.ParenthesizedTree;
+import com.sun.source.tree.PatternCaseLabelTree;
 import com.sun.source.tree.PrimitiveTypeTree;
 import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.StatementTree;
+import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
@@ -98,9 +102,6 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.dataflow.qual.Pure;
-import org.checkerframework.javacutil.TreeUtilsAfterJava11.CaseUtils;
-import org.checkerframework.javacutil.TreeUtilsAfterJava11.JCVariableDeclUtils;
-import org.checkerframework.javacutil.TreeUtilsAfterJava11.SwitchExpressionUtils;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.UniqueIdMap;
 
@@ -136,14 +137,14 @@ public final class TreeUtils {
   private static final long Flags_RECORD = 2305843009213693952L;
 
   /** Tree kinds that represent a binary comparison. */
-  private static final Set<Tree.Kind> BINARY_COMPARISON_TREE_KINDS =
+  private static final Set<Kind> BINARY_COMPARISON_TREE_KINDS =
       EnumSet.of(
-          Tree.Kind.EQUAL_TO,
-          Tree.Kind.NOT_EQUAL_TO,
-          Tree.Kind.LESS_THAN,
-          Tree.Kind.GREATER_THAN,
-          Tree.Kind.LESS_THAN_EQUAL,
-          Tree.Kind.GREATER_THAN_EQUAL);
+          Kind.EQUAL_TO,
+          Kind.NOT_EQUAL_TO,
+          Kind.LESS_THAN,
+          Kind.GREATER_THAN,
+          Kind.LESS_THAN_EQUAL,
+          Kind.GREATER_THAN_EQUAL);
 
   static {
     try {
@@ -933,7 +934,7 @@ public final class TreeUtils {
    * this version works on Trees.
    *
    * @param tree a tree
-   * @see com.sun.tools.javac.tree.TreeInfo#isDiamond(JCTree)
+   * @see TreeInfo#isDiamond(JCTree)
    */
   public static boolean isDiamondTree(Tree tree) {
     switch (tree.getKind()) {
@@ -973,13 +974,12 @@ public final class TreeUtils {
    * @return true if the tree represents a {@code String} concatenation operation
    */
   public static boolean isStringConcatenation(Tree tree) {
-    return (tree.getKind() == Tree.Kind.PLUS && TypesUtils.isString(TreeUtils.typeOf(tree)));
+    return (tree.getKind() == Kind.PLUS && TypesUtils.isString(TreeUtils.typeOf(tree)));
   }
 
   /** Returns true if the compound assignment tree is a string concatenation. */
   public static boolean isStringCompoundConcatenation(CompoundAssignmentTree tree) {
-    return (tree.getKind() == Tree.Kind.PLUS_ASSIGNMENT
-        && TypesUtils.isString(TreeUtils.typeOf(tree)));
+    return (tree.getKind() == Kind.PLUS_ASSIGNMENT && TypesUtils.isString(TreeUtils.typeOf(tree)));
   }
 
   /**
@@ -1077,11 +1077,11 @@ public final class TreeUtils {
   // tree gets cast to ClassTree when it is actually a NewClassTree,
   // for example in enclosingClass above.
   /** The kinds that represent classes. */
-  private static final Set<Tree.Kind> classTreeKinds;
+  private static final Set<Kind> classTreeKinds;
 
   static {
-    classTreeKinds = EnumSet.noneOf(Tree.Kind.class);
-    for (Tree.Kind kind : Tree.Kind.values()) {
+    classTreeKinds = EnumSet.noneOf(Kind.class);
+    for (Kind kind : Kind.values()) {
       if (kind.asInterface() == ClassTree.class) {
         classTreeKinds.add(kind);
       }
@@ -1089,11 +1089,11 @@ public final class TreeUtils {
   }
 
   /** Kinds that represent a class or method tree. */
-  private static final Set<Tree.Kind> classAndMethodTreeKinds;
+  private static final Set<Kind> classAndMethodTreeKinds;
 
   static {
     classAndMethodTreeKinds = EnumSet.copyOf(classTreeKinds());
-    classAndMethodTreeKinds.add(Tree.Kind.METHOD);
+    classAndMethodTreeKinds.add(Kind.METHOD);
   }
 
   /**
@@ -1101,7 +1101,7 @@ public final class TreeUtils {
    *
    * @return the set of kinds that represent classes and methods
    */
-  public static Set<Tree.Kind> classAndMethodTreeKinds() {
+  public static Set<Kind> classAndMethodTreeKinds() {
     return classAndMethodTreeKinds;
   }
 
@@ -1110,7 +1110,7 @@ public final class TreeUtils {
    *
    * @return the set of kinds that represent classes
    */
-  public static Set<Tree.Kind> classTreeKinds() {
+  public static Set<Kind> classTreeKinds() {
     return classTreeKinds;
   }
 
@@ -1128,13 +1128,13 @@ public final class TreeUtils {
    * The kinds that represent declarations that might have {@code @SuppressWarnings} written on
    * them: classes, methods, and variables.
    */
-  private static final Set<Tree.Kind> declarationTreeKinds;
+  private static final Set<Kind> declarationTreeKinds;
 
   static {
-    declarationTreeKinds = EnumSet.noneOf(Tree.Kind.class);
+    declarationTreeKinds = EnumSet.noneOf(Kind.class);
     declarationTreeKinds.addAll(classTreeKinds);
-    declarationTreeKinds.add(Tree.Kind.METHOD);
-    declarationTreeKinds.add(Tree.Kind.VARIABLE);
+    declarationTreeKinds.add(Kind.METHOD);
+    declarationTreeKinds.add(Kind.VARIABLE);
   }
 
   /**
@@ -1142,7 +1142,7 @@ public final class TreeUtils {
    *
    * @return the set of kinds that represent declarations
    */
-  public static Set<Tree.Kind> declarationTreeKinds() {
+  public static Set<Kind> declarationTreeKinds() {
     return declarationTreeKinds;
   }
 
@@ -1157,23 +1157,23 @@ public final class TreeUtils {
   }
 
   /** The kinds that represent types. */
-  private static final Set<Tree.Kind> typeTreeKinds =
+  private static final Set<Kind> typeTreeKinds =
       EnumSet.of(
-          Tree.Kind.PRIMITIVE_TYPE,
-          Tree.Kind.PARAMETERIZED_TYPE,
-          Tree.Kind.TYPE_PARAMETER,
-          Tree.Kind.ARRAY_TYPE,
-          Tree.Kind.UNBOUNDED_WILDCARD,
-          Tree.Kind.EXTENDS_WILDCARD,
-          Tree.Kind.SUPER_WILDCARD,
-          Tree.Kind.ANNOTATED_TYPE);
+          Kind.PRIMITIVE_TYPE,
+          Kind.PARAMETERIZED_TYPE,
+          Kind.TYPE_PARAMETER,
+          Kind.ARRAY_TYPE,
+          Kind.UNBOUNDED_WILDCARD,
+          Kind.EXTENDS_WILDCARD,
+          Kind.SUPER_WILDCARD,
+          Kind.ANNOTATED_TYPE);
 
   /**
    * Returns the set of kinds that represent types.
    *
    * @return the set of kinds that represent types
    */
-  public static Set<Tree.Kind> typeTreeKinds() {
+  public static Set<Kind> typeTreeKinds() {
     return typeTreeKinds;
   }
 
@@ -1874,8 +1874,8 @@ public final class TreeUtils {
    * Determines the type for a method invocation at its call site, which has all type variables
    * substituted with the type arguments at the call site.
    *
-   * <p>{@link javax.lang.model.type.TypeVariable} in the returned type should be compared using
-   * {@link TypesUtils#areSame(TypeVariable, TypeVariable)} because the {@code TypeVariable} will be
+   * <p>{@link TypeVariable} in the returned type should be compared using {@link
+   * TypesUtils#areSame(TypeVariable, TypeVariable)} because the {@code TypeVariable} will be
    * freshly created by this method and will not be the same using {@link Object#equals(Object)} or
    * {@link javax.lang.model.util.Types#isSameType(TypeMirror, TypeMirror)}.
    *
@@ -1915,7 +1915,7 @@ public final class TreeUtils {
    */
   @Pure
   public static ExecutableType typeFromUse(NewClassTree tree) {
-    if (!(tree instanceof JCTree.JCNewClass)) {
+    if (!(tree instanceof JCNewClass)) {
       throw new BugInCF("TreeUtils.typeFromUse(NewClassTree): not a javac internal tree");
     }
 
@@ -2058,7 +2058,7 @@ public final class TreeUtils {
       return true;
     }
     tree = TreeUtils.withoutParens(tree);
-    if (tree instanceof JCTree.JCBinary) {
+    if (tree instanceof JCBinary) {
       JCBinary binTree = (JCBinary) tree;
       JCExpression ltree = binTree.lhs;
       JCExpression rtree = binTree.rhs;
@@ -2368,10 +2368,10 @@ public final class TreeUtils {
     if (isSwitchStatement(switchTree)) {
       cases = ((SwitchTree) switchTree).getCases();
     } else {
-      cases = SwitchExpressionUtils.getCases(switchTree);
+      cases = ((SwitchExpressionTree) switchTree).getCases();
     }
     for (CaseTree caseTree : cases) {
-      List<? extends Tree> labels = CaseUtils.getLabels(caseTree);
+      List<? extends Tree> labels = getLabels(caseTree);
       for (Tree label : labels) {
         if (label.getKind() == Kind.NULL_LITERAL) {
           return true;
@@ -2379,6 +2379,69 @@ public final class TreeUtils {
       }
     }
     return false;
+  }
+
+  /**
+   * Returns true if this is the default case for a switch statement or expression. (Also, returns
+   * true if {@code caseTree} is {@code case null, default:}.)
+   *
+   * @param caseTree a case tree
+   * @return true if {@code caseTree} is the default case for a switch statement or expression
+   */
+  public static boolean isDefaultCaseTree(CaseTree caseTree) {
+    for (Tree label : getLabels(caseTree, true)) {
+      if (label instanceof DefaultCaseLabelTree) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns the list of labels from a case expression. For {@code default}, this is empty. For
+   * {@code case null, default}, the list contains {@code null}. Otherwise, in JDK 11 and earlier,
+   * this is a list of a single expression tree. In JDK 12+, the list may have multiple expression
+   * trees. In JDK 21+, the list might contain a single pattern tree.
+   *
+   * @param caseTree the case expression to get the labels from
+   * @return the list of case labels in the case
+   */
+  public static List<? extends Tree> getLabels(CaseTree caseTree) {
+    return getLabels(caseTree, false);
+  }
+
+  /**
+   * Returns the list of labels from a case expression.
+   *
+   * <p>If {@code useDefaultCaseLabelTree} is false, then if {@code caseTree} is the default case or
+   * {@code case null, default}, then the returned list is empty. If {@code useDefaultCaseLabelTree}
+   * is true, then if {@code caseTree} is the default case the returned contains just a {@code
+   * DefaultCaseLabelTree}. If {@code useDefaultCaseLabelTree} is false, then if {@code caseTree} is
+   * {@code case null, default} the returned list is a {@code DefaultCaseLabelTree} and the
+   * expression tree for {@code null}.
+   *
+   * @param caseTree the case expression to get the labels from
+   * @param useDefaultCaseLabelTree weather the result should contain a {@code
+   *     DefaultCaseLabelTree}.
+   * @return the list of case labels in the case
+   */
+  private static List<? extends Tree> getLabels(
+      CaseTree caseTree, boolean useDefaultCaseLabelTree) {
+    List<? extends Tree> caseLabelTrees = caseTree.getLabels();
+    List<Tree> labels = new ArrayList<>();
+    for (Tree caseLabel : caseLabelTrees) {
+      switch (caseLabel) {
+        case DefaultCaseLabelTree d -> {
+          if (useDefaultCaseLabelTree) {
+            labels.add(d);
+          }
+        }
+        case ConstantCaseLabelTree c -> labels.add(c.getConstantExpression());
+        case PatternCaseLabelTree p -> labels.add(p.getPattern());
+        default -> throw new BugInCF("Unexpected case label class: " + caseLabel);
+      }
+    }
+    return labels;
   }
 
   /**
@@ -2430,8 +2493,8 @@ public final class TreeUtils {
     }
 
     for (CaseTree caseTree : switchTree.getCases()) {
-      for (Tree caseLabel : CaseUtils.getLabels(caseTree)) {
-        if (caseLabel.getKind() == Tree.Kind.NULL_LITERAL
+      for (Tree caseLabel : getLabels(caseTree)) {
+        if (caseLabel.getKind() == Kind.NULL_LITERAL
             || TreeUtils.isBindingPatternTree(caseLabel)
             || TreeUtils.isDeconstructionPatternTree(caseLabel)) {
           return true;
@@ -2450,7 +2513,7 @@ public final class TreeUtils {
    */
   public static boolean isVariableTreeDeclaredUsingVar(VariableTree variableTree) {
     JCVariableDecl variableDecl = (JCVariableDecl) variableTree;
-    if (JCVariableDeclUtils.declaredUsingVar(variableDecl)) {
+    if (variableDecl.declaredUsingVar()) {
       return true;
     }
     JCExpression type = variableDecl.vartype;
@@ -2575,7 +2638,7 @@ public final class TreeUtils {
    * @return true if the tree is of the kind RECORD
    */
   public static boolean isRecordTree(Tree tree) {
-    Tree.Kind kind = tree.getKind();
+    Kind kind = tree.getKind();
     // Must use String comparison because we may be on an older JDK:
     return kind.name().equals("RECORD");
   }
@@ -2588,9 +2651,9 @@ public final class TreeUtils {
    * @param tree the tree to get the kind for
    * @return the kind of the tree, but CLASS if the kind was RECORD
    */
-  public static Tree.Kind getKindRecordAsClass(Tree tree) {
+  public static Kind getKindRecordAsClass(Tree tree) {
     if (isRecordTree(tree)) {
-      return Tree.Kind.CLASS;
+      return Kind.CLASS;
     }
     return tree.getKind();
   }
@@ -2733,8 +2796,8 @@ public final class TreeUtils {
    */
   public static boolean isStandaloneExpression(ExpressionTree expression) {
     expression = TreeUtils.withoutParens(expression);
-    if (expression instanceof JCTree.JCExpression) {
-      if (((JCTree.JCExpression) expression).isStandalone()) {
+    if (expression instanceof JCExpression) {
+      if (((JCExpression) expression).isStandalone()) {
         return true;
       }
       if (expression instanceof MethodInvocationTree) {
@@ -2799,7 +2862,7 @@ public final class TreeUtils {
       return false;
     }
     MemberReferenceTree memberReferenceTree = (MemberReferenceTree) tree;
-    if (TreeUtils.MemberReferenceKind.getMemberReferenceKind(memberReferenceTree).isUnbound()) {
+    if (MemberReferenceKind.getMemberReferenceKind(memberReferenceTree).isUnbound()) {
       TypeMirror preColonTreeType = typeOf(memberReferenceTree.getQualifierExpression());
       return TypesUtils.isRaw(preColonTreeType);
     }
