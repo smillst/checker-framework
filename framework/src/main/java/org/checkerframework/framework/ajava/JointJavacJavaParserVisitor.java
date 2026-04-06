@@ -41,6 +41,7 @@ import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.PatternExpr;
+import com.github.javaparser.ast.expr.RecordPatternExpr;
 import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.github.javaparser.ast.expr.SuperExpr;
@@ -167,6 +168,7 @@ import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TreeUtilsAfterJava17.DeconstructionPatternUtils;
 
 /**
  * A visitor that processes javac trees and JavaParser nodes simultaneously, matching corresponding
@@ -1597,6 +1599,77 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
   }
 
   /**
+   * The default action for this visitor. This is inherited from SimpleTreeVisitor, but is only
+   * called for those methods which do not have an override of the visitXXX method in this class.
+   * Ultimately, those are the methods added post Java 11, such as for switch-expressions.
+   *
+   * @param tree the Javac tree
+   * @param node the Javaparser node
+   * @return nothing
+   */
+  @Override
+  protected Void defaultAction(Tree tree, Node node) {
+    // Features added between JDK 21 and JDK 26 inclusive.
+    // Must use String comparison to support compiling on JDK 17:
+    return switch (tree.getKind().name()) {
+      case "DECONSTRUCTION_PATTERN" -> visitDeconstructionPattern21(tree, node);
+      case "DEFAULT_CASE_LABEL" -> visitDefaultCaseLabel21(tree, node);
+      case "CONSTANT_CASE_LABEL" -> visitConstantCaseLabel21(tree, node);
+      case "PATTERN_CASE_LABEL" -> visitPatternCaseLabel21(tree, node);
+      default -> super.defaultAction(tree, node);
+    };
+  }
+
+  /**
+   * Visits a {@code DeconstructionPatternTree} tree.
+   *
+   * @param javacTree a {@code DeconstructionPatternTree} tree
+   * @param javaParserNode JavaPaser node
+   * @return null
+   */
+  public Void visitDeconstructionPattern21(Tree javacTree, Node javaParserNode) {
+    RecordPatternExpr node = castNode(RecordPatternExpr.class, javaParserNode, javacTree);
+    processDeconstructionPattern(javacTree, node);
+    visitLists(DeconstructionPatternUtils.getNestedPatterns(javacTree), node.getPatternList());
+    DeconstructionPatternUtils.getDeconstructor(javacTree).accept(this, node.getType());
+    return null;
+  }
+
+  /**
+   * Visits a {@code DefaultCaseLabelTree} tree.
+   *
+   * @param javacTree a {@code DefaultCaseLabelTree} tree
+   * @param javaParserNode javaParserNode
+   */
+  public Void visitDefaultCaseLabel21(Tree javacTree, Node javaParserNode) {
+    //    DefaCL node = castNode(WhileStmt.class, javaParserNode, javacTree);
+    //    processWhileLoop(javacTree, node);
+    return null;
+  }
+
+  /**
+   * Visits a {@code ConstantCaseLabelTree} tree.
+   *
+   * @param javacTree a {@code ConstantCaseLabelTree} tree
+   * @param javaParserNode JavaPaser node
+   * @return null
+   */
+  public Void visitConstantCaseLabel21(Tree javacTree, Node javaParserNode) {
+    return null;
+  }
+
+  /**
+   * Visits a {@code PatternCaseLabelTree} tree.
+   *
+   * @param javacTree a {@code PatternCaseLabelTree}
+   * @param javaParserNode JavaPaser node
+   * @return null
+   */
+  public Void visitPatternCaseLabel21(Tree javacTree, Node javaParserNode) {
+    return null;
+  }
+
+  /**
    * Process an {@code AnnotationTree} with multiple key-value pairs like {@code @MyAnno(a=5,
    * b=10)}.
    *
@@ -2317,6 +2390,8 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
    * @param javaParserNode corresponding Javaparser node
    */
   public abstract void processYield(Tree javacTree, YieldStmt javaParserNode);
+
+  public abstract void processDeconstructionPattern(Tree javacTree, RecordPatternExpr node);
 
   /**
    * Process a {@code CompoundAssignmentTree}.
