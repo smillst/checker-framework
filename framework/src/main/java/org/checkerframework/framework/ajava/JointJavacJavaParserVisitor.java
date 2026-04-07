@@ -289,7 +289,10 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
     }
 
     assert variableTree.getInitializer() == null;
-    variableTree.getType().accept(this, patternExpr.getType());
+    // If the variable is defined with a var, then the javac tree, does not have a type, so skip it.
+    if (variableTree.getType() != null) {
+      variableTree.getType().accept(this, patternExpr.getType());
+    }
 
     return null;
   }
