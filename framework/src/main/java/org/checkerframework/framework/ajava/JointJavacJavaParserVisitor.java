@@ -168,6 +168,7 @@ import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TreeUtilsAfterJava17.CaseUtils;
 import org.checkerframework.javacutil.TreeUtilsAfterJava17.DeconstructionPatternUtils;
 
 /**
@@ -442,13 +443,18 @@ public abstract class JointJavacJavaParserVisitor extends SimpleTreeVisitor<Void
     processCase(javacTree, node);
     // Java 12 introduced multiple label cases:
     List<Expression> labels = node.getLabels();
-    List<? extends ExpressionTree> treeExpressions = javacTree.getExpressions();
-    assert node.getLabels().size() == treeExpressions.size()
-        : String.format(
-            "node.getLabels() = %s, treeExpressions = %s", node.getLabels(), treeExpressions);
-    for (int i = 0; i < treeExpressions.size(); i++) {
-      treeExpressions.get(i).accept(this, labels.get(i));
+    List<? extends Tree> labelTrees = CaseUtils.getLabels(javacTree);
+    assert node.getLabels().size() == labelTrees.size()
+        : String.format("node.getLabels() = %s, labelTrees = %s", node.getLabels(), labelTrees);
+    for (int i = 0; i < labelTrees.size(); i++) {
+      labelTrees.get(i).accept(this, labels.get(i));
     }
+
+    Tree guard = CaseUtils.getGuard(javacTree);
+    if (guard != null && node.getGuard().isPresent()) {
+      guard.accept(this, node.getGuard().get());
+    }
+
     if (javacTree.getStatements() == null) {
       Tree javacBody = javacTree.getBody();
       Statement nodeBody = node.getStatement(0);

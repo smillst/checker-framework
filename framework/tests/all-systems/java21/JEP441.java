@@ -60,7 +60,7 @@ public class JEP441 {
       case Integer i -> String.format("int %d", i);
       case Long l -> String.format("long %d", l);
       case Double d -> String.format("double %f", d);
-      case String s -> String.format("String %s", s);
+      case String s1 -> String.format("String %s", s1);
       default -> obj.toString();
     };
   }
@@ -77,9 +77,9 @@ public class JEP441 {
   static void testStringOld(String response) {
     switch (response) {
       case null -> {}
-      case String s -> {
-        if (s.equalsIgnoreCase("YES")) System.out.println("You got it");
-        else if (s.equalsIgnoreCase("NO")) System.out.println("Shame");
+      case String s2 -> {
+        if (s2.equalsIgnoreCase("YES")) System.out.println("You got it");
+        else if (s2.equalsIgnoreCase("NO")) System.out.println("Shame");
         else System.out.println("Sorry?");
       }
     }
@@ -88,13 +88,13 @@ public class JEP441 {
   static void testStringNew(String response) {
     switch (response) {
       case null -> {}
-      case String s when s.equalsIgnoreCase("YES") -> {
+      case String s3 when s3.equalsIgnoreCase("YES") -> {
         System.out.println("You got it");
       }
-      case String s when s.equalsIgnoreCase("NO") -> {
+      case String s4 when s4.equalsIgnoreCase("NO") -> {
         System.out.println("Shame");
       }
-      case String s -> {
+      case String s5 -> {
         System.out.println("Sorry?");
       }
     }
@@ -109,13 +109,13 @@ public class JEP441 {
       case "n", "N" -> {
         System.out.println("Shame");
       }
-      case String s when s.equalsIgnoreCase("YES") -> {
+      case String s6 when s6.equalsIgnoreCase("YES") -> {
         System.out.println("You got it");
       }
-      case String s when s.equalsIgnoreCase("NO") -> {
+      case String s7 when s7.equalsIgnoreCase("NO") -> {
         System.out.println("Shame");
       }
-      case String s -> {
+      case String s7 -> {
         System.out.println("Sorry?");
       }
     }
