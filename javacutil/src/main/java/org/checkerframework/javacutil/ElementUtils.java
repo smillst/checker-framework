@@ -53,12 +53,6 @@ public class ElementUtils {
     throw new AssertionError("Class ElementUtils cannot be instantiated.");
   }
 
-  /** The value of Flags.COMPACT_RECORD_CONSTRUCTOR which does not exist in Java 9 or 11. */
-  private static final long Flags_COMPACT_RECORD_CONSTRUCTOR = 1L << 51;
-
-  /** The value of Flags.GENERATED_MEMBER which does not exist in Java 9 or 11. */
-  private static final long Flags_GENERATED_MEMBER = 16777216;
-
   /**
    * Returns the innermost type element that is, or encloses, the given element.
    *
@@ -826,7 +820,7 @@ public class ElementUtils {
    * @return true if the element is a binding variable
    * @deprecated Use {@link ElementKind#BINDING_VARIABLE}
    */
-  @Deprecated(forRemoval = true, since = "2026-03-25")
+  @Deprecated(forRemoval = true, since = "4.0.0")
   public static boolean isBindingVariable(Element element) {
     return element.getKind() == ElementKind.BINDING_VARIABLE;
   }
@@ -871,7 +865,7 @@ public class ElementUtils {
     }
     // Generated constructors seem to get GENERATEDCONSTR even though the documentation
     // seems to imply they would get GENERATED_MEMBER like the fields do.
-    return (((Symbol) e).flags() & (Flags_GENERATED_MEMBER | Flags.GENERATEDCONSTR)) != 0;
+    return (((Symbol) e).flags() & (Flags.GENERATED_MEMBER | Flags.GENERATEDCONSTR)) != 0;
   }
 
   /**
@@ -1011,7 +1005,7 @@ public class ElementUtils {
    * @return the kind of the element, but CLASS if the kind was RECORD
    * @deprecated Use {@link ElementKind#RECORD}
    */
-  @Deprecated(forRemoval = true, since = "2026-03-25")
+  @Deprecated(forRemoval = true, since = "4.0.0")
   public static ElementKind getKindRecordAsClass(Element elt) {
     ElementKind kind = elt.getKind();
     if (kind == ElementKind.RECORD) {
@@ -1044,7 +1038,7 @@ public class ElementUtils {
    */
   public static boolean isCompactCanonicalRecordConstructor(Element elt) {
     return elt.getKind() == ElementKind.CONSTRUCTOR
-        && (((Symbol) elt).flags() & Flags_COMPACT_RECORD_CONSTRUCTOR) != 0;
+        && (((Symbol) elt).flags() & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0;
   }
 
   /**
