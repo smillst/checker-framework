@@ -141,6 +141,7 @@ import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.SwitchExpressionScanner;
 import org.checkerframework.javacutil.SwitchExpressionScanner.FunctionalSwitchExpressionScanner;
+import org.checkerframework.javacutil.SystemUtil;
 import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TreeUtils.MemberReferenceKind;
@@ -322,8 +323,16 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     infer = checker.hasOption("infer");
     suggestPureMethods = checker.hasOption("suggestPureMethods") || infer;
     checkPurityAnnotations = checker.hasOption("checkPurityAnnotations") || suggestPureMethods;
-    ajavaChecks = checker.hasOption("ajavaChecks");
 
+    boolean ajavaChecksOptions = checker.hasOption("ajavaChecks");
+    if (ajavaChecksOptions) {
+      // Javaparser doesn't work for all Java 25 language features.
+      String release = SystemUtil.getReleaseValue(env);
+      release = release != null ? release : String.valueOf(SystemUtil.jreVersion);
+      ajavaChecks = Integer.valueOf(release) < 22;
+    } else {
+      ajavaChecks = false;
+    }
     assumeSideEffectFree =
         checker.hasOption("assumeSideEffectFree") || checker.hasOption("assumePure");
     assumeDeterministic =
