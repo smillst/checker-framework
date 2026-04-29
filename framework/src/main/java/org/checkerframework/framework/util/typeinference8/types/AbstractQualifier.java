@@ -64,7 +64,7 @@ public abstract class AbstractQualifier {
    * @param context a context
    * @return the least upper bounds of {@code quals}
    */
-  public static Set<AnnotationMirror> lub(
+  public static AnnotationMirrorSet lub(
       Set<AbstractQualifier> quals, Java8InferenceContext context) {
     return combine(
         quals, context.typeFactory.getQualifierHierarchy()::leastUpperBoundQualifiersOnly);
@@ -78,7 +78,7 @@ public abstract class AbstractQualifier {
    * @param context a context
    * @return the greatest lowest bounds of {@code quals}
    */
-  public static Set<AnnotationMirror> glb(
+  public static AnnotationMirrorSet glb(
       Set<AbstractQualifier> quals, Java8InferenceContext context) {
     return combine(
         quals, context.typeFactory.getQualifierHierarchy()::greatestLowerBoundQualifiersOnly);
@@ -93,7 +93,7 @@ public abstract class AbstractQualifier {
    *     {@code AnnotationMirror}
    * @return the result of applying the {@code combine} function on {@code quals}
    */
-  private static Set<AnnotationMirror> combine(
+  private static AnnotationMirrorSet combine(
       Set<AbstractQualifier> quals, BinaryOperator<AnnotationMirror> combine) {
     Map<String, AnnotationMirror> m = new HashMap<>();
 

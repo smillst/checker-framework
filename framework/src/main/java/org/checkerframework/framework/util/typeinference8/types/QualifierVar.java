@@ -187,7 +187,12 @@ public class QualifierVar extends AbstractQualifier {
           }
         }
       }
-      return glb;
+      if (glb != null) {
+        instantiation = glb;
+      } else {
+        // TODO: What does the framework do in this case?
+        instantiation = context.typeFactory.getQualifierHierarchy().getTopAnnotation(polyQualifier);
+      }
     }
     return instantiation;
   }

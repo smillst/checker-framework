@@ -154,9 +154,9 @@ public class InvocationType {
     }
 
     if (map == null) {
-      return new ProperType(returnType, returnTypeJava, context);
+      return new ProperType(returnType, returnTypeJava, qualifierVars, context, false);
     }
-    return InferenceType.create(returnType, returnTypeJava, map, context);
+    return InferenceType.create(returnType, returnTypeJava, map, qualifierVars, context, false);
   }
 
   /**

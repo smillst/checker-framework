@@ -60,6 +60,7 @@ import org.checkerframework.framework.util.typeinference8.constraint.Typing;
 import org.checkerframework.framework.util.typeinference8.util.CheckedExceptionsUtil;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.framework.util.typeinference8.util.Theta;
+import org.checkerframework.javacutil.AnnotationMirrorMap;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.SwitchExpressionScanner;
@@ -881,6 +882,7 @@ public class InferenceFactory {
     TypeMirror lubTM = null;
     AnnotatedTypeMirror lubATM = null;
     boolean ignoreAnnotations = false;
+    AnnotationMirrorMap<QualifierVar> quals = new AnnotationMirrorMap<>();
     for (ProperType properType : properTypes) {
       AnnotatedTypeMirror atm = properType.getAnnotatedType();
       TypeMirror tm = properType.getJavaType();
@@ -888,6 +890,7 @@ public class InferenceFactory {
         lubATM = atm;
         lubTM = tm;
         ignoreAnnotations = properType.ignoreAnnotations;
+        quals.putAll(properType.getQualifierVars());
       } else {
         lubTM = lub(context.env, lubTM, tm);
         if (properType.ignoreAnnotations == ignoreAnnotations) {
@@ -901,9 +904,10 @@ public class InferenceFactory {
               AnnotatedTypes.asSuper(
                   typeFactory, atm, AnnotatedTypeMirror.createType(lubTM, typeFactory, false));
         }
+        quals.putAll(properType.getQualifierVars());
       }
     }
-    return new ProperType(lubATM, lubTM, context, ignoreAnnotations);
+    return new ProperType(lubATM, lubTM, quals, context, ignoreAnnotations);
   }
 
   /**

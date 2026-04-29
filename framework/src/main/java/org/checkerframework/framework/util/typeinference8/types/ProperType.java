@@ -6,6 +6,7 @@ import com.sun.tools.javac.code.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -123,6 +124,10 @@ public class ProperType extends AbstractType {
     }
   }
 
+  public AnnotationMirrorMap<QualifierVar> getQualifierVars() {
+    return qualifierVars;
+  }
+
   @Override
   public Kind getKind() {
     return Kind.PROPER;
@@ -170,9 +175,23 @@ public class ProperType extends AbstractType {
 
     if (context.typeFactory.types.isAssignable(subJavaType, superJavaType)
         || context.typeFactory.types.isAssignable(subErasedJavaType, superErasedJavaType)) {
-      if (ignoreAnnotations || superType.ignoreAnnotations) {
+      boolean ignore = false;
+      for (AnnotationMirror anno : qualifierVars.keySet()) {
+        if (this.getAnnotatedType().hasAnnotation(anno)) {
+          ignore = true;
+          break;
+        }
+      }
+      for (AnnotationMirror anno : superType.qualifierVars.keySet()) {
+        if (superType.getAnnotatedType().hasAnnotation(anno)) {
+          ignore = true;
+          break;
+        }
+      }
+      if (ignore || ignoreAnnotations || superType.ignoreAnnotations) {
         return ConstraintSet.TRUE;
       }
+
       AnnotatedTypeMirror superATM = superType.getAnnotatedType();
       AnnotatedTypeMirror subATM = this.getAnnotatedType();
       if (typeFactory.getTypeHierarchy().isSubtype(subATM, superATM)) {
