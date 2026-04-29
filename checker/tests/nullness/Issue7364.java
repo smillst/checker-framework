@@ -12,7 +12,7 @@ public class Issue7364 {
 
   public static void test2(Stream<@Nullable GoalElement> goalElements) {
     Stream<@Nullable AbstractGoal> abstractGoalStream = goalElements.map(AbstractGoal.class::cast);
-    // : error: [methodref.return]
+    // :: error: [methodref.return]
     Stream<AbstractGoal> abstractGoalStream2 = goalElements.map(AbstractGoal.class::cast);
   }
 

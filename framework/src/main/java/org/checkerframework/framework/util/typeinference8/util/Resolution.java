@@ -345,14 +345,14 @@ public class Resolution {
       var lowerBoundLubAnnos = AbstractQualifier.lub(lowerBoundQuals, context);
       lubTV.getLowerBound().replaceAnnotations(lowerBoundLubAnnos);
 
-      //      Set<AbstractQualifier> upperBoundQuals =  new
-      // HashSet<>(lubProperType.getTypeVarLowerBound().getQualifiers());
-      //      upperBoundQuals.addAll(qualifierLowerBounds);
-      //      var upperBoundLubAnnos = AbstractQualifier.lub(upperBoundQuals, context);
-      //      lubTV.getUpperBound().replaceAnnotations(upperBoundLubAnnos);
-      //      lowerBoundLubAnnos.retainAll(upperBoundLubAnnos);
-      //      lubTV.replaceAnnotations(lowerBoundLubAnnos);
+      Set<AbstractQualifier> upperBoundQuals =
+          new HashSet<>(lubProperType.getTypeVarUpperBound().getQualifiers());
+      upperBoundQuals.addAll(qualifierLowerBounds);
+      var upperBoundLubAnnos = AbstractQualifier.lub(upperBoundQuals, context);
+      lubTV.getUpperBound().replaceAnnotations(upperBoundLubAnnos);
+      lowerBoundLubAnnos.retainAll(upperBoundLubAnnos);
 
+      lubTV.replaceAnnotations(lowerBoundLubAnnos);
     } else {
       qualifierLowerBounds.addAll(lubProperType.getQualifiers());
       Set<AnnotationMirror> lubAnnos = AbstractQualifier.lub(qualifierLowerBounds, context);

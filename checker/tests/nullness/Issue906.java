@@ -11,5 +11,5 @@ public class Issue906 {
     x(a, c);
   }
 
-  private <C, B extends C> void x(B a, Class<? extends B> c) {}
+  private <X, Y extends X> void x(Y a, Class<? extends Y> c) {}
 }
