@@ -12,8 +12,8 @@ import java.lang.annotation.Target;
  * {@link UnsupportedOperationException}.
  *
  * <p>As an exception, {@code @Modifiable} means {@code @Unknown*} if the type does not support a
- * given category of operation; for example, {@Modifiable Iterator} means
- * {@code @UnknownGrow @UnknownShrink @Replaceable Iterator}.)
+ * given category of operation; for example, {@code @Modifiable Iterator} means
+ * {@code @UnknownGrow @UnknownShrink @Replaceable Iterator}.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

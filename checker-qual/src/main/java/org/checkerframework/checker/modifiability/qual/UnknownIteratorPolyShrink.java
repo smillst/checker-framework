@@ -13,7 +13,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * <p>This is the default qualifier for unannotated types.
  *
- * @see #IteratorPolyShrink
+ * @see IteratorPolyShrink
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
 @Documented
