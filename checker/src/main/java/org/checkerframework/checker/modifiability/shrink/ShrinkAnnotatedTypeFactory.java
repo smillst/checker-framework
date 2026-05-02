@@ -129,17 +129,39 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineIteratorReturnType(tree, method);
     }
 
-    if (!ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      return mType;
+    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
+      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
     }
 
-    AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
-    if (argumentType.hasPrimaryAnnotation(SHRINKABLE)) {
-      method.getReturnType().replaceAnnotation(SHRINKABLE);
-    } else {
-      method.getReturnType().replaceAnnotation(UNKNOWN_SHRINK);
-    }
     return mType;
+  }
+
+  /**
+   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   *
+   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
+   * when the argument is already a List with no duplicates, but otherwise it returns a new
+   * ArrayList. A stub annotation like
+   *
+   * <pre>{@code
+   * static <T> @PolyShrink List<T> withoutDuplicates(@PolyShrink Collection<T> values)
+   * }</pre>
+   *
+   * would be unsound, because an {@code @Unshrinkable} input could receive the fresh ArrayList,
+   * whose static type should be {@code @Shrinkable}. It would also be too imprecise to always use
+   * {@code @UnknownShrink}, because passing a {@code @Shrinkable} collection guarantees that both
+   * possible results are shrinkable. Therefore, model the method here as preserving
+   * {@code @Shrinkable} inputs and otherwise returning {@code @UnknownShrink}.
+   *
+   * @param tree the invocation of {@code withoutDuplicates}
+   * @param methodType the annotated executable type of the invoked method
+   */
+  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
+    AnnotationMirror returnAnnotation =
+        argumentType.hasPrimaryAnnotation(SHRINKABLE) ? SHRINKABLE : UNKNOWN_SHRINK;
+    methodType.getReturnType().replaceAnnotation(returnAnnotation);
   }
 
   /**
