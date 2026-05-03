@@ -209,20 +209,26 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if this invocation is an instance {@code iterator()} method returning Iterator.
+   * Returns true if this invocation is an iterator-returning {@code iterator()} or {@code
+   * listIterator()} method.
    *
    * @param tree the method invocation to test
    * @param methodType the annotated executable type of the invoked method
-   * @return true if this invocation is an instance {@code iterator()} method returning Iterator
+   * @return true if this invocation returns an Iterator from {@code iterator()} or {@code
+   *     listIterator()}
    */
   private boolean isIteratorMethod(MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    if (!tree.getArguments().isEmpty()) {
-      return false;
-    }
     ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null || !invokedMethod.getSimpleName().contentEquals("iterator")) {
+    if (invokedMethod == null) {
       return false;
     }
+    String methodName = invokedMethod.getSimpleName().toString();
+    int argCount = tree.getArguments().size();
+    if (!((methodName.equals("iterator") && argCount == 0)
+        || (methodName.equals("listIterator") && argCount <= 1))) {
+      return false;
+    }
+
     TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
     return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
   }

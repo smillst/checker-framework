@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -74,6 +75,30 @@ public class IteratorPrecisionTest {
     Iterator<String> iterator2 = list2.iterator();
     // :: error: [method.invocation]
     iterator2.remove();
+  }
+
+  void copyOnWriteArrayListListIterator() {
+    CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
+    @Unmodifiable ListIterator<String> iterator = list.listIterator();
+    @Unmodifiable ListIterator<String> indexedIterator = list.listIterator(0);
+
+    List<String> list2 = new CopyOnWriteArrayList<>();
+    // default to be unknown mod.
+    ListIterator<String> iterator2 = list2.listIterator();
+    ListIterator<String> indexedIterator2 = list2.listIterator(0);
+  }
+
+  void arryaListListIterator() {
+    ArrayList<String> list = new ArrayList<>();
+    @Modifiable ListIterator<String> iterator = list.listIterator();
+    iterator.remove();
+    iterator.set("c");
+    iterator.add("d");
+    @Modifiable ListIterator<String> indexedIterator = list.listIterator(0);
+
+    List<String> list2 = new ArrayList<>();
+    @Modifiable ListIterator<String> iterator2 = list2.listIterator();
+    @Modifiable ListIterator<String> indexedIterator2 = list2.listIterator(0);
   }
 
   void UnmodListIterator() {
