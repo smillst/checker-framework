@@ -143,17 +143,41 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineListIteratorReturnType(tree, method);
     }
 
-    if (!ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      return mType;
+    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
+      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
     }
 
+    return mType;
+  }
+
+  /**
+   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   *
+   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
+   * when the argument is already a List with no duplicates, but otherwise it returns a new
+   * ArrayList. A stub annotation like
+   *
+   * <pre>{@code
+   * static <T> @PolyReplace List<T> withoutDuplicates(@PolyReplace Collection<T> values)
+   * }</pre>
+   *
+   * would be unsound, because an {@code @Unreplaceable} input could receive the fresh ArrayList,
+   * whose static type should be {@code @Replaceable}. It would also be too imprecise to always use
+   * {@code @UnknownReplace}, because passing a {@code @Replaceable} collection guarantees that both
+   * possible results are replaceable. Therefore, model the method here as preserving
+   * {@code @Replaceable} inputs and otherwise returning {@code @UnknownReplace}.
+   *
+   * @param tree the invocation of {@code withoutDuplicates}
+   * @param methodType the annotated executable type of the invoked method
+   */
+  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(REPLACEABLE)) {
-      method.getReturnType().replaceAnnotation(REPLACEABLE);
+      methodType.getReturnType().replaceAnnotation(REPLACEABLE);
     } else {
-      method.getReturnType().replaceAnnotation(UNKNOWN_REPLACE);
+      methodType.getReturnType().replaceAnnotation(UNKNOWN_REPLACE);
     }
-    return mType;
   }
 
   /**

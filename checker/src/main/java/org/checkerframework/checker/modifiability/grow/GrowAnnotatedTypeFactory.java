@@ -129,17 +129,41 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineListIteratorReturnType(tree, method);
     }
 
-    if (!ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      return mType;
+    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
+      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
     }
 
+    return mType;
+  }
+
+  /**
+   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   *
+   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
+   * when the argument is already a List with no duplicates, but otherwise it returns a new
+   * ArrayList. A stub annotation like
+   *
+   * <pre>{@code
+   * static <T> @PolyGrow List<T> withoutDuplicates(@PolyGrow Collection<T> values)
+   * }</pre>
+   *
+   * would be unsound, because an {@code @Ungrowable} input could receive the fresh ArrayList, whose
+   * static type should be {@code @Growable}. It would also be too imprecise to always use
+   * {@code @UnknownGrow}, because passing a {@code @Growable} collection guarantees that both
+   * possible results are growable. Therefore, model the method here as preserving {@code @Growable}
+   * inputs and otherwise returning {@code @UnknownGrow}.
+   *
+   * @param tree the invocation of {@code withoutDuplicates}
+   * @param methodType the annotated executable type of the invoked method
+   */
+  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(GROWABLE)) {
-      method.getReturnType().replaceAnnotation(GROWABLE);
+      methodType.getReturnType().replaceAnnotation(GROWABLE);
     } else {
-      method.getReturnType().replaceAnnotation(UNKNOWN_GROW);
+      methodType.getReturnType().replaceAnnotation(UNKNOWN_GROW);
     }
-    return mType;
   }
 
   /**
