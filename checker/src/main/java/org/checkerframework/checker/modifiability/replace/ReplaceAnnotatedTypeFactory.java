@@ -1,19 +1,23 @@
 package org.checkerframework.checker.modifiability.replace;
 
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomReplace;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyShrink;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplace;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyShrink;
 import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.UnknownReplace;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -28,6 +32,8 @@ import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link ReplaceChecker}. */
@@ -65,6 +71,12 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyReplace} qualifier. */
   private final AnnotationMirror POLY_REPLACE;
 
+  /** The {@code @}{@link UnknownIteratorPolyShrink} qualifier. */
+  private final AnnotationMirror UNKNOWN_ITER;
+
+  /** The {@code @}{@link IteratorPolyShrink} qualifier. */
+  private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
+
   /**
    * Creates a ReplaceAnnotatedTypeFactory.
    *
@@ -91,6 +103,10 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Replaceable.class);
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
     this.POLY_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplace.class);
+    this.UNKNOWN_ITER =
+        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyShrink.class);
+    this.ITERATOR_PRESERVE_REMOVE =
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrink.class);
 
     addAliasedTypeAnnotation(Modifiable.class, REPLACEABLE);
     addAliasedTypeAnnotation(Unmodifiable.class, UNREPLACEABLE);
@@ -107,7 +123,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Replaceable.class,
             Unreplaceable.class,
             BottomReplace.class,
-            PolyReplace.class));
+            PolyReplace.class,
+            UnknownIteratorPolyShrink.class,
+            IteratorPolyShrink.class));
   }
 
   @Override
@@ -119,11 +137,16 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected ParameterizedExecutableType methodFromUse(
       MethodInvocationTree tree, boolean inferTypeArgs) {
     ParameterizedExecutableType mType = super.methodFromUse(tree, inferTypeArgs);
+    AnnotatedExecutableType method = mType.executableType();
+
+    if (isListIteratorMethod(tree, method)) {
+      refineListIteratorReturnType(tree, method);
+    }
+
     if (!ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
       return mType;
     }
 
-    AnnotatedExecutableType method = mType.executableType();
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(REPLACEABLE)) {
       method.getReturnType().replaceAnnotation(REPLACEABLE);
@@ -131,6 +154,79 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       method.getReturnType().replaceAnnotation(UNKNOWN_REPLACE);
     }
     return mType;
+  }
+
+  /**
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrink}.
+   *
+   * @param tree the listIterator method invocation
+   * @param methodType the annotated executable type of the invoked method
+   */
+  private void refineListIteratorReturnType(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    AnnotatedTypeMirror returnType = methodType.getReturnType();
+    if (returnType.hasPrimaryAnnotation(UNREPLACEABLE)
+        || returnType.hasPrimaryAnnotation(REPLACEABLE)
+        || returnType.hasPrimaryAnnotation(POLY_REPLACE)) {
+      return;
+    }
+
+    Tree receiverTree = TreeUtils.getReceiverTree(tree);
+    if (receiverTree == null) {
+      return;
+    }
+    AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
+
+    if (receiverType.hasPrimaryAnnotation(UNREPLACEABLE)) {
+      returnType.replaceAnnotation(UNREPLACEABLE);
+      return;
+    }
+
+    if (!receiverType.hasPrimaryAnnotation(REPLACEABLE)) {
+      return;
+    }
+
+    if (hasIteratorPolyShrink(receiverType)) {
+      returnType.replaceAnnotation(REPLACEABLE);
+    } else {
+      returnType.replaceAnnotation(UNKNOWN_REPLACE);
+    }
+  }
+
+  /**
+   * Returns true if this invocation is a {@code listIterator()} method that returns an Iterator.
+   *
+   * @param tree the method invocation to test
+   * @param methodType the annotated executable type of the invoked method
+   * @return true if this invocation returns an Iterator from {@code listIterator()}
+   */
+  private boolean isListIteratorMethod(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (invokedMethod == null) {
+      return false;
+    }
+    if (!invokedMethod.getSimpleName().contentEquals("listIterator")
+        || tree.getArguments().size() > 1) {
+      return false;
+    }
+
+    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
+    return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
+  }
+
+  /**
+   * Returns true if {@code type} has the {@code @IteratorPolyShrink} marker annotation.
+   *
+   * @param type the type to test
+   * @return true if {@code type} has the {@code @IteratorPolyShrink} marker annotation
+   */
+  private boolean hasIteratorPolyShrink(AnnotatedTypeMirror type) {
+    if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      return true;
+    }
+    return AnnotationUtils.containsSameByClass(
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrink.class);
   }
 
   /**
@@ -188,30 +284,32 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   protected QualifierUpperBounds createQualifierUpperBounds() {
     return new QualifierUpperBounds(this) {
-      private final AnnotationMirrorSet unknownReplace =
-          AnnotationMirrorSet.singleton(UNKNOWN_REPLACE);
+      private final AnnotationMirrorSet unknownReplaceAndIter =
+          AnnotationMirrorSet.unmodifiableSet(Arrays.asList(UNKNOWN_REPLACE, UNKNOWN_ITER));
 
       @Override
       public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
         TypeMirror erasedType = types.erasure(type);
         if (types.isSameType(erasedType, collectionErasure)) {
           // Elements of a raw Collection are treated as @UnknownReplace.
-          return unknownReplace;
+          return unknownReplaceAndIter;
         } else if (TypesUtils.isErasedSubtype(type, setErasure, types)) {
           // Elements of a set can never be replaced, so treat them as @UnknownReplace. Even if
           // they are annotation @Modifiable in a stubfile.
-          return unknownReplace;
+          return unknownReplaceAndIter;
         } else if (TypesUtils.isErasedSubtype(type, queueErasure, types)
             && !TypesUtils.isErasedSubtype(type, linkedListErasure, types)) {
           // Elements of a queue (but not LinkedList) can never be replaced, so treat them as
           // @UnknownReplace.
-          return unknownReplace;
+          return unknownReplaceAndIter;
         } else if (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
             && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types)) {
           // Iterators cannot replace elements.
-          return unknownReplace;
+          return unknownReplaceAndIter;
         }
-        return super.getBoundQualifiers(type);
+        AnnotationMirrorSet bounds = new AnnotationMirrorSet(super.getBoundQualifiers(type));
+        bounds.add(UNKNOWN_ITER);
+        return bounds;
       }
     };
   }

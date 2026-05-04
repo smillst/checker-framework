@@ -1,21 +1,25 @@
 package org.checkerframework.checker.modifiability.grow;
 
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomGrow;
 import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyShrink;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrow;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.modifiability.qual.UnknownGrow;
+import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyShrink;
 import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -28,6 +32,8 @@ import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link GrowChecker}. */
@@ -56,6 +62,12 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyGrow} qualifier. */
   private final AnnotationMirror POLY_GROW;
 
+  /** The {@code @}{@link UnknownIteratorPolyShrink} qualifier. */
+  private final AnnotationMirror UNKNOWN_ITER;
+
+  /** The {@code @}{@link IteratorPolyShrink} qualifier. */
+  private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
+
   /**
    * Creates a GrowAnnotatedTypeFactory.
    *
@@ -77,6 +89,10 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
     this.POLY_GROW = AnnotationBuilder.fromClass(getElementUtils(), PolyGrow.class);
+    this.UNKNOWN_ITER =
+        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyShrink.class);
+    this.ITERATOR_PRESERVE_REMOVE =
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrink.class);
 
     addAliasedTypeAnnotation(Modifiable.class, GROWABLE);
     addAliasedTypeAnnotation(Unmodifiable.class, UNGROWABLE);
@@ -89,7 +105,13 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
     return new LinkedHashSet<>(
         Arrays.asList(
-            UnknownGrow.class, Growable.class, Ungrowable.class, BottomGrow.class, PolyGrow.class));
+            UnknownGrow.class,
+            Growable.class,
+            Ungrowable.class,
+            BottomGrow.class,
+            PolyGrow.class,
+            UnknownIteratorPolyShrink.class,
+            IteratorPolyShrink.class));
   }
 
   @Override
@@ -101,11 +123,16 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected ParameterizedExecutableType methodFromUse(
       MethodInvocationTree tree, boolean inferTypeArgs) {
     ParameterizedExecutableType mType = super.methodFromUse(tree, inferTypeArgs);
+    AnnotatedExecutableType method = mType.executableType();
+
+    if (isListIteratorMethod(tree, method)) {
+      refineListIteratorReturnType(tree, method);
+    }
+
     if (!ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
       return mType;
     }
 
-    AnnotatedExecutableType method = mType.executableType();
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(GROWABLE)) {
       method.getReturnType().replaceAnnotation(GROWABLE);
@@ -113,6 +140,79 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       method.getReturnType().replaceAnnotation(UNKNOWN_GROW);
     }
     return mType;
+  }
+
+  /**
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrink}.
+   *
+   * @param tree the listIterator method invocation
+   * @param methodType the annotated executable type of the invoked method
+   */
+  private void refineListIteratorReturnType(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    AnnotatedTypeMirror returnType = methodType.getReturnType();
+    if (returnType.hasPrimaryAnnotation(UNGROWABLE)
+        || returnType.hasPrimaryAnnotation(GROWABLE)
+        || returnType.hasPrimaryAnnotation(POLY_GROW)) {
+      return;
+    }
+
+    Tree receiverTree = TreeUtils.getReceiverTree(tree);
+    if (receiverTree == null) {
+      return;
+    }
+    AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
+
+    if (receiverType.hasPrimaryAnnotation(UNGROWABLE)) {
+      returnType.replaceAnnotation(UNGROWABLE);
+      return;
+    }
+
+    if (!receiverType.hasPrimaryAnnotation(GROWABLE)) {
+      return;
+    }
+
+    if (hasIteratorPolyShrink(receiverType)) {
+      returnType.replaceAnnotation(GROWABLE);
+    } else {
+      returnType.replaceAnnotation(UNKNOWN_GROW);
+    }
+  }
+
+  /**
+   * Returns true if this invocation is a {@code listIterator()} method that returns an Iterator.
+   *
+   * @param tree the method invocation to test
+   * @param methodType the annotated executable type of the invoked method
+   * @return true if this invocation returns an Iterator from {@code listIterator()}
+   */
+  private boolean isListIteratorMethod(
+      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (invokedMethod == null) {
+      return false;
+    }
+    if (!invokedMethod.getSimpleName().contentEquals("listIterator")
+        || tree.getArguments().size() > 1) {
+      return false;
+    }
+
+    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
+    return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
+  }
+
+  /**
+   * Returns true if {@code type} has the {@code @IteratorPolyShrink} marker annotation.
+   *
+   * @param type the type to test
+   * @return true if {@code type} has the {@code @IteratorPolyShrink} marker annotation
+   */
+  private boolean hasIteratorPolyShrink(AnnotatedTypeMirror type) {
+    if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      return true;
+    }
+    return AnnotationUtils.containsSameByClass(
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrink.class);
   }
 
   /**
@@ -162,7 +262,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   protected QualifierUpperBounds createQualifierUpperBounds() {
     return new QualifierUpperBounds(this) {
-      private final AnnotationMirrorSet unknownGrow = AnnotationMirrorSet.singleton(UNKNOWN_GROW);
+      private final AnnotationMirrorSet unknownGrowAndIter =
+          AnnotationMirrorSet.unmodifiableSet(Arrays.asList(UNKNOWN_GROW, UNKNOWN_ITER));
 
       @Override
       public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
@@ -171,9 +272,11 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         } else if (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
             && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types)) {
           // Standard Iterator (not ListIterator) cannot be grown.
-          return unknownGrow;
+          return unknownGrowAndIter;
         }
-        return super.getBoundQualifiers(type);
+        AnnotationMirrorSet bounds = new AnnotationMirrorSet(super.getBoundQualifiers(type));
+        bounds.add(UNKNOWN_ITER);
+        return bounds;
       }
     };
   }
