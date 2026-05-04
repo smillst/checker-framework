@@ -12,12 +12,12 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomReplace;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyShrink;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplace;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
-import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyShrink;
+import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.UnknownReplace;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -71,10 +71,10 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyReplace} qualifier. */
   private final AnnotationMirror POLY_REPLACE;
 
-  /** The {@code @}{@link UnknownIteratorPolyShrink} qualifier. */
+  /** The {@code @}{@link UnknownIteratorPolyMod} qualifier. */
   private final AnnotationMirror UNKNOWN_ITER;
 
-  /** The {@code @}{@link IteratorPolyShrink} qualifier. */
+  /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
@@ -104,9 +104,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
     this.POLY_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplace.class);
     this.UNKNOWN_ITER =
-        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyShrink.class);
+        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyMod.class);
     this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrink.class);
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     addAliasedTypeAnnotation(Modifiable.class, REPLACEABLE);
     addAliasedTypeAnnotation(Unmodifiable.class, UNREPLACEABLE);
@@ -124,8 +124,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Unreplaceable.class,
             BottomReplace.class,
             PolyReplace.class,
-            UnknownIteratorPolyShrink.class,
-            IteratorPolyShrink.class));
+            UnknownIteratorPolyMod.class,
+            IteratorPolyMod.class));
   }
 
   @Override
@@ -181,7 +181,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrink}.
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyMod}.
    *
    * @param tree the listIterator method invocation
    * @param methodType the annotated executable type of the invoked method
@@ -210,7 +210,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    if (hasIteratorPolyShrink(receiverType)) {
+    if (hasIteratorPolyMod(receiverType)) {
       returnType.replaceAnnotation(REPLACEABLE);
     } else {
       returnType.replaceAnnotation(UNKNOWN_REPLACE);
@@ -240,17 +240,17 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if {@code type} has the {@code @IteratorPolyShrink} marker annotation.
+   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
    *
    * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyShrink} marker annotation
+   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
    */
-  private boolean hasIteratorPolyShrink(AnnotatedTypeMirror type) {
+  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
     if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       return true;
     }
     return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrink.class);
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
   /**

@@ -85,11 +85,11 @@ a collection's iterator.
 \begin{verbatim}
   Grow hierarchy           Shrink hierarchy              Replace hierarchy             Iterator hierarchy
 
-    @UnknownGrow             @UnknownShrink               @UnknownReplace          @UnknownIteratorPolyShrink
+    @UnknownGrow             @UnknownShrink               @UnknownReplace          @UnknownIteratorPolyMod
       /      \                 /       \                    /       \                          |
  @Growable @Ungrowable   @Shrinkable @Unshrinkable   @Replaceable @Unreplaceable               |
       \      /                 \       /                    \       /                          |
-    @BottomGrow             @BottomShrink                @BottomReplace              @IteratorPolyShrink
+    @BottomGrow             @BottomShrink                @BottomReplace              @IteratorPolyMod
 \end{verbatim}
   \end{minipage}
 \end{smaller}
@@ -216,13 +216,13 @@ The bottom qualifier in the Replace hierarchy.  Programmers should rarely write 
 
 Qualifiers in the Iterator hierarchy:
 \begin{description}
-\item[\refqualclass{checker/modifiability/qual}{UnknownIteratorPolyShrink}]
+\item[\refqualclass{checker/modifiability/qual}{UnknownIteratorPolyMod}]
 The top qualifier.
 The checker cannot determine whether this collection's \code{iterator()} is
 \<@PolyShrink>.
 This is the default qualifier for unannotated types.
 
-\item[\refqualclass{checker/modifiability/qual}{IteratorPolyShrink}]
+\item[\refqualclass{checker/modifiability/qual}{IteratorPolyMod}]
 This collection's \code{iterator()} is \<@PolyShrink>.  That is, if
 collection \<c> is \<@Shrinkable>, then \<c.iterator()> is also
 \<@Shrinkable>.
@@ -358,13 +358,13 @@ iterator.  For such subclasses of \<Collection>, the signature of
 \end{Verbatim}
 
 A collection uses the second signature if the collection is
-\<@IteratorPolyShrink>.  The collection uses the first signature if the
-collection is \<@UnknownIteratorPolyShrink>.
+\<@IteratorPolyMod>.  The collection uses the first signature if the
+collection is \<@UnknownIteratorPolyMod>.
 
 Here are examples of its use:
 
 \begin{Verbatim}
-  @IteratorPolyShrink @Shrinkable List<String> list = ...;
+  @IteratorPolyMod @Shrinkable List<String> list = ...;
   @Shrinkable Iterator<String> it = list.iterator();
   it.remove();  // OK
 
@@ -444,4 +444,4 @@ class Demo {
 % LocalWords:  addLast unreplaceable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrow BottomShrink BottomReplace
-% LocalWords:  UnknownIteratorPolyShrink IteratorPolyShrink
+% LocalWords:  UnknownIteratorPolyMod IteratorPolyMod
