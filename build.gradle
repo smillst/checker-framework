@@ -26,7 +26,7 @@ repositories {
 ext {
   // Different JDKs may be used to run Gradle, compile the Checker Framework, and run the CF tests.
 
-  // Ways to specifiy the JDK used by different tasks/Gradle:
+  // Ways to specify the JDK used by different tasks/Gradle:
   //
   // 1. Run Gradle using JDK 21:
   // mkdir ~/.gradle && echo "org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64" >> ~/.gradle/gradle.properties
@@ -78,6 +78,7 @@ ext {
 }
 
 tasks.register("setLocalHooksDir", Exec) {
+  onlyIf { rootProject.file(".git").exists() }
   commandLine("git", "rev-parse", "--git-path", "hooks")
   standardOutput = new ByteArrayOutputStream()
 
@@ -88,6 +89,7 @@ tasks.register("setLocalHooksDir", Exec) {
 
 // No group so it does not show up in the output of `gradlew tasks`
 tasks.register("installGitHooks", Copy) {
+  onlyIf { rootProject.file(".git").exists() }
   dependsOn("setLocalHooksDir")
   description = "Copies git hooks to the local git hooks directory"
   from(files("checker/bin-devel/git.post-merge", "checker/bin-devel/git.pre-commit"))
