@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
@@ -126,7 +127,7 @@ public class ContractsFromMethod {
   private <T extends Contract> Set<T> getContractsOfKind(
       ExecutableElement executableElement, Contract.Kind kind, Class<T> clazz) {
     MethodTree methodDecl;
-    if (executableElement.getSimpleName().toString().equals("<init>")) {
+    if (executableElement.getKind() == ElementKind.CONSTRUCTOR) {
       // It's a constructor, not a method.
       methodDecl = null;
     } else {
@@ -295,7 +296,7 @@ public class ContractsFromMethod {
   private @Nullable AnnotationMirror getQualifierEnforcedByContractAnnotation(
       AnnotationMirror contractAnno,
       @Nullable AnnotationMirror argumentAnno,
-      @Nullable Map<String, String> argumentRenaming,
+      Map<String, String> argumentRenaming,
       @Nullable TypeMirror type) {
 
     @SuppressWarnings("deprecation") // permitted for use in the framework
