@@ -307,9 +307,12 @@ public class Typing extends TypeConstraint {
       if (S.getTypeKind() == TypeKind.WILDCARD) {
         return ConstraintSet.FALSE;
       }
-      if (isCovarTypeArg) {
-        return new Typing(this, S, T, Kind.SUBTYPE);
-      }
+      // TODO: This code is incorrect because the java types must be equal, but the qualifiers can
+      // be covariant.  However, I can't write a test case that fails when the qualifiers are not
+      // in a subtyping relationship.
+      // if (isCovarTypeArg) {
+      // return new Typing(this, S, T, Kind.SUBTYPE);
+      // }
       return new Typing(this, S, T, Kind.TYPE_EQUALITY);
 
     } else if (T.isUnboundWildcard()) {
