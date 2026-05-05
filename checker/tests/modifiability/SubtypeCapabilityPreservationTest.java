@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 // Tests that storing a modifiable subtype in a less-capable supertype does not permanently discard
@@ -17,7 +16,7 @@ class SubtypeCapabilityPreservationTest {
   void listIteratorThroughIterator() {
     List<String> list = new ArrayList<>();
     @Modifiable ListIterator<String> listIterator = list.listIterator();
-    @Shrinkable Iterator<String> iterator = listIterator;
+    Iterator<String> iterator = listIterator;
     @Modifiable ListIterator<String> listIterator2 = (ListIterator<String>) iterator;
     listIterator2.add("added");
     listIterator2.set("replaced");
@@ -26,6 +25,7 @@ class SubtypeCapabilityPreservationTest {
     List<String> unmodList = Collections.unmodifiableList(new ArrayList<>());
     @Unmodifiable ListIterator<String> listIterator3 = unmodList.listIterator();
     Iterator<String> iterator2 = listIterator3;
+    // :: error: [assignment]
     @Modifiable ListIterator<String> listIterator4 = (ListIterator<String>) iterator2;
   }
 
