@@ -1,5 +1,3 @@
-package open.liam;
-
 import org.checkerframework.framework.qual.Covariant;
 
 public class Issue7676 {

@@ -1,5 +1,3 @@
-package open.liam;
-
 import java.util.Optional;
 
 public class Issue7695 {
