@@ -45,7 +45,6 @@ public class Typing extends TypeConstraint {
   private final Kind kind;
 
   /** True if this constraint is for a covariant type argument. */
-  @SuppressWarnings("UnusedVariable") // Not currently used, but may be in the future.
   private boolean isCovarTypeArg;
 
   /**
@@ -314,7 +313,7 @@ public class Typing extends TypeConstraint {
       // if (isCovarTypeArg) {
       // return new Typing(this, S, T, Kind.SUBTYPE);
       // }
-      return new Typing(this, S, T, Kind.TYPE_EQUALITY);
+      return new Typing(this, S, T, Kind.TYPE_EQUALITY, isCovarTypeArg);
 
     } else if (T.isUnboundWildcard()) {
       return ConstraintSet.TRUE;
