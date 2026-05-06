@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
@@ -22,16 +23,12 @@ import org.checkerframework.checker.modifiability.qual.UnknownGrow;
 import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.QualifierUpperBounds;
-import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
-import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -62,9 +59,6 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyGrow} qualifier. */
   private final AnnotationMirror POLY_GROW;
 
-  /** The {@code @}{@link UnknownIteratorPolyMod} qualifier. */
-  private final AnnotationMirror UNKNOWN_ITER;
-
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
@@ -89,15 +83,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
     this.POLY_GROW = AnnotationBuilder.fromClass(getElementUtils(), PolyGrow.class);
-    this.UNKNOWN_ITER =
-        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyMod.class);
     this.ITERATOR_PRESERVE_REMOVE =
         AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
-    addAliasedTypeAnnotation(Modifiable.class, GROWABLE);
-    addAliasedTypeAnnotation(Unmodifiable.class, UNGROWABLE);
-    addAliasedTypeAnnotation(UnknownModifiability.class, UNKNOWN_GROW);
-    addAliasedTypeAnnotation(PolyModifiable.class, POLY_GROW);
     postInit();
   }
 
@@ -114,9 +102,33 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             IteratorPolyMod.class));
   }
 
+  /**
+   * Expands whole-modifiability aliases into this hierarchy, with structural weakening only for
+   * aliases whose meaning depends on the annotated type.
+   *
+   * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
+   * that cannot grow structurally, such as {@code Map.Entry} and non-{@code ListIterator} {@code
+   * Iterator}, their grow component canonicalizes to {@code @UnknownGrow}. Explicit grow qualifiers
+   * are left to normal canonicalization so users can still write and preserve an explicit
+   * capability tuple such as {@code @Growable @Shrinkable @Replaceable Iterator}.
+   *
+   * <p>{@code @PolyModifiable} is different: it should usually become {@code @PolyGrow}, but for
+   * {@code Map.Entry} only the replace bit is meaningful to carry from the map receiver. Its grow
+   * bit is therefore {@code @UnknownGrow}.
+   */
   @Override
-  protected TypeAnnotator createTypeAnnotator() {
-    return new ListTypeAnnotator(new GrowTypeAnnotator(this), super.createTypeAnnotator());
+  public AnnotationMirror canonicalAnnotation(
+      AnnotationMirror annotation, @Nullable TypeMirror tm) {
+    if (areSameByClass(annotation, Modifiable.class)) {
+      return tm != null && typeCannotGrow(tm) ? UNKNOWN_GROW : GROWABLE;
+    } else if (areSameByClass(annotation, Unmodifiable.class)) {
+      return tm != null && typeCannotGrow(tm) ? UNKNOWN_GROW : UNGROWABLE;
+    } else if (areSameByClass(annotation, UnknownModifiability.class)) {
+      return UNKNOWN_GROW;
+    } else if (areSameByClass(annotation, PolyModifiable.class)) {
+      return tm != null && isMapEntry(tm) ? UNKNOWN_GROW : POLY_GROW;
+    }
+    return super.canonicalAnnotation(annotation);
   }
 
   @Override
@@ -239,69 +251,21 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
-  /**
-   * Removes grow capability for types that structurally cannot support it:
-   *
-   * <ul>
-   *   <li>Set or Queue (not LinkedList): remove Replace capability → set Replace to
-   *       {@code @UnknownReplace}
-   *   <li>Map.Entry: remove Grow and Shrink capabilities
-   *   <li>Iterator: remove Grow and Replace capabilities
-   * </ul>
-   */
-  private class GrowTypeAnnotator extends TypeAnnotator {
-    /**
-     * Creates a new GrowTypeAnnotator.
-     *
-     * @param factory the associated type factory
-     */
-    public GrowTypeAnnotator(GrowAnnotatedTypeFactory factory) {
-      super(factory);
+  /** Returns true if {@code type} structurally cannot support grow operations. */
+  private boolean typeCannotGrow(TypeMirror type) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return false;
     }
-
-    @Override
-    public Void visitDeclared(AnnotatedDeclaredType type, Void p) {
-      super.visitDeclared(type, p);
-
-      // Skip structural refinement for polymorphic types.
-      if (type.hasPrimaryAnnotation(POLY_GROW)) {
-        return null;
-      }
-
-      TypeMirror underlyingType = type.getUnderlyingType();
-
-      if (TypesUtils.isErasedSubtype(underlyingType, mapEntryErasure, types)) {
-        // Map.Entry: no grow.
-        type.replaceAnnotation(UNKNOWN_GROW);
-      } else if (TypesUtils.isErasedSubtype(underlyingType, iteratorErasure, types)
-          && !TypesUtils.isErasedSubtype(underlyingType, listIteratorErasure, types)) {
-        // Iterator: no grow.
-        type.replaceAnnotation(UNKNOWN_GROW);
-      }
-
-      return null;
-    }
+    return isMapEntry(type)
+        || (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
+            && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types));
   }
 
-  @Override
-  protected QualifierUpperBounds createQualifierUpperBounds() {
-    return new QualifierUpperBounds(this) {
-      private final AnnotationMirrorSet unknownGrowAndIter =
-          AnnotationMirrorSet.unmodifiableSet(Arrays.asList(UNKNOWN_GROW, UNKNOWN_ITER));
-
-      @Override
-      public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
-        if (TypesUtils.isErasedSubtype(type, mapEntryErasure, types)) {
-          // Map.Entry cannot be grown.
-        } else if (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
-            && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types)) {
-          // Standard Iterator (not ListIterator) cannot be grown.
-          return unknownGrowAndIter;
-        }
-        AnnotationMirrorSet bounds = new AnnotationMirrorSet(super.getBoundQualifiers(type));
-        bounds.add(UNKNOWN_ITER);
-        return bounds;
-      }
-    };
+  /** Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}. */
+  private boolean isMapEntry(TypeMirror type) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return false;
+    }
+    return TypesUtils.isErasedSubtype(type, mapEntryErasure, types);
   }
 }

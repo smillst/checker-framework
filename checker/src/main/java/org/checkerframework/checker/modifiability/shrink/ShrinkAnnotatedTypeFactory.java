@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
@@ -22,17 +23,13 @@ import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.UnknownShrink;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.Unshrinkable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
-import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.framework.type.QualifierUpperBounds;
-import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
-import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -60,11 +57,6 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyShrink} qualifier. */
   private final AnnotationMirror POLY_SHRINK;
 
-  /**
-   * The {@code @}{@link UnknownIteratorPolyMod} qualifier (top of iterator-preservation hierarchy).
-   */
-  private final AnnotationMirror UNKNOWN_ITER;
-
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
@@ -88,15 +80,9 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Shrinkable.class);
     this.UNSHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Unshrinkable.class);
     this.POLY_SHRINK = AnnotationBuilder.fromClass(getElementUtils(), PolyShrink.class);
-    this.UNKNOWN_ITER =
-        AnnotationBuilder.fromClass(getElementUtils(), UnknownIteratorPolyMod.class);
     this.ITERATOR_PRESERVE_REMOVE =
         AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
-    addAliasedTypeAnnotation(Modifiable.class, SHRINKABLE);
-    addAliasedTypeAnnotation(Unmodifiable.class, UNSHRINKABLE);
-    addAliasedTypeAnnotation(UnknownModifiability.class, UNKNOWN_SHRINK);
-    addAliasedTypeAnnotation(PolyModifiable.class, POLY_SHRINK);
     postInit();
   }
 
@@ -113,9 +99,33 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             IteratorPolyMod.class));
   }
 
+  /**
+   * Expands whole-modifiability aliases into this hierarchy, with structural weakening only for
+   * aliases whose meaning depends on the annotated type.
+   *
+   * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on {@code
+   * Map.Entry}, which cannot shrink, their shrink component canonicalizes to
+   * {@code @UnknownShrink}. Explicit shrink qualifiers are left to normal canonicalization so users
+   * can still write and preserve an explicit capability tuple such as
+   * {@code @Growable @Shrinkable @Replaceable Entry}.
+   *
+   * <p>{@code @PolyModifiable} is different: it should usually become {@code @PolyShrink}, but for
+   * {@code Map.Entry} only the replace bit is meaningful to carry from the map receiver. Its shrink
+   * bit is therefore {@code @UnknownShrink}.
+   */
   @Override
-  protected TypeAnnotator createTypeAnnotator() {
-    return new ListTypeAnnotator(new ShrinkTypeAnnotator(this), super.createTypeAnnotator());
+  public AnnotationMirror canonicalAnnotation(
+      AnnotationMirror annotation, @Nullable TypeMirror tm) {
+    if (areSameByClass(annotation, Modifiable.class)) {
+      return tm != null && typeCannotShrink(tm) ? UNKNOWN_SHRINK : SHRINKABLE;
+    } else if (areSameByClass(annotation, Unmodifiable.class)) {
+      return tm != null && typeCannotShrink(tm) ? UNKNOWN_SHRINK : UNSHRINKABLE;
+    } else if (areSameByClass(annotation, UnknownModifiability.class)) {
+      return UNKNOWN_SHRINK;
+    } else if (areSameByClass(annotation, PolyModifiable.class)) {
+      return tm != null && isMapEntry(tm) ? UNKNOWN_SHRINK : POLY_SHRINK;
+    }
+    return super.canonicalAnnotation(annotation);
   }
 
   @Override
@@ -246,58 +256,16 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
-  /**
-   * Removes shrink capability for types that structurally cannot support it:
-   *
-   * <ul>
-   *   <li>Map.Entry: cannot shrink, set to {@code @UnknownShrink}
-   * </ul>
-   */
-  private class ShrinkTypeAnnotator extends TypeAnnotator {
-
-    /**
-     * Creates a new ShrinkTypeAnnotator.
-     *
-     * @param factory the associated type factory
-     */
-    public ShrinkTypeAnnotator(ShrinkAnnotatedTypeFactory factory) {
-      super(factory);
-    }
-
-    @Override
-    public Void visitDeclared(AnnotatedDeclaredType type, Void p) {
-      super.visitDeclared(type, p);
-
-      // Skip structural refinement for polymorphic types.
-      if (type.hasPrimaryAnnotation(POLY_SHRINK)) {
-        return null;
-      }
-
-      TypeMirror underlyingType = type.getUnderlyingType();
-
-      if (TypesUtils.isErasedSubtype(underlyingType, mapEntryErasure, types)) {
-        // Map.Entry: no shrink.
-        type.replaceAnnotation(UNKNOWN_SHRINK);
-      }
-
-      return null;
-    }
+  /** Returns true if {@code type} structurally cannot support shrink operations. */
+  private boolean typeCannotShrink(TypeMirror type) {
+    return isMapEntry(type);
   }
 
-  @Override
-  protected QualifierUpperBounds createQualifierUpperBounds() {
-    return new QualifierUpperBounds(this) {
-      @Override
-      public AnnotationMirrorSet getBoundQualifiers(TypeMirror type) {
-        if (TypesUtils.isErasedSubtype(type, mapEntryErasure, types)) {
-          // Map.Entry uses fixed upper bounds in both supported hierarchies.
-          AnnotationMirrorSet bounds = new AnnotationMirrorSet();
-          bounds.add(UNKNOWN_SHRINK);
-          bounds.add(UNKNOWN_ITER);
-          return bounds;
-        }
-        return super.getBoundQualifiers(type);
-      }
-    };
+  /** Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}. */
+  private boolean isMapEntry(TypeMirror type) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return false;
+    }
+    return TypesUtils.isErasedSubtype(type, mapEntryErasure, types);
   }
 }

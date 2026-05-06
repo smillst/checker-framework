@@ -35,7 +35,7 @@ class SetTest {
 
     @Growable @Shrinkable Set<String> gs1 = modifiable; // OK
     // :: error: [assignment]
-    @Replaceable Set<String> r2 = modifiable; //unknownReplace cannot assign to replaceable. 
+    @Replaceable Set<String> r2 = modifiable; // unknownReplace cannot assign to replaceable.
   }
 
   void testSetGrowShrinkPreserved(
@@ -95,7 +95,7 @@ class SetTest {
     Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u3 = gs;
     // Explicit Grow/Shrink annotations are preserved.
     // :: error: [assignment]
-    Map.@Growable Entry<String, String> g1 = unknown; 
+    Map.@Growable Entry<String, String> g1 = unknown;
     // :: error: [assignment]
     Map.@Shrinkable Entry<String, String> s1 = unknown;
     Map.@Growable Entry<String, String> g2 = gs; // OK
