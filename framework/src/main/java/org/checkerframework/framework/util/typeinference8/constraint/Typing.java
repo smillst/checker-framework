@@ -308,11 +308,12 @@ public class Typing extends TypeConstraint {
         return ConstraintSet.FALSE;
       }
       // TODO: This code is incorrect because the java types must be equal, but the qualifiers can
-      // be covariant.  However, I can't write a test case that fails when the qualifiers are not
-      // in a subtyping relationship.
+      // be covariant.
       // if (isCovarTypeArg) {
       // return new Typing(this, S, T, Kind.SUBTYPE);
       // }
+      // However, this causes new false postives.  For example,
+      // checker/tests/tainting/CovariantError.java
       return new Typing(this, S, T, Kind.TYPE_EQUALITY, isCovarTypeArg);
 
     } else if (T.isUnboundWildcard()) {
