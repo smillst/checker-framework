@@ -13,37 +13,29 @@ import org.checkerframework.checker.modifiability.qual.UnknownShrink;
 /**
  * Tests structural capability removal for Set, Queue, Map.Entry, and Iterator.
  *
- * <p>Set / Queue: TypeAnnotator removes the Replace capability (sets Replace to @UnknownReplace).
- * Map.Entry: TypeAnnotator removes Grow and Shrink capabilities. Iterator: TypeAnnotator removes
- * Grow and Replace capabilities.
+ * <p>Convenience aliases on Set / Queue lose the Replace capability (set Replace
+ * to @UnknownReplace). Convenience aliases on Map.Entry lose Grow and Shrink capabilities.
+ * Convenience aliases on Iterator lose Grow and Replace capabilities. Explicit capability
+ * annotations are preserved.
  */
 class SetTest {
 
   // ==========================================================
-  // Set: Replace capability is always removed by the TypeAnnotator.
-  // Effective types have Replace = @UnknownReplace.
+  // Set: explicit Replace capability is preserved.
   // ==========================================================
 
   void testSetReplaceRemoved(
       @Replaceable Set<String> replaceable,
       @Growable @Replaceable Set<String> growReplace,
       @Shrinkable @Replaceable Set<String> shrinkReplace,
-      @Growable @Shrinkable @Replaceable Set<String> modifiable) {
+      @Modifiable Set<String> modifiable) {
 
-    // After TypeAnnotator, all Set Replace qualifiers become @UnknownReplace.
-    // So @Replaceable Set, @Growable @Replaceable Set, etc. lose their Replaceable.
-
-    // @Replaceable Set → Grow=Unknown, Shrink=Unknown, Replace=Unknown (R removed)
-    // @Growable @Replaceable Set → Grow=Growable, Shrink=Unknown, Replace=Unknown (R removed)
     @Growable Set<String> g1 = growReplace; // OK: Grow still intact
-    @Replaceable Set<String> r1 =
-        growReplace; // OK: @replaceable set becomes @UnknownMod, GrowReplace set becomes @Growable.
+    @Replaceable Set<String> r1 = growReplace;
 
-    // @Growable @Shrinkable @Replaceable Set → Grow=G, Shrink=S, Replace=Unknown (R removed)
-    // effectively the same as @Growable @Shrinkable Set
     @Growable @Shrinkable Set<String> gs1 = modifiable; // OK
-    @Replaceable Set<String> r2 =
-        modifiable; // OK: replaceale becomes unknown, modifiable becomes @Growable @Shrinkable
+    // :: error: [assignment]
+    @Replaceable Set<String> r2 = modifiable; //unknownReplace cannot assign to replaceable. 
   }
 
   void testSetGrowShrinkPreserved(
@@ -69,10 +61,13 @@ class SetTest {
   }
 
   void testQueueLikeSet(
-      @Modifiable Queue<String> modifiable, @Growable @Shrinkable Queue<String> gs) {
-    // Queue also has Replace removed (same rule as Set).
-    @Growable @Shrinkable Queue<String> q1 = modifiable; // OK: modifiable <: gs (R removed from both)
-    @Growable @Shrinkable @Replaceable Queue<String> q2 = gs; // OK: same after TypeAnnotator
+      @Modifiable Queue<String> modifiable,
+      @Growable @Shrinkable @Replaceable Queue<String> explicit) {
+    // @Modifiable Queue loses only its Replace capability.
+    @Growable @Shrinkable Queue<String> q1 = modifiable;
+    // :: error: [assignment]
+    @Growable @Shrinkable @Replaceable Queue<String> q2 = modifiable;
+    @Growable @Shrinkable @Replaceable Queue<String> q3 = explicit;
   }
 
   // ==========================================================
@@ -90,30 +85,34 @@ class SetTest {
       Map.@Replaceable Entry<String, String> replaceable,
       Map.@Growable @Replaceable Entry<String, String> growReplace,
       Map.@Shrinkable @Replaceable Entry<String, String> shrinkReplace,
-      Map.@Growable @Shrinkable @Replaceable Entry<String, String> modifiable) {
+      Map.@Modifiable Entry<String, String> modifiable,
+      Map.@Growable @Shrinkable @Replaceable Entry<String, String> explicit) {
 
     // Group 1: entries without Replace bit become @UnknownGrow @UnknownShrink @UnknownReplace
     // (G and S are removed → both become Unknown; R was already Unknown)
     Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u1 = growable;
     Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u2 = shrinkable;
     Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u3 = gs;
-    // After TypeAnnotator they are all effectively @UnknownGrow @UnknownShrink @UnknownReplace,
-    // so assignments between them are valid.
-    Map.@Growable Entry<String, String> g1 = unknown; // OK: same effective type
+    // Explicit Grow/Shrink annotations are preserved.
+    // :: error: [assignment]
+    Map.@Growable Entry<String, String> g1 = unknown; 
+    // :: error: [assignment]
     Map.@Shrinkable Entry<String, String> s1 = unknown;
     Map.@Growable Entry<String, String> g2 = gs; // OK
 
-    // Group 2: entries with Replace bit become @UnknownGrow @UnknownShrink @Replaceable
-    // (G and S are removed; R=Replaceable is preserved)
     Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r1 = growReplace;
     Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r2 = shrinkReplace;
     Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r3 = modifiable;
-    // After TypeAnnotator they are all effectively @UnknownGrow @UnknownShrink @Replaceable.
+    // Explicit Grow/Shrink annotations are preserved on Map.Entry.
+    // :: error: [assignment]
     Map.@Growable @Replaceable Entry<String, String> gr1 = replaceable; // OK: same effective type
+    // :: error: [assignment]
     Map.@Shrinkable @Replaceable Entry<String, String> sr1 = replaceable;
-    Map.@Growable @Shrinkable @Replaceable Entry<String, String> m1 = replaceable;
+    Map.@Modifiable Entry<String, String> m1 = replaceable;
+    // :: error: [assignment]
     Map.@Shrinkable @Replaceable Entry<String, String> sr2 = growReplace;
-    Map.@Growable @Replaceable Entry<String, String> gr2 = modifiable;
+    Map.@Replaceable Entry<String, String> gr2 = modifiable;
+    Map.@Modifiable Entry<String, String> m2 = explicit;
 
     // Cross-group: Replace !<: UnknownReplace (wrong direction) is NOT an error —
     // but UnknownReplace !<: Replaceable IS an error:
@@ -136,15 +135,18 @@ class SetTest {
       @Shrinkable Iterator<String> shrinkable,
       @Growable @Shrinkable Iterator<String> growShrink,
       @Shrinkable @Replaceable Iterator<String> shrinkReplace,
-      @Growable @Shrinkable @Replaceable Iterator<String> modifiable) {
+      @Modifiable Iterator<String> modifiable,
+      @Growable @Shrinkable @Replaceable Iterator<String> explicit) {
 
     // Group 1: No Shrink bit → effective @UnknownGrow @UnknownShrink @UnknownReplace
     @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u1 = growable;
     @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u2 = replaceable;
     @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u3 = growReplace;
-    // They are all effectively the same type after TypeAnnotator:
+    // Explicit Grow/Replace annotations are preserved.
+    // :: error: [assignment]
     @Growable Iterator<String> g1 = unknown;
     @Replaceable Iterator<String> r1 = growReplace;
+    // :: error: [assignment]
     @Growable @Replaceable Iterator<String> gr1 = replaceable;
 
     // Group 2: Has Shrink bit → effective @UnknownGrow @Shrinkable @UnknownReplace
@@ -154,11 +156,11 @@ class SetTest {
     @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s4 = modifiable;
     // Cross-assignments within group 2:
     @Shrinkable Iterator<String> sh1 = modifiable;
+    // :: error: [assignment]
     @Growable @Shrinkable Iterator<String> gs1 = modifiable;
+    // :: error: [assignment]
     @Shrinkable @Replaceable Iterator<String> sr1 = modifiable;
-    @Growable @Shrinkable Iterator<String> gs2 = shrinkable;
-    @Shrinkable @Replaceable Iterator<String> sr2 = growShrink;
-
+    @Modifiable Iterator<String> m1 = explicit;
     // :: error: [assignment]
     @Shrinkable Iterator<String> bad1 = growable; // Error: Shrink=Unknown !<: Shrinkable
   }
