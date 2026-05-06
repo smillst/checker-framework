@@ -251,7 +251,12 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
-  /** Returns true if {@code type} structurally cannot support grow operations. */
+  /**
+   * Returns true if {@code type} structurally cannot support grow operations.
+   *
+   * @param type the type to test
+   * @return true if {@code type} structurally cannot support grow operations
+   */
   private boolean typeCannotGrow(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;
@@ -261,7 +266,12 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types));
   }
 
-  /** Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}. */
+  /**
+   * Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}.
+   *
+   * @param type the type to test
+   * @return true if {@code type} is a subtype of {@link java.util.Map.Entry}
+   */
   private boolean isMapEntry(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;

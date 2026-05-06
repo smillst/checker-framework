@@ -266,7 +266,12 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
-  /** Returns true if {@code type} structurally cannot support replace operations. */
+  /**
+   * Returns true if {@code type} structurally cannot support replace operations.
+   *
+   * @param type the type to test
+   * @return true if {@code type} structurally cannot support replace operations
+   */
   private boolean typeCannotReplace(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;

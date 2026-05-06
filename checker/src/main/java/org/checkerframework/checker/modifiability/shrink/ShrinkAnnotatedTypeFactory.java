@@ -256,12 +256,22 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
-  /** Returns true if {@code type} structurally cannot support shrink operations. */
+  /**
+   * Returns true if {@code type} structurally cannot support shrink operations.
+   *
+   * @param type the type to test
+   * @return true if {@code type} structurally cannot support shrink operations
+   */
   private boolean typeCannotShrink(TypeMirror type) {
     return isMapEntry(type);
   }
 
-  /** Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}. */
+  /**
+   * Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}.
+   *
+   * @param type the type to test
+   * @return true if {@code type} is a subtype of {@link java.util.Map.Entry}
+   */
   private boolean isMapEntry(TypeMirror type) {
     if (type.getKind() != TypeKind.DECLARED) {
       return false;
