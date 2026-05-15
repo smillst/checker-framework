@@ -101,7 +101,8 @@ public class BasicModifiabilityTest {
     unmod.retainAll(other);
   }
 
-  void testReplaceAll(@IteratorPolyMod @Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
+  void testReplaceAll(
+      @IteratorPolyMod @Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
     mod.replaceAll(s -> s + "!");
 
     // :: error: [method.invocation]
