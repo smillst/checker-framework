@@ -1,3 +1,6 @@
+import java.util.AbstractCollection;
+import java.util.AbstractSequentialList;
+import java.util.AbstractSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,8 +16,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -238,5 +243,185 @@ public class IteratorPrecisionTest {
     @Unshrinkable Iterator<String> keyIterator = map.keySet().iterator();
     @Unshrinkable Iterator<String> valueIterator = map.values().iterator();
     @Unshrinkable Iterator<Map.@Unmodifiable Entry<String, String>> entryIterator = map.entrySet().iterator();
+  }
+
+  void iteratorDependentCollectionMethodsRequireIteratorPolyMod(
+      @Modifiable IteratorRemoveUnsupportedCollection collection,
+      @Modifiable IteratorRemoveUnsupportedSet set) {
+    // :: error: [method.invocation]
+    collection.remove("a");
+    // :: error: [method.invocation]
+    collection.removeAll(List.of("a"));
+    // :: error: [method.invocation]
+    collection.retainAll(List.of("a"));
+    // :: error: [method.invocation]
+    collection.clear();
+    // :: error: [method.invocation]
+    collection.removeIf(s -> true);
+
+    // :: error: [method.invocation]
+    set.removeAll(List.of("a"));
+  }
+
+  void iteratorDependentListMethodsRequireIteratorPolyMod(
+      @Modifiable IteratorMutationUnsupportedList list) {
+    // :: error: [method.invocation]
+    list.set(0, "b");
+    // :: error: [method.invocation]
+    list.add(0, "b");
+    // :: error: [method.invocation]
+    list.remove(0);
+    // :: error: [method.invocation]
+    list.addAll(0, List.of("b"));
+    // :: error: [method.invocation]
+    list.replaceAll(s -> s + "!");
+    // :: error: [method.invocation]
+    list.sort(null);
+
+    // :: error: [argument]
+    Collections.sort(list);
+    // :: error: [argument]
+    Collections.sort(list, String::compareTo);
+    // :: error: [argument]
+    Collections.reverse(list);
+    // :: error: [argument]
+    Collections.shuffle(list);
+    // :: error: [argument]
+    Collections.shuffle(list, new Random());
+    // :: error: [argument]
+    Collections.fill(list, "b");
+    // :: error: [argument]
+    Collections.copy(list, List.of("b"));
+    // :: error: [argument]
+    Collections.rotate(list, 1);
+    // :: error: [argument]
+    Collections.replaceAll(list, "a", "b");
+  }
+
+  void copyOnWriteDirectOverridesRemainUsableButInheritedIteratorBasedApisDoNot() {
+    CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
+    list.add("a");
+    list.removeIf(s -> false);
+    list.replaceAll(s -> s + "!");
+    list.sort(null);
+    list.clear();
+
+    // :: error: [argument]
+    Collections.sort(list);
+    // :: error: [argument]
+    Collections.reverse(list);
+
+    List<String> asList = list;
+    // :: error: [method.invocation]
+    asList.sort(null);
+    // :: error: [method.invocation]
+    asList.replaceAll(s -> s);
+  }
+
+  static class IteratorRemoveUnsupportedCollection extends AbstractCollection<String> {
+    @Override
+    public Iterator<String> iterator() {
+      return new Iterator<>() {
+        private boolean hasNext = true;
+
+        @Override
+        public boolean hasNext() {
+          return hasNext;
+        }
+
+        @Override
+        public String next() {
+          if (!hasNext) {
+            throw new NoSuchElementException();
+          }
+          hasNext = false;
+          return "a";
+        }
+      };
+    }
+
+    @Override
+    public int size() {
+      return 1;
+    }
+  }
+
+  static class IteratorRemoveUnsupportedSet extends AbstractSet<String> {
+    @Override
+    public Iterator<String> iterator() {
+      return List.of("a").iterator();
+    }
+
+    @Override
+    public int size() {
+      return 1;
+    }
+  }
+
+  static class IteratorMutationUnsupportedList extends AbstractSequentialList<String> {
+    @Override
+    public ListIterator<String> listIterator(int index) {
+      return new ListIterator<>() {
+        private int cursor = index;
+
+        @Override
+        public boolean hasNext() {
+          return cursor < 1;
+        }
+
+        @Override
+        public String next() {
+          if (!hasNext()) {
+            throw new NoSuchElementException();
+          }
+          cursor++;
+          return "a";
+        }
+
+        @Override
+        public boolean hasPrevious() {
+          return cursor > 0;
+        }
+
+        @Override
+        public String previous() {
+          if (!hasPrevious()) {
+            throw new NoSuchElementException();
+          }
+          cursor--;
+          return "a";
+        }
+
+        @Override
+        public int nextIndex() {
+          return cursor;
+        }
+
+        @Override
+        public int previousIndex() {
+          return cursor - 1;
+        }
+
+        @Override
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void set(String e) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add(String e) {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
+
+    @Override
+    public int size() {
+      return 1;
+    }
   }
 }

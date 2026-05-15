@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -100,7 +101,7 @@ public class BasicModifiabilityTest {
     unmod.retainAll(other);
   }
 
-  void testReplaceAll(@Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
+  void testReplaceAll(@IteratorPolyMod @Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
     mod.replaceAll(s -> s + "!");
 
     // :: error: [method.invocation]
