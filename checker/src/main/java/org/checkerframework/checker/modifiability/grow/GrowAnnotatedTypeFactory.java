@@ -173,8 +173,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(GROWABLE)) {
       methodType.getReturnType().replaceAnnotation(GROWABLE);
-    } else {
-      methodType.getReturnType().replaceAnnotation(UNKNOWN_GROW);
+    }
+    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
     }
   }
 

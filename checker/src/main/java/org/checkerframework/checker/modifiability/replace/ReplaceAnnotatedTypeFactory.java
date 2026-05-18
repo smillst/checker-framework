@@ -188,8 +188,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(REPLACEABLE)) {
       methodType.getReturnType().replaceAnnotation(REPLACEABLE);
-    } else {
-      methodType.getReturnType().replaceAnnotation(UNKNOWN_REPLACE);
+    }
+    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
     }
   }
 

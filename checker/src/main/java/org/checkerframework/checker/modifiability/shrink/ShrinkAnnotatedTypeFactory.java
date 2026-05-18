@@ -168,9 +168,12 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private void refineCollectionsPlumeWithoutDuplicatesReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
-    AnnotationMirror returnAnnotation =
-        argumentType.hasPrimaryAnnotation(SHRINKABLE) ? SHRINKABLE : UNKNOWN_SHRINK;
-    methodType.getReturnType().replaceAnnotation(returnAnnotation);
+    if (argumentType.hasPrimaryAnnotation(SHRINKABLE)) {
+      methodType.getReturnType().replaceAnnotation(SHRINKABLE);
+    }
+    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
+    }
   }
 
   /**
