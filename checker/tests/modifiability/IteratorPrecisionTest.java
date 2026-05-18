@@ -69,7 +69,7 @@ public class IteratorPrecisionTest {
     CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
     @Unshrinkable Iterator<String> iterator = list.iterator();
 
-    // store CopyOnWriteArrayList as a list, the iterator is @UnknownShrink.
+    // store CopyOnWriteArrayList as a list, the iterator is @MaybeShrink.
     List<String> list2 = new CopyOnWriteArrayList<>();
     // TODO!!!!: below the Iterator is default to be unknown shrink because the logic goes:
     // if the current iterator return unknown (which is what List.iterator() returns),

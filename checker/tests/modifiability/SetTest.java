@@ -3,20 +3,19 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.MaybeGrow;
+import org.checkerframework.checker.modifiability.qual.MaybeReplace;
+import org.checkerframework.checker.modifiability.qual.MaybeShrink;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
-import org.checkerframework.checker.modifiability.qual.UnknownGrow;
-import org.checkerframework.checker.modifiability.qual.UnknownReplace;
-import org.checkerframework.checker.modifiability.qual.UnknownShrink;
 
 /**
  * Tests structural capability removal for Set, Queue, Map.Entry, and Iterator.
  *
- * <p>Convenience aliases on Set / Queue lose the Replace capability (set Replace
- * to @UnknownReplace). Convenience aliases on Map.Entry lose Grow and Shrink capabilities.
- * Convenience aliases on Iterator lose Grow and Replace capabilities. Explicit capability
- * annotations are preserved.
+ * <p>Convenience aliases on Set / Queue lose the Replace capability (set Replace to @MaybeReplace).
+ * Convenience aliases on Map.Entry lose Grow and Shrink capabilities. Convenience aliases on
+ * Iterator lose Grow and Replace capabilities. Explicit capability annotations are preserved.
  */
 class SetTest {
 
@@ -35,26 +34,26 @@ class SetTest {
 
     @Growable @Shrinkable Set<String> gs1 = modifiable; // OK
     // :: error: [assignment]
-    @Replaceable Set<String> r2 = modifiable; // unknownReplace cannot assign to replaceable.
+    @Replaceable Set<String> r2 = modifiable; // maybeReplace cannot assign to replaceable.
   }
 
   void testSetGrowShrinkPreserved(
-      @UnknownGrow @UnknownShrink @UnknownReplace Set<String> unknown,
+      @MaybeGrow @MaybeShrink @MaybeReplace Set<String> unknown,
       @Growable Set<String> growable,
       @Shrinkable Set<String> shrinkable,
       @Growable @Shrinkable Set<String> gs) {
 
     // Top in all hierarchies: accepts everything
-    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u1 = growable;
-    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u2 = shrinkable;
-    @UnknownGrow @UnknownShrink @UnknownReplace Set<String> u3 = gs;
+    @MaybeGrow @MaybeShrink @MaybeReplace Set<String> u1 = growable;
+    @MaybeGrow @MaybeShrink @MaybeReplace Set<String> u2 = shrinkable;
+    @MaybeGrow @MaybeShrink @MaybeReplace Set<String> u3 = gs;
 
-    // @Growable Set: Grow=G, Shrink=Unknown, Replace=Unknown
+    // @Growable Set: Grow=G, Shrink=Maybe, Replace=Maybe
     @Growable Set<String> g1 = gs; // OK: G+S <: G
     // :: error: [assignment]
     @Growable Set<String> g2 = shrinkable; // Error: S only, no G
 
-    // @Shrinkable Set: Grow=Unknown, Shrink=S, Replace=Unknown
+    // @Shrinkable Set: Grow=Maybe, Shrink=S, Replace=Maybe
     @Shrinkable Set<String> s1 = gs; // OK: G+S <: S
     // :: error: [assignment]
     @Shrinkable Set<String> s2 = growable; // Error: G only, no S
@@ -76,8 +75,8 @@ class SetTest {
   // ==========================================================
 
   void testEntryAssignment(
-      // No Replace bit: effective Replace = @UnknownReplace after G+S removal
-      Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> unknown,
+      // No Replace bit: effective Replace = @MaybeReplace after G+S removal
+      Map.@MaybeGrow @MaybeShrink @MaybeReplace Entry<String, String> unknown,
       Map.@Growable Entry<String, String> growable,
       Map.@Shrinkable Entry<String, String> shrinkable,
       Map.@Growable @Shrinkable Entry<String, String> gs,
@@ -88,11 +87,11 @@ class SetTest {
       Map.@Modifiable Entry<String, String> modifiable,
       Map.@Growable @Shrinkable @Replaceable Entry<String, String> explicit) {
 
-    // Group 1: entries without Replace bit become @UnknownGrow @UnknownShrink @UnknownReplace
-    // (G and S are removed → both become Unknown; R was already Unknown)
-    Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u1 = growable;
-    Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u2 = shrinkable;
-    Map.@UnknownGrow @UnknownShrink @UnknownReplace Entry<String, String> u3 = gs;
+    // Group 1: entries without Replace bit become @MaybeGrow @MaybeShrink @MaybeReplace
+    // (G and S are removed → both become Maybe; R was already Maybe)
+    Map.@MaybeGrow @MaybeShrink @MaybeReplace Entry<String, String> u1 = growable;
+    Map.@MaybeGrow @MaybeShrink @MaybeReplace Entry<String, String> u2 = shrinkable;
+    Map.@MaybeGrow @MaybeShrink @MaybeReplace Entry<String, String> u3 = gs;
     // Explicit Grow/Shrink annotations are preserved.
     // :: error: [assignment]
     Map.@Growable Entry<String, String> g1 = unknown;
@@ -100,9 +99,9 @@ class SetTest {
     Map.@Shrinkable Entry<String, String> s1 = unknown;
     Map.@Growable Entry<String, String> g2 = gs; // OK
 
-    Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r1 = growReplace;
-    Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r2 = shrinkReplace;
-    Map.@UnknownGrow @UnknownShrink @Replaceable Entry<String, String> r3 = modifiable;
+    Map.@MaybeGrow @MaybeShrink @Replaceable Entry<String, String> r1 = growReplace;
+    Map.@MaybeGrow @MaybeShrink @Replaceable Entry<String, String> r2 = shrinkReplace;
+    Map.@MaybeGrow @MaybeShrink @Replaceable Entry<String, String> r3 = modifiable;
     // Explicit Grow/Shrink annotations are preserved on Map.Entry.
     // :: error: [assignment]
     Map.@Growable @Replaceable Entry<String, String> gr1 = replaceable; // OK: same effective type
@@ -114,10 +113,10 @@ class SetTest {
     Map.@Replaceable Entry<String, String> gr2 = modifiable;
     Map.@Modifiable Entry<String, String> m2 = explicit;
 
-    // Cross-group: Replace !<: UnknownReplace (wrong direction) is NOT an error —
-    // but UnknownReplace !<: Replaceable IS an error:
+    // Cross-group: Replace !<: MaybeReplace (wrong direction) is NOT an error —
+    // but MaybeReplace !<: Replaceable IS an error:
     // :: error: [assignment]
-    Map.@Replaceable Entry<String, String> bad1 = growable; // Error: R=Unknown !<: Replaceable
+    Map.@Replaceable Entry<String, String> bad1 = growable; // Error: R=Maybe !<: Replaceable
   }
 
   // ==========================================================
@@ -126,22 +125,22 @@ class SetTest {
   // ==========================================================
 
   void testIteratorAssignment(
-      // No Shrink bit: effective after G+R removal → @UnknownGrow @UnknownShrink @UnknownReplace
-      @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> unknown,
+      // No Shrink bit: effective after G+R removal → @MaybeGrow @MaybeShrink @MaybeReplace
+      @MaybeGrow @MaybeShrink @MaybeReplace Iterator<String> unknown,
       @Growable Iterator<String> growable,
       @Replaceable Iterator<String> replaceable,
       @Growable @Replaceable Iterator<String> growReplace,
-      // Has Shrink bit: effective after G+R removal → @UnknownGrow @Shrinkable @UnknownReplace
+      // Has Shrink bit: effective after G+R removal → @MaybeGrow @Shrinkable @MaybeReplace
       @Shrinkable Iterator<String> shrinkable,
       @Growable @Shrinkable Iterator<String> growShrink,
       @Shrinkable @Replaceable Iterator<String> shrinkReplace,
       @Modifiable Iterator<String> modifiable,
       @Growable @Shrinkable @Replaceable Iterator<String> explicit) {
 
-    // Group 1: No Shrink bit → effective @UnknownGrow @UnknownShrink @UnknownReplace
-    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u1 = growable;
-    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u2 = replaceable;
-    @UnknownGrow @UnknownShrink @UnknownReplace Iterator<String> u3 = growReplace;
+    // Group 1: No Shrink bit → effective @MaybeGrow @MaybeShrink @MaybeReplace
+    @MaybeGrow @MaybeShrink @MaybeReplace Iterator<String> u1 = growable;
+    @MaybeGrow @MaybeShrink @MaybeReplace Iterator<String> u2 = replaceable;
+    @MaybeGrow @MaybeShrink @MaybeReplace Iterator<String> u3 = growReplace;
     // Explicit Grow/Replace annotations are preserved.
     // :: error: [assignment]
     @Growable Iterator<String> g1 = unknown;
@@ -149,11 +148,11 @@ class SetTest {
     // :: error: [assignment]
     @Growable @Replaceable Iterator<String> gr1 = replaceable;
 
-    // Group 2: Has Shrink bit → effective @UnknownGrow @Shrinkable @UnknownReplace
-    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s1 = shrinkable;
-    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s2 = growShrink;
-    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s3 = shrinkReplace;
-    @UnknownGrow @Shrinkable @UnknownReplace Iterator<String> s4 = modifiable;
+    // Group 2: Has Shrink bit → effective @MaybeGrow @Shrinkable @MaybeReplace
+    @MaybeGrow @Shrinkable @MaybeReplace Iterator<String> s1 = shrinkable;
+    @MaybeGrow @Shrinkable @MaybeReplace Iterator<String> s2 = growShrink;
+    @MaybeGrow @Shrinkable @MaybeReplace Iterator<String> s3 = shrinkReplace;
+    @MaybeGrow @Shrinkable @MaybeReplace Iterator<String> s4 = modifiable;
     // Cross-assignments within group 2:
     @Shrinkable Iterator<String> sh1 = modifiable;
     // :: error: [assignment]
@@ -162,6 +161,6 @@ class SetTest {
     @Shrinkable @Replaceable Iterator<String> sr1 = modifiable;
     @Modifiable Iterator<String> m1 = explicit;
     // :: error: [assignment]
-    @Shrinkable Iterator<String> bad1 = growable; // Error: Shrink=Unknown !<: Shrinkable
+    @Shrinkable Iterator<String> bad1 = growable; // Error: Shrink=Maybe !<: Shrinkable
   }
 }

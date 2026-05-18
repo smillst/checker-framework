@@ -9,12 +9,11 @@ import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The top qualifier in the Replace hierarchy. Represents unknown replace capability. The checker
- * cannot determine whether the collection supports replace operations such as {@code set} or {@code
- * replaceAll}.
+ * For the annotated collection, The return type of {@code iterator()} is {@code @Unshrinkable}.
  *
- * <p>This is the default qualifier for unannotated types in the Replace hierarchy.
+ * <p>This is the default qualifier for unannotated types.
  *
+ * @see IteratorPolyMod
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
 @Documented
@@ -22,4 +21,4 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
 @DefaultQualifierInHierarchy
-public @interface UnknownReplace {}
+public @interface MaybeIteratorPolyMod {}

@@ -44,7 +44,7 @@ public class SetRefinementTest {
     this.items.addAll(other);
   }
 
-  // Negative field case: in a regular method, items has its declared type @UnknownModifiability.
+  // Negative field case: in a regular method, items has its declared type @MaybeModifiable.
   public void updateItemsLikeConstructor(List<String> other, int dummy) {
     // :: error: [method.invocation]
     this.items.set(0, other.get(0));
@@ -97,7 +97,7 @@ public class SetRefinementTest {
     arr[0] = new ArrayList<>(); // arr[0] is @Modifiable
     arr[0].add("x"); // side effect without @DoesNotUnrefineReceiver; refinement of arr[0] cleared
     // :: error: [method.invocation]
-    arr[0].addAll(other); // ERROR: arr[0] is @UnknownModifiability (declared type)
+    arr[0].addAll(other); // ERROR: arr[0] is @MaybeModifiable (declared type)
   }
 
   // ==========================================================

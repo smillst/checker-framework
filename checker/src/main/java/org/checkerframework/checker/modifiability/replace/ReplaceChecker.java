@@ -15,7 +15,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  *
  * <p>The checker enforces the Modifiability type system, where {@code @Replaceable} collections can
  * be safely mutated, {@code @Unreplaceable} collections cannot be replaced, and
- * {@code @UnknownReplace} collections have unknown replace behavior.
+ * {@code @MaybeReplace} collections have unknown replace behavior.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

@@ -11,9 +11,9 @@ import java.lang.annotation.Target;
  * mutating operation (growing, shrinking, or replacing) may throw {@link
  * UnsupportedOperationException}.
  *
- * <p>As an exception, {@code @Unmodifiable} means {@code @Unknown*} if the type does not support a
+ * <p>As an exception, {@code @Unmodifiable} means {@code @Maybe*} if the type does not support a
  * given category of operation; for example, {@code @Unmodifiable Iterator} means
- * {@code @UnknownGrow @Unshrinkable @UnknownReplace Iterator}.
+ * {@code @MaybeGrow @Unshrinkable @MaybeReplace Iterator}.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

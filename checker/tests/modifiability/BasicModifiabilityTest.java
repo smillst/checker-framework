@@ -2,8 +2,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 // this checkes the correctness of annotation in List.java and ONLY the initialization of ArrayList
@@ -61,7 +61,7 @@ public class BasicModifiabilityTest {
   void testToArrayModifiability(
       @Modifiable List<String> modList,
       @Unmodifiable List<String> unmodList,
-      @UnknownModifiability List<String> anyList) {
+      @MaybeModifiable List<String> anyList) {
 
     modList.toArray();
     unmodList.toArray();
@@ -75,7 +75,7 @@ public class BasicModifiabilityTest {
   void testIteratorPolymorphic(
       @Modifiable List<String> modList, @Unmodifiable List<String> unmodList) {
 
-    @UnknownModifiability Iterator<String> itMod = modList.iterator();
+    @MaybeModifiable Iterator<String> itMod = modList.iterator();
 
     // And the iterator from an unmodifiable list is unmodifiable:
     @Unmodifiable Iterator<String> itUnmod = unmodList.iterator();

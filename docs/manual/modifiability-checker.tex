@@ -85,7 +85,7 @@ a collection's iterator.
 \begin{verbatim}
   Grow hierarchy           Shrink hierarchy              Replace hierarchy             Iterator hierarchy
 
-    @UnknownGrow             @UnknownShrink               @UnknownReplace          @UnknownIteratorPolyMod
+    @MaybeGrow             @MaybeShrink               @MaybeReplace          @MaybeIteratorPolyMod
       /      \                 /       \                    /       \                          |
  @Growable @Ungrowable   @Shrinkable @Unshrinkable   @Replaceable @Unreplaceable               |
       \      /                 \       /                    \       /                          |
@@ -101,10 +101,10 @@ a collection's iterator.
 Figure~\ref{fig-modifiability-lattice} shows the hierarchies.
 An assignment \code{T x = y} is valid only if the compile-time type of \code{y} is a
 subtype of (or equal to) \code{T} in every hierarchy simultaneously.  For
-example, \code{@Growable @UnknownShrink @UnknownReplace List} is a
-subtype of \code{@UnknownGrow @UnknownShrink @UnknownReplace List}
-(because \<@Growable> $\le$ \<@UnknownGrow>), but it is \emph{not} a
-subtype of \code{@Ungrowable @UnknownShrink @UnknownReplace List}
+example, \code{@Growable @MaybeShrink @MaybeReplace List} is a
+subtype of \code{@MaybeGrow @MaybeShrink @MaybeReplace List}
+(because \<@Growable> $\le$ \<@MaybeGrow>), but it is \emph{not} a
+subtype of \code{@Ungrowable @MaybeShrink @MaybeReplace List}
 (because \<@Growable> and \<@Ungrowable> are incomparable siblings in the
 Grow hierarchy).
 
@@ -129,8 +129,8 @@ collection is definitely unmodifiable: calling any mutating operation
 always throws \UnsupportedOperationException.  The checker issues a warning
 at every invocation of a grow, shrink, or replace operation.
 
-\item[\refqualclass{checker/modifiability/qual}{UnknownModifiability}]
-Alias for \code{@UnknownGrow @UnknownShrink @UnknownReplace}.
+\item[\refqualclass{checker/modifiability/qual}{MaybeModifiable}]
+Alias for \code{@MaybeGrow @MaybeShrink @MaybeReplace}.
 The checker cannot determine the modifiability of the collection.
 The checker conservatively issues a warning at every invocation of a grow,
 shrink, or replace operation.
@@ -147,14 +147,14 @@ Examples using alias annotations:
 \begin{Verbatim}
   @Modifiable List<String> mod = new ArrayList<>();  // all three capabilities
   @Unmodifiable List<String> unmod = List.of("a");   // no capabilities
-  @UnknownModifiability List<String> unknown = ...;  // capabilities are unknown at compile time
+  @MaybeModifiable List<String> unknown = ...;  // capabilities are unknown at compile time
 \end{Verbatim}
 
 \subsectionAndLabel{Hierarchy qualifiers}{modifiability-hierarchy-qualifiers}
 
 Qualifiers in the Grow hierarchy:
 \begin{description}
-\item[\refqualclass{checker/modifiability/qual}{UnknownGrow}]
+\item[\refqualclass{checker/modifiability/qual}{MaybeGrow}]
 The top qualifier in the Grow hierarchy.
 The checker cannot determine whether this collection supports grow
 operations.  This is the default qualifier for unannotated types in the
@@ -174,7 +174,7 @@ The bottom qualifier in the Grow hierarchy.  Programmers should rarely write it.
 
 Qualifiers in the Shrink hierarchy:
 \begin{description}
-\item[\refqualclass{checker/modifiability/qual}{UnknownShrink}]
+\item[\refqualclass{checker/modifiability/qual}{MaybeShrink}]
 The top qualifier in the Shrink hierarchy.
 The checker cannot determine whether this collection supports shrink
 operations.  This is the default qualifier for unannotated types in the
@@ -195,7 +195,7 @@ The bottom qualifier in the Shrink hierarchy.  Programmers should rarely write i
 
 Qualifiers in the Replace hierarchy:
 \begin{description}
-\item[\refqualclass{checker/modifiability/qual}{UnknownReplace}]
+\item[\refqualclass{checker/modifiability/qual}{MaybeReplace}]
 The top qualifier in the Replace hierarchy.
 The checker cannot determine whether this collection supports replace
 operations.  This is the default qualifier for unannotated types in the
@@ -216,7 +216,7 @@ The bottom qualifier in the Replace hierarchy.  Programmers should rarely write 
 
 Qualifiers in the Iterator hierarchy:
 \begin{description}
-\item[\refqualclass{checker/modifiability/qual}{UnknownIteratorPolyMod}]
+\item[\refqualclass{checker/modifiability/qual}{MaybeIteratorPolyMod}]
 The top qualifier.
 The checker cannot determine whether this collection's \code{iterator()} is
 \<@PolyShrink>.
@@ -234,16 +234,16 @@ collection \<c> is \<@Shrinkable>, then \<c.iterator()> is also
 To express multiple capabilities, write one annotation per hierarchy:
 
 \begin{Verbatim}
-  @Growable @Shrinkable List<String>   // can grow and shrink, replace unknown
-  @Growable @Replaceable List<String>  // can grow and replace, shrink unknown
+  @Growable @Shrinkable List<String>   // can grow and shrink, maybe replace
+  @Growable @Replaceable List<String>  // can grow and replace, maybe shrink
   @Growable @Shrinkable @Replaceable List<String>  // all three capabilities
 \end{Verbatim}
 
 Because the three hierarchies are independent, subtyping checks each
 hierarchy individually.  A \code{@Growable @Shrinkable List} is a
-subtype of \code{@Growable List} (Shrink defaults to \<@UnknownGrow> on the
+subtype of \code{@Growable List} (Shrink defaults to \<@MaybeShrink> on the
 right, Replace
-defaults to \<@UnknownReplace> on both sides), but it is \emph{not} a
+defaults to \<@MaybeReplace> on both sides), but it is \emph{not} a
 subtype of \code{@Growable @Shrinkable @Replaceable List} (due to the Replace
 qualifiers).
 
@@ -290,13 +290,13 @@ polymorphic and concrete qualifiers across hierarchies.  For example:
 
 If the map is \code{@Growable @Shrinkable @Replaceable}, then
 \code{keySet} returns
-\code{@Ungrowable @Shrinkable @UnknownReplace Set}.
+\code{@Ungrowable @Shrinkable @MaybeReplace Set}.
 
-If the map is \code{@UnknownGrow @UnknownShrink @UnknownReplace}, then
-\code{keySet} returns \code{@Ungrowable @UnknownShrink @UnknownReplace Set}.
+If the map is \code{@MaybeGrow @MaybeShrink @MaybeReplace}, then
+\code{keySet} returns \code{@Ungrowable @MaybeShrink @MaybeReplace Set}.
 
 If the map is \code{@Ungrowable @Unshrinkable @Unreplaceable}, then
-\code{keySet} returns \code{@Ungrowable @Unshrinkable @UnknownReplace Set}.
+\code{keySet} returns \code{@Ungrowable @Unshrinkable @MaybeReplace Set}.
 
 
 \subsectionAndLabel{Modifiability method annotations}{modifiability-method-annotations}
@@ -326,7 +326,7 @@ For example, \sunjavadoc{java.base/java/util/Queue.html}{\code{Queue}} has
 When a programmer writes \<@Modifiable> or \<@Unmodifiable> on a type that
 has no method for a given mutation, the Modifiability Checker uses the top
 qualifier.  For example, both \<@Modifiable Queue> and \<@Unmodifiable
-Queue> have \<@UnknownReplace> as their replaceability qualifier.  (In the
+Queue> have \<@MaybeReplace> as their replaceability qualifier.  (In the
 above assignment, \<q> was flow-sensitively refined to have type
 \<@Replaceable>.)  Other examples are that \<Set> has no replace methods
 and \<Iterator> has no grow or replace methods.
@@ -359,7 +359,7 @@ iterator.  For such subclasses of \<Collection>, the signature of
 
 A collection uses the second signature if the collection is
 \<@IteratorPolyMod>.  The collection uses the first signature if the
-collection is \<@UnknownIteratorPolyMod>.
+collection is \<@MaybeIteratorPolyMod>.
 
 Here are examples of its use:
 
@@ -418,7 +418,7 @@ class Demo {
     map.put("key", "value");  // OK
 
     // Map.remove requires Shrink capability
-    map.remove("key");        // Error: @UnknownShrink (default) !<: @Shrinkable
+    map.remove("key");        // Error: @MaybeShrink (default) !<: @Shrinkable
   }
 
   // @PolyModifiable preserves all three capabilities
@@ -430,7 +430,7 @@ class Demo {
     @Modifiable List<String> m = wrap(mod);            // OK
     @Growable @Shrinkable List<String> gs2 = wrap(gs); // OK
     // :: error: [assignment]
-    @Modifiable List<String> bad = wrap(gs);  // Error: gs has @UnknownReplace
+    @Modifiable List<String> bad = wrap(gs);  // Error: gs has @MaybeReplace
   }
 }
 \end{Verbatim}
@@ -438,10 +438,10 @@ class Demo {
 % LocalWords:  Modifiability modifiability copyOf emptyList emptySet gsr
 % LocalWords:  emptyMap unmodifiableList unmodifiableSet unmodifiableMap
 % LocalWords:  toArray addAll removeAll retainAll replaceAll setValue
-% LocalWords:  UnknownModifiability Growable UnknownGrow UnknownShrink
-% LocalWords:  UnknownReplace growable ListIterator PolyModifiable addFirst
+% LocalWords:  MaybeModifiable Growable MaybeGrow MaybeShrink
+% LocalWords:  MaybeReplace growable ListIterator PolyModifiable addFirst
 % LocalWords:  synchronizedList PolyShrink PolyGrow PolyReplace ThrowsUOE
 % LocalWords:  addLast unreplaceable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrow BottomShrink BottomReplace
-% LocalWords:  UnknownIteratorPolyMod IteratorPolyMod
+% LocalWords:  MaybeIteratorPolyMod IteratorPolyMod

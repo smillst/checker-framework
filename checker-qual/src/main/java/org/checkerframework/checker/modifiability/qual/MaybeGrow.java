@@ -21,4 +21,4 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
 @SubtypeOf({})
 @DefaultQualifierInHierarchy
-public @interface UnknownGrow {}
+public @interface MaybeGrow {}

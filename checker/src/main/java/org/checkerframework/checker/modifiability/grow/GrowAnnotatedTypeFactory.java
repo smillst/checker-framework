@@ -15,13 +15,13 @@ import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomGrow;
 import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeGrow;
+import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrow;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
-import org.checkerframework.checker.modifiability.qual.UnknownGrow;
-import org.checkerframework.checker.modifiability.qual.UnknownIteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -47,8 +47,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   // ── Hierarchy qualifiers ──────────
 
-  /** The {@code @}{@link UnknownGrow} qualifier (top of Grow hierarchy). */
-  private final AnnotationMirror UNKNOWN_GROW;
+  /** The {@code @}{@link MaybeGrow} qualifier (top of Grow hierarchy). */
+  private final AnnotationMirror MAYBE_GROW;
 
   /** The {@code @}{@link Growable} qualifier. */
   private final AnnotationMirror GROWABLE;
@@ -79,7 +79,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.listIteratorErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
-    this.UNKNOWN_GROW = AnnotationBuilder.fromClass(getElementUtils(), UnknownGrow.class);
+    this.MAYBE_GROW = AnnotationBuilder.fromClass(getElementUtils(), MaybeGrow.class);
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
     this.POLY_GROW = AnnotationBuilder.fromClass(getElementUtils(), PolyGrow.class);
@@ -93,12 +93,12 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
     return new LinkedHashSet<>(
         Arrays.asList(
-            UnknownGrow.class,
+            MaybeGrow.class,
             Growable.class,
             Ungrowable.class,
             BottomGrow.class,
             PolyGrow.class,
-            UnknownIteratorPolyMod.class,
+            MaybeIteratorPolyMod.class,
             IteratorPolyMod.class));
   }
 
@@ -108,25 +108,25 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    *
    * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
    * that cannot grow structurally, such as {@code Map.Entry} and non-{@code ListIterator} {@code
-   * Iterator}, their grow component canonicalizes to {@code @UnknownGrow}. Explicit grow qualifiers
+   * Iterator}, their grow component canonicalizes to {@code @MaybeGrow}. Explicit grow qualifiers
    * are left to normal canonicalization so users can still write and preserve an explicit
    * capability tuple such as {@code @Growable @Shrinkable @Replaceable Iterator}.
    *
    * <p>{@code @PolyModifiable} is different: it should usually become {@code @PolyGrow}, but for
    * {@code Map.Entry} only the replace bit is meaningful to carry from the map receiver. Its grow
-   * bit is therefore {@code @UnknownGrow}.
+   * bit is therefore {@code @MaybeGrow}.
    */
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
     if (areSameByClass(annotation, Modifiable.class)) {
-      return tm != null && typeCannotGrow(tm) ? UNKNOWN_GROW : GROWABLE;
+      return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : GROWABLE;
     } else if (areSameByClass(annotation, Unmodifiable.class)) {
-      return tm != null && typeCannotGrow(tm) ? UNKNOWN_GROW : UNGROWABLE;
-    } else if (areSameByClass(annotation, UnknownModifiability.class)) {
-      return UNKNOWN_GROW;
+      return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : UNGROWABLE;
+    } else if (areSameByClass(annotation, MaybeModifiable.class)) {
+      return MAYBE_GROW;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
-      return tm != null && isMapEntry(tm) ? UNKNOWN_GROW : POLY_GROW;
+      return tm != null && isMapEntry(tm) ? MAYBE_GROW : POLY_GROW;
     }
     return super.canonicalAnnotation(annotation);
   }
@@ -161,9 +161,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    *
    * would be unsound, because an {@code @Ungrowable} input could receive the fresh ArrayList, whose
    * static type should be {@code @Growable}. It would also be too imprecise to always use
-   * {@code @UnknownGrow}, because passing a {@code @Growable} collection guarantees that both
+   * {@code @MaybeGrow}, because passing a {@code @Growable} collection guarantees that both
    * possible results are growable. Therefore, model the method here as preserving {@code @Growable}
-   * inputs and otherwise returning {@code @UnknownGrow}.
+   * inputs and otherwise returning {@code @MaybeGrow}.
    *
    * @param tree the invocation of {@code withoutDuplicates}
    * @param methodType the annotated executable type of the invoked method
@@ -212,7 +212,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (hasIteratorPolyMod(receiverType)) {
       returnType.replaceAnnotation(GROWABLE);
     } else {
-      returnType.replaceAnnotation(UNKNOWN_GROW);
+      returnType.replaceAnnotation(MAYBE_GROW);
     }
   }
 

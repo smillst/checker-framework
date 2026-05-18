@@ -2,14 +2,14 @@ import org.checkerframework.checker.modifiability.qual.BottomGrow;
 import org.checkerframework.checker.modifiability.qual.BottomReplace;
 import org.checkerframework.checker.modifiability.qual.BottomShrink;
 import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.MaybeGrow;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
+import org.checkerframework.checker.modifiability.qual.MaybeReplace;
+import org.checkerframework.checker.modifiability.qual.MaybeShrink;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
-import org.checkerframework.checker.modifiability.qual.UnknownGrow;
-import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
-import org.checkerframework.checker.modifiability.qual.UnknownReplace;
-import org.checkerframework.checker.modifiability.qual.UnknownShrink;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.modifiability.qual.Unshrinkable;
@@ -17,7 +17,7 @@ import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 /**
  * Tests the three independent 4-element lattices of the Modifiability Checker.
  *
- * <p>Each hierarchy is: Unknown* (top/default), two incomparable siblings (*able and Un*able), and
+ * <p>Each hierarchy is: Maybe* (top/default), two incomparable siblings (*able and Un*able), and
  * Bottom* (bottom).
  *
  * <p>An annotated type carries one qualifier per hierarchy. Assignment is valid if and only if the
@@ -26,10 +26,10 @@ import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 class HierarchyTest {
 
   void testGrow(
-      @Growable Object g, @Ungrowable Object ug, @UnknownGrow Object u, @BottomGrow Object b) {
-    @UnknownGrow Object u1 = g;
-    @UnknownGrow Object u2 = ug;
-    @UnknownGrow Object u3 = b;
+      @Growable Object g, @Ungrowable Object ug, @MaybeGrow Object u, @BottomGrow Object b) {
+    @MaybeGrow Object u1 = g;
+    @MaybeGrow Object u2 = ug;
+    @MaybeGrow Object u3 = b;
 
     @Growable Object g1 = b;
     @Ungrowable Object ug1 = b;
@@ -53,11 +53,11 @@ class HierarchyTest {
   void testShrink(
       @Shrinkable Object s,
       @Unshrinkable Object us,
-      @UnknownShrink Object u,
+      @MaybeShrink Object u,
       @BottomShrink Object b) {
-    @UnknownShrink Object u1 = s;
-    @UnknownShrink Object u2 = us;
-    @UnknownShrink Object u3 = b;
+    @MaybeShrink Object u1 = s;
+    @MaybeShrink Object u2 = us;
+    @MaybeShrink Object u3 = b;
 
     @Shrinkable Object s1 = b;
     @Unshrinkable Object us1 = b;
@@ -75,11 +75,11 @@ class HierarchyTest {
   void testReplace(
       @Replaceable Object r,
       @Unreplaceable Object ur,
-      @UnknownReplace Object u,
+      @MaybeReplace Object u,
       @BottomReplace Object b) {
-    @UnknownReplace Object u1 = r;
-    @UnknownReplace Object u2 = ur;
-    @UnknownReplace Object u3 = b;
+    @MaybeReplace Object u1 = r;
+    @MaybeReplace Object u2 = ur;
+    @MaybeReplace Object u3 = b;
 
     @Replaceable Object r1 = b;
     @Unreplaceable Object ur1 = b;
@@ -103,7 +103,7 @@ class HierarchyTest {
       @Shrinkable Object s,
       @Replaceable Object r,
       @Ungrowable @Unshrinkable @Unreplaceable Object none,
-      @UnknownGrow @UnknownShrink @UnknownReplace Object unknown) {
+      @MaybeGrow @MaybeShrink @MaybeReplace Object unknown) {
 
     @Growable Object gv1 = gsr;
     @Growable Object gv2 = gs;
@@ -147,19 +147,19 @@ class HierarchyTest {
     // :: error: [assignment]
     @Replaceable Object rv8 = unknown;
 
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv1 = gsr;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv2 = gs;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv3 = gr;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv4 = sr;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv5 = g;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv6 = s;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv7 = r;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv8 = none;
-    @UnknownGrow @UnknownShrink @UnknownReplace Object tv9 = unknown;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv1 = gsr;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv2 = gs;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv3 = gr;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv4 = sr;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv5 = g;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv6 = s;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv7 = r;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv8 = none;
+    @MaybeGrow @MaybeShrink @MaybeReplace Object tv9 = unknown;
   }
 
   void testAliases(
-      @Modifiable Object mod, @Unmodifiable Object unmod, @UnknownModifiability Object unknown) {
+      @Modifiable Object mod, @Unmodifiable Object unmod, @MaybeModifiable Object unknown) {
 
     @Growable Object g1 = mod;
     @Shrinkable Object s1 = mod;
@@ -169,12 +169,12 @@ class HierarchyTest {
     @Unshrinkable Object us1 = unmod;
     @Unreplaceable Object ur1 = unmod;
 
-    @UnknownGrow Object ug2 = unknown;
-    @UnknownShrink Object us2 = unknown;
-    @UnknownReplace Object ur2 = unknown;
+    @MaybeGrow Object ug2 = unknown;
+    @MaybeShrink Object us2 = unknown;
+    @MaybeReplace Object ur2 = unknown;
 
-    @UnknownModifiability Object unknown1 = mod;
-    @UnknownModifiability Object unknown2 = unmod;
+    @MaybeModifiable Object unknown1 = mod;
+    @MaybeModifiable Object unknown2 = unmod;
 
     // :: error: [assignment]
     @Unmodifiable Object unmod1 = mod;

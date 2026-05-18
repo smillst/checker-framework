@@ -18,5 +18,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(UnknownGrow.class)
+@SubtypeOf(MaybeGrow.class)
 public @interface Growable {}

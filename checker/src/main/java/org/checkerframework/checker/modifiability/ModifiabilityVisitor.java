@@ -63,7 +63,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
 
   // Suppresses the framework's "constructor result must be TOP" check.
   // Collection constructors (e.g., new ArrayList()) legitimately produce @Modifiable, which is a
-  // subtype of the top type @UnknownModifiability. This suppression is sound: constructors are
+  // subtype of the top type @MaybeModifiable. This suppression is sound: constructors are
   // typed by their stubs or by defaults inferred from the class's annotations, so they cannot
   // silently widen an unmodifiable collection to @Modifiable.
   @Override

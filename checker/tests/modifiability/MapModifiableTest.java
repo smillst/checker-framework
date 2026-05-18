@@ -3,8 +3,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.UnknownModifiability;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 // Tests for Map mutating and read-only methods with modifiability qualifiers.
@@ -95,7 +95,7 @@ public class MapModifiableTest {
   }
 
   void testAnnotatedLocalsFromParams(
-      @UnknownModifiability Map<String, Integer> any,
+      @MaybeModifiable Map<String, Integer> any,
       @Modifiable Map<String, Integer> modSrc,
       @Unmodifiable Map<String, Integer> unmodSrc) {
 

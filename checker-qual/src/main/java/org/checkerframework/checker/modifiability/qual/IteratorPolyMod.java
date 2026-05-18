@@ -11,7 +11,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
  * If a collection's type is {@code @IteratorPolyMod}, then its {@code iterator()} method preserves
  * the ability to call {@code Iterator.remove()}. That is, if collection {@code c} has type
  * {@code @Shrinkable}, then {@code c.iterator()} also has type {@code @Shrinkable}. For any
- * collection whose type is {@code @UnknownIteratorPolyMod}, its iterator is always
+ * collection whose type is {@code @MaybeIteratorPolyMod}, its iterator is always
  * {@code @Unshrinkable}.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
@@ -19,5 +19,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(UnknownIteratorPolyMod.class)
+@SubtypeOf(MaybeIteratorPolyMod.class)
 public @interface IteratorPolyMod {}
