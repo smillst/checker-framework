@@ -135,6 +135,10 @@ The checker cannot determine the modifiability of the collection.
 The checker conservatively issues a warning at every invocation of a grow,
 shrink, or replace operation.
 
+\item[\refqualclass{checker/modifiability/qual}{UnmodParam}]
+A syntactic sugar for \refqualclass{checker/modifiability/qual}{MaybeModifiable}.
+Could only be written on formal parameters when the method is not designed to change the parameter.
+
 \item[\refqualclass{checker/modifiability/qual}{PolyModifiable}]
 Alias for \code{@PolyGrow @PolyShrink @PolyReplace}
 (see Section~\ref{modifiability-polymorphic}).
@@ -148,6 +152,7 @@ Examples using alias annotations:
   @Modifiable List<String> mod = new ArrayList<>();  // all three capabilities
   @Unmodifiable List<String> unmod = List.of("a");   // no capabilities
   @MaybeModifiable List<String> unknown = ...;  // capabilities are unknown at compile time
+  void foo(@UnmodParam List<String> list) { ... }  // foo does not modify list
 \end{Verbatim}
 
 \subsectionAndLabel{Hierarchy qualifiers}{modifiability-hierarchy-qualifiers}
@@ -438,7 +443,7 @@ class Demo {
 % LocalWords:  Modifiability modifiability copyOf emptyList emptySet gsr
 % LocalWords:  emptyMap unmodifiableList unmodifiableSet unmodifiableMap
 % LocalWords:  toArray addAll removeAll retainAll replaceAll setValue
-% LocalWords:  MaybeModifiable Growable MaybeGrow MaybeShrink
+% LocalWords:  MaybeModifiable UnmodParam Growable MaybeGrow MaybeShrink
 % LocalWords:  MaybeReplace growable ListIterator PolyModifiable addFirst
 % LocalWords:  synchronizedList PolyShrink PolyGrow PolyReplace ThrowsUOE
 % LocalWords:  addLast unreplaceable Growability shrinkability replacability

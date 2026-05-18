@@ -22,6 +22,7 @@ import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrow;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
+import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -123,7 +124,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : GROWABLE;
     } else if (areSameByClass(annotation, Unmodifiable.class)) {
       return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : UNGROWABLE;
-    } else if (areSameByClass(annotation, MaybeModifiable.class)) {
+    } else if (areSameByClass(annotation, MaybeModifiable.class)
+        || areSameByClass(annotation, UnmodParam.class)) {
       return MAYBE_GROW;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
       return tm != null && isMapEntry(tm) ? MAYBE_GROW : POLY_GROW;

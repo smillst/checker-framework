@@ -21,6 +21,7 @@ import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyShrink;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -119,7 +120,8 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return tm != null && typeCannotShrink(tm) ? MAYBE_SHRINK : SHRINKABLE;
     } else if (areSameByClass(annotation, Unmodifiable.class)) {
       return tm != null && typeCannotShrink(tm) ? MAYBE_SHRINK : UNSHRINKABLE;
-    } else if (areSameByClass(annotation, MaybeModifiable.class)) {
+    } else if (areSameByClass(annotation, MaybeModifiable.class)
+        || areSameByClass(annotation, UnmodParam.class)) {
       return MAYBE_SHRINK;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
       return tm != null && isMapEntry(tm) ? MAYBE_SHRINK : POLY_SHRINK;
