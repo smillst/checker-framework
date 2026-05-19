@@ -85,13 +85,15 @@ public class SetRefinementTest {
     arr[0].addAll(other);
   }
 
-  // Negative: add() lacks @DoesNotUnrefineReceiver, so the @Modifiable refinement is lost.
+  // Positive: add() also preserves the @Modifiable refinement of the array element.
+  // Collection.add() is annotated @DoesNotUnrefineReceiver("modifiability"), and that declaration
+  // annotation is inherited by overriding methods such as List.add().
   @SuppressWarnings("unchecked")
   public void arrayAccessReceiverSideEffect(List<String> other) {
     List<String>[] arr = new ArrayList[1];
     arr[0] = new ArrayList<>(); // arr[0] is @Modifiable
-    arr[0].add("x"); // side effect without @DoesNotUnrefineReceiver; refinement of arr[0] cleared
-    arr[0].addAll(other); // ERROR: arr[0] is @MaybeModifiable (declared type)
+    arr[0].add("x"); // side effect with @DoesNotUnrefineReceiver; refinement of arr[0] preserved
+    arr[0].addAll(other);
   }
 
   // ==========================================================
