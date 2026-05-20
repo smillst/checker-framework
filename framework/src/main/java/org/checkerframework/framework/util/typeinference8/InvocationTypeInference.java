@@ -670,6 +670,8 @@ public class InvocationTypeInference {
   private BoundSet getB4(BoundSet b3, ConstraintSet c) {
     // C might contain new variables that have not yet been added to the b3 bound set.
     Set<Variable> newVariables = c.getAllInferenceVariables();
+    c.applyInstantiations();
+
     while (!c.isEmpty()) {
 
       ConstraintSet subset = ConstraintSet.getClosedSubset(c, b3.getDependencies(newVariables));
