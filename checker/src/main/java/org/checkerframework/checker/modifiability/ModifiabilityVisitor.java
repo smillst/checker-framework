@@ -1,8 +1,15 @@
 package org.checkerframework.checker.modifiability;
 
+import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.modifiability.qual.ThrowsUOE;
+import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -29,6 +36,16 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    */
   public ModifiabilityVisitor(BaseTypeChecker checker) {
     super(checker);
+  }
+
+  @Override
+  public Void visitAnnotation(AnnotationTree tree, Void p) {
+    if (shouldCheckUnmodParamLocation() && isUnmodParamAnnotation(tree)) {
+      if (!isWithinAllowedUnmodParamLocation()) {
+        checker.reportError(tree, "unmodparam.location");
+      }
+    }
+    return super.visitAnnotation(tree, p);
   }
 
   @Override
@@ -59,6 +76,69 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    */
   protected boolean shouldCheckThrowsUOE() {
     return true;
+  }
+
+  /**
+   * Returns true if this checker should report {@code @UnmodParam} location errors.
+   *
+   * <p>The default is {@code true}. Shrink and Replace override this to avoid tripling diagnostics
+   * when running under the aggregate {@link ModifiabilityChecker}.
+   *
+   * @return true if this visitor should report {@code @UnmodParam} location errors
+   */
+  protected boolean shouldCheckUnmodParamLocation() {
+    return true;
+  }
+
+  /**
+   * Returns true if {@code tree} is an {@link UnmodParam} annotation.
+   *
+   * @param tree an annotation tree
+   * @return true if {@code tree} is an {@code @UnmodParam} annotation
+   */
+  private boolean isUnmodParamAnnotation(AnnotationTree tree) {
+    String annotationName = tree.getAnnotationType().toString();
+    // Quick check to avoid expensive annotation resolution for most annotations.
+    if (!annotationName.equals("UnmodParam") && !annotationName.endsWith(".UnmodParam")) {
+      return false;
+    }
+
+    AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(tree);
+    return annotation != null && atypeFactory.areSameByClass(annotation, UnmodParam.class);
+  }
+
+  /**
+   * Returns true if the current annotation path is inside a method/constructor parameter type or
+   * explicit receiver parameter type.
+   *
+   * @return true if {@code @UnmodParam} is allowed at the current location
+   */
+  private boolean isWithinAllowedUnmodParamLocation() {
+    // Find the declaration that contains the annotation, if any.
+    TreePath path = getCurrentPath();
+    TreePath variablePath = null;
+    while (path != null) {
+      if (path.getLeaf() instanceof VariableTree) {
+        variablePath = path;
+        break;
+      }
+      path = path.getParentPath();
+    }
+
+    if (variablePath == null || variablePath.getParentPath() == null) {
+      return false;
+    }
+
+    // Ordinary and receiver parameters are represented as VariableTrees under a MethodTree.
+    Tree parent = variablePath.getParentPath().getLeaf();
+    if (!(parent instanceof MethodTree methodTree)) {
+      return false;
+    }
+
+    // Allow nested annotations anywhere within an allowed parameter's type.
+    VariableTree variable = (VariableTree) variablePath.getLeaf();
+    return methodTree.getParameters().contains(variable)
+        || methodTree.getReceiverParameter() == variable;
   }
 
   // Suppresses the framework's "constructor result must be TOP" check.

@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
 /**
  * Convenience alias meaning {@code @MaybeGrow @MaybeShrink @MaybeReplace}. This is a syntactic
  * sugar for {@link MaybeModifiable}. It is intended to be used on parameters of methods that are
- * not designed to change the parameter. This annotation is only allowed to be written on formal
- * parameters.
+ * not designed to change the parameter. This annotation is only allowed to be written within method
+ * or constructor parameter types, or explicit receiver parameter types.
  *
  * <p>This annotation is not part of the type hierarchy; the Modifiability Checker expands it to
  * {@code @MaybeGrow @MaybeShrink @MaybeReplace} on each annotated type.

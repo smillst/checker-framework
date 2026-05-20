@@ -137,7 +137,10 @@ shrink, or replace operation.
 
 \item[\refqualclass{checker/modifiability/qual}{UnmodParam}]
 A syntactic sugar for \refqualclass{checker/modifiability/qual}{MaybeModifiable}.
-Could only be written on formal parameters when the method is not designed to change the parameter.
+It may only be written within a method or constructor parameter type, or within
+an explicit receiver parameter type, when the method is not designed to change
+the parameter.  It may appear nested within such a parameter type, such as in
+\code{List<@UnmodParam List<String>>}.
 
 \item[\refqualclass{checker/modifiability/qual}{PolyModifiable}]
 Alias for \code{@PolyGrow @PolyShrink @PolyReplace}
