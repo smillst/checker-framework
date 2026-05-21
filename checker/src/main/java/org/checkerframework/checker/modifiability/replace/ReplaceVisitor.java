@@ -26,4 +26,10 @@ public class ReplaceVisitor extends ModifiabilityVisitor {
     // When running under ModifiabilityChecker, GrowChecker handles @UnmodParam location reporting.
     return checker.getParentChecker() == null;
   }
+
+  @Override
+  protected boolean shouldCheckCustomModifiabilityAnnotation() {
+    // When running under ModifiabilityChecker, GrowChecker handles custom type warnings.
+    return checker.getParentChecker() == null;
+  }
 }

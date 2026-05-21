@@ -23,6 +23,7 @@ public class Issue1715 {
     }
   }
 
+  @SuppressWarnings("modifiability:annotation.unverified")
   public abstract static class ImmutableList<E> implements List<E> {
 
     public static <E> ImmutableList<E> of(E element) {

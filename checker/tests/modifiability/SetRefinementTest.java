@@ -103,6 +103,7 @@ public class SetRefinementTest {
   // effects, so the behavior is correct regardless of @DoesNotUnrefineReceiver.
   // ==========================================================
 
+  // :: warning: [modifiability.annotation.unverified]
   static class ThisListReceiver extends ArrayList<String> {
 
     public void update(@Modifiable ThisListReceiver this, List<String> other) {

@@ -1,6 +1,7 @@
 package org.checkerframework.checker.modifiability;
 
 import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
@@ -8,13 +9,17 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.qual.ThrowsUOE;
 import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * Base visitor for the Modifiability sub-checkers (Grow, Shrink, Replace).
@@ -29,6 +34,15 @@ import org.checkerframework.javacutil.TreeUtils;
  */
 public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
 
+  /** The erased {@code java.util.Collection} type. */
+  private final TypeMirror collectionErasure;
+
+  /** The erased {@code java.util.Map} type. */
+  private final TypeMirror mapErasure;
+
+  /** The erased {@code java.util.Iterator} type. */
+  private final TypeMirror iteratorErasure;
+
   /**
    * Create a ModifiabilityVisitor.
    *
@@ -36,6 +50,27 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    */
   public ModifiabilityVisitor(BaseTypeChecker checker) {
     super(checker);
+    this.collectionErasure =
+        atypeFactory.types.erasure(
+            atypeFactory.getElementUtils().getTypeElement("java.util.Collection").asType());
+    this.mapErasure =
+        atypeFactory.types.erasure(
+            atypeFactory.getElementUtils().getTypeElement("java.util.Map").asType());
+    this.iteratorErasure =
+        atypeFactory.types.erasure(
+            atypeFactory.getElementUtils().getTypeElement("java.util.Iterator").asType());
+  }
+
+  @Override
+  public void processClassTree(ClassTree classTree) {
+    super.processClassTree(classTree);
+    if (shouldCheckCustomModifiabilityAnnotation()) {
+      TypeElement typeElement = TreeUtils.elementFromDeclaration(classTree);
+      if (typeElement != null && isSourceDefinedModifiabilityType(typeElement)) {
+        checker.reportWarning(
+            classTree, "modifiability.annotation.unverified", typeElement.getQualifiedName());
+      }
+    }
   }
 
   @Override
@@ -87,6 +122,19 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    * @return true if this visitor should report {@code @UnmodParam} location errors
    */
   protected boolean shouldCheckUnmodParamLocation() {
+    return true;
+  }
+
+  /**
+   * Returns true if this checker should report warnings for source-defined Collection, Map, and
+   * Iterator subtypes whose modifiability annotations are trusted but not verified.
+   *
+   * <p>The default is {@code true}. Shrink and Replace override this to avoid tripling diagnostics
+   * when running under the aggregate {@link ModifiabilityChecker}.
+   *
+   * @return true if this visitor should report custom modifiability annotation warnings
+   */
+  protected boolean shouldCheckCustomModifiabilityAnnotation() {
     return true;
   }
 
@@ -150,4 +198,22 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
   @Override
   protected void checkConstructorResult(
       AnnotatedExecutableType constructorType, ExecutableElement constructorElement) {}
+
+  /**
+   * Returns true if {@code typeElement} is a source-defined subtype of {@link
+   * java.util.Collection}, {@link java.util.Map}, or {@link java.util.Iterator}.
+   *
+   * @param typeElement the type element to test
+   * @return true if this source-defined type relies on trusted custom modifiability annotations
+   */
+  private boolean isSourceDefinedModifiabilityType(TypeElement typeElement) {
+    if (!ElementUtils.isElementFromSourceCode(typeElement)) {
+      return false;
+    }
+
+    TypeMirror type = typeElement.asType();
+    return TypesUtils.isErasedSubtype(type, collectionErasure, atypeFactory.types)
+        || TypesUtils.isErasedSubtype(type, mapErasure, atypeFactory.types)
+        || TypesUtils.isErasedSubtype(type, iteratorErasure, atypeFactory.types);
+  }
 }

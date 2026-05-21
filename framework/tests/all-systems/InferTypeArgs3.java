@@ -12,6 +12,7 @@ public class InferTypeArgs3 {
     java.util.Arrays.asList(i, "");
   }
 
+  @SuppressWarnings("modifiability:annotation.unverified")
   void foo() {
     new HashSet<>(Arrays.asList(new Object()));
     new HashSet<Object>(Arrays.asList(new Object())) {};

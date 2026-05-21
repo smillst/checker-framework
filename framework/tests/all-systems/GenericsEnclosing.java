@@ -7,6 +7,7 @@ import org.checkerframework.checker.modifiability.qual.Modifiable;
  *
  * <p>Also see regex/GenericsEnclosing for a test case for the Regex Checker.
  */
+@SuppressWarnings("modifiability:annotation.unverified")
 public @Modifiable class GenericsEnclosing extends TreeMap<String, String> {
   class Inner {
     void foo() {

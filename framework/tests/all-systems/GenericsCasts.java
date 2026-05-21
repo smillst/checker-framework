@@ -27,6 +27,7 @@ public class GenericsCasts {
   // are currently problematic.
   // TODO: try to find a problem with skipping this check.
   class Test<K extends Object, V extends Object> {
+    @SuppressWarnings("modifiability:annotation.unverified")
     @Modifiable class Entry<K extends Object, V extends Object> extends LinkedList<K> {}
 
     class Queue<T extends Object> {

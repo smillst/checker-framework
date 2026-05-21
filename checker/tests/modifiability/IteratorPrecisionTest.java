@@ -318,9 +318,11 @@ public class IteratorPrecisionTest {
     asList.replaceAll(s -> s);
   }
 
+  // :: warning: [modifiability.annotation.unverified]
   static class IteratorRemoveUnsupportedCollection extends AbstractCollection<String> {
     @Override
     public Iterator<String> iterator() {
+      // :: warning: [modifiability.annotation.unverified]
       return new Iterator<>() {
         private boolean hasNext = true;
 
@@ -346,6 +348,7 @@ public class IteratorPrecisionTest {
     }
   }
 
+  // :: warning: [modifiability.annotation.unverified]
   static class IteratorRemoveUnsupportedSet extends AbstractSet<String> {
     @Override
     public Iterator<String> iterator() {
@@ -358,9 +361,11 @@ public class IteratorPrecisionTest {
     }
   }
 
+  // :: warning: [modifiability.annotation.unverified]
   static class IteratorMutationUnsupportedList extends AbstractSequentialList<String> {
     @Override
     public ListIterator<String> listIterator(int index) {
+      // :: warning: [modifiability.annotation.unverified]
       return new ListIterator<>() {
         private int cursor = index;
 
