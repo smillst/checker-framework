@@ -113,6 +113,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    *
    * @return true if {@code @UnmodParam} is allowed at the current location
    */
+  @SuppressWarnings("interning:not.interned") // AST node comparison
   private boolean isWithinAllowedUnmodParamLocation() {
     // Find the declaration that contains the annotation, if any.
     TreePath path = getCurrentPath();
