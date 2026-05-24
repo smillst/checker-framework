@@ -135,12 +135,12 @@ The checker cannot determine the modifiability of the collection.
 The checker conservatively issues a warning at every invocation of a grow,
 shrink, or replace operation.
 
-\item[\refqualclass{checker/modifiability/qual}{UnmodParam}]
+\item[\refqualclass{checker/modifiability/qual}{UnmodifiableParam}]
 A syntactic sugar for \refqualclass{checker/modifiability/qual}{MaybeModifiable}.
 It may only be written within a method or constructor parameter type, or within
 an explicit receiver parameter type, when the method is not designed to change
 the parameter.  It may appear nested within such a parameter type, such as in
-\code{List<@UnmodParam List<String>>}.
+\code{List<@UnmodifiableParam List<String>>}.
 
 \item[\refqualclass{checker/modifiability/qual}{PolyModifiable}]
 Alias for \code{@PolyGrowable @PolyShrinkable @PolyReplaceable}
@@ -155,7 +155,7 @@ Examples using alias annotations:
   @Modifiable List<String> mod = new ArrayList<>();  // all three capabilities
   @Unmodifiable List<String> unmod = List.of("a");   // no capabilities
   @MaybeModifiable List<String> unknown = ...;  // capabilities are unknown at compile time
-  void foo(@UnmodParam List<String> list) { ... }  // foo does not modify list
+  void foo(@UnmodifiableParam List<String> list) { ... }  // foo does not modify list
 \end{Verbatim}
 
 \subsectionAndLabel{Hierarchy qualifiers}{modifiability-hierarchy-qualifiers}
@@ -446,7 +446,7 @@ class Demo {
 % LocalWords:  Modifiability modifiability copyOf emptyList emptySet gsr
 % LocalWords:  emptyMap unmodifiableList unmodifiableSet unmodifiableMap
 % LocalWords:  toArray addAll removeAll retainAll replaceAll setValue
-% LocalWords:  MaybeModifiable UnmodParam Growable MaybeGrowable MaybeShrinkable
+% LocalWords:  MaybeModifiable UnmodifiableParam Growable MaybeGrowable MaybeShrinkable
 % LocalWords:  MaybeReplaceable growable ListIterator PolyModifiable addFirst
 % LocalWords:  synchronizedList PolyShrinkable PolyGrowable PolyReplaceable ThrowsUOE
 % LocalWords:  addLast unreplaceable Growability shrinkability replacability

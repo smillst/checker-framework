@@ -21,8 +21,8 @@ import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplaceable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
-import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -140,7 +140,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else if (areSameByClass(annotation, Unmodifiable.class)) {
       return tm != null && typeCannotReplace(tm) ? MAYBE_REPLACE : UNREPLACEABLE;
     } else if (areSameByClass(annotation, MaybeModifiable.class)
-        || areSameByClass(annotation, UnmodParam.class)) {
+        || areSameByClass(annotation, UnmodifiableParam.class)) {
       return MAYBE_REPLACE;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
       return POLY_REPLACE;

@@ -1,47 +1,47 @@
 import java.util.List;
 import java.util.function.Consumer;
-import org.checkerframework.checker.modifiability.qual.UnmodParam;
+import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 
 class UnmodParamLocationTest<
     // :: error: [unmodparam.location]
-    @UnmodParam T> {
+    @UnmodifiableParam T> {
 
   // :: error: [unmodparam.location]
-  @UnmodParam List<String> field;
+  @UnmodifiableParam List<String> field;
 
   // :: error: [unmodparam.location]
-  List<@UnmodParam List<String>> nestedField;
+  List<@UnmodifiableParam List<String>> nestedField;
 
-  UnmodParamLocationTest(@UnmodParam List<String> parameter) {}
+  UnmodParamLocationTest(@UnmodifiableParam List<String> parameter) {}
 
-  void method(@UnmodParam List<String> parameter) {}
+  void method(@UnmodifiableParam List<String> parameter) {}
 
-  void nestedParameter(List<@UnmodParam List<String>> parameter) {}
+  void nestedParameter(List<@UnmodifiableParam List<String>> parameter) {}
 
-  void receiver(@UnmodParam UnmodParamLocationTest<T> this) {}
+  void receiver(@UnmodifiableParam UnmodParamLocationTest<T> this) {}
 
   // :: error: [unmodparam.location]
-  @UnmodParam List<String> returnType() {
+  @UnmodifiableParam List<String> returnType() {
     return null;
   }
 
   @SuppressWarnings("unchecked")
   void local(Object object) {
     // :: error: [unmodparam.location]
-    @UnmodParam List<String> local = null;
+    @UnmodifiableParam List<String> local = null;
     local = null;
 
     // :: error: [unmodparam.location]
-    List<String> cast = (@UnmodParam List<String>) object;
+    List<String> cast = (@UnmodifiableParam List<String>) object;
     cast = null;
   }
 
   void lambda() {
     // :: error: [unmodparam.location]
-    Consumer<List<String>> consumer = (@UnmodParam List<String> parameter) -> {};
+    Consumer<List<String>> consumer = (@UnmodifiableParam List<String> parameter) -> {};
     consumer.accept(null);
   }
 
   // :: error: [unmodparam.location]
-  <@UnmodParam S> void methodTypeParameter(S value) {}
+  <@UnmodifiableParam S> void methodTypeParameter(S value) {}
 }

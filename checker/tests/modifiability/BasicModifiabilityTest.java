@@ -4,8 +4,8 @@ import java.util.List;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 
 // this checkes the correctness of annotation in List.java and ONLY the initialization of ArrayList
 public class BasicModifiabilityTest {
@@ -102,7 +102,7 @@ public class BasicModifiabilityTest {
     unmod.retainAll(other);
   }
 
-  void testUnmodParamMutation(@UnmodParam List<String> unmodParam, String value) {
+  void testUnmodifiableParamMutation(@UnmodifiableParam List<String> unmodParam, String value) {
     // :: error: [method.invocation]
     unmodParam.add(value);
     // :: error: [method.invocation]

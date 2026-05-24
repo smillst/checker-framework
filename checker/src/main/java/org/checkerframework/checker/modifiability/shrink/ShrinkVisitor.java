@@ -22,8 +22,9 @@ public class ShrinkVisitor extends ModifiabilityVisitor {
   }
 
   @Override
-  protected boolean shouldCheckUnmodParamLocation() {
-    // When running under ModifiabilityChecker, GrowChecker handles @UnmodParam location reporting.
+  protected boolean shouldCheckUnmodifiableParamLocation() {
+    // When running under ModifiabilityChecker, GrowChecker handles @UnmodifiableParam location
+    // reporting.
     return checker.getParentChecker() == null;
   }
 
