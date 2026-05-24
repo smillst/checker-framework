@@ -3,7 +3,7 @@ import java.util.Map;
 import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.*;
 
-public class PolyShrinkTest {
+public class PolyShrinkableTest {
 
   void testMapKeySet() {
     // Modifiable map: keySet() returns @Shrinkable. Cannot add or replace.
@@ -38,7 +38,7 @@ public class PolyShrinkTest {
   }
 
   void testMapEntrySet() {
-    // entrySet(): Set is @PolyShrink (cannot add), Entry is @PolyModifiable.
+    // entrySet(): Set is @PolyShrinkable (cannot add), Entry is @PolyModifiable.
 
     // Modifiable map: Set is @Shrinkable, Entry is @Modifiable.
     @Modifiable Map<String, String> modMap = new java.util.HashMap<>();

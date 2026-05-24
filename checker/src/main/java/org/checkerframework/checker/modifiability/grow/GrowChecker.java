@@ -14,8 +14,8 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  * UnsupportedOperationException} at run time due to calling a grow method on a collection.
  *
  * <p>The checker enforces the Modifiability type system, where {@code @Growable} collections can be
- * safely added to, {@code @Ungrowable} collections cannot, and {@code @MaybeGrow} collections have
- * unknown grow behavior.
+ * safely added to, {@code @Ungrowable} collections cannot, and {@code @MaybeGrowable} collections
+ * have unknown grow behavior.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

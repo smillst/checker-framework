@@ -18,5 +18,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(MaybeShrink.class)
+@SubtypeOf(MaybeShrinkable.class)
 public @interface Unshrinkable {}

@@ -8,8 +8,8 @@ import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 /**
- * Tests @PolyModifiable, which expands to @PolyGrow @PolyShrink @PolyReplace and thus preserves all
- * three capabilities independently.
+ * Tests @PolyModifiable, which expands to @PolyGrowable @PolyShrinkable @PolyReplaceable and thus
+ * preserves all three capabilities independently.
  */
 public class PolyModifiableTest {
 
@@ -20,9 +20,9 @@ public class PolyModifiableTest {
 
   void testPoly(
       @Modifiable List<String> mod,
-      @Growable @Shrinkable List<String> gs, // Grow+Shrink; Replace = MaybeReplace (default)
-      @Growable @Replaceable List<String> gr, // Grow+Replace; Shrink = MaybeShrink
-      @Shrinkable @Replaceable List<String> sr, // Shrink+Replace; Grow = MaybeGrow
+      @Growable @Shrinkable List<String> gs, // Grow+Shrink; Replace = MaybeReplaceable (default)
+      @Growable @Replaceable List<String> gr, // Grow+Replace; Shrink = MaybeShrinkable
+      @Shrinkable @Replaceable List<String> sr, // Shrink+Replace; Grow = MaybeGrowable
       @Growable List<String> g,
       @Shrinkable List<String> s,
       @Replaceable List<String> r,
@@ -36,7 +36,7 @@ public class PolyModifiableTest {
     @MaybeModifiable List<String> m2 = identity(mod); // OK: G+S+R <: top in all
 
     // ============================================================
-    // Identity on @Growable @Shrinkable (G+S, R=MaybeReplace)
+    // Identity on @Growable @Shrinkable (G+S, R=MaybeReplaceable)
     // ============================================================
     @Growable @Shrinkable List<String> gs1 = identity(gs); // OK
     // :: error: [assignment]
@@ -47,7 +47,7 @@ public class PolyModifiableTest {
     @Replaceable List<String> gs5 = identity(gs); // Error: MaybeR !<: Replaceable
 
     // ============================================================
-    // Identity on @Growable @Replaceable (G+R, S=MaybeShrink)
+    // Identity on @Growable @Replaceable (G+R, S=MaybeShrinkable)
     // ============================================================
     @Growable @Replaceable List<String> gr1 = identity(gr); // OK
     // :: error: [assignment]
@@ -58,7 +58,7 @@ public class PolyModifiableTest {
     @Replaceable List<String> gr5 = identity(gr); // OK
 
     // ============================================================
-    // Identity on @Shrinkable @Replaceable (S+R, G=MaybeGrow)
+    // Identity on @Shrinkable @Replaceable (S+R, G=MaybeGrowable)
     // ============================================================
     @Shrinkable @Replaceable List<String> sr1 = identity(sr); // OK
     // :: error: [assignment]

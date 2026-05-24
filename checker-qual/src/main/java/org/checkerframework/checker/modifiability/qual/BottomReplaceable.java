@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The bottom qualifier in the Shrink hierarchy.
+ * The bottom qualifier in the Replace hierarchy.
  *
  * <p>Programmers should rarely write this qualifier.
  *
@@ -17,5 +17,5 @@ import org.checkerframework.framework.qual.SubtypeOf;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf({Shrinkable.class, Unshrinkable.class})
-public @interface BottomShrink {}
+@SubtypeOf({Replaceable.class, Unreplaceable.class})
+public @interface BottomReplaceable {}
