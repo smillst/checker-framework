@@ -1,4 +1,4 @@
-import java.util.Date;
+import java.util.List;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -16,115 +16,199 @@ interface MyGodMap<K, V> {
 
 public class GetOrDefaultTest {
 
-  Date d;
-  @Modifiable Date dm;
-  @Unmodifiable Date du;
+  List<String> d;
+  @Modifiable List<String> dm;
+  @Unmodifiable List<String> du;
 
-  void foo1(MyGodMap<String, Date> m) {
-    Date d1 = m.getOrDefault("hello", d);
-    @Modifiable Date d2 = m.getOrDefault("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault("hello", d);
-    Date d4 = m.getOrDefault("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault("hello", dm);
-    Date d7 = m.getOrDefault("hello", du);
-    @Modifiable Date d8 = m.getOrDefault("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault("hello", du);
+  void foo1(MyGodMap<String, List<String>> m) {
+    List<String> d1 = m.getOrDefault("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefault("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefault("hello", d);
+    List<String> d4 = m.getOrDefault("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d5 = m.getOrDefault("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefault("hello", dm);
+    List<String> d7 = m.getOrDefault("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefault("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d9 = m.getOrDefault("hello", du);
   }
 
-  void foo2(MyGodMap<String, @Modifiable Date> m) {
-    Date d1 = m.getOrDefault("hello", d);
-    @Modifiable Date d2 = m.getOrDefault("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault("hello", d);
-    Date d4 = m.getOrDefault("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault("hello", dm);
-    Date d7 = m.getOrDefault("hello", du);
-    @Modifiable Date d8 = m.getOrDefault("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault("hello", du);
+  void foo2(MyGodMap<String, @Modifiable List<String>> m) {
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    List<String> d1 = m.getOrDefault("hello", d);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Modifiable List<String> d2 = m.getOrDefault("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Unmodifiable List<String> d3 = m.getOrDefault("hello", d);
+    List<String> d4 = m.getOrDefault("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefault("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefault("hello", dm);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    List<String> d7 = m.getOrDefault("hello", du);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Modifiable List<String> d8 = m.getOrDefault("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Unmodifiable List<String> d9 = m.getOrDefault("hello", du);
   }
 
-  void foo3(MyGodMap<String, @Unmodifiable Date> m) {
-    Date d1 = m.getOrDefault("hello", d);
-    @Modifiable Date d2 = m.getOrDefault("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault("hello", d);
-    Date d4 = m.getOrDefault("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault("hello", dm);
-    Date d7 = m.getOrDefault("hello", du);
-    @Modifiable Date d8 = m.getOrDefault("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault("hello", du);
+  void foo3(MyGodMap<String, @Unmodifiable List<String>> m) {
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    List<String> d1 = m.getOrDefault("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Modifiable List<String> d2 = m.getOrDefault("hello", d);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Unmodifiable List<String> d3 = m.getOrDefault("hello", d);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    List<String> d4 = m.getOrDefault("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Modifiable List<String> d5 = m.getOrDefault("hello", dm);
+    // :: error: [argument] :: error: [argument] :: error: [argument]
+    @Unmodifiable List<String> d6 = m.getOrDefault("hello", dm);
+    List<String> d7 = m.getOrDefault("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefault("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefault("hello", du);
   }
 
-  void foo4(MyGodMap<String, Date> m) {
-    Date d1 = m.getOrDefaultPoly("hello", d);
-    @Modifiable Date d2 = m.getOrDefaultPoly("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefaultPoly("hello", d);
-    Date d4 = m.getOrDefaultPoly("hello", dm);
-    @Modifiable Date d5 = m.getOrDefaultPoly("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefaultPoly("hello", dm);
-    Date d7 = m.getOrDefaultPoly("hello", du);
-    @Modifiable Date d8 = m.getOrDefaultPoly("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefaultPoly("hello", du);
+  void foo4(MyGodMap<String, List<String>> m) {
+    List<String> d1 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefaultPoly("hello", d);
+    List<String> d4 = m.getOrDefaultPoly("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefaultPoly("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefaultPoly("hello", dm);
+    List<String> d7 = m.getOrDefaultPoly("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefaultPoly("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefaultPoly("hello", du);
   }
 
-  void foo5(MyGodMap<String, @Modifiable Date> m) {
-    Date d1 = m.getOrDefaultPoly("hello", d);
-    @Modifiable Date d2 = m.getOrDefaultPoly("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefaultPoly("hello", d);
-    Date d4 = m.getOrDefaultPoly("hello", dm);
-    @Modifiable Date d5 = m.getOrDefaultPoly("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefaultPoly("hello", dm);
-    Date d7 = m.getOrDefaultPoly("hello", du);
-    @Modifiable Date d8 = m.getOrDefaultPoly("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefaultPoly("hello", du);
+  void foo5(MyGodMap<String, @Modifiable List<String>> m) {
+    List<String> d1 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefaultPoly("hello", d);
+    List<String> d4 = m.getOrDefaultPoly("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefaultPoly("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefaultPoly("hello", dm);
+    List<String> d7 = m.getOrDefaultPoly("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefaultPoly("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefaultPoly("hello", du);
   }
 
-  void foo6(MyGodMap<String, @Unmodifiable Date> m) {
-    Date d1 = m.getOrDefaultPoly("hello", d);
-    @Modifiable Date d2 = m.getOrDefaultPoly("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefaultPoly("hello", d);
-    Date d4 = m.getOrDefaultPoly("hello", dm);
-    @Modifiable Date d5 = m.getOrDefaultPoly("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefaultPoly("hello", dm);
-    Date d7 = m.getOrDefaultPoly("hello", du);
-    @Modifiable Date d8 = m.getOrDefaultPoly("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefaultPoly("hello", du);
+  void foo6(MyGodMap<String, @Unmodifiable List<String>> m) {
+    List<String> d1 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefaultPoly("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefaultPoly("hello", d);
+    List<String> d4 = m.getOrDefaultPoly("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefaultPoly("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefaultPoly("hello", dm);
+    List<String> d7 = m.getOrDefaultPoly("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefaultPoly("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefaultPoly("hello", du);
   }
 
-  void foo7(MyGodMap<String, Date> m) {
-    Date d1 = m.getOrDefault2("hello", d);
-    @Modifiable Date d2 = m.getOrDefault2("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault2("hello", d);
-    Date d4 = m.getOrDefault2("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault2("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault2("hello", dm);
-    Date d7 = m.getOrDefault2("hello", du);
-    @Modifiable Date d8 = m.getOrDefault2("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault2("hello", du);
+  void foo7(MyGodMap<String, List<String>> m) {
+    List<String> d1 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d2 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d3 = m.getOrDefault2("hello", d);
+    List<String> d4 = m.getOrDefault2("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefault2("hello", dm);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d6 = m.getOrDefault2("hello", dm);
+    List<String> d7 = m.getOrDefault2("hello", du);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d8 = m.getOrDefault2("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefault2("hello", du);
   }
 
-  void foo8(MyGodMap<String, @Modifiable Date> m) {
-    Date d1 = m.getOrDefault2("hello", d);
-    @Modifiable Date d2 = m.getOrDefault2("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault2("hello", d);
-    Date d4 = m.getOrDefault2("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault2("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault2("hello", dm);
-    Date d7 = m.getOrDefault2("hello", du);
-    @Modifiable Date d8 = m.getOrDefault2("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault2("hello", du);
+  void foo8(MyGodMap<String, @Modifiable List<String>> m) {
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    List<String> d1 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d2 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d3 = m.getOrDefault2("hello", d);
+    List<String> d4 = m.getOrDefault2("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefault2("hello", dm);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d6 = m.getOrDefault2("hello", dm);
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    List<String> d7 = m.getOrDefault2("hello", du);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d8 = m.getOrDefault2("hello", du);
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d9 = m.getOrDefault2("hello", du);
   }
 
-  void foo9(MyGodMap<String, @Unmodifiable Date> m) {
-    Date d1 = m.getOrDefault2("hello", d);
-    @Modifiable Date d2 = m.getOrDefault2("hello", d);
-    @Unmodifiable Date d3 = m.getOrDefault2("hello", d);
-    Date d4 = m.getOrDefault2("hello", dm);
-    @Modifiable Date d5 = m.getOrDefault2("hello", dm);
-    @Unmodifiable Date d6 = m.getOrDefault2("hello", dm);
-    Date d7 = m.getOrDefault2("hello", du);
-    @Modifiable Date d8 = m.getOrDefault2("hello", du);
-    @Unmodifiable Date d9 = m.getOrDefault2("hello", du);
+  void foo9(MyGodMap<String, @Unmodifiable List<String>> m) {
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    List<String> d1 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d2 = m.getOrDefault2("hello", d);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d3 = m.getOrDefault2("hello", d);
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    List<String> d4 = m.getOrDefault2("hello", dm);
+    // :: error: [type.arguments.not.inferred] :: error: [type.arguments.not.inferred] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d5 = m.getOrDefault2("hello", dm);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Unmodifiable List<String> d6 = m.getOrDefault2("hello", dm);
+    List<String> d7 = m.getOrDefault2("hello", du);
+    // :: error: [assignment] :: error: [type.arguments.not.inferred] :: error: [assignment] ::
+    // error: [type.arguments.not.inferred] :: error: [assignment] :: error:
+    // [type.arguments.not.inferred]
+    @Modifiable List<String> d8 = m.getOrDefault2("hello", du);
+    @Unmodifiable List<String> d9 = m.getOrDefault2("hello", du);
   }
 }
