@@ -15,11 +15,35 @@ import org.checkerframework.framework.util.typeinference8.util.Theta;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TreeUtils.MemberReferenceKind;
 
-/** A type for a method reference */
-public class MethodReferenceType extends InvocationType {
+/**
+ * Represents the compile-time declaration of the method reference that is the method to which the
+ * expression refers. See <a
+ * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-15.html#jls-15.13.1">JLS section
+ * 15.13.1</a> for a complete definition.
+ *
+ * <p>The type of a member reference is a functional interface. The function type of a member
+ * reference is the type of the single abstract method declared by the functional interface. The
+ * compile-time declaration type is the type of the actual method referenced by the method
+ * reference, i.e. the method that is actually being referenced.
+ *
+ * <p>For example,
+ *
+ * <pre>{@code
+ * static class MyClass {
+ *   String field;
+ *   public static int compareByField(MyClass a, MyClass b) { ... }
+ * }
+ * Comparator<MyClass> func = MyClass::compareByField;
+ * }</pre>
+ *
+ * <p>The function type is {@code compare(Comparator<MyClass> this, MyClass o1, MyClass o2)} where
+ * as the compile-time declaration type is {@code compareByField(MyClass a, MyClass b)}.
+ */
+public class CompileTimeDeclarationType extends InferenceExecutableType {
 
   /**
-   * Type of the receiver. This may be different than {@code annotatedExecutableType.getReceiver()}
+   * The type of the receiver. This may be different than {@code
+   * annotatedExecutableType.getReceiver()}.
    */
   AnnotatedTypeMirror receiver;
 
@@ -35,7 +59,7 @@ public class MethodReferenceType extends InvocationType {
    * @param receiver the type of the receiver for this method reference
    * @param context the context
    */
-  public MethodReferenceType(
+  public CompileTimeDeclarationType(
       AnnotatedExecutableType annotatedExecutableType,
       ExecutableType methodType,
       MemberReferenceTree methodRef,
@@ -72,22 +96,22 @@ public class MethodReferenceType extends InvocationType {
 
   @Override
   public AbstractType getReturnType(Theta map) {
-    TypeMirror returnTypeJava;
-    AnnotatedTypeMirror returnType;
+    TypeMirror returnType;
+    AnnotatedTypeMirror annotatedReturnType;
 
     if (invocation instanceof MemberReferenceTree mrt && mrt.getMode() == ReferenceMode.NEW) {
-      returnType =
+      annotatedReturnType =
           context.typeFactory.getResultingTypeOfConstructorMemberReference(
               mrt, annotatedExecutableType);
-      returnTypeJava = returnType.getUnderlyingType();
+      returnType = annotatedReturnType.getUnderlyingType();
     } else {
-      returnTypeJava = methodType.getReturnType();
-      returnType = annotatedExecutableType.getReturnType();
+      returnType = methodType.getReturnType();
+      annotatedReturnType = annotatedExecutableType.getReturnType();
     }
 
     if (map == null) {
-      return new ProperType(returnType, returnTypeJava, context);
+      return new ProperType(annotatedReturnType, returnType, context);
     }
-    return InferenceType.create(returnType, returnTypeJava, map, context);
+    return InferenceType.create(annotatedReturnType, returnType, map, context);
   }
 }
