@@ -12,7 +12,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.qual.ThrowsUOE;
-import org.checkerframework.checker.modifiability.qual.UnmodParam;
+import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -75,8 +75,8 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
 
   @Override
   public Void visitAnnotation(AnnotationTree tree, Void p) {
-    if (shouldCheckUnmodParamLocation() && isUnmodParamAnnotation(tree)) {
-      if (!isWithinAllowedUnmodParamLocation()) {
+    if (shouldCheckUnmodifiableParamLocation() && isUnmodifiableParamAnnotation(tree)) {
+      if (!isWithinAllowedUnmodifiableParamLocation()) {
         checker.reportError(tree, "unmodparam.location");
       }
     }
@@ -114,14 +114,14 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
   }
 
   /**
-   * Returns true if this checker should report {@code @UnmodParam} location errors.
+   * Returns true if this checker should report {@code @UnmodifiableParam} location errors.
    *
    * <p>The default is {@code true}. Shrink and Replace override this to avoid tripling diagnostics
    * when running under the aggregate {@link ModifiabilityChecker}.
    *
-   * @return true if this visitor should report {@code @UnmodParam} location errors
+   * @return true if this visitor should report {@code @UnmodifiableParam} location errors
    */
-  protected boolean shouldCheckUnmodParamLocation() {
+  protected boolean shouldCheckUnmodifiableParamLocation() {
     return true;
   }
 
@@ -139,30 +139,31 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
   }
 
   /**
-   * Returns true if {@code tree} is an {@link UnmodParam} annotation.
+   * Returns true if {@code tree} is an {@link UnmodifiableParam} annotation.
    *
    * @param tree an annotation tree
-   * @return true if {@code tree} is an {@code @UnmodParam} annotation
+   * @return true if {@code tree} is an {@code @UnmodifiableParam} annotation
    */
-  private boolean isUnmodParamAnnotation(AnnotationTree tree) {
+  private boolean isUnmodifiableParamAnnotation(AnnotationTree tree) {
     String annotationName = tree.getAnnotationType().toString();
     // Quick check to avoid expensive annotation resolution for most annotations.
-    if (!annotationName.equals("UnmodParam") && !annotationName.endsWith(".UnmodParam")) {
+    if (!annotationName.equals("UnmodifiableParam")
+        && !annotationName.endsWith(".UnmodifiableParam")) {
       return false;
     }
 
     AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(tree);
-    return annotation != null && atypeFactory.areSameByClass(annotation, UnmodParam.class);
+    return annotation != null && atypeFactory.areSameByClass(annotation, UnmodifiableParam.class);
   }
 
   /**
    * Returns true if the current annotation path is inside a method/constructor parameter type or
    * explicit receiver parameter type.
    *
-   * @return true if {@code @UnmodParam} is allowed at the current location
+   * @return true if {@code @UnmodifiableParam} is allowed at the current location
    */
   @SuppressWarnings("interning:not.interned") // AST node comparison
-  private boolean isWithinAllowedUnmodParamLocation() {
+  private boolean isWithinAllowedUnmodifiableParamLocation() {
     // Find the declaration that contains the annotation, if any.
     TreePath path = getCurrentPath();
     TreePath variablePath = null;

@@ -4,8 +4,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
 /**
- * Convenience alias meaning {@code @PolyGrow @PolyReplace @PolyShrink}. A polymorphic qualifier for
- * all three modifiability hierarchies.
+ * Convenience alias meaning {@code @PolyGrowable @PolyReplaceable @PolyShrinkable}. A polymorphic
+ * qualifier for all three modifiability hierarchies.
  *
  * <p>You should write {@code @PolyModifiable} on methods that preserve or transfer modifiability,
  * such as {@code List.subList()}, {@code iterator()}, and {@code stream()}.

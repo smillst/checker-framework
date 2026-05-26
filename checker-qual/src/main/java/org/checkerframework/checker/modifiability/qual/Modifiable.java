@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  *
  * <p>As an exception, {@code @Modifiable} means {@code @Maybe*} if the type does not support a
  * given category of operation; for example, {@code @Modifiable Iterator} means
- * {@code @MaybeGrow @Shrinkable @MaybeReplace Iterator}.
+ * {@code @MaybeGrowable @Shrinkable @MaybeReplaceable Iterator}.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

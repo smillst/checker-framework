@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.PolyShrink;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 
 /**
  * A {@link WrapperMap} is a map all of whose methods delegate by default to those of a supplied
@@ -40,8 +40,8 @@ public class WrapperMap<K, V> implements Map<K, V> {
 
   @SuppressWarnings("keyfor") // use of delegate object
   @Override
-  public @IteratorPolyMod @PolyShrink Set<java.util.Map.Entry<K, V>> entrySet(
-      @PolyShrink WrapperMap<K, V> this) {
+  public @IteratorPolyMod @PolyShrinkable Set<java.util.Map.Entry<K, V>> entrySet(
+      @PolyShrinkable WrapperMap<K, V> this) {
     return back.entrySet();
   }
 

@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.Growable;
-import org.checkerframework.checker.modifiability.qual.MaybeGrow;
-import org.checkerframework.checker.modifiability.qual.MaybeReplace;
-import org.checkerframework.checker.modifiability.qual.MaybeShrink;
+import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
+import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
+import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
@@ -17,37 +17,37 @@ import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 class AliasCanonicalizationTest {
 
   void modifiableIterator(@Modifiable Iterator<String> iterator) {
-    @MaybeGrow @Shrinkable @MaybeReplace Iterator<String> canonical = iterator;
+    @MaybeGrowable @Shrinkable @MaybeReplaceable Iterator<String> canonical = iterator;
     @Shrinkable Iterator<String> shrinkable = iterator;
     iterator.remove();
   }
 
   void unmodifiableIterator(@Unmodifiable Iterator<String> iterator) {
-    @MaybeGrow @Unshrinkable @MaybeReplace Iterator<String> canonical = iterator;
+    @MaybeGrowable @Unshrinkable @MaybeReplaceable Iterator<String> canonical = iterator;
     // :: error: [method.invocation]
     iterator.remove();
   }
 
   void modifiableSet(@Modifiable Set<String> set) {
-    @Growable @Shrinkable @MaybeReplace Set<String> canonical = set;
+    @Growable @Shrinkable @MaybeReplaceable Set<String> canonical = set;
     set.add("a");
     set.remove("a");
   }
 
   void modifiableQueue(@Modifiable Queue<String> queue) {
-    @Growable @Shrinkable @MaybeReplace Queue<String> canonical = queue;
+    @Growable @Shrinkable @MaybeReplaceable Queue<String> canonical = queue;
     queue.add("a");
     queue.remove();
   }
 
   void modifiableCollection(@Modifiable Collection<String> collection) {
-    @Growable @Shrinkable @MaybeReplace Collection<String> canonical = collection;
+    @Growable @Shrinkable @MaybeReplaceable Collection<String> canonical = collection;
     collection.add("a");
     collection.remove("a");
   }
 
   void modifiableEntry(Map.@Modifiable Entry<String, String> entry) {
-    Map.@MaybeGrow @MaybeShrink @Replaceable Entry<String, String> canonical = entry;
+    Map.@MaybeGrowable @MaybeShrinkable @Replaceable Entry<String, String> canonical = entry;
     entry.setValue("value");
   }
 

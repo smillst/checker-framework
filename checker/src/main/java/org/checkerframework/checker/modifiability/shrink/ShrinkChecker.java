@@ -14,8 +14,8 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  * UnsupportedOperationException} at run time due to calling a shrink method on a collection.
  *
  * <p>The checker enforces the Modifiability type system, where {@code @Shrinkable} collections can
- * be safely mutated, {@code @Unshrinkable} collections cannot be shrunk, and {@code @MaybeShrink}
- * collections have unknown shrink behavior.
+ * be safely mutated, {@code @Unshrinkable} collections cannot be shrunk, and
+ * {@code @MaybeShrinkable} collections have unknown shrink behavior.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

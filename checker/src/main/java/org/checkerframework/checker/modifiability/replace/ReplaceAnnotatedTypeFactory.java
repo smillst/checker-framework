@@ -12,17 +12,17 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
-import org.checkerframework.checker.modifiability.qual.BottomReplace;
+import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
-import org.checkerframework.checker.modifiability.qual.MaybeReplace;
+import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
-import org.checkerframework.checker.modifiability.qual.PolyReplace;
+import org.checkerframework.checker.modifiability.qual.PolyReplaceable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
-import org.checkerframework.checker.modifiability.qual.UnmodParam;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
+import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
@@ -57,7 +57,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   // ── Hierarchy qualifiers ──────────
 
-  /** The {@code @}{@link MaybeReplace} qualifier (top of Replace hierarchy). */
+  /** The {@code @}{@link MaybeReplaceable} qualifier (top of Replace hierarchy). */
   private final AnnotationMirror MAYBE_REPLACE;
 
   /** The {@code @}{@link Replaceable} qualifier. */
@@ -66,7 +66,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link Unreplaceable} qualifier. */
   private final AnnotationMirror UNREPLACEABLE;
 
-  /** The {@code @}{@link PolyReplace} qualifier. */
+  /** The {@code @}{@link PolyReplaceable} qualifier. */
   private final AnnotationMirror POLY_REPLACE;
 
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
@@ -94,10 +94,10 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), MaybeReplace.class);
+    this.MAYBE_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), MaybeReplaceable.class);
     this.REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Replaceable.class);
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
-    this.POLY_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplace.class);
+    this.POLY_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplaceable.class);
     this.ITERATOR_PRESERVE_REMOVE =
         AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
@@ -108,11 +108,11 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
     return new LinkedHashSet<>(
         Arrays.asList(
-            MaybeReplace.class,
+            MaybeReplaceable.class,
             Replaceable.class,
             Unreplaceable.class,
-            BottomReplace.class,
-            PolyReplace.class,
+            BottomReplaceable.class,
+            PolyReplaceable.class,
             MaybeIteratorPolyMod.class,
             IteratorPolyMod.class));
   }
@@ -124,11 +124,11 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
    * that cannot replace structurally, such as exact {@code Collection}, {@code Set}, non-{@code
    * LinkedList} {@code Queue}, and non-{@code ListIterator} {@code Iterator}, their replace
-   * component canonicalizes to {@code @MaybeReplace}. Explicit replace qualifiers are left to
+   * component canonicalizes to {@code @MaybeReplaceable}. Explicit replace qualifiers are left to
    * normal canonicalization so users can still write and preserve an explicit capability tuple such
    * as {@code @Growable @Shrinkable @Replaceable Set}.
    *
-   * <p>{@code @PolyModifiable} remains {@code @PolyReplace}: unlike grow and shrink for {@code
+   * <p>{@code @PolyModifiable} remains {@code @PolyReplaceable}: unlike grow and shrink for {@code
    * Map.Entry}, replacement through {@code Entry.setValue} is a meaningful capability to carry from
    * the map receiver.
    */
@@ -140,7 +140,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     } else if (areSameByClass(annotation, Unmodifiable.class)) {
       return tm != null && typeCannotReplace(tm) ? MAYBE_REPLACE : UNREPLACEABLE;
     } else if (areSameByClass(annotation, MaybeModifiable.class)
-        || areSameByClass(annotation, UnmodParam.class)) {
+        || areSameByClass(annotation, UnmodifiableParam.class)) {
       return MAYBE_REPLACE;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
       return POLY_REPLACE;
@@ -173,14 +173,14 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * ArrayList. A stub annotation like
    *
    * <pre>{@code
-   * static <T> @PolyReplace List<T> withoutDuplicates(@PolyReplace Collection<T> values)
+   * static <T> @PolyReplaceable List<T> withoutDuplicates(@PolyReplaceable Collection<T> values)
    * }</pre>
    *
    * would be unsound, because an {@code @Unreplaceable} input could receive the fresh ArrayList,
    * whose static type should be {@code @Replaceable}. It would also be too imprecise to always use
-   * {@code @MaybeReplace}, because passing a {@code @Replaceable} collection guarantees that both
-   * possible results are replaceable. Therefore, model the method here as preserving
-   * {@code @Replaceable} inputs and otherwise returning {@code @MaybeReplace}.
+   * {@code @MaybeReplaceable}, because passing a {@code @Replaceable} collection guarantees that
+   * both possible results are replaceable. Therefore, model the method here as preserving
+   * {@code @Replaceable} inputs and otherwise returning {@code @MaybeReplaceable}.
    *
    * @param tree the invocation of {@code withoutDuplicates}
    * @param methodType the annotated executable type of the invoked method
