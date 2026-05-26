@@ -7,7 +7,7 @@ public class BasicModifiableTest3 {
 
   /*
   @ReleasesNoLocks
-  @SideEffectsOnly("this")
+  // @SideEffectsOnly("this")
   @EnsuresNonEmpty("this")
   */
   <E> boolean my_add(@Modifiable @GuardSatisfied List<E> this_one, E e) {
