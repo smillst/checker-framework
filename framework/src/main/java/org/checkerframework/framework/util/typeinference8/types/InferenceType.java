@@ -282,23 +282,23 @@ public class InferenceType extends AbstractType {
 
   @Override
   public AbstractType applyInstantiations() {
-    List<TypeVariable> typeVariables = new ArrayList<>();
-    List<TypeMirror> arguments = new ArrayList<>();
+    //    List<TypeVariable> typeVariables = new ArrayList<>();
+    //    List<TypeMirror> arguments = new ArrayList<>();
     List<Variable> instantiations = new ArrayList<>();
+    //
+    //    for (Variable alpha : map.values()) {
+    //      if (alpha.getInstantiation() != null) {
+    //        typeVariables.add(alpha.getJavaType());
+    //        arguments.add(alpha.getBounds().getInstantiation().getJavaType());
+    //        instantiations.add(alpha);
+    //      }
+    //    }
+    //    if (typeVariables.isEmpty()) {
+    //      return this;
+    //    }
 
-    for (Variable alpha : map.values()) {
-      if (alpha.getInstantiation() != null) {
-        typeVariables.add(alpha.getJavaType());
-        arguments.add(alpha.getBounds().getInstantiation().getJavaType());
-        instantiations.add(alpha);
-      }
-    }
-    if (typeVariables.isEmpty()) {
-      return this;
-    }
-
-    TypeMirror newTypeJava =
-        TypesUtils.substitute(typeMirror, typeVariables, arguments, context.env);
+    //    TypeMirror newTypeJava =
+    //        TypesUtils.substitute(typeMirror, typeVariables, arguments, context.env);
 
     Map<TypeVariable, AnnotatedTypeMirror> mapping = new LinkedHashMap<>();
 
@@ -320,7 +320,12 @@ public class InferenceType extends AbstractType {
 
     AnnotatedTypeMirror newType = typeFactory.getTypeVarSubstitutor().substitute(mapping, type);
     return createIgnoreInstantiated(
-        newType, newTypeJava, map, AnnotationMirrorMap.emptyMap(), context, ignoreAnnotations);
+        newType,
+        newType.getUnderlyingType(),
+        map,
+        AnnotationMirrorMap.emptyMap(),
+        context,
+        ignoreAnnotations);
   }
 
   @Override

@@ -86,7 +86,7 @@ public class Expression extends TypeConstraint {
   public ReductionResult reduce(Java8InferenceContext context) {
     // See JLS 18.2.1
     if (getT().isProper()) {
-      return reduceProperType();
+      reduceProperType();
     } else if (TreeUtils.isStandaloneExpression(expression)) {
       AbstractType s;
       if (!context.isLambdaParam(expression)) {
@@ -319,14 +319,15 @@ public class Expression extends TypeConstraint {
     AbstractType R = tPrime.getFunctionTypeReturnType();
     if (R != null && R.getTypeKind() != TypeKind.VOID) {
       for (ExpressionTree e : TreeUtils.getReturnedExpressions(lambda)) {
-        if (R.isProper()) {
-          if (!context.env.getTypeUtils().isAssignable(TreeUtils.typeOf(e), R.getJavaType())) {
-            boundSet.addFalse();
-            return ReductionResultPair.of(constraintSet, boundSet);
-          }
-        } else {
-          constraintSet.add(new Expression(this, e, R));
-        }
+        //        if (R.isProper()) {
+        //          if (!context.env.getTypeUtils().isAssignable(TreeUtils.typeOf(e),
+        // R.getJavaType())) {
+        //            boundSet.addFalse();
+        //            return ReductionResultPair.of(constraintSet, boundSet);
+        //          }
+        //        } else {
+        constraintSet.add(new Expression(this, e, R));
+        //        }
       }
     }
     return ReductionResultPair.of(constraintSet, boundSet);
