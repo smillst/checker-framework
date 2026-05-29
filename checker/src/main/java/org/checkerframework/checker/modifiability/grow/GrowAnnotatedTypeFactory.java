@@ -182,6 +182,15 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /**
    * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrinkable}.
    *
+   * <p>{@code listIterator()} cannot be annotated as {@code @PolyModifiable} because not all
+   * collections preserve the modifiability of their iterators. (For example, {@code
+   * CopyOnWriteArrayList} has unmodifiable iterators even though the list is modifiable.) Thus,
+   * special treatment is needed for Iterator methods.
+   *
+   * <p>If the receiver is {@code @Growable} and {@code @IteratorPolyShrinkable}, then the result is
+   * {@code @Growable Iterator}. Otherwise, growability precision is dropped to
+   * {@code @MaybeGrowable}.
+   *
    * @param tree the listIterator method invocation
    * @param methodType the annotated executable type of the invoked method
    */

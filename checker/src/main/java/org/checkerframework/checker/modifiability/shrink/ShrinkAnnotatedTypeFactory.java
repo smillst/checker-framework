@@ -177,11 +177,17 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code iterator()} return type based on {@code @IteratorPolyShrinkable}.
+   * Refines {@code iterator()} and {@code listIterator()} return types based on
+   * {@code @IteratorPolyShrinkable}.
    *
-   * <p>If the receiver is {@code @Shrinkable} and either the receiver type use or the invoked
-   * method receiver type has {@code @IteratorPolyShrinkable}, then the result is {@code @Shrinkable
-   * Iterator}. Otherwise, shrinkability precision is dropped to {@code @MaybeShrinkable}.
+   * <p>{@code iterator()} and {@code listIterator()} cannot be annotated as {@code @PolyModifiable}
+   * because not all collections preserve the modifiability of their iterators. (For example, {@code
+   * CopyOnWriteArrayList} has unmodifiable iterators even though the list is modifiable.) Thus,
+   * special treatment is needed for Iterator methods.
+   *
+   * <p>If the receiver is {@code @Shrinkable} and {@code @IteratorPolyShrinkable}, then the result
+   * is {@code @Shrinkable Iterator}. Otherwise, shrinkability precision is dropped to
+   * {@code @MaybeShrinkable}.
    *
    * @param tree the iterator method invocation
    * @param methodType the annotated executable type of the invoked method
