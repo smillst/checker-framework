@@ -22,7 +22,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * Base visitor for the Modifiability sub-checkers (Grow, Shrink, Replace).
+ * Base visitor for the modifiability sub-checkers (Grow, Shrink, Replace).
  *
  * <p>This class contains logic shared across all three sub-checkers:
  *
@@ -66,7 +66,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
     super.processClassTree(classTree);
     if (shouldCheckCustomModifiabilityAnnotation()) {
       TypeElement typeElement = TreeUtils.elementFromDeclaration(classTree);
-      if (typeElement != null && isSourceDefinedModifiabilityType(typeElement)) {
+      if (typeElement != null && isCollectionFromSourceCode(typeElement)) {
         checker.reportWarning(
             classTree, "modifiability.annotation.unverified", typeElement.getQualifiedName());
       }
@@ -207,7 +207,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
    * @param typeElement the type element to test
    * @return true if this source-defined type relies on trusted custom modifiability annotations
    */
-  private boolean isSourceDefinedModifiabilityType(TypeElement typeElement) {
+  private boolean isCollectionFromSourceCode(TypeElement typeElement) {
     if (!ElementUtils.isElementFromSourceCode(typeElement)) {
       return false;
     }

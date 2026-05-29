@@ -9,7 +9,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * Calling replace operations such as {@code set}, {@code replaceAll}, etc. on this collection will
- * not result in throwing {@link UnsupportedOperationException}.
+ * not throw {@link UnsupportedOperationException}.
  *
  * <p>No guarantees are made about grow or shrink operations.
  *

@@ -14,9 +14,9 @@ import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
@@ -48,8 +48,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   // ── Hierarchy qualifiers ──────────
 
-  /** The {@code @}{@link MaybeGrowable} qualifier (top of Grow hierarchy). */
-  private final AnnotationMirror MAYBE_GROW;
+  /** The {@code @}{@link MaybeGrowable} qualifier. */
+  private final AnnotationMirror MAYBE_GROWABLE;
 
   /** The {@code @}{@link Growable} qualifier. */
   private final AnnotationMirror GROWABLE;
@@ -58,9 +58,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private final AnnotationMirror UNGROWABLE;
 
   /** The {@code @}{@link PolyGrowable} qualifier. */
-  private final AnnotationMirror POLY_GROW;
+  private final AnnotationMirror POLY_GROWABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
+  /** The {@code @}{@link IteratorPolyShrinkable} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
@@ -71,7 +71,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @SuppressWarnings("this-escape")
   public GrowAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-    // Cache type erasures.
+
     Types types = getProcessingEnv().getTypeUtils();
     this.mapEntryErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
@@ -80,12 +80,12 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.listIteratorErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_GROW = AnnotationBuilder.fromClass(getElementUtils(), MaybeGrowable.class);
+    this.MAYBE_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeGrowable.class);
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
-    this.POLY_GROW = AnnotationBuilder.fromClass(getElementUtils(), PolyGrowable.class);
+    this.POLY_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyGrowable.class);
     this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrinkable.class);
 
     postInit();
   }
@@ -99,8 +99,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Ungrowable.class,
             BottomGrowable.class,
             PolyGrowable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            MaybeIteratorPolyShrinkable.class,
+            IteratorPolyShrinkable.class));
   }
 
   /**
@@ -109,9 +109,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    *
    * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
    * that cannot grow structurally, such as {@code Map.Entry} and non-{@code ListIterator} {@code
-   * Iterator}, their grow component canonicalizes to {@code @MaybeGrowable}. Explicit grow
-   * qualifiers are left to normal canonicalization so users can still write and preserve an
-   * explicit capability tuple such as {@code @Growable @Shrinkable @Replaceable Iterator}.
+   * Iterator}, their grow component canonicalizes to {@code @MaybeGrowable}.
    *
    * <p>{@code @PolyModifiable} is different: it should usually become {@code @PolyGrowable}, but
    * for {@code Map.Entry} only the replace bit is meaningful to carry from the map receiver. Its
@@ -120,15 +118,17 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
-    if (areSameByClass(annotation, Modifiable.class)) {
-      return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : GROWABLE;
-    } else if (areSameByClass(annotation, Unmodifiable.class)) {
-      return tm != null && typeCannotGrow(tm) ? MAYBE_GROW : UNGROWABLE;
+    if (tm != null) {
+      if (areSameByClass(annotation, Modifiable.class)) {
+        return typeCannotGrow(tm) ? MAYBE_GROWABLE : GROWABLE;
+      } else if (areSameByClass(annotation, Unmodifiable.class)) {
+        return typeCannotGrow(tm) ? MAYBE_GROWABLE : UNGROWABLE;
+      } else if (areSameByClass(annotation, PolyModifiable.class)) {
+        return isMapEntry(tm) ? MAYBE_GROWABLE : POLY_GROWABLE;
+      }
     } else if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
-      return MAYBE_GROW;
-    } else if (areSameByClass(annotation, PolyModifiable.class)) {
-      return tm != null && isMapEntry(tm) ? MAYBE_GROW : POLY_GROW;
+      return MAYBE_GROWABLE;
     }
     return super.canonicalAnnotation(annotation);
   }
@@ -153,21 +153,19 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /**
    * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
    *
-   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
-   * when the argument is already a List with no duplicates, but otherwise it returns a new
-   * ArrayList. A stub annotation like
+   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
    *
    * <pre>{@code
    * static <T> @PolyGrowable List<T> withoutDuplicates(@PolyGrowable Collection<T> values)
    * }</pre>
    *
-   * would be unsound, because an {@code @Ungrowable} input could receive the fresh ArrayList, whose
-   * static type should be {@code @Growable}. It would also be too imprecise to always use
+   * would be unsound, because an {@code @Ungrowable} input could yield a growable ArrayList, whose
+   * static type should be {@code @Growable}. It would be sound but imprecise to always use
    * {@code @MaybeGrowable}, because passing a {@code @Growable} collection guarantees that both
    * possible results are growable. Therefore, model the method here as preserving {@code @Growable}
    * inputs and otherwise returning {@code @MaybeGrowable}.
    *
-   * @param tree the invocation of {@code withoutDuplicates}
+   * @param tree an invocation of {@code withoutDuplicates}
    * @param methodType the annotated executable type of the invoked method
    */
   private void refineCollectionsPlumeWithoutDuplicatesReturnType(
@@ -182,7 +180,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code listIterator()} return type based on {@code @IteratorPolyMod}.
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrinkable}.
    *
    * @param tree the listIterator method invocation
    * @param methodType the annotated executable type of the invoked method
@@ -192,7 +190,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     AnnotatedTypeMirror returnType = methodType.getReturnType();
     if (returnType.hasPrimaryAnnotation(UNGROWABLE)
         || returnType.hasPrimaryAnnotation(GROWABLE)
-        || returnType.hasPrimaryAnnotation(POLY_GROW)) {
+        || returnType.hasPrimaryAnnotation(POLY_GROWABLE)) {
       return;
     }
 
@@ -211,10 +209,10 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    if (hasIteratorPolyMod(receiverType)) {
+    if (hasIteratorPolyShrinkable(receiverType)) {
       returnType.replaceAnnotation(GROWABLE);
     } else {
-      returnType.replaceAnnotation(MAYBE_GROW);
+      returnType.replaceAnnotation(MAYBE_GROWABLE);
     }
   }
 
@@ -241,17 +239,17 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
+   * Returns true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation.
    *
    * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
+   * @return true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation
    */
-  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
+  private boolean hasIteratorPolyShrinkable(AnnotatedTypeMirror type) {
     if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       return true;
     }
     return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrinkable.class);
   }
 
   /**

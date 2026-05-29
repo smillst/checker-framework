@@ -7,13 +7,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Convenience alias meaning {@code @MaybeGrowable @MaybeShrinkable @MaybeReplaceable}. This is a
- * syntactic sugar for {@link MaybeModifiable}. It is intended to be used on parameters of methods
- * that are not designed to change the parameter. This annotation is only allowed to be written
- * within method or constructor parameter types, or explicit receiver parameter types.
+ * Convenience alias that is syntactic sugar for {@code @}{@link MaybeModifiable}. It may only be
+ * written within a formal parameter type.
  *
- * <p>This annotation is not part of the type hierarchy; the Modifiability Checker expands it to
- * {@code @MaybeGrowable @MaybeShrinkable @MaybeReplaceable} on each annotated type.
+ * <p>You can write {@code @UnmodifiableParam} to indicate that a method does not change its
+ * parameter. From the method's point of view, the parameter is unmodifiable. This is reference
+ * unmodifiability, because another alias can change the value, unlike {@code @}{@link Unmodifiable}
+ * which means object immutability: no alias can change the value.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */

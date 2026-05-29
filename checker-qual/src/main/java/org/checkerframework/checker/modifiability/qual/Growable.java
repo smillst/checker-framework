@@ -9,7 +9,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * Calling grow operations such as {@code add}, {@code addAll}, etc. on this collection will not
- * result in throwing {@link UnsupportedOperationException}.
+ * throw {@link UnsupportedOperationException}.
  *
  * <p>No guarantees are made about shrink or replace operations.
  *

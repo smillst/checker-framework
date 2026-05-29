@@ -13,8 +13,8 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
@@ -57,8 +57,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   // ── Hierarchy qualifiers ──────────
 
-  /** The {@code @}{@link MaybeReplaceable} qualifier (top of Replace hierarchy). */
-  private final AnnotationMirror MAYBE_REPLACE;
+  /** The {@code @}{@link MaybeReplaceable} qualifier. */
+  private final AnnotationMirror MAYBE_REPLACEABLE;
 
   /** The {@code @}{@link Replaceable} qualifier. */
   private final AnnotationMirror REPLACEABLE;
@@ -67,9 +67,9 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private final AnnotationMirror UNREPLACEABLE;
 
   /** The {@code @}{@link PolyReplaceable} qualifier. */
-  private final AnnotationMirror POLY_REPLACE;
+  private final AnnotationMirror POLY_REPLACEABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
+  /** The {@code @}{@link IteratorPolyShrinkable} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
@@ -80,7 +80,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @SuppressWarnings("this-escape")
   public ReplaceAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-    // Cache type erasures.
+
     Types types = getProcessingEnv().getTypeUtils();
     this.setErasure = types.erasure(getElementUtils().getTypeElement("java.util.Set").asType());
     this.collectionErasure =
@@ -94,12 +94,12 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), MaybeReplaceable.class);
+    this.MAYBE_REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeReplaceable.class);
     this.REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Replaceable.class);
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
-    this.POLY_REPLACE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplaceable.class);
+    this.POLY_REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplaceable.class);
     this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrinkable.class);
 
     postInit();
   }
@@ -113,8 +113,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Unreplaceable.class,
             BottomReplaceable.class,
             PolyReplaceable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            MaybeIteratorPolyShrinkable.class,
+            IteratorPolyShrinkable.class));
   }
 
   /**
@@ -124,9 +124,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
    * that cannot replace structurally, such as exact {@code Collection}, {@code Set}, non-{@code
    * LinkedList} {@code Queue}, and non-{@code ListIterator} {@code Iterator}, their replace
-   * component canonicalizes to {@code @MaybeReplaceable}. Explicit replace qualifiers are left to
-   * normal canonicalization so users can still write and preserve an explicit capability tuple such
-   * as {@code @Growable @Shrinkable @Replaceable Set}.
+   * component canonicalizes to {@code @MaybeReplaceable}.
    *
    * <p>{@code @PolyModifiable} remains {@code @PolyReplaceable}: unlike grow and shrink for {@code
    * Map.Entry}, replacement through {@code Entry.setValue} is a meaningful capability to carry from
@@ -135,15 +133,17 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
-    if (areSameByClass(annotation, Modifiable.class)) {
-      return tm != null && typeCannotReplace(tm) ? MAYBE_REPLACE : REPLACEABLE;
-    } else if (areSameByClass(annotation, Unmodifiable.class)) {
-      return tm != null && typeCannotReplace(tm) ? MAYBE_REPLACE : UNREPLACEABLE;
+    if (tm != null) {
+      if (areSameByClass(annotation, Modifiable.class)) {
+        return typeCannotReplace(tm) ? MAYBE_REPLACEABLE : REPLACEABLE;
+      } else if (areSameByClass(annotation, Unmodifiable.class)) {
+        return typeCannotReplace(tm) ? MAYBE_REPLACEABLE : UNREPLACEABLE;
+      }
     } else if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
-      return MAYBE_REPLACE;
+      return MAYBE_REPLACEABLE;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {
-      return POLY_REPLACE;
+      return POLY_REPLACEABLE;
     }
     return super.canonicalAnnotation(annotation);
   }
@@ -168,21 +168,19 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /**
    * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
    *
-   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
-   * when the argument is already a List with no duplicates, but otherwise it returns a new
-   * ArrayList. A stub annotation like
+   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
    *
    * <pre>{@code
    * static <T> @PolyReplaceable List<T> withoutDuplicates(@PolyReplaceable Collection<T> values)
    * }</pre>
    *
-   * would be unsound, because an {@code @Unreplaceable} input could receive the fresh ArrayList,
-   * whose static type should be {@code @Replaceable}. It would also be too imprecise to always use
+   * would be unsound, because an {@code @Unreplaceable} input could yield a replaceable ArrayList,
+   * whose static type should be {@code @Replaceable}. It would be sound but imprecise to always use
    * {@code @MaybeReplaceable}, because passing a {@code @Replaceable} collection guarantees that
    * both possible results are replaceable. Therefore, model the method here as preserving
    * {@code @Replaceable} inputs and otherwise returning {@code @MaybeReplaceable}.
    *
-   * @param tree the invocation of {@code withoutDuplicates}
+   * @param tree an invocation of {@code withoutDuplicates}
    * @param methodType the annotated executable type of the invoked method
    */
   private void refineCollectionsPlumeWithoutDuplicatesReturnType(
@@ -197,7 +195,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code listIterator()} return type based on {@code @IteratorPolyMod}.
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrinkable}.
    *
    * @param tree the listIterator method invocation
    * @param methodType the annotated executable type of the invoked method
@@ -207,7 +205,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     AnnotatedTypeMirror returnType = methodType.getReturnType();
     if (returnType.hasPrimaryAnnotation(UNREPLACEABLE)
         || returnType.hasPrimaryAnnotation(REPLACEABLE)
-        || returnType.hasPrimaryAnnotation(POLY_REPLACE)) {
+        || returnType.hasPrimaryAnnotation(POLY_REPLACEABLE)) {
       return;
     }
 
@@ -226,10 +224,10 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    if (hasIteratorPolyMod(receiverType)) {
+    if (hasIteratorPolyShrinkable(receiverType)) {
       returnType.replaceAnnotation(REPLACEABLE);
     } else {
-      returnType.replaceAnnotation(MAYBE_REPLACE);
+      returnType.replaceAnnotation(MAYBE_REPLACEABLE);
     }
   }
 
@@ -256,17 +254,17 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
+   * Returns true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation.
    *
    * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
+   * @return true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation
    */
-  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
+  private boolean hasIteratorPolyShrinkable(AnnotatedTypeMirror type) {
     if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       return true;
     }
     return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrinkable.class);
   }
 
   /**

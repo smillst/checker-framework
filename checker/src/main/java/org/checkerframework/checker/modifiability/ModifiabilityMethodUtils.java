@@ -21,7 +21,7 @@ public final class ModifiabilityMethodUtils {
   }
 
   /**
-   * Returns true if {@code tree} invokes {@code
+   * Returns true if {@code tree} is a call to {@code
    * org.plumelib.util.CollectionsPlume.withoutDuplicates(Collection)}.
    *
    * @param tree a method invocation tree
@@ -29,16 +29,14 @@ public final class ModifiabilityMethodUtils {
    */
   public static boolean isCollectionsPlumeWithoutDuplicates(MethodInvocationTree tree) {
     ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null
-        || !invokedMethod.getSimpleName().contentEquals(WITHOUT_DUPLICATES)
-        || invokedMethod.getParameters().size() != 1) {
-      return false;
+    if (invokedMethod != null
+        && invokedMethod.getSimpleName().contentEquals(WITHOUT_DUPLICATES)
+        && invokedMethod.getParameters().size() == 1) {
+      Element enclosingElement = invokedMethod.getEnclosingElement();
+      if (enclosingElement instanceof TypeElement enclosingType) {
+        return enclosingType.getQualifiedName().contentEquals(COLLECTIONS_PLUME);
+      }
     }
-
-    Element enclosingElement = invokedMethod.getEnclosingElement();
-    if (!(enclosingElement instanceof TypeElement enclosingType)) {
-      return false;
-    }
-    return enclosingType.getQualifiedName().contentEquals(COLLECTIONS_PLUME);
+    return false;
   }
 }

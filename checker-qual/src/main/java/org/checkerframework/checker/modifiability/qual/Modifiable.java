@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * Convenience alias usually meaning {@code @Growable @Shrinkable @Replaceable}. Calling a mutating
- * operation (growing, shrinking, or replacing) on this collection will not result in throwing
- * {@link UnsupportedOperationException}.
+ * operation (growing, shrinking, or replacing) on this collection will not throw {@link
+ * UnsupportedOperationException}.
  *
  * <p>As an exception, {@code @Modifiable} means {@code @Maybe*} if the type does not support a
  * given category of operation; for example, {@code @Modifiable Iterator} means

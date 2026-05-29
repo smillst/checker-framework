@@ -9,9 +9,9 @@ import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * The top qualifier in the Replace hierarchy. Represents unknown replace capability. The checker
- * cannot determine whether the collection supports replace operations such as {@code set} or {@code
- * replaceAll}.
+ * The top qualifier in the Replace hierarchy. The collection may or may not support replace
+ * operations such as {@code set} and {@code replaceAll}. The checker conservatively issues an error
+ * wherever a replace operation is called on a {@code @MaybeReplaceable} expression.
  *
  * <p>This is the default qualifier for unannotated types in the Replace hierarchy.
  *

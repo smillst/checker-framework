@@ -13,8 +13,8 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
@@ -46,8 +46,8 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
   // ── Hierarchy qualifiers ──────────
 
-  /** The {@code @}{@link MaybeShrinkable} qualifier (top of Shrink hierarchy). */
-  private final AnnotationMirror MAYBE_SHRINK;
+  /** The {@code @}{@link MaybeShrinkable} qualifier. */
+  private final AnnotationMirror MAYBE_SHRINKABLE;
 
   /** The {@code @}{@link Shrinkable} qualifier. */
   private final AnnotationMirror SHRINKABLE;
@@ -56,9 +56,9 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private final AnnotationMirror UNSHRINKABLE;
 
   /** The {@code @}{@link PolyShrinkable} qualifier. */
-  private final AnnotationMirror POLY_SHRINK;
+  private final AnnotationMirror POLY_SHRINKABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
+  /** The {@code @}{@link IteratorPolyShrinkable} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
@@ -69,7 +69,7 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @SuppressWarnings("this-escape")
   public ShrinkAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-    // Cache type erasures.
+
     Types types = getProcessingEnv().getTypeUtils();
     this.mapEntryErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
@@ -77,12 +77,12 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_SHRINK = AnnotationBuilder.fromClass(getElementUtils(), MaybeShrinkable.class);
+    this.MAYBE_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeShrinkable.class);
     this.SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Shrinkable.class);
     this.UNSHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Unshrinkable.class);
-    this.POLY_SHRINK = AnnotationBuilder.fromClass(getElementUtils(), PolyShrinkable.class);
+    this.POLY_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyShrinkable.class);
     this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrinkable.class);
 
     postInit();
   }
@@ -96,8 +96,8 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Unshrinkable.class,
             BottomShrinkable.class,
             PolyShrinkable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            MaybeIteratorPolyShrinkable.class,
+            IteratorPolyShrinkable.class));
   }
 
   /**
@@ -106,9 +106,7 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
    *
    * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on {@code
    * Map.Entry}, which cannot shrink, their shrink component canonicalizes to
-   * {@code @MaybeShrinkable}. Explicit shrink qualifiers are left to normal canonicalization so
-   * users can still write and preserve an explicit capability tuple such as
-   * {@code @Growable @Shrinkable @Replaceable Entry}.
+   * {@code @MaybeShrinkable}.
    *
    * <p>{@code @PolyModifiable} is different: it should usually become {@code @PolyShrinkable}, but
    * for {@code Map.Entry} only the replace bit is meaningful to carry from the map receiver. Its
@@ -117,15 +115,17 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
-    if (areSameByClass(annotation, Modifiable.class)) {
-      return tm != null && typeCannotShrink(tm) ? MAYBE_SHRINK : SHRINKABLE;
-    } else if (areSameByClass(annotation, Unmodifiable.class)) {
-      return tm != null && typeCannotShrink(tm) ? MAYBE_SHRINK : UNSHRINKABLE;
+    if (tm != null) {
+      if (areSameByClass(annotation, Modifiable.class)) {
+        return typeCannotShrink(tm) ? MAYBE_SHRINKABLE : SHRINKABLE;
+      } else if (areSameByClass(annotation, Unmodifiable.class)) {
+        return typeCannotShrink(tm) ? MAYBE_SHRINKABLE : UNSHRINKABLE;
+      } else if (areSameByClass(annotation, PolyModifiable.class)) {
+        return isMapEntry(tm) ? MAYBE_SHRINKABLE : POLY_SHRINKABLE;
+      }
     } else if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
-      return MAYBE_SHRINK;
-    } else if (areSameByClass(annotation, PolyModifiable.class)) {
-      return tm != null && isMapEntry(tm) ? MAYBE_SHRINK : POLY_SHRINK;
+      return MAYBE_SHRINKABLE;
     }
     return super.canonicalAnnotation(annotation);
   }
@@ -150,21 +150,19 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /**
    * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
    *
-   * <p>{@code withoutDuplicates} has a conditional aliasing contract: it may return its argument
-   * when the argument is already a List with no duplicates, but otherwise it returns a new
-   * ArrayList. A stub annotation like
+   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
    *
    * <pre>{@code
    * static <T> @PolyShrinkable List<T> withoutDuplicates(@PolyShrinkable Collection<T> values)
    * }</pre>
    *
-   * would be unsound, because an {@code @Unshrinkable} input could receive the fresh ArrayList,
-   * whose static type should be {@code @Shrinkable}. It would also be too imprecise to always use
+   * would be unsound, because an {@code @Unshrinkable} input could yield a shrinkable ArrayList,
+   * whose static type should be {@code @Shrinkable}. It would be sound but imprecise to always use
    * {@code @MaybeShrinkable}, because passing a {@code @Shrinkable} collection guarantees that both
    * possible results are shrinkable. Therefore, model the method here as preserving
    * {@code @Shrinkable} inputs and otherwise returning {@code @MaybeShrinkable}.
    *
-   * @param tree the invocation of {@code withoutDuplicates}
+   * @param tree an invocation of {@code withoutDuplicates}
    * @param methodType the annotated executable type of the invoked method
    */
   private void refineCollectionsPlumeWithoutDuplicatesReturnType(
@@ -179,10 +177,10 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code iterator()} return type based on {@code @IteratorPolyMod}.
+   * Refines {@code iterator()} return type based on {@code @IteratorPolyShrinkable}.
    *
    * <p>If the receiver is {@code @Shrinkable} and either the receiver type use or the invoked
-   * method receiver type has {@code @IteratorPolyMod}, then the result is {@code @Shrinkable
+   * method receiver type has {@code @IteratorPolyShrinkable}, then the result is {@code @Shrinkable
    * Iterator}. Otherwise, shrinkability precision is dropped to {@code @MaybeShrinkable}.
    *
    * @param tree the iterator method invocation
@@ -195,7 +193,7 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     // ArrayList).
     if (returnType.hasPrimaryAnnotation(UNSHRINKABLE)
         || returnType.hasPrimaryAnnotation(SHRINKABLE)
-        || returnType.hasPrimaryAnnotation(POLY_SHRINK)) {
+        || returnType.hasPrimaryAnnotation(POLY_SHRINKABLE)) {
       return;
     }
 
@@ -214,11 +212,11 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    // receiver type is @Shrinkable. check for @IteratorPolyMod
-    if (hasIteratorPolyMod(receiverType)) {
+    // receiver type is @Shrinkable. check for @IteratorPolyShrinkable
+    if (hasIteratorPolyShrinkable(receiverType)) {
       returnType.replaceAnnotation(SHRINKABLE);
     } else {
-      returnType.replaceAnnotation(MAYBE_SHRINK);
+      returnType.replaceAnnotation(MAYBE_SHRINKABLE);
     }
   }
 
@@ -248,17 +246,17 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
+   * Returns true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation.
    *
    * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
+   * @return true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation
    */
-  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
+  private boolean hasIteratorPolyShrinkable(AnnotatedTypeMirror type) {
     if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       return true;
     }
     return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrinkable.class);
   }
 
   /**

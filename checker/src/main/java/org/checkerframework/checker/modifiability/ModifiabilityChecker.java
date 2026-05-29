@@ -25,7 +25,7 @@ import org.checkerframework.framework.source.SourceChecker;
  */
 public class ModifiabilityChecker extends AggregateChecker {
 
-  /** Creates a Modifiability checker. */
+  /** Creates a ModifiabilityChecker. */
   public ModifiabilityChecker() {}
 
   @Override
