@@ -238,13 +238,14 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (invokedMethod == null) {
       return false;
     }
+    // quick syntax check before expensive erasure checks
     if (!invokedMethod.getSimpleName().contentEquals("listIterator")
         || tree.getArguments().size() > 1) {
       return false;
     }
-
+    // Check if the return type is an erased ListIterator
     TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
-    return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
+    return TypesUtils.isErasedSubtype(returnUnderlying, listIteratorErasure, types);
   }
 
   /**

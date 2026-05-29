@@ -240,13 +240,14 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     if (invokedMethod == null) {
       return false;
     }
+    // quick syntax check before expensive erasure checks
     String methodName = invokedMethod.getSimpleName().toString();
     int argCount = tree.getArguments().size();
     if (!((methodName.equals("iterator") && argCount == 0)
         || (methodName.equals("listIterator") && argCount <= 1))) {
       return false;
     }
-
+    // Check if the return type is an erased Iterator
     TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
     return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
   }
