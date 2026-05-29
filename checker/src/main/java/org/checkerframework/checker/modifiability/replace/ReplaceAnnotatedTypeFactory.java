@@ -138,7 +138,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       } else if (areSameByClass(annotation, Unmodifiable.class)) {
         return typeCannotReplace(tm) ? MAYBE_REPLACEABLE : UNREPLACEABLE;
       }
-    } else if (areSameByClass(annotation, MaybeModifiable.class)
+    }
+    if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
       return MAYBE_REPLACEABLE;
     } else if (areSameByClass(annotation, PolyModifiable.class)) {

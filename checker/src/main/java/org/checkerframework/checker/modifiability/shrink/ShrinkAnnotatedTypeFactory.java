@@ -122,7 +122,8 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       } else if (areSameByClass(annotation, PolyModifiable.class)) {
         return isMapEntry(tm) ? MAYBE_SHRINKABLE : POLY_SHRINKABLE;
       }
-    } else if (areSameByClass(annotation, MaybeModifiable.class)
+    }
+    if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
       return MAYBE_SHRINKABLE;
     }

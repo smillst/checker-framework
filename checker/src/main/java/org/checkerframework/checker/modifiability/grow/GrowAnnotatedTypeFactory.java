@@ -125,7 +125,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       } else if (areSameByClass(annotation, PolyModifiable.class)) {
         return isMapEntry(tm) ? MAYBE_GROWABLE : POLY_GROWABLE;
       }
-    } else if (areSameByClass(annotation, MaybeModifiable.class)
+    }
+    if (areSameByClass(annotation, MaybeModifiable.class)
         || areSameByClass(annotation, UnmodifiableParam.class)) {
       return MAYBE_GROWABLE;
     }
