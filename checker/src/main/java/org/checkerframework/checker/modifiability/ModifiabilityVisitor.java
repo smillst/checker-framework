@@ -201,11 +201,11 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
       AnnotatedExecutableType constructorType, ExecutableElement constructorElement) {}
 
   /**
-   * Returns true if {@code typeElement} is a source-defined subtype of {@link
-   * java.util.Collection}, {@link java.util.Map}, or {@link java.util.Iterator}.
+   * Returns true if {@code typeElement} is a user-defined subtype of {@link java.util.Collection},
+   * {@link java.util.Map}, or {@link java.util.Iterator}.
    *
    * @param typeElement the type element to test
-   * @return true if this source-defined type relies on trusted custom modifiability annotations
+   * @return true if {@code typeElement} is a user-defined subtype of Collection, Map, or Iterator
    */
   private boolean isCollectionFromSourceCode(TypeElement typeElement) {
     if (!ElementUtils.isElementFromSourceCode(typeElement)) {
