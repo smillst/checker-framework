@@ -3,7 +3,7 @@ package org.checkerframework.afu.scenelib.util.coll;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 
 /**
@@ -40,7 +40,7 @@ public class WrapperMap<K, V> implements Map<K, V> {
 
   @SuppressWarnings("keyfor") // use of delegate object
   @Override
-  public @IteratorPolyShrinkable @PolyShrinkable Set<java.util.Map.Entry<K, V>> entrySet(
+  public @IteratorPolyMod @PolyShrinkable Set<java.util.Map.Entry<K, V>> entrySet(
       @PolyShrinkable WrapperMap<K, V> this) {
     return back.entrySet();
   }

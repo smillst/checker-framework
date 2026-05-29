@@ -14,9 +14,9 @@ import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
@@ -60,7 +60,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link PolyGrowable} qualifier. */
   private final AnnotationMirror POLY_GROWABLE;
 
-  /** The {@code @}{@link IteratorPolyShrinkable} qualifier. */
+  /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
@@ -85,7 +85,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
     this.POLY_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyGrowable.class);
     this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyShrinkable.class);
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     postInit();
   }
@@ -99,8 +99,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             Ungrowable.class,
             BottomGrowable.class,
             PolyGrowable.class,
-            MaybeIteratorPolyShrinkable.class,
-            IteratorPolyShrinkable.class));
+            MaybeIteratorPolyMod.class,
+            IteratorPolyMod.class));
   }
 
   /**
@@ -180,14 +180,14 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Refines {@code listIterator()} return type based on {@code @IteratorPolyShrinkable}.
+   * Refines {@code listIterator()} return type based on {@code @IteratorPolyMod}.
    *
    * <p>{@code listIterator()} cannot be annotated as {@code @PolyModifiable} because not all
    * collections preserve the modifiability of their iterators. (For example, {@code
    * CopyOnWriteArrayList} has unmodifiable iterators even though the list is modifiable.) Thus,
    * special treatment is needed for Iterator methods.
    *
-   * <p>If the receiver is {@code @Growable} and {@code @IteratorPolyShrinkable}, then the result is
+   * <p>If the receiver is {@code @Growable} and {@code @IteratorPolyMod}, then the result is
    * {@code @Growable Iterator}. Otherwise, growability precision is dropped to
    * {@code @MaybeGrowable}.
    *
@@ -218,7 +218,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    if (hasIteratorPolyShrinkable(receiverType)) {
+    if (hasIteratorPolyMod(receiverType)) {
       returnType.replaceAnnotation(GROWABLE);
     } else {
       returnType.replaceAnnotation(MAYBE_GROWABLE);
@@ -249,17 +249,17 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   /**
-   * Returns true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation.
+   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
    *
    * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyShrinkable} marker annotation
+   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
    */
-  private boolean hasIteratorPolyShrinkable(AnnotatedTypeMirror type) {
+  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
     if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       return true;
     }
     return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyShrinkable.class);
+        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
   /**

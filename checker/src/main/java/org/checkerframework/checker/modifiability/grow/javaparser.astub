@@ -1,5 +1,5 @@
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 
 package com.github.javaparser.ast.stmt;
 
@@ -10,5 +10,5 @@ class BlockStmt {
 package com.github.javaparser.ast;
 
 class CompilationUnit {
-  public @Modifiable @IteratorPolyShrinkable NodeList<ImportDeclaration> getImports() {}
+  public @Modifiable @IteratorPolyMod NodeList<ImportDeclaration> getImports() {}
 }

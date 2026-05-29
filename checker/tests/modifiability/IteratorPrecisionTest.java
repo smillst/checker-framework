@@ -30,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TransferQueue;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -43,7 +43,7 @@ public class IteratorPrecisionTest {
     B
   }
 
-  @IteratorPolyShrinkable List<String> list;
+  @IteratorPolyMod List<String> list;
 
   void iteratorChecker() {
     // this should not be allowed because CopyOnWriteArrayList's iterator does not preserve remove
@@ -73,7 +73,7 @@ public class IteratorPrecisionTest {
     List<String> list2 = new CopyOnWriteArrayList<>();
     // TODO!!!!: below the Iterator is default to be unknown shrink because the logic goes:
     // if the current iterator return unknown (which is what List.iterator() returns),
-    //    then if the receiver is @Shrinkable and has @IteratorPolyShrinkable, then the result is
+    //    then if the receiver is @Shrinkable and has @IteratorPolyMod, then the result is
     // @Shrinkable.
     //    otherwise, the result is unknown.
     // think: should we add a special case for CopyOnWriteArrayList to return unshrinkable iterator?
@@ -133,7 +133,7 @@ public class IteratorPrecisionTest {
     @Shrinkable Iterator<String> iter2 = keys2.iterator();
   }
 
-  void setIteratorPolyShrinkable() {
+  void setIteratorPolyMod() {
     Set<String> hashSet = new HashSet<>();
     @Shrinkable Iterator<String> hashSetIterator = hashSet.iterator();
     hashSetIterator.remove();
@@ -143,7 +143,7 @@ public class IteratorPrecisionTest {
     treeSetIterator.remove();
   }
 
-  void dequeIteratorPolyShrinkable() {
+  void dequeIteratorPolyMod() {
     Deque<String> arrayDeque = new ArrayDeque<>();
     @Shrinkable Iterator<String> arrayDequeIterator = arrayDeque.iterator();
     arrayDequeIterator.remove();
@@ -153,7 +153,7 @@ public class IteratorPrecisionTest {
     linkedListIterator.remove();
   }
 
-  void queueIteratorPolyShrinkable() {
+  void queueIteratorPolyMod() {
     Queue<String> priorityQueue = new PriorityQueue<>();
     @Shrinkable Iterator<String> priorityQueueIterator = priorityQueue.iterator();
     priorityQueueIterator.remove();
@@ -171,7 +171,7 @@ public class IteratorPrecisionTest {
     linkedTransferQueueIterator.remove();
   }
 
-  void factoryIteratorPolyShrinkable() {
+  void factoryIteratorPolyMod() {
     Set<TestEnum> enumSet = EnumSet.of(TestEnum.A, TestEnum.B);
     @Shrinkable Iterator<TestEnum> enumSetIterator = enumSet.iterator();
     enumSetIterator.remove();
@@ -245,7 +245,7 @@ public class IteratorPrecisionTest {
     @Unshrinkable Iterator<Map.@Unmodifiable Entry<String, String>> entryIterator = map.entrySet().iterator();
   }
 
-  void iteratorDependentCollectionMethodsRequireIteratorPolyShrinkable(
+  void iteratorDependentCollectionMethodsRequireIteratorPolyMod(
       @Modifiable IteratorRemoveUnsupportedCollection collection,
       @Modifiable IteratorRemoveUnsupportedSet set) {
     // :: error: [method.invocation]
@@ -263,7 +263,7 @@ public class IteratorPrecisionTest {
     set.removeAll(List.of("a"));
   }
 
-  void iteratorDependentListMethodsRequireIteratorPolyShrinkable(
+  void iteratorDependentListMethodsRequireIteratorPolyMod(
       @Modifiable IteratorMutationUnsupportedList list) {
     // :: error: [method.invocation]
     list.set(0, "b");
