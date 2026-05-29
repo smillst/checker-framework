@@ -1,7 +1,6 @@
 package org.checkerframework.checker.modifiability.replace;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import org.checkerframework.checker.modifiability.ModifiabilityBaseChecker;
@@ -19,13 +18,7 @@ import org.checkerframework.framework.source.SuppressWarningsPrefix;
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
-@RelevantJavaTypes({
-  Collection.class,
-  Iterator.class,
-  Map.class,
-  Map.Entry.class,
-  Collections.class
-})
+@RelevantJavaTypes({Collection.class, Iterator.class, Map.class, Map.Entry.class})
 @StubFiles({"ical4j.astub", "javaparser.astub"})
 @SuppressWarningsPrefix({"replaceable", "modifiability"})
 public class ReplaceChecker extends ModifiabilityBaseChecker {
