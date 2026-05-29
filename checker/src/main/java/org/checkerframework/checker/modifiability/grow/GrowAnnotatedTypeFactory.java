@@ -30,7 +30,6 @@ import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -214,14 +213,9 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       return;
     }
 
-    if (!receiverType.hasPrimaryAnnotation(GROWABLE)) {
-      return;
-    }
-
-    if (hasIteratorPolyMod(receiverType)) {
+    if (receiverType.hasPrimaryAnnotation(GROWABLE)
+        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(GROWABLE);
-    } else {
-      returnType.replaceAnnotation(MAYBE_GROWABLE);
     }
   }
 
@@ -246,20 +240,6 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     // Check if the return type is an erased ListIterator
     TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
     return TypesUtils.isErasedSubtype(returnUnderlying, listIteratorErasure, types);
-  }
-
-  /**
-   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
-   *
-   * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
-   */
-  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
-    if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      return true;
-    }
-    return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
   /**

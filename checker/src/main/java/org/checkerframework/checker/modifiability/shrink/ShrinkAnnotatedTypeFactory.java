@@ -31,7 +31,6 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExe
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
-import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -214,15 +213,10 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       returnType.replaceAnnotation(UNSHRINKABLE);
     }
 
-    if (!receiverType.hasPrimaryAnnotation(SHRINKABLE)) {
-      return;
-    }
-
-    // receiver type is @Shrinkable. check for @IteratorPolyMod
-    if (hasIteratorPolyMod(receiverType)) {
+    // receiver type is @Shrinkable and @IteratorPolyMod
+    if (receiverType.hasPrimaryAnnotation(SHRINKABLE)
+        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(SHRINKABLE);
-    } else {
-      returnType.replaceAnnotation(MAYBE_SHRINKABLE);
     }
   }
 
@@ -250,20 +244,6 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     // Check if the return type is an erased Iterator
     TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
     return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
-  }
-
-  /**
-   * Returns true if {@code type} has the {@code @IteratorPolyMod} marker annotation.
-   *
-   * @param type the type to test
-   * @return true if {@code type} has the {@code @IteratorPolyMod} marker annotation
-   */
-  private boolean hasIteratorPolyMod(AnnotatedTypeMirror type) {
-    if (type.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      return true;
-    }
-    return AnnotationUtils.containsSameByClass(
-        type.getUnderlyingType().getAnnotationMirrors(), IteratorPolyMod.class);
   }
 
   /**
