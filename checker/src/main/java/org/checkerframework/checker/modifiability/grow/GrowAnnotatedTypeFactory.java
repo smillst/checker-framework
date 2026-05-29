@@ -196,6 +196,8 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private void refineListIteratorReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
     AnnotatedTypeMirror returnType = methodType.getReturnType();
+    // Keep explicit ungrowable/growable iterator contracts (for example, CopyOnWriteArrayList,
+    // ArrayList).
     if (returnType.hasPrimaryAnnotation(UNGROWABLE)
         || returnType.hasPrimaryAnnotation(GROWABLE)
         || returnType.hasPrimaryAnnotation(POLY_GROWABLE)) {
@@ -208,11 +210,13 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
     AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
 
+    // all ungrowable collections' iterators are ungrowable.
     if (receiverType.hasPrimaryAnnotation(UNGROWABLE)) {
       returnType.replaceAnnotation(UNGROWABLE);
       return;
     }
 
+    // receiver type is @Growable and @IteratorPolyMod
     if (receiverType.hasPrimaryAnnotation(GROWABLE)
         && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(GROWABLE);

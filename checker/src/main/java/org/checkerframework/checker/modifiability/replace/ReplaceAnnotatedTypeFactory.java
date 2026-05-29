@@ -211,6 +211,8 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   private void refineListIteratorReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
     AnnotatedTypeMirror returnType = methodType.getReturnType();
+    // Keep explicit unreplaceable/replaceable iterator contracts (for example,
+    // CopyOnWriteArrayList, ArrayList).
     if (returnType.hasPrimaryAnnotation(UNREPLACEABLE)
         || returnType.hasPrimaryAnnotation(REPLACEABLE)
         || returnType.hasPrimaryAnnotation(POLY_REPLACEABLE)) {
@@ -223,11 +225,12 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
     AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
 
+    // all unreplaceable collections' iterators are unreplaceable.
     if (receiverType.hasPrimaryAnnotation(UNREPLACEABLE)) {
       returnType.replaceAnnotation(UNREPLACEABLE);
       return;
     }
-
+    // receiver type is @Replaceable and @IteratorPolyMod
     if (receiverType.hasPrimaryAnnotation(REPLACEABLE)
         && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(REPLACEABLE);
