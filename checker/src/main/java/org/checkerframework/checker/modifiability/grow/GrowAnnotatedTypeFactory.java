@@ -46,7 +46,7 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The erased {@code java.util.ListIterator} type. */
   private final TypeMirror listIteratorErasure;
 
-  // ── Hierarchy qualifiers ──────────
+  // -- Hierarchy qualifiers ----------
 
   /** The {@code @}{@link MaybeGrowable} qualifier. */
   private final AnnotationMirror MAYBE_GROWABLE;
