@@ -44,7 +44,7 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The erased {@code java.util.Iterator} type. */
   private final TypeMirror iteratorErasure;
 
-  // ── Hierarchy qualifiers ──────────
+  // -- Hierarchy qualifiers ----------
 
   /** The {@code @}{@link MaybeShrinkable} qualifier (top of Shrink hierarchy). */
   private final AnnotationMirror MAYBE_SHRINK;

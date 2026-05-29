@@ -55,7 +55,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The erased {@code java.util.ListIterator} type. */
   private final TypeMirror listIteratorErasure;
 
-  // ── Hierarchy qualifiers ──────────
+  // -- Hierarchy qualifiers ----------
 
   /** The {@code @}{@link MaybeReplaceable} qualifier (top of Replace hierarchy). */
   private final AnnotationMirror MAYBE_REPLACE;
