@@ -341,7 +341,7 @@ do not change modifiability.
 
 \subsectionAndLabel{Modifiability method annotations}{modifiability-method-annotations}
 
-The Modifiability Checker supports one annotation that specifies method
+The Modifiability Checker supports method annotations that specify method
 behavior.
 
 \begin{description}
@@ -353,6 +353,20 @@ method or constructor declaration, it indicates that the method always throws
 erroneous.  The Modifiability Checker issues an error at every call to a
 method annotated with \code{@ThrowsUOE}.
 
+\item[\refqualclass{checker/modifiability/qual}{PreservesModifiability}]
+When written on a one-argument method declaration, it indicates that the
+method preserves positive modifiability capabilities from its argument to
+its return value.  If the argument is \<@Growable>, \<@Shrinkable>,
+\<@Replaceable>, or \<@IteratorPolyMod>, then the Modifiability Checker
+treats the return value as having that same capability. If the argument has
+any other qualifier, the return type is the top qualifier (\<@MaybeGrowable>,
+\<@MaybeShrinkable>, \<@MaybeReplaceable>, or \<@MaybeIteratorPolyMod>) in
+the corresponding hierarchy.
+
+This is useful for methods that may return their argument, or may return a
+new modifiable collection.
+
+If put on a method with no parameters, then it has no effect.
 \end{description}
 
 \sectionAndLabel{\<@Modifiable> and \<@Unmodifiable> for types without grow, shrink, and/or replace methods}{modifiability-types-lacking-methods}
@@ -502,4 +516,4 @@ class Demo {
 % LocalWords:  addLast unreplaceable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrowable BottomShrinkable BottomReplaceable
-% LocalWords:  MaybeIteratorPolyMod IteratorPolyMod
+% LocalWords:  MaybeIteratorPolyMod IteratorPolyMod PreservesModifiability

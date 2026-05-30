@@ -11,7 +11,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
@@ -20,6 +19,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
@@ -140,33 +140,38 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineIteratorReturnType(tree, method);
     }
 
-    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (getDeclAnnotation(invokedMethod, PreservesModifiability.class) != null) {
+      refinePreservesModifiabilityReturnType(tree, method);
     }
 
     return mType;
   }
 
   /**
-   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   * Refines the return type of a {@code @PreservesModifiability} method.
    *
-   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
+   * <p>If the method has no parameters, then this annotation has no effect.
    *
-   * <pre>{@code
-   * static <T> @PolyShrinkable List<T> withoutDuplicates(@PolyShrinkable Collection<T> values)
-   * }</pre>
+   * <p>Otherwise, if the first argument is {@code @Shrinkable}, then the return type is also
+   * {@code @Shrinkable}. If the first argument is {@code @IteratorPolyMod}, then the return type is
+   * also {@code @IteratorPolyMod}.
    *
-   * would be unsound, because an {@code @Unshrinkable} input could yield a shrinkable ArrayList,
-   * whose static type should be {@code @Shrinkable}. It would be sound but imprecise to always use
-   * {@code @MaybeShrinkable}, because passing a {@code @Shrinkable} collection guarantees that both
-   * possible results are shrinkable. Therefore, model the method here as preserving
-   * {@code @Shrinkable} inputs and otherwise returning {@code @MaybeShrinkable}.
+   * <p>For every other case, the return type is {@code @MaybeShrinkable}.
    *
-   * @param tree an invocation of {@code withoutDuplicates}
+   * <p>Such method cannot be annotated as {@code @PolyShrinkable} because an {@code @Unshrinkable}
+   * input could yield either a shrinkable or unshrinkable result. It would be imprecise to always
+   * use {@code @MaybeShrinkable}, because passing a {@code @Shrinkable} collection guarantees that
+   * {@code @Shrinkable} return type.
+   *
+   * @param tree an invocation of a {@code @PreservesModifiability} method
    * @param methodType the annotated executable type of the invoked method
    */
-  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+  private void refinePreservesModifiabilityReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    if (tree.getArguments().isEmpty()) {
+      return;
+    }
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(SHRINKABLE)) {
       methodType.getReturnType().replaceAnnotation(SHRINKABLE);

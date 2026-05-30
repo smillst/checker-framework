@@ -11,7 +11,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
@@ -21,6 +20,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
@@ -143,33 +143,38 @@ public class GrowAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineListIteratorReturnType(tree, method);
     }
 
-    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (getDeclAnnotation(invokedMethod, PreservesModifiability.class) != null) {
+      refinePreservesModifiabilityReturnType(tree, method);
     }
 
     return mType;
   }
 
   /**
-   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   * Refines the return type of a {@code @PreservesModifiability} method.
    *
-   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
+   * <p>If the method has no parameters, then this annotation has no effect.
    *
-   * <pre>{@code
-   * static <T> @PolyGrowable List<T> withoutDuplicates(@PolyGrowable Collection<T> values)
-   * }</pre>
+   * <p>Otherwise, if the first argument is {@code @Growable}, then the return type is also
+   * {@code @Growable}. If the first argument is {@code @IteratorPolyMod}, then the return type is
+   * also {@code @IteratorPolyMod}.
    *
-   * would be unsound, because an {@code @Ungrowable} input could yield a growable ArrayList, whose
-   * static type should be {@code @Growable}. It would be sound but imprecise to always use
-   * {@code @MaybeGrowable}, because passing a {@code @Growable} collection guarantees that both
-   * possible results are growable. Therefore, model the method here as preserving {@code @Growable}
-   * inputs and otherwise returning {@code @MaybeGrowable}.
+   * <p>For every other case, the return type is {@code @MaybeGrowable}.
    *
-   * @param tree an invocation of {@code withoutDuplicates}
+   * <p>Such method cannot be annotated as {@code @PolyGrowable} because an {@code @Ungrowable}
+   * input could yield either a growable or ungrowable result. It would be imprecise to always use
+   * {@code @MaybeGrowable}, because passing a {@code @Growable} collection guarantees that
+   * {@code @Growable} return type.
+   *
+   * @param tree an invocation of a {@code @PreservesModifiability} method
    * @param methodType the annotated executable type of the invoked method
    */
-  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+  private void refinePreservesModifiabilityReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    if (tree.getArguments().isEmpty()) {
+      return;
+    }
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(GROWABLE)) {
       methodType.getReturnType().replaceAnnotation(GROWABLE);

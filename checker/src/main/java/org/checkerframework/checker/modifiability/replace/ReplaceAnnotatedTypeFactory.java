@@ -11,7 +11,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import org.checkerframework.checker.modifiability.ModifiabilityMethodUtils;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
@@ -20,6 +19,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplaceable;
+import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
@@ -158,33 +158,38 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
       refineListIteratorReturnType(tree, method);
     }
 
-    if (ModifiabilityMethodUtils.isCollectionsPlumeWithoutDuplicates(tree)) {
-      refineCollectionsPlumeWithoutDuplicatesReturnType(tree, method);
+    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
+    if (getDeclAnnotation(invokedMethod, PreservesModifiability.class) != null) {
+      refinePreservesModifiabilityReturnType(tree, method);
     }
 
     return mType;
   }
 
   /**
-   * Refines the return type of {@code CollectionsPlume.withoutDuplicates(Collection)}.
+   * Refines the return type of a {@code @PreservesModifiability} method.
    *
-   * <p>{@code withoutDuplicates} returns its argument or a new modifiable ArrayList. The signature
+   * <p>If the method has no parameters, then this annotation has no effect.
    *
-   * <pre>{@code
-   * static <T> @PolyReplaceable List<T> withoutDuplicates(@PolyReplaceable Collection<T> values)
-   * }</pre>
+   * <p>Otherwise, if the first argument is {@code @Replaceable}, then the return type is also
+   * {@code @Replaceable}. If the first argument is {@code @IteratorPolyMod}, then the return type
+   * is also {@code @IteratorPolyMod}.
    *
-   * would be unsound, because an {@code @Unreplaceable} input could yield a replaceable ArrayList,
-   * whose static type should be {@code @Replaceable}. It would be sound but imprecise to always use
-   * {@code @MaybeReplaceable}, because passing a {@code @Replaceable} collection guarantees that
-   * both possible results are replaceable. Therefore, model the method here as preserving
-   * {@code @Replaceable} inputs and otherwise returning {@code @MaybeReplaceable}.
+   * <p>For every other case, the return type is {@code @MaybeReplaceable}.
    *
-   * @param tree an invocation of {@code withoutDuplicates}
+   * <p>Such method cannot be annotated as {@code @PolyReplaceable} because an
+   * {@code @Unreplaceable} input could yield either a replaceable or unreplaceable result. It would
+   * be imprecise to always use {@code @MaybeReplaceable}, because passing a {@code @Replaceable}
+   * collection guarantees {@code @Replaceable} return type.
+   *
+   * @param tree an invocation of a {@code @PreservesModifiability} method
    * @param methodType the annotated executable type of the invoked method
    */
-  private void refineCollectionsPlumeWithoutDuplicatesReturnType(
+  private void refinePreservesModifiabilityReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
+    if (tree.getArguments().isEmpty()) {
+      return;
+    }
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(REPLACEABLE)) {
       methodType.getReturnType().replaceAnnotation(REPLACEABLE);
