@@ -1,7 +1,6 @@
 package org.checkerframework.checker.modifiability.replace;
 
 import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -11,6 +10,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
@@ -25,16 +25,15 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link ReplaceChecker}. */
-public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
+public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Set} type. */
   private final TypeMirror setErasure;
@@ -104,6 +103,31 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   }
 
   @Override
+  protected AnnotationMirror maybeCapability() {
+    return MAYBE_REPLACEABLE;
+  }
+
+  @Override
+  protected AnnotationMirror positiveCapability() {
+    return REPLACEABLE;
+  }
+
+  @Override
+  protected AnnotationMirror negativeCapability() {
+    return UNREPLACEABLE;
+  }
+
+  @Override
+  protected AnnotationMirror polyCapability() {
+    return POLY_REPLACEABLE;
+  }
+
+  @Override
+  protected AnnotationMirror iteratorPreserveRemove() {
+    return ITERATOR_PRESERVE_REMOVE;
+  }
+
+  @Override
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
     return new LinkedHashSet<>(
         Arrays.asList(
@@ -155,7 +179,7 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     AnnotatedExecutableType method = mType.executableType();
 
     if (isListIteratorMethod(tree, method)) {
-      refineListIteratorReturnType(tree, method);
+      refineIteratorReturnType(tree, method);
     }
 
     ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
@@ -164,108 +188,6 @@ public class ReplaceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     return mType;
-  }
-
-  /**
-   * Refines the return type of a {@code @PreservesModifiability} method.
-   *
-   * <p>If the method has no parameters, then this annotation has no effect.
-   *
-   * <p>Otherwise, if the first argument is {@code @Replaceable}, then the return type is also
-   * {@code @Replaceable}. If the first argument is {@code @IteratorPolyMod}, then the return type
-   * is also {@code @IteratorPolyMod}.
-   *
-   * <p>For every other case, the return type is {@code @MaybeReplaceable}.
-   *
-   * <p>Such method cannot be annotated as {@code @PolyReplaceable} because an
-   * {@code @Unreplaceable} input could yield either a replaceable or unreplaceable result. It would
-   * be imprecise to always use {@code @MaybeReplaceable}, because passing a {@code @Replaceable}
-   * collection guarantees {@code @Replaceable} return type.
-   *
-   * @param tree an invocation of a {@code @PreservesModifiability} method
-   * @param methodType the annotated executable type of the invoked method
-   */
-  private void refinePreservesModifiabilityReturnType(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    if (tree.getArguments().isEmpty()) {
-      return;
-    }
-    AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
-    if (argumentType.hasPrimaryAnnotation(REPLACEABLE)) {
-      methodType.getReturnType().replaceAnnotation(REPLACEABLE);
-    }
-    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
-    }
-  }
-
-  /**
-   * Refines {@code listIterator()} return type based on {@code @IteratorPolyMod}.
-   *
-   * <p>{@code listIterator()} cannot be annotated as {@code @PolyModifiable} because not all
-   * collections preserve the modifiability of their iterators. (For example, {@code
-   * CopyOnWriteArrayList} has unmodifiable iterators even though the list is modifiable.) Thus,
-   * special treatment is needed for Iterator methods.
-   *
-   * <p>If the receiver is {@code @Replaceable} and {@code @IteratorPolyMod}, then the result is
-   * {@code @Replaceable Iterator}. Otherwise, replaceability precision is dropped to
-   * {@code @MaybeReplaceable}.
-   *
-   * @param tree the listIterator method invocation
-   * @param methodType the annotated executable type of the invoked method
-   */
-  private void refineListIteratorReturnType(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    AnnotatedTypeMirror returnType = methodType.getReturnType();
-    // Keep explicit unreplaceable/replaceable iterator contracts (for example,
-    // CopyOnWriteArrayList, ArrayList).
-    if (returnType.hasPrimaryAnnotation(UNREPLACEABLE)
-        || returnType.hasPrimaryAnnotation(REPLACEABLE)
-        || returnType.hasPrimaryAnnotation(POLY_REPLACEABLE)) {
-      return;
-    }
-
-    Tree receiverTree = TreeUtils.getReceiverTree(tree);
-    if (receiverTree == null) {
-      return;
-    }
-    AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
-
-    // all unreplaceable collections' iterators are unreplaceable.
-    if (receiverType.hasPrimaryAnnotation(UNREPLACEABLE)) {
-      returnType.replaceAnnotation(UNREPLACEABLE);
-      return;
-    }
-    // receiver type is @Replaceable and @IteratorPolyMod
-    if (receiverType.hasPrimaryAnnotation(REPLACEABLE)
-        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      returnType.replaceAnnotation(REPLACEABLE);
-    } else {
-      returnType.replaceAnnotation(MAYBE_REPLACEABLE);
-    }
-  }
-
-  /**
-   * Returns true if this invocation is a {@code listIterator()} method that returns an Iterator.
-   *
-   * @param tree the method invocation to test
-   * @param methodType the annotated executable type of the invoked method
-   * @return true if this invocation returns an Iterator from {@code listIterator()}
-   */
-  private boolean isListIteratorMethod(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null) {
-      return false;
-    }
-    // quick syntax check before expensive erasure checks
-    if (!invokedMethod.getSimpleName().contentEquals("listIterator")
-        || tree.getArguments().size() > 1) {
-      return false;
-    }
-    // Check if the return type is an erased ListIterator
-    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
-    return TypesUtils.isErasedSubtype(returnUnderlying, listIteratorErasure, types);
   }
 
   /**

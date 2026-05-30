@@ -1,7 +1,6 @@
 package org.checkerframework.checker.modifiability.shrink;
 
 import com.sun.source.tree.MethodInvocationTree;
-import com.sun.source.tree.Tree;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -11,6 +10,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
@@ -25,23 +25,17 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
-import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link ShrinkChecker}. */
-public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
+public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Map.Entry} type. */
   private final TypeMirror mapEntryErasure;
-
-  /** The erased {@code java.util.Iterator} type. */
-  private final TypeMirror iteratorErasure;
 
   // -- Hierarchy qualifiers ----------
 
@@ -72,8 +66,6 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     Types types = getProcessingEnv().getTypeUtils();
     this.mapEntryErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
-    this.iteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
     this.MAYBE_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeShrinkable.class);
@@ -84,6 +76,31 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     postInit();
+  }
+
+  @Override
+  protected AnnotationMirror maybeCapability() {
+    return MAYBE_SHRINKABLE;
+  }
+
+  @Override
+  protected AnnotationMirror positiveCapability() {
+    return SHRINKABLE;
+  }
+
+  @Override
+  protected AnnotationMirror negativeCapability() {
+    return UNSHRINKABLE;
+  }
+
+  @Override
+  protected AnnotationMirror polyCapability() {
+    return POLY_SHRINKABLE;
+  }
+
+  @Override
+  protected AnnotationMirror iteratorPreserveRemove() {
+    return ITERATOR_PRESERVE_REMOVE;
   }
 
   @Override
@@ -146,110 +163,6 @@ public class ShrinkAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     }
 
     return mType;
-  }
-
-  /**
-   * Refines the return type of a {@code @PreservesModifiability} method.
-   *
-   * <p>If the method has no parameters, then this annotation has no effect.
-   *
-   * <p>Otherwise, if the first argument is {@code @Shrinkable}, then the return type is also
-   * {@code @Shrinkable}. If the first argument is {@code @IteratorPolyMod}, then the return type is
-   * also {@code @IteratorPolyMod}.
-   *
-   * <p>For every other case, the return type is {@code @MaybeShrinkable}.
-   *
-   * <p>Such method cannot be annotated as {@code @PolyShrinkable} because an {@code @Unshrinkable}
-   * input could yield either a shrinkable or unshrinkable result. It would be imprecise to always
-   * use {@code @MaybeShrinkable}, because passing a {@code @Shrinkable} collection guarantees that
-   * {@code @Shrinkable} return type.
-   *
-   * @param tree an invocation of a {@code @PreservesModifiability} method
-   * @param methodType the annotated executable type of the invoked method
-   */
-  private void refinePreservesModifiabilityReturnType(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    if (tree.getArguments().isEmpty()) {
-      return;
-    }
-    AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
-    if (argumentType.hasPrimaryAnnotation(SHRINKABLE)) {
-      methodType.getReturnType().replaceAnnotation(SHRINKABLE);
-    }
-    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
-    }
-  }
-
-  /**
-   * Refines {@code iterator()} and {@code listIterator()} return types based on
-   * {@code @IteratorPolyMod}.
-   *
-   * <p>{@code iterator()} and {@code listIterator()} cannot be annotated as {@code @PolyModifiable}
-   * because not all collections preserve the modifiability of their iterators. (For example, {@code
-   * CopyOnWriteArrayList} has unmodifiable iterators even though the list is modifiable.) Thus,
-   * special treatment is needed for Iterator methods.
-   *
-   * <p>If the receiver is {@code @Shrinkable} and {@code @IteratorPolyMod}, then the result is
-   * {@code @Shrinkable Iterator}. Otherwise, shrinkability precision is dropped to
-   * {@code @MaybeShrinkable}.
-   *
-   * @param tree the iterator method invocation
-   * @param methodType the annotated executable type of the invoked method
-   */
-  private void refineIteratorReturnType(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    AnnotatedTypeMirror returnType = methodType.getReturnType();
-    // Keep explicit unshrinkable/shrinkable iterator contracts (for example, CopyOnWriteArrayList,
-    // ArrayList).
-    if (returnType.hasPrimaryAnnotation(UNSHRINKABLE)
-        || returnType.hasPrimaryAnnotation(SHRINKABLE)
-        || returnType.hasPrimaryAnnotation(POLY_SHRINKABLE)) {
-      return;
-    }
-
-    Tree receiverTree = TreeUtils.getReceiverTree(tree);
-    if (receiverTree == null) {
-      return;
-    }
-    AnnotatedTypeMirror receiverType = getAnnotatedType(receiverTree);
-
-    // all unshrinkable collections' iterators are unshrinkable.
-    if (receiverType.hasPrimaryAnnotation(UNSHRINKABLE)) {
-      returnType.replaceAnnotation(UNSHRINKABLE);
-    }
-
-    // receiver type is @Shrinkable and @IteratorPolyMod
-    if (receiverType.hasPrimaryAnnotation(SHRINKABLE)
-        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      returnType.replaceAnnotation(SHRINKABLE);
-    }
-  }
-
-  /**
-   * Returns true if this invocation is an iterator-returning {@code iterator()} or {@code
-   * listIterator()} method.
-   *
-   * @param tree the method invocation to test
-   * @param methodType the annotated executable type of the invoked method
-   * @return true if this invocation returns an Iterator from {@code iterator()} or {@code
-   *     listIterator()}
-   */
-  private boolean isIteratorMethod(MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null) {
-      return false;
-    }
-    // quick syntax check before expensive erasure checks
-    String methodName = invokedMethod.getSimpleName().toString();
-    int argCount = tree.getArguments().size();
-    if (!((methodName.equals("iterator") && argCount == 0)
-        || (methodName.equals("listIterator") && argCount <= 1))) {
-      return false;
-    }
-    // Check if the return type is an erased Iterator
-    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
-    return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
   }
 
   /**
