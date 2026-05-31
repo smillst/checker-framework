@@ -130,7 +130,9 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
       } else if (areSameByClass(annotation, Unmodifiable.class)) {
         return typeCannotShrink(tm) ? MAYBE_SHRINKABLE : UNSHRINKABLE;
       } else if (areSameByClass(annotation, PolyModifiable.class)) {
-        return isMapEntry(tm) ? MAYBE_SHRINKABLE : POLY_SHRINKABLE;
+        return TypesUtils.isErasedSubtype(tm, mapEntryErasure, types)
+            ? MAYBE_SHRINKABLE
+            : POLY_SHRINKABLE;
       }
     }
     if (areSameByClass(annotation, MaybeModifiable.class)
