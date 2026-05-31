@@ -114,15 +114,31 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
     }
   }
 
-  /** Returns the top/unknown qualifier. */
+  /**
+   * Returns the top/unknown qualifier.
+   *
+   * @return the top/unknown qualifier
+   */
   protected abstract AnnotationMirror maybeCapability();
 
-  /** Returns the positive capability qualifier. */
+  /**
+   * Returns the positive capability qualifier.
+   *
+   * @return the positive capability qualifier
+   */
   protected abstract AnnotationMirror positiveCapability();
 
-  /** Returns the negative capability qualifier. */
+  /**
+   * Returns the negative capability qualifier.
+   *
+   * @return the negative capability qualifier
+   */
   protected abstract AnnotationMirror negativeCapability();
 
-  /** Returns the polymorphic capability qualifier. */
+  /**
+   * Returns the polymorphic capability qualifier.
+   *
+   * @return the polymorphic capability qualifier
+   */
   protected abstract AnnotationMirror polyCapability();
 }
