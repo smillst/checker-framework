@@ -133,6 +133,10 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
     AnnotatedDeclaredType overriderReceiver = overriderMethodType.getReceiverType();
     AnnotatedDeclaredType overriddenReceiver = overriddenMethodType.getReceiverType();
+    if (overriderReceiver == null || overriddenReceiver == null) {
+      return true;
+    }
+
     AnnotationMirror positiveCapability = positiveCapability();
 
     if (overriddenReceiver.hasPrimaryAnnotation(positiveCapability)
