@@ -13,9 +13,9 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.qual.ThrowsUOE;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
-import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -32,7 +32,7 @@ import org.checkerframework.javacutil.TypesUtils;
  *       legitimately produce {@code @Modifiable}.
  * </ul>
  */
-public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFactory> {
+public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotatedTypeFactory> {
 
   /** The erased {@code java.util.Collection} type. */
   private final TypeMirror collectionErasure;
@@ -96,6 +96,59 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<BaseAnnotatedTypeFacto
       }
     }
     return super.visitMethodInvocation(node, p);
+  }
+
+  /**
+   * Returns the positive qualifier for this checker's modifiability hierarchy, such as
+   * {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable}.
+   *
+   * @return this checker's positive capability qualifier
+   */
+  private AnnotationMirror positiveCapability() {
+    return atypeFactory.positiveCapability();
+  }
+
+  /**
+   * Checks the normal override rules, then requires overrides to preserve any positive
+   * modifiability receiver capability from the overridden method.
+   *
+   * <p>For example, if the overridden method requires a {@code @Growable} receiver, then the
+   * overriding method must also require a {@code @Growable} receiver.
+   *
+   * <p>The framework's ordinary receiver override rule allows an overriding method to relax
+   * receiver preconditions. For modifiability operations, that would allow a subtype method to drop
+   * a required {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable} receiver capability.
+   */
+  @Override
+  protected boolean checkOverride(
+      MethodTree overriderTree,
+      AnnotatedExecutableType overriderMethodType,
+      AnnotatedDeclaredType overriderType,
+      AnnotatedExecutableType overriddenMethodType,
+      AnnotatedDeclaredType overriddenType) {
+    if (!super.checkOverride(
+        overriderTree, overriderMethodType, overriderType, overriddenMethodType, overriddenType)) {
+      return false;
+    }
+
+    AnnotatedDeclaredType overriderReceiver = overriderMethodType.getReceiverType();
+    AnnotatedDeclaredType overriddenReceiver = overriddenMethodType.getReceiverType();
+    AnnotationMirror positiveCapability = positiveCapability();
+
+    if (overriddenReceiver.hasPrimaryAnnotation(positiveCapability)
+        && !overriderReceiver.hasPrimaryAnnotation(positiveCapability)) {
+      checker.reportError(
+          overriderTree,
+          "override.receiver",
+          overriderReceiver,
+          overriddenReceiver,
+          overriderType,
+          overriderMethodType,
+          overriddenType,
+          overriddenMethodType);
+      return false;
+    }
+    return true;
   }
 
   /**

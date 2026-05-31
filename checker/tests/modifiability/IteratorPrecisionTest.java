@@ -408,16 +408,19 @@ public class IteratorPrecisionTest {
         }
 
         @Override
+        // :: error: [override.receiver]
         public void remove() {
           throw new UnsupportedOperationException();
         }
 
         @Override
+        // :: error: [override.receiver]
         public void set(String e) {
           throw new UnsupportedOperationException();
         }
 
         @Override
+        // :: error: [override.receiver]
         public void add(String e) {
           throw new UnsupportedOperationException();
         }
