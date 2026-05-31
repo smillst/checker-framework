@@ -168,10 +168,13 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
     ParameterizedExecutableType mType = super.methodFromUse(tree, inferTypeArgs);
     AnnotatedExecutableType method = mType.executableType();
 
-    if (isListIteratorMethod(tree, method)) {
+    // if the method is listIterator().
+    TypeMirror returnUnderlying = method.getReturnType().getUnderlyingType();
+    if (TypesUtils.isErasedSubtype(returnUnderlying, listIteratorErasure, types)) {
       refineIteratorReturnType(tree, method);
     }
 
+    // if the method is annotated @PreservesModifiability
     ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
     if (getDeclAnnotation(invokedMethod, PreservesModifiability.class) != null) {
       refinePreservesModifiabilityReturnType(tree, method);

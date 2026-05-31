@@ -37,6 +37,9 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
   /** The erased {@code java.util.Map.Entry} type. */
   private final TypeMirror mapEntryErasure;
 
+  /** The erased {@code java.util.Iterator} type. */
+  private final TypeMirror iteratorErasure;
+
   // -- Hierarchy qualifiers ----------
 
   /** The {@code @}{@link MaybeShrinkable} qualifier. */
@@ -63,7 +66,8 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
     Types types = getProcessingEnv().getTypeUtils();
     this.mapEntryErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
-
+    this.iteratorErasure =
+        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
     this.MAYBE_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeShrinkable.class);
     this.SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Shrinkable.class);
@@ -143,10 +147,13 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
     ParameterizedExecutableType mType = super.methodFromUse(tree, inferTypeArgs);
     AnnotatedExecutableType method = mType.executableType();
 
-    if (isIteratorMethod(tree, method)) {
+    // if the method is iterator() (including listIterator()).
+    TypeMirror returnUnderlying = method.getReturnType().getUnderlyingType();
+    if (TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types)) {
       refineIteratorReturnType(tree, method);
     }
 
+    // if the method is annotated @PreservesModifiability
     ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
     if (getDeclAnnotation(invokedMethod, PreservesModifiability.class) != null) {
       refinePreservesModifiabilityReturnType(tree, method);

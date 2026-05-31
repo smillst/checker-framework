@@ -3,9 +3,6 @@ package org.checkerframework.checker.modifiability;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -13,17 +10,9 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 /** Shared annotated type factory logic for the Modifiability sub-checkers. */
 public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
-
-  /** The erased {@code java.util.Iterator} type. */
-  private final TypeMirror iteratorErasure;
-
-  /** The erased {@code java.util.ListIterator} type. */
-  private final TypeMirror listIteratorErasure;
-
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   protected final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
@@ -35,12 +24,6 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
   @SuppressWarnings("this-escape")
   protected ModifiabilityAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-
-    Types types = getProcessingEnv().getTypeUtils();
-    this.iteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
-    this.listIteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
     this.ITERATOR_PRESERVE_REMOVE =
         AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
   }
@@ -129,56 +112,6 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
         && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(positiveCapability());
     }
-  }
-
-  /**
-   * Returns true if this invocation is a {@code listIterator()} method that returns a ListIterator.
-   *
-   * @param tree the method invocation to test
-   * @param methodType the annotated executable type of the invoked method
-   * @return true if this invocation returns a ListIterator from {@code listIterator()}
-   */
-  protected boolean isListIteratorMethod(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null) {
-      return false;
-    }
-    // quick syntax check before expensive erasure checks
-    if (!invokedMethod.getSimpleName().contentEquals("listIterator")
-        || tree.getArguments().size() > 1) {
-      return false;
-    }
-    // Check if the return type is an erased ListIterator
-    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
-    return TypesUtils.isErasedSubtype(returnUnderlying, listIteratorErasure, types);
-  }
-
-  /**
-   * Returns true if this invocation is an iterator-returning {@code iterator()} or {@code
-   * listIterator()} method.
-   *
-   * @param tree the method invocation to test
-   * @param methodType the annotated executable type of the invoked method
-   * @return true if this invocation returns an Iterator from {@code iterator()} or {@code
-   *     listIterator()}
-   */
-  protected boolean isIteratorMethod(
-      MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    ExecutableElement invokedMethod = TreeUtils.elementFromUse(tree);
-    if (invokedMethod == null) {
-      return false;
-    }
-    // quick syntax check before expensive erasure checks
-    String methodName = invokedMethod.getSimpleName().toString();
-    int argCount = tree.getArguments().size();
-    if (!((methodName.equals("iterator") && argCount == 0)
-        || (methodName.equals("listIterator") && argCount <= 1))) {
-      return false;
-    }
-    // Check if the return type is an erased Iterator
-    TypeMirror returnUnderlying = methodType.getReturnType().getUnderlyingType();
-    return TypesUtils.isErasedSubtype(returnUnderlying, iteratorErasure, types);
   }
 
   /** Returns the top/unknown qualifier. */
