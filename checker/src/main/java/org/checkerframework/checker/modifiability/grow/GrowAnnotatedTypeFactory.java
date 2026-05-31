@@ -177,18 +177,8 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
     if (type.getKind() != TypeKind.DECLARED) {
       return false;
     }
-    return isMapEntry(type)
+    return TypesUtils.isErasedSubtype(type, mapEntryErasure, types)
         || (TypesUtils.isErasedSubtype(type, iteratorErasure, types)
             && !TypesUtils.isErasedSubtype(type, listIteratorErasure, types));
-  }
-
-  /**
-   * Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}.
-   *
-   * @param type the type to test
-   * @return true if {@code type} is a subtype of {@link java.util.Map.Entry}
-   */
-  private boolean isMapEntry(TypeMirror type) {
-    return TypesUtils.isErasedSubtype(type, mapEntryErasure, types);
   }
 }

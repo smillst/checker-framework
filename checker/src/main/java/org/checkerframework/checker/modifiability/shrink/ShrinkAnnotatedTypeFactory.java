@@ -7,7 +7,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
@@ -169,19 +168,6 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
    * @return true if {@code type} structurally cannot support shrink operations
    */
   private boolean typeCannotShrink(TypeMirror type) {
-    return isMapEntry(type);
-  }
-
-  /**
-   * Returns true if {@code type} is a subtype of {@link java.util.Map.Entry}.
-   *
-   * @param type the type to test
-   * @return true if {@code type} is a subtype of {@link java.util.Map.Entry}
-   */
-  private boolean isMapEntry(TypeMirror type) {
-    if (type.getKind() != TypeKind.DECLARED) {
-      return false;
-    }
     return TypesUtils.isErasedSubtype(type, mapEntryErasure, types);
   }
 }
