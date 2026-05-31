@@ -57,9 +57,6 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
   /** The {@code @}{@link PolyGrowable} qualifier. */
   private final AnnotationMirror POLY_GROWABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
-  private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
-
   /**
    * Creates a GrowAnnotatedTypeFactory.
    *
@@ -81,8 +78,6 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
     this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
     this.POLY_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyGrowable.class);
-    this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     postInit();
   }
@@ -105,11 +100,6 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
   @Override
   protected AnnotationMirror polyCapability() {
     return POLY_GROWABLE;
-  }
-
-  @Override
-  protected AnnotationMirror iteratorPreserveRemove() {
-    return ITERATOR_PRESERVE_REMOVE;
   }
 
   @Override

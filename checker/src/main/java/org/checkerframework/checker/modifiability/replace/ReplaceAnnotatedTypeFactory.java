@@ -67,9 +67,6 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   /** The {@code @}{@link PolyReplaceable} qualifier. */
   private final AnnotationMirror POLY_REPLACEABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
-  private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
-
   /**
    * Creates a ReplaceAnnotatedTypeFactory.
    *
@@ -96,8 +93,6 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
     this.REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Replaceable.class);
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
     this.POLY_REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplaceable.class);
-    this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     postInit();
   }
@@ -120,11 +115,6 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   @Override
   protected AnnotationMirror polyCapability() {
     return POLY_REPLACEABLE;
-  }
-
-  @Override
-  protected AnnotationMirror iteratorPreserveRemove() {
-    return ITERATOR_PRESERVE_REMOVE;
   }
 
   @Override

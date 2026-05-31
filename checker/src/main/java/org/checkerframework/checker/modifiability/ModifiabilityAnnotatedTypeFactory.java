@@ -11,6 +11,7 @@ import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -22,6 +23,9 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
 
   /** The erased {@code java.util.ListIterator} type. */
   private final TypeMirror listIteratorErasure;
+
+  /** The {@code @}{@link IteratorPolyMod} qualifier. */
+  protected final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
    * Creates a ModifiabilityAnnotatedTypeFactory.
@@ -37,6 +41,8 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
         types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
     this.listIteratorErasure =
         types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
+    this.ITERATOR_PRESERVE_REMOVE =
+        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
   }
 
   /**
@@ -69,8 +75,8 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
     if (argumentType.hasPrimaryAnnotation(positiveCapability())) {
       methodType.getReturnType().replaceAnnotation(positiveCapability());
     }
-    if (argumentType.hasPrimaryAnnotation(iteratorPreserveRemove())) {
-      methodType.getReturnType().replaceAnnotation(iteratorPreserveRemove());
+    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
     }
   }
 
@@ -120,7 +126,7 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
 
     // receiver type is @Modifiable and @IteratorPolyMod
     if (receiverType.hasPrimaryAnnotation(positiveCapability())
-        && receiverType.hasPrimaryAnnotation(iteratorPreserveRemove())) {
+        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
       returnType.replaceAnnotation(positiveCapability());
     }
   }
@@ -186,7 +192,4 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
 
   /** Returns the polymorphic capability qualifier. */
   protected abstract AnnotationMirror polyCapability();
-
-  /** Returns the {@code @}{@link IteratorPolyMod} qualifier. */
-  protected abstract AnnotationMirror iteratorPreserveRemove();
 }

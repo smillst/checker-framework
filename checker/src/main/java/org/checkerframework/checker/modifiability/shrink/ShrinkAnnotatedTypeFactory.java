@@ -51,9 +51,6 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
   /** The {@code @}{@link PolyShrinkable} qualifier. */
   private final AnnotationMirror POLY_SHRINKABLE;
 
-  /** The {@code @}{@link IteratorPolyMod} qualifier. */
-  private final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
-
   /**
    * Creates a ShrinkAnnotatedTypeFactory.
    *
@@ -72,8 +69,6 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
     this.SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Shrinkable.class);
     this.UNSHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Unshrinkable.class);
     this.POLY_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyShrinkable.class);
-    this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
 
     postInit();
   }
@@ -96,11 +91,6 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
   @Override
   protected AnnotationMirror polyCapability() {
     return POLY_SHRINKABLE;
-  }
-
-  @Override
-  protected AnnotationMirror iteratorPreserveRemove() {
-    return ITERATOR_PRESERVE_REMOVE;
   }
 
   @Override
