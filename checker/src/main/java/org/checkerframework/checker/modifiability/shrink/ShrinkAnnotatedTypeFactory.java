@@ -8,7 +8,6 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
@@ -62,16 +61,13 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
   public ShrinkAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
 
-    Types types = getProcessingEnv().getTypeUtils();
-    this.mapEntryErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
-    this.iteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
+    this.mapEntryErasure = types.erasure(elements.getTypeElement("java.util.Map.Entry").asType());
+    this.iteratorErasure = types.erasure(elements.getTypeElement("java.util.Iterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeShrinkable.class);
-    this.SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Shrinkable.class);
-    this.UNSHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), Unshrinkable.class);
-    this.POLY_SHRINKABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyShrinkable.class);
+    this.MAYBE_SHRINKABLE = AnnotationBuilder.fromClass(elements, MaybeShrinkable.class);
+    this.SHRINKABLE = AnnotationBuilder.fromClass(elements, Shrinkable.class);
+    this.UNSHRINKABLE = AnnotationBuilder.fromClass(elements, Unshrinkable.class);
+    this.POLY_SHRINKABLE = AnnotationBuilder.fromClass(elements, PolyShrinkable.class);
 
     postInit();
   }

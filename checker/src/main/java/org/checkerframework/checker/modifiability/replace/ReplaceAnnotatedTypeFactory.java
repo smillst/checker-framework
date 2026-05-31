@@ -9,7 +9,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
@@ -76,23 +75,21 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   public ReplaceAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
 
-    Types types = getProcessingEnv().getTypeUtils();
-    this.setErasure = types.erasure(getElementUtils().getTypeElement("java.util.Set").asType());
+    this.setErasure = types.erasure(elements.getTypeElement("java.util.Set").asType());
     this.collectionErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Collection").asType());
-    this.queueErasure = types.erasure(getElementUtils().getTypeElement("java.util.Queue").asType());
+        types.erasure(elements.getTypeElement("java.util.Collection").asType());
+    this.queueErasure = types.erasure(elements.getTypeElement("java.util.Queue").asType());
     this.linkedListErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.LinkedList").asType());
-    this.iteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
+        types.erasure(elements.getTypeElement("java.util.LinkedList").asType());
+    this.iteratorErasure = types.erasure(elements.getTypeElement("java.util.Iterator").asType());
     this.listIteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
+        types.erasure(elements.getTypeElement("java.util.ListIterator").asType());
 
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeReplaceable.class);
-    this.REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Replaceable.class);
-    this.UNREPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), Unreplaceable.class);
-    this.POLY_REPLACEABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyReplaceable.class);
+    this.MAYBE_REPLACEABLE = AnnotationBuilder.fromClass(elements, MaybeReplaceable.class);
+    this.REPLACEABLE = AnnotationBuilder.fromClass(elements, Replaceable.class);
+    this.UNREPLACEABLE = AnnotationBuilder.fromClass(elements, Unreplaceable.class);
+    this.POLY_REPLACEABLE = AnnotationBuilder.fromClass(elements, PolyReplaceable.class);
 
     postInit();
   }

@@ -9,7 +9,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Types;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
@@ -66,18 +65,15 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
   public GrowAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
 
-    Types types = getProcessingEnv().getTypeUtils();
-    this.mapEntryErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Map.Entry").asType());
-    this.iteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.Iterator").asType());
+    this.mapEntryErasure = types.erasure(elements.getTypeElement("java.util.Map.Entry").asType());
+    this.iteratorErasure = types.erasure(elements.getTypeElement("java.util.Iterator").asType());
     this.listIteratorErasure =
-        types.erasure(getElementUtils().getTypeElement("java.util.ListIterator").asType());
+        types.erasure(elements.getTypeElement("java.util.ListIterator").asType());
     // Initialize annotation mirrors after the hierarchy is established.
-    this.MAYBE_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), MaybeGrowable.class);
-    this.GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Growable.class);
-    this.UNGROWABLE = AnnotationBuilder.fromClass(getElementUtils(), Ungrowable.class);
-    this.POLY_GROWABLE = AnnotationBuilder.fromClass(getElementUtils(), PolyGrowable.class);
+    this.MAYBE_GROWABLE = AnnotationBuilder.fromClass(elements, MaybeGrowable.class);
+    this.GROWABLE = AnnotationBuilder.fromClass(elements, Growable.class);
+    this.UNGROWABLE = AnnotationBuilder.fromClass(elements, Ungrowable.class);
+    this.POLY_GROWABLE = AnnotationBuilder.fromClass(elements, PolyGrowable.class);
 
     postInit();
   }

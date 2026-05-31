@@ -24,8 +24,7 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
   @SuppressWarnings("this-escape")
   protected ModifiabilityAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
-    this.ITERATOR_PRESERVE_REMOVE =
-        AnnotationBuilder.fromClass(getElementUtils(), IteratorPolyMod.class);
+    this.ITERATOR_PRESERVE_REMOVE = AnnotationBuilder.fromClass(elements, IteratorPolyMod.class);
   }
 
   /**
