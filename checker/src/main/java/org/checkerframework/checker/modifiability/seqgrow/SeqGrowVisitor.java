@@ -20,4 +20,17 @@ public class SeqGrowVisitor extends ModifiabilityVisitor {
     // When running under ModifiabilityChecker, GrowChecker handles @ThrowsUOE reporting.
     return false;
   }
+
+  @Override
+  protected boolean shouldCheckUnmodifiableParamLocation() {
+    // When running under ModifiabilityChecker, GrowChecker handles @UnmodifiableParam location
+    // reporting.
+    return checker.getParentChecker() == null;
+  }
+
+  @Override
+  protected boolean shouldCheckCustomModifiabilityAnnotation() {
+    // When running under ModifiabilityChecker, GrowChecker handles custom type warnings.
+    return checker.getParentChecker() == null;
+  }
 }

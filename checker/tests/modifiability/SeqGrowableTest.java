@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SequencedCollection;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -19,6 +20,10 @@ import org.checkerframework.checker.modifiability.qual.SeqGrowable;
 import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
 
 public class SeqGrowableTest {
+
+  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation] ::
+  // error:declaration.inconsistent.with.implements.clause
+  abstract static @SeqGrowable class UserDefinedSortedSet implements SortedSet<String> {}
 
   void constructorPositiveCases() {
     @SeqGrowable ArrayDeque<String> arrayDeque = new ArrayDeque<>();
