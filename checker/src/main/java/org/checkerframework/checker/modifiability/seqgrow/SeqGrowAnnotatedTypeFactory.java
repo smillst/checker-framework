@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
@@ -32,7 +33,7 @@ import org.checkerframework.javacutil.TypesUtils;
 public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
 
   /** The erased {@code java.util.SequencedCollection} type. */
-  private final TypeMirror sequencedCollectionErasure;
+  private final @Nullable TypeMirror sequencedCollectionErasure;
 
   /** The {@code @}{@link MaybeSeqGrowable} qualifier. */
   private final AnnotationMirror MAYBE_SEQ_GROWABLE;
@@ -55,8 +56,12 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   public SeqGrowAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
 
+    TypeElement sequencedCollectionElement =
+        elements.getTypeElement("java.util.SequencedCollection");
     this.sequencedCollectionErasure =
-        types.erasure(elements.getTypeElement("java.util.SequencedCollection").asType());
+        sequencedCollectionElement == null
+            ? null
+            : types.erasure(sequencedCollectionElement.asType());
     this.MAYBE_SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, MaybeSeqGrowable.class);
     this.SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, SeqGrowable.class);
     this.SEQ_UNGROWABLE = AnnotationBuilder.fromClass(elements, SeqUngrowable.class);
@@ -139,7 +144,8 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
    * @return true if {@code type} structurally cannot support sequenced grow operations
    */
   private boolean typeCannotSeqGrow(TypeMirror type) {
-    return type.getKind() != TypeKind.DECLARED
+    return sequencedCollectionErasure == null
+        || type.getKind() != TypeKind.DECLARED
         || !TypesUtils.isErasedSubtype(type, sequencedCollectionErasure, types);
   }
 }
