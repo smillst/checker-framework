@@ -17,7 +17,11 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 public class CollectionsModifiableTest {
@@ -285,7 +289,8 @@ public class CollectionsModifiableTest {
     // :: error: [assignment]
     @Modifiable Map<String, String> modM = Collections.unmodifiableMap(m);
 
-    @Modifiable SortedSet<String> ss = new TreeSet<>();
+    @Growable @Shrinkable @Replaceable @SeqUngrowable
+    SortedSet<String> ss = new TreeSet<>();
     @Unmodifiable SortedSet<String> unmodSS = Collections.unmodifiableSortedSet(ss);
     // :: error: [method.invocation]
     unmodSS.add("a");

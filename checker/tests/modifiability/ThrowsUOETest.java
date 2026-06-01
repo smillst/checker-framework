@@ -11,10 +11,10 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class ThrowsUOETest {
 
   void testSortedSet(SortedSet<String> s) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     s.addFirst("foo");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     s.addLast("bar");
   }
 
@@ -23,10 +23,10 @@ public class ThrowsUOETest {
     // We verify that calling them on a concrete implementation also triggers the
     // warning.
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     ts.addFirst("foo");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     ts.addLast("bar");
   }
 
