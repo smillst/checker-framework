@@ -101,6 +101,14 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
             PolySeqGrowable.class));
   }
 
+  /**
+   * Expands whole-modifiability aliases into this hierarchy, with structural weakening only for
+   * aliases whose meaning depends on the annotated type.
+   *
+   * <p>{@code @Modifiable} and {@code @Unmodifiable} claim all component capabilities, so on types
+   * that structurally cannot support sequenced grow operations, such as {@code Iterator}, their
+   * SeqGrow component canonicalizes to {@code @MaybeSeqGrowable}.
+   */
   @Override
   public AnnotationMirror canonicalAnnotation(
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
