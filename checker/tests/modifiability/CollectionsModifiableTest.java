@@ -295,7 +295,8 @@ public class CollectionsModifiableTest {
     // :: error: [method.invocation]
     unmodSS.add("a");
 
-    @Modifiable SortedMap<String, String> sm = new TreeMap<>();
+    @Growable @Shrinkable @Replaceable @SeqUngrowable
+    SortedMap<String, String> sm = new TreeMap<>();
     @Unmodifiable SortedMap<String, String> unmodSM = Collections.unmodifiableSortedMap(sm);
     // :: error: [method.invocation]
     unmodSM.put("a", "b");

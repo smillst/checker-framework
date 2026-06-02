@@ -9,8 +9,8 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * Calling sequenced-grow operations such as {@code addFirst}, {@code addLast}, {@code offerFirst},
- * {@code offerLast}, and {@code push} on this collection will throw {@link
- * UnsupportedOperationException}.
+ * {@code offerLast}, {@code push}, {@code putFirst}, and {@code putLast} on this collection or map
+ * will throw {@link UnsupportedOperationException}.
  *
  * <p>No guarantees are made about ordinary grow, shrink, or replace operations.
  *

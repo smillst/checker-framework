@@ -1,5 +1,7 @@
 import java.util.TreeMap;
-import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
 
 /**
  * Resolution of outer classes must take substitution of generic types into account. Thanks to EMS
@@ -8,7 +10,8 @@ import org.checkerframework.checker.modifiability.qual.Modifiable;
  * <p>Also see regex/GenericsEnclosing for a test case for the Regex Checker.
  */
 @SuppressWarnings("modifiability:annotation.unverified")
-public @Modifiable class GenericsEnclosing extends TreeMap<String, String> {
+public @Growable @Replaceable @SeqUngrowable class GenericsEnclosing
+    extends TreeMap<String, String> {
   class Inner {
     void foo() {
       put("string", "string".toString());

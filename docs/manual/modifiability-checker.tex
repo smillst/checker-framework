@@ -65,15 +65,17 @@ without throwing \UnsupportedOperationException.  Non-optional methods, such
 as \code{size}, \code{get}, \code{contains}, \code{isEmpty}, and \code{toArray}, may be
 called on any collection, whether modifiable or unmodifiable.
 
-Some collections may be modified in some ways but not in others.
-A collection can be modified in four different ways:
+Some collections and maps may be modified in some ways but not in others.
+A collection or map can be modified in four different ways:
 \textbf{Grow}, \textbf{SeqGrow}, \textbf{Shrink}, and \textbf{Replace}.
 \begin{itemize}
     \item \textbf{Grow}: The collection can grow by adding new elements
       (\<add>, \<addAll>, \<offer>, \ldots).
     \item \textbf{SeqGrow}: A sequenced collection can grow by adding new
       elements at the beginning or end (\<addFirst>, \<addLast>,
-      \<offerFirst>, \<offerLast>, \<push>, \ldots).
+      \<offerFirst>, \<offerLast>, \<push>, \ldots), and a sequenced map can
+      insert or replace mappings at the beginning or end (\<putFirst>,
+      \<putLast>).
     \item \textbf{Shrink}: The collection can shrink by removing
       existing elements (\<remove>, \<removeAll>, \<clear>, \<retainAll>, \<poll>, \<pop>, \ldots).
     \item \textbf{Replace}: The collection can replace existing
@@ -218,23 +220,29 @@ The bottom qualifier in the Grow hierarchy.  Programmers should rarely write it.
 \begin{description}
 \item[\refqualclass{checker/modifiability/qual}{MaybeSeqGrowable}]
 The top qualifier in the SeqGrow hierarchy.
-The checker cannot determine whether this collection supports sequenced grow
+The checker cannot determine whether this collection or map supports sequenced grow
 operations.
-Calling sequenced grow operations such as \code{addFirst} and \code{addLast} on this
-collection \emph{may} throw \UnsupportedOperationException.
+Calling sequenced grow operations such as \code{addFirst}, \code{addLast},
+\code{putFirst}, and \code{putLast} on this collection or map \emph{may}
+throw \UnsupportedOperationException.
 This is the default qualifier for unannotated types in the
 SeqGrow hierarchy.
 
 \item[\refqualclass{checker/modifiability/qual}{SeqGrowable}]
-Calling sequenced grow operations such as \code{addFirst} and \code{addLast} on this
-collection \emph{will not} throw \UnsupportedOperationException.
+Sequenced grow operations, such as \code{addFirst} and \code{addLast} for
+collections or \code{putFirst} and \code{putLast} for maps, \emph{will not}
+throw \UnsupportedOperationException.
 
 \item[\refqualclass{checker/modifiability/qual}{SeqUngrowable}]
-Calling sequenced grow operations such as \code{addFirst} and \code{addLast} on this
-collection \emph{will} throw \UnsupportedOperationException.
+Sequenced grow operations, such as \code{addFirst} and \code{addLast} for
+collections or \code{putFirst} and \code{putLast} for maps, \emph{will}
+throw \UnsupportedOperationException.
 For example, \<TreeSet> and \<ConcurrentSkipListSet> support ordinary
 \<add> but throw \UnsupportedOperationException\ for explicit positional
 insertion with \<addFirst> and \<addLast>.
+Similarly, \<TreeMap> and \<ConcurrentSkipListMap> support ordinary \<put>
+but throw \UnsupportedOperationException\ for explicit positional updates
+with \<putFirst> and \<putLast>.
 
 \item[\refqualclass{checker/modifiability/qual}{BottomSeqGrowable}]
 The bottom qualifier in the SeqGrow hierarchy.  Programmers should rarely write it.
@@ -394,6 +402,10 @@ exceptions:
 \<@Unmodifiable> & \<Queue>    & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Queue> \\
 \<@Modifiable> & \<Deque>    & = & \<@Growable> & \<@SeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Deque> \\
 \<@Unmodifiable> & \<Deque>    & = & \<@Ungrowable> & \<@SeqUngrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Deque> \\
+\<@Modifiable> & \<Map>      & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@Replaceable> & \<Map> \\
+\<@Unmodifiable> & \<Map>      & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@Unreplaceable> & \<Map> \\
+\<@Modifiable> & \<SequencedMap> & = & \<@Growable> & \<@SeqGrowable> & \<@Shrinkable> & \<@Replaceable> & \<SequencedMap> \\
+\<@Unmodifiable> & \<SequencedMap> & = & \<@Ungrowable> & \<@SeqUngrowable> & \<@Unshrinkable> & \<@Unreplaceable> & \<SequencedMap> \\
 \<@Modifiable> & \<Set>      & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Set> \\
 \<@Unmodifiable> & \<Set>      & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Set> \\
 \<@Modifiable> & \<Iterator> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Iterator> \\
@@ -405,11 +417,14 @@ has no methods for a given mutation, the Modifiability Checker uses the top
 qualifier.
 For example, \sunjavadoc{java.base/java/util/Queue.html}{\code{Queue}} has
 \<add> and \<remove> methods but no replacement methods.
-It is not a subtype of \<SequencedCollection>, so it also has no
-\<addFirst> or \<addLast> methods.  By contrast, \<SortedSet> is a
+It is not a subtype of \<SequencedCollection> or \<SequencedMap>, so it also has no
+\<addFirst>, \<addLast>, \<putFirst>, or \<putLast> methods.  By contrast, \<SortedSet> is a
 \<SequencedCollection>, so its seq-grow capability is relevant; the JDK
 annotations mark it \<@SeqUngrowable> because its \<addFirst> and
-\<addLast> methods always throw \UnsupportedOperationException.
+\<addLast> methods always throw \UnsupportedOperationException.  Likewise,
+\<SortedMap> is a \<SequencedMap>, so the JDK annotations mark it
+\<@SeqUngrowable> because its \<putFirst> and \<putLast> methods always throw
+\UnsupportedOperationException.
 
 
 Although no object of class \<Queue> supports replace operations,
@@ -529,7 +544,8 @@ class Demo {
 % LocalWords:  MaybeReplaceable MaybeSeqGrowable growable seq ListIterator
 % LocalWords:  PolyModifiable PolySeqGrowable addFirst synchronizedList
 % LocalWords:  PolyShrinkable PolyGrowable PolyReplaceable ThrowsUOE SeqGrow
-% LocalWords:  addLast offerFirst offerLast unreplaceable seq-growability
+% LocalWords:  addLast offerFirst offerLast putFirst putLast unreplaceable seq-growability
+% LocalWords:  SequencedMap SortedMap
 % LocalWords:  SeqGrowable SeqUngrowable BottomSeqGrowable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrowable BottomShrinkable BottomReplaceable

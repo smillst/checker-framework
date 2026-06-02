@@ -35,6 +35,9 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   /** The erased {@code java.util.SequencedCollection} type. */
   private final @Nullable TypeMirror sequencedCollectionErasure;
 
+  /** The erased {@code java.util.SequencedMap} type. */
+  private final @Nullable TypeMirror sequencedMapErasure;
+
   /** The erased {@code java.util.Deque} type. */
   private final TypeMirror dequeErasure;
 
@@ -65,6 +68,9 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
         sequencedCollectionElement == null
             ? null
             : types.erasure(sequencedCollectionElement.asType());
+    TypeElement sequencedMapElement = elements.getTypeElement("java.util.SequencedMap");
+    this.sequencedMapErasure =
+        sequencedMapElement == null ? null : types.erasure(sequencedMapElement.asType());
     this.dequeErasure = types.erasure(elements.getTypeElement("java.util.Deque").asType());
     this.MAYBE_SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, MaybeSeqGrowable.class);
     this.SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, SeqGrowable.class);
@@ -150,9 +156,9 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   /**
    * Returns true if {@code type} structurally can support sequenced grow operations.
    *
-   * <p>Only sequenced collections can support sequenced grow operations. On JDKs before Java 21,
-   * {@code SequencedCollection} is not present, but {@code Deque} still supports first/last
-   * insertion operations.
+   * <p>Only sequenced collections and sequenced maps can support sequenced grow operations. On JDKs
+   * before Java 21, {@code SequencedCollection} and {@code SequencedMap} are not present, but
+   * {@code Deque} still supports first/last insertion operations.
    *
    * @param type the type to test
    * @return true if {@code type} structurally can support sequenced grow operations
@@ -163,6 +169,8 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
     }
     return (sequencedCollectionErasure != null
             && TypesUtils.isErasedSubtype(type, sequencedCollectionErasure, types))
+        || (sequencedMapErasure != null
+            && TypesUtils.isErasedSubtype(type, sequencedMapErasure, types))
         || TypesUtils.isErasedSubtype(type, dequeErasure, types);
   }
 }

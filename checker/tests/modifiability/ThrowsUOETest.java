@@ -31,42 +31,42 @@ public class ThrowsUOETest {
   }
 
   void testSortedMap(SortedMap<String, String> m) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putFirst("foo", "bar");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putLast("baz", "qux");
   }
 
   void testImplementation(TreeMap<String, String> tm) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     tm.putFirst("foo", "bar");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     tm.putLast("baz", "qux");
   }
 
   void testNavigableMap(NavigableMap<String, String> m) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putFirst("foo", "bar");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putLast("baz", "qux");
   }
 
   void testConcurrentNavigableMap(ConcurrentNavigableMap<String, String> m) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putFirst("foo", "bar");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putLast("baz", "qux");
   }
 
   void testConcurrentSkipListMap(ConcurrentSkipListMap<String, String> m) {
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putFirst("foo", "bar");
 
-    // :: error: [usage.throws.uoe]
+    // :: error: [usage.throws.uoe] :: error: [method.invocation]
     m.putLast("baz", "qux");
   }
 }
