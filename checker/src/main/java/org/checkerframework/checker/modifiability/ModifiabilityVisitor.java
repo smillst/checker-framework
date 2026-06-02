@@ -4,9 +4,12 @@ import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
-import com.sun.source.util.TreePath;
+import com.sun.source.util.TreeScanner;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
@@ -43,6 +46,9 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   /** The erased {@code java.util.Iterator} type. */
   private final TypeMirror iteratorErasure;
 
+  /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
+  private final Deque<Set<AnnotationTree>> allowedUnmodifiableParamAnnotations = new ArrayDeque<>();
+
   /**
    * Create a ModifiabilityVisitor.
    *
@@ -73,10 +79,32 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
     }
   }
 
+  /**
+   * Collects the {@code @UnmodifiableParam} annotations that are permitted in this method's formal
+   * and receiver parameters before visiting the method body. {@link #visitAnnotation} uses the
+   * stack entry to distinguish allowed parameter annotations from disallowed uses elsewhere in the
+   * same method.
+   */
+  @Override
+  public void processMethodTree(String className, MethodTree tree) {
+    Set<AnnotationTree> allowedAnnotations = new HashSet<>();
+    for (VariableTree parameter : tree.getParameters()) {
+      allowedAnnotations.addAll(unmodifiableParamAnnotations(parameter));
+    }
+    VariableTree receiverParameter = tree.getReceiverParameter();
+    if (receiverParameter != null) {
+      allowedAnnotations.addAll(unmodifiableParamAnnotations(receiverParameter));
+    }
+    allowedUnmodifiableParamAnnotations.push(allowedAnnotations);
+    super.processMethodTree(className, tree);
+    allowedUnmodifiableParamAnnotations.pop();
+  }
+
   @Override
   public Void visitAnnotation(AnnotationTree tree, Void p) {
     if (shouldCheckUnmodifiableParamLocation() && isUnmodifiableParamAnnotation(tree)) {
-      if (!isWithinAllowedUnmodifiableParamLocation()) {
+      if (allowedUnmodifiableParamAnnotations.isEmpty()
+          || !allowedUnmodifiableParamAnnotations.peek().contains(tree)) {
         checker.reportError(tree, "unmodparam.location");
       }
     }
@@ -214,38 +242,35 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   }
 
   /**
-   * Returns true if the current annotation path is inside a method/constructor parameter type or
-   * explicit receiver parameter type.
+   * Returns all {@code @UnmodifiableParam} annotations written on a formal or receiver parameter's
+   * type. An annotation before the parameter type may appear in the parameter's modifiers, while an
+   * annotation inside a generic or array type appears in the parameter's type tree.
    *
-   * @return true if {@code @UnmodifiableParam} is allowed at the current location
+   * @param parameter a formal or receiver parameter
+   * @return the {@code @UnmodifiableParam} annotation trees that are allowed by this parameter
+   *     location
    */
-  @SuppressWarnings("interning:not.interned") // AST node comparison
-  private boolean isWithinAllowedUnmodifiableParamLocation() {
-    // Find the declaration that contains the annotation, if any.
-    TreePath path = getCurrentPath();
-    TreePath variablePath = null;
-    while (path != null) {
-      if (path.getLeaf() instanceof VariableTree) {
-        variablePath = path;
-        break;
-      }
-      path = path.getParentPath();
-    }
+  private Set<AnnotationTree> unmodifiableParamAnnotations(VariableTree parameter) {
+    Set<AnnotationTree> annotations = new HashSet<>();
+    TreeScanner<Void, Void> scanner =
+        new TreeScanner<>() {
+          @Override
+          public Void visitAnnotation(AnnotationTree tree, Void p) {
+            if (isUnmodifiableParamAnnotation(tree)) {
+              annotations.add(tree);
+            }
+            return super.visitAnnotation(tree, p);
+          }
+        };
 
-    if (variablePath == null || variablePath.getParentPath() == null) {
-      return false;
+    // Scan both javac locations for parameter type annotations.
+    // search for method(@UnmodifiableParam List<> param)
+    scanner.scan(parameter.getModifiers().getAnnotations(), null);
+    if (parameter.getType() != null) {
+      // search for method(List<@UnmodifiableParam List<>> param)
+      scanner.scan(parameter.getType(), null);
     }
-
-    // Ordinary and receiver parameters are represented as VariableTrees under a MethodTree.
-    Tree parent = variablePath.getParentPath().getLeaf();
-    if (!(parent instanceof MethodTree methodTree)) {
-      return false;
-    }
-
-    // Allow nested annotations anywhere within an allowed parameter's type.
-    VariableTree variable = (VariableTree) variablePath.getLeaf();
-    return methodTree.getParameters().contains(variable)
-        || methodTree.getReceiverParameter() == variable;
+    return annotations;
   }
 
   // Suppresses the framework's "constructor result must be TOP" check.
