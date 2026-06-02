@@ -18,7 +18,10 @@ class UnmodParamLocationTest<
 
   void nestedParameter(List<@UnmodifiableParam List<String>> parameter) {}
 
-  void receiver(@UnmodifiableParam UnmodParamLocationTest<T> this) {}
+  @SuppressWarnings("modifiability:annotation.unverified")
+  abstract static class RelevantReceiver implements List<String> {
+    void receiver(@UnmodifiableParam RelevantReceiver this) {}
+  }
 
   // :: error: [unmodparam.location]
   @UnmodifiableParam List<String> returnType() {
