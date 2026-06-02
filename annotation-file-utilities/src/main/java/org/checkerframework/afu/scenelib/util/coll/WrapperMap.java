@@ -40,7 +40,7 @@ public class WrapperMap<K, V> implements Map<K, V> {
 
   @SuppressWarnings("keyfor") // use of delegate object
   @Override
-  public @IteratorPolyMod @PolyShrinkable Set<java.util.Map.Entry<K, V>> entrySet(
+  public @IteratorPolyMod @PolyShrinkable Set<Map.Entry<K, V>> entrySet(
       @PolyShrinkable WrapperMap<K, V> this) {
     return back.entrySet();
   }
