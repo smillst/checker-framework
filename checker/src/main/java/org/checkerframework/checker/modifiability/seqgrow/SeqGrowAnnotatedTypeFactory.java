@@ -35,6 +35,9 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   /** The erased {@code java.util.SequencedCollection} type. */
   private final @Nullable TypeMirror sequencedCollectionErasure;
 
+  /** The erased {@code java.util.Deque} type. */
+  private final TypeMirror dequeErasure;
+
   /** The {@code @}{@link MaybeSeqGrowable} qualifier. */
   private final AnnotationMirror MAYBE_SEQ_GROWABLE;
 
@@ -62,6 +65,7 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
         sequencedCollectionElement == null
             ? null
             : types.erasure(sequencedCollectionElement.asType());
+    this.dequeErasure = types.erasure(elements.getTypeElement("java.util.Deque").asType());
     this.MAYBE_SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, MaybeSeqGrowable.class);
     this.SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, SeqGrowable.class);
     this.SEQ_UNGROWABLE = AnnotationBuilder.fromClass(elements, SeqUngrowable.class);
@@ -114,9 +118,9 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
       AnnotationMirror annotation, @Nullable TypeMirror tm) {
     if (tm != null) {
       if (areSameByClass(annotation, Modifiable.class)) {
-        return typeCannotSeqGrow(tm) ? MAYBE_SEQ_GROWABLE : SEQ_GROWABLE;
+        return typeCanSeqGrow(tm) ? SEQ_GROWABLE : MAYBE_SEQ_GROWABLE;
       } else if (areSameByClass(annotation, Unmodifiable.class)) {
-        return typeCannotSeqGrow(tm) ? MAYBE_SEQ_GROWABLE : SEQ_UNGROWABLE;
+        return typeCanSeqGrow(tm) ? SEQ_UNGROWABLE : MAYBE_SEQ_GROWABLE;
       }
     }
     if (areSameByClass(annotation, MaybeModifiable.class)
@@ -144,16 +148,21 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   }
 
   /**
-   * Returns true if {@code type} structurally cannot support sequenced grow operations.
+   * Returns true if {@code type} structurally can support sequenced grow operations.
    *
-   * <p>Only sequenced collections can support sequenced grow operations.
+   * <p>Only sequenced collections can support sequenced grow operations. On JDKs before Java 21,
+   * {@code SequencedCollection} is not present, but {@code Deque} still supports first/last
+   * insertion operations.
    *
    * @param type the type to test
-   * @return true if {@code type} structurally cannot support sequenced grow operations
+   * @return true if {@code type} structurally can support sequenced grow operations
    */
-  private boolean typeCannotSeqGrow(TypeMirror type) {
-    return sequencedCollectionErasure == null
-        || type.getKind() != TypeKind.DECLARED
-        || !TypesUtils.isErasedSubtype(type, sequencedCollectionErasure, types);
+  private boolean typeCanSeqGrow(TypeMirror type) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return false;
+    }
+    return (sequencedCollectionErasure != null
+            && TypesUtils.isErasedSubtype(type, sequencedCollectionErasure, types))
+        || TypesUtils.isErasedSubtype(type, dequeErasure, types);
   }
 }
