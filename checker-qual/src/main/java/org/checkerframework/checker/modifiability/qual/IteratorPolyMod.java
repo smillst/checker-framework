@@ -9,7 +9,7 @@ import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
  * If a collection's type is {@code @IteratorPolyMod}, then its {@code iterator()} and {@code
- * listIterator()} methods preserves the ability to call modification methods in its iterator.
+ * listIterator()} methods preserve the ability to call modification methods in its iterator.
  *
  * <p>For example, if collection {@code c} has type {@code @Shrinkable}, then {@code c.iterator()}
  * also has type {@code @Shrinkable}. If list {@code l} has type {@code @Replaceable}, then {@code
