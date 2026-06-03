@@ -4,6 +4,7 @@ import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
 import java.util.ArrayDeque;
@@ -11,6 +12,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
@@ -49,6 +51,10 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
   private final Deque<Set<AnnotationTree>> allowedUnmodifiableParamAnnotations = new ArrayDeque<>();
 
+  /** Package that contains the modifiability type-use qualifiers. */
+  private static final String MODIFIABILITY_QUAL_PACKAGE =
+      "org.checkerframework.checker.modifiability.qual";
+
   /**
    * Create a ModifiabilityVisitor.
    *
@@ -67,12 +73,22 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
             atypeFactory.getElementUtils().getTypeElement("java.util.Iterator").asType());
   }
 
+  /**
+   * Processes a class declaration and reports an unverified modifiability warning only when a
+   * source-defined collection-like type explicitly claims a concrete modifiability qualifier on the
+   * class or one of its constructors. Defaulted/unannotated types and Maybe* annotations do not
+   * make a verifiable modifiability claim.
+   *
+   * @param classTree the class declaration to process
+   */
   @Override
   public void processClassTree(ClassTree classTree) {
     super.processClassTree(classTree);
     if (shouldCheckCustomModifiabilityAnnotation()) {
       TypeElement typeElement = TreeUtils.elementFromDeclaration(classTree);
-      if (typeElement != null && isCollectionFromSourceCode(typeElement)) {
+      if (typeElement != null
+          && isCollectionFromSourceCode(typeElement)
+          && hasExplicitWarningModifiabilityAnnotation(classTree)) {
         checker.reportWarning(
             classTree, "modifiability.annotation.unverified", typeElement.getQualifiedName());
       }
@@ -239,6 +255,79 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
     AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(tree);
     return annotation != null && atypeFactory.areSameByClass(annotation, UnmodifiableParam.class);
+  }
+
+  /**
+   * Returns true if {@code classTree} explicitly writes a warning-worthy modifiability qualifier on
+   * the class declaration or on any constructor.
+   *
+   * @param classTree a class declaration
+   * @return true if a warning-worthy modifiability annotation is written on the class or
+   *     constructor
+   */
+  private boolean hasExplicitWarningModifiabilityAnnotation(ClassTree classTree) {
+    // write explicit modifianility annotations on the class
+    if (hasWarningModifiabilityAnnotation(classTree.getModifiers().getAnnotations())) {
+      return true;
+    }
+
+    // write explicit modifiability annotations on any constructor
+    for (Tree member : classTree.getMembers()) {
+      if (member instanceof MethodTree methodTree
+          && TreeUtils.isConstructor(methodTree)
+          && hasWarningModifiabilityAnnotation(methodTree.getModifiers().getAnnotations())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the list {@code annotations} contains any explicit non-maybe modifiability
+   * qualifier.
+   *
+   * <p>Iterator throw the list of annotations and call isWarningModifiablityAnnotation(annotation)
+   *
+   * @param annotations annotation trees to inspect
+   * @return true if one annotation should trigger an unverified modifiability warning
+   */
+  private boolean hasWarningModifiabilityAnnotation(
+      Iterable<? extends AnnotationTree> annotations) {
+    for (AnnotationTree annotationTree : annotations) {
+      AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(annotationTree);
+      if (annotation != null && isWarningModifiabilityAnnotation(annotation)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if {@code annotation} is a non-maybe modifiability qualifier that should trigger
+   * the unverified custom modifiability warning.
+   *
+   * @param annotation an annotation mirror
+   * @return true if {@code annotation} should trigger a warning
+   */
+  private boolean isWarningModifiabilityAnnotation(AnnotationMirror annotation) {
+    Element element = annotation.getAnnotationType().asElement();
+    if (!(element instanceof TypeElement typeElement)) {
+      return false;
+    }
+
+    // Only annotations in the modifiability qualifier package are relevant.
+    String qualifiedName = typeElement.getQualifiedName().toString();
+    if (!qualifiedName.startsWith(MODIFIABILITY_QUAL_PACKAGE + ".")) {
+      return false;
+    }
+
+    // Maybe* annotations and @UnmodifiableParam are unknown/top-like, so they do not warn.
+    String simpleName = typeElement.getSimpleName().toString();
+    if (simpleName.startsWith("Maybe") || simpleName.equals("UnmodifiableParam")) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
