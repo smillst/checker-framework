@@ -16,12 +16,6 @@ public class ReplaceVisitor extends ModifiabilityVisitor {
   }
 
   @Override
-  protected boolean shouldCheckThrowsUOE() {
-    // When running under ModifiabilityChecker, GrowChecker handles @ThrowsUOE reporting.
-    return checker.getParentChecker() == null;
-  }
-
-  @Override
   protected boolean shouldCheckUnmodifiableParamLocation() {
     // When running under ModifiabilityChecker, GrowChecker handles @UnmodifiableParam location
     // reporting.

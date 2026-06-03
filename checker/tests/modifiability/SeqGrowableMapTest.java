@@ -67,7 +67,7 @@ public class SeqGrowableMapTest {
     treeMap.remove("a");
     treeMap.put("b", 2);
     treeMap.replace("b", 3);
-    // :: error: [usage.throws.uoe] :: error: [method.invocation]
+    // :: error: [method.invocation]
     treeMap.putFirst("c", 4);
 
     @Growable @Shrinkable @Replaceable @SeqUngrowable
@@ -76,7 +76,7 @@ public class SeqGrowableMapTest {
     concurrentSkipListMap.remove("a");
     concurrentSkipListMap.put("b", 2);
     concurrentSkipListMap.replace("b", 3);
-    // :: error: [usage.throws.uoe] :: error: [method.invocation]
+    // :: error: [method.invocation]
     concurrentSkipListMap.putLast("c", 4);
 
     // :: error: [assignment]

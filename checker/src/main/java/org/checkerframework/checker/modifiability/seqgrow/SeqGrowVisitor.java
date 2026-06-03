@@ -16,12 +16,6 @@ public class SeqGrowVisitor extends ModifiabilityVisitor {
   }
 
   @Override
-  protected boolean shouldCheckThrowsUOE() {
-    // When running under ModifiabilityChecker, GrowChecker handles @ThrowsUOE reporting.
-    return false;
-  }
-
-  @Override
   protected boolean shouldCheckUnmodifiableParamLocation() {
     // When running under ModifiabilityChecker, GrowChecker handles @UnmodifiableParam location
     // reporting.

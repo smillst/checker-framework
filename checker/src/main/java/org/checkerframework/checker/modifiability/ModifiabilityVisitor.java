@@ -2,7 +2,6 @@ package org.checkerframework.checker.modifiability;
 
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
-import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
@@ -16,7 +15,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.qual.ThrowsUOE;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -32,7 +30,6 @@ import org.checkerframework.javacutil.TypesUtils;
  * <p>This class contains logic shared across all three sub-checkers:
  *
  * <ul>
- *   <li>Reporting errors for invocations of methods annotated with {@link ThrowsUOE}.
  *   <li>Suppressing the "constructor result must be TOP" check, since collection constructors may
  *       legitimately produce {@code @Modifiable}.
  * </ul>
@@ -127,21 +124,6 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
     return super.visitAnnotation(tree, p);
   }
 
-  @Override
-  public Void visitMethodInvocation(MethodInvocationTree node, Void p) {
-    // Methods annotated @ThrowsUOE always throw UnsupportedOperationException when called.
-    // When running as part of the aggregate ModifiabilityChecker, only the GrowChecker
-    // reports this error (shouldCheckThrowsUOE() returns false in the other two) to avoid
-    // tripling the diagnostic. When running a sub-checker standalone, each reports it.
-    if (shouldCheckThrowsUOE()) {
-      ExecutableElement method = TreeUtils.elementFromUse(node);
-      if (atypeFactory.getDeclAnnotation(method, ThrowsUOE.class) != null) {
-        checker.reportError(node, "usage.throws.uoe", method.getSimpleName());
-      }
-    }
-    return super.visitMethodInvocation(node, p);
-  }
-
   /**
    * Returns the positive qualifier for this checker's modifiability hierarchy, such as
    * {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable}.
@@ -196,21 +178,6 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
           overriddenMethodType);
       return false;
     }
-    return true;
-  }
-
-  /**
-   * Returns true if this checker should report {@code @ThrowsUOE} errors.
-   *
-   * <p>The default is {@code true}. {@link
-   * org.checkerframework.checker.modifiability.shrink.ShrinkVisitor} and {@link
-   * org.checkerframework.checker.modifiability.replace.ReplaceVisitor} override this to return
-   * {@code false} when running under the aggregate {@link ModifiabilityChecker}, so that each
-   * {@code @ThrowsUOE} call site produces exactly one error rather than three.
-   *
-   * @return true if this visitor should report {@code @ThrowsUOE} violations
-   */
-  protected boolean shouldCheckThrowsUOE() {
     return true;
   }
 

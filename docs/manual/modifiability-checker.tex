@@ -360,13 +360,6 @@ behavior.
 
 \begin{description}
 
-\item[\refqualclass{checker/modifiability/qual}{ThrowsUOE}]
-When written on a
-method or constructor declaration, it indicates that the method always throws
-\UnsupportedOperationException.  Therefore, any code that calls it is
-erroneous.  The Modifiability Checker issues an error at every call to a
-method annotated with \code{@ThrowsUOE}.
-
 \item[\refqualclass{checker/modifiability/qual}{PreservesModifiability}]
 When written on a one-argument method declaration, it indicates that the
 method preserves positive modifiability capabilities from its argument to
@@ -543,7 +536,7 @@ class Demo {
 % LocalWords:  MaybeModifiable UnmodifiableParam Growable MaybeGrowable MaybeShrinkable
 % LocalWords:  MaybeReplaceable MaybeSeqGrowable growable seq ListIterator
 % LocalWords:  PolyModifiable PolySeqGrowable addFirst synchronizedList
-% LocalWords:  PolyShrinkable PolyGrowable PolyReplaceable ThrowsUOE SeqGrow
+% LocalWords:  PolyShrinkable PolyGrowable PolyReplaceable SeqGrow
 % LocalWords:  addLast offerFirst offerLast putFirst putLast unreplaceable seq-growability
 % LocalWords:  SequencedMap SortedMap
 % LocalWords:  SeqGrowable SeqUngrowable BottomSeqGrowable Growability shrinkability replacability
