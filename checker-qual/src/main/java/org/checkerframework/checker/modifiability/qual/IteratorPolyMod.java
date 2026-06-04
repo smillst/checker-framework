@@ -13,8 +13,11 @@ import org.checkerframework.framework.qual.SubtypeOf;
  *
  * <p>For example, if collection {@code c} has type {@code @Shrinkable}, then {@code c.iterator()}
  * also has type {@code @Shrinkable}. If list {@code l} has type {@code @Replaceable}, then {@code
- * l.listIterator()} also has type {@code @Replaceable}. For any collection whose type is
- * {@code @MaybeIteratorPolyMod}, its iterator is always {@code @MaybeShrinkable}.
+ * l.listIterator()} also has type {@code @Replaceable}.
+ *
+ * <p>If the collection itself is {@code @Unmodifiable}, then its iterator is {@code @Unshrinkable}.
+ * For any collection whose type is {@code @MaybeIteratorPolyMod}, its iterator is
+ * {@code @MaybeShrinkable}.
  *
  * <p>This annotation is used in GrowChecker, ShrinkChecker, and ReplaceChecker.
  *

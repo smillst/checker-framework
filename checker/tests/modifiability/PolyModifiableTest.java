@@ -8,8 +8,9 @@ import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 /**
- * Tests @PolyModifiable, which expands to @PolyGrowable @PolyShrinkable @PolyReplaceable and thus
- * preserves all three capabilities independently.
+ * Tests @PolyModifiable, which expands
+ * to @PolyGrowable @PolySeqGrowable @PolyShrinkable @PolyReplaceable and thus preserves all four
+ * capabilities independently.
  */
 public class PolyModifiableTest {
 
