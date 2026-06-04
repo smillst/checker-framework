@@ -80,6 +80,9 @@ A collection may support modifying a collection through one or more of the follo
 \noindent
 Some collections can also be modified through their iterator; see Section~\ref{modifiability-iterator-behavior}.
 
+%% TODO: For each category what methods may or may not be called? I would guess this is in the
+% annotated JDK, but where do I find this information?
+
 
 
 \sectionAndLabel{Modifiability annotations}{modifiability-annotations}
@@ -355,7 +358,7 @@ behavior.
 \begin{description}
 
 \item[\refqualclass{checker/modifiability/qual}{PreservesModifiability}]
-When written on a one-argument method declaration, it indicates that the
+When written on a non-void, one-argument method declaration, it indicates that the
 method preserves positive modifiability capabilities from its argument to
 its return value.  If the argument is \<@Growable>, \<@Shrinkable>,
 \<@Replaceable>, \<@SeqGrowable>, or \<@IteratorPolyMod>, then the Modifiability Checker
