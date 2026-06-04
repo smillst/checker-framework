@@ -81,7 +81,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   @Override
   public void processClassTree(ClassTree classTree) {
     super.processClassTree(classTree);
-    if (shouldCheckCustomModifiabilityAnnotation()) {
+    if (shouldCheckModifiabilityAnnotationValidity()) {
       TypeElement typeElement = TreeUtils.elementFromDeclaration(classTree);
       if (typeElement != null
           && isCollectionFromSourceCode(typeElement)
@@ -115,7 +115,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
   @Override
   public Void visitAnnotation(AnnotationTree tree, Void p) {
-    if (shouldCheckUnmodifiableParamLocation() && isUnmodifiableParamAnnotation(tree)) {
+    if (shouldCheckModifiabilityAnnotationValidity() && isUnmodifiableParamAnnotation(tree)) {
       if (allowedUnmodifiableParamAnnotations.isEmpty()
           || !allowedUnmodifiableParamAnnotations.peek().contains(tree)) {
         checker.reportError(tree, "unmodparam.location");
@@ -182,27 +182,15 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   }
 
   /**
-   * Returns true if this checker should report {@code @UnmodifiableParam} location errors.
+   * Returns true if this checker should report diagnostics about modifiability annotations whose
+   * validity is independent of a particular capability hierarchy.
    *
-   * <p>The default is {@code true}. Shrink and Replace override this to avoid tripling diagnostics
-   * when running under the aggregate {@link ModifiabilityChecker}.
+   * <p>The default is {@code true}. SeqGrow, Shrink, and Replace override this to avoid repeating
+   * diagnostics when running under the aggregate {@link ModifiabilityChecker}.
    *
-   * @return true if this visitor should report {@code @UnmodifiableParam} location errors
+   * @return true if this visitor should report shared modifiability annotation diagnostics
    */
-  protected boolean shouldCheckUnmodifiableParamLocation() {
-    return true;
-  }
-
-  /**
-   * Returns true if this checker should report warnings for source-defined Collection, Map, and
-   * Iterator subtypes whose modifiability annotations are trusted but not verified.
-   *
-   * <p>The default is {@code true}. Shrink and Replace override this to avoid tripling diagnostics
-   * when running under the aggregate {@link ModifiabilityChecker}.
-   *
-   * @return true if this visitor should report custom modifiability annotation warnings
-   */
-  protected boolean shouldCheckCustomModifiabilityAnnotation() {
+  protected boolean shouldCheckModifiabilityAnnotationValidity() {
     return true;
   }
 

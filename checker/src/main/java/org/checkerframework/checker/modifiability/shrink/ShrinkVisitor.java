@@ -16,15 +16,8 @@ public class ShrinkVisitor extends ModifiabilityVisitor {
   }
 
   @Override
-  protected boolean shouldCheckUnmodifiableParamLocation() {
-    // When running under ModifiabilityChecker, GrowChecker handles @UnmodifiableParam location
-    // reporting.
-    return checker.getParentChecker() == null;
-  }
-
-  @Override
-  protected boolean shouldCheckCustomModifiabilityAnnotation() {
-    // When running under ModifiabilityChecker, GrowChecker handles custom type warnings.
+  protected boolean shouldCheckModifiabilityAnnotationValidity() {
+    // When running under ModifiabilityChecker, GrowChecker handles shared annotation diagnostics.
     return checker.getParentChecker() == null;
   }
 }
