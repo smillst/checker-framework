@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * for all four modifiability hierarchies.
  *
  * <p>Write {@code @PolyModifiable} on methods that preserve or transfer modifiability, such as
- * {@code List.subList()} and {@code stream()}.
+ * {@code List.subList()}.
  *
  * <p>For example:
  *
