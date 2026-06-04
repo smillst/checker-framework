@@ -375,19 +375,54 @@ If put on a method with no parameters, then it has no effect.
 
 \sectionAndLabel{\<@Modifiable> and \<@Unmodifiable> for types without grow, seq-grow, shrink, and/or replace methods}{modifiability-types-lacking-methods}
 
-%% TODO add explicit examples TODO, also in the Javadoc TODO.
-
 Ordinarily, the declaration
 \<@Modifiable MyClass x;> is equivalent to
 \<@Growable @SeqGrowable @Shrinkable @Replaceable MyClass x;>,
 and
 \<@Unmodifiable MyClass x;> is equivalent to
-\<@Ungrowable @SeqUngrowable @Unshrinkable @Unreplaceable MyClass x;>.  However, there are
-exceptions:
+\<@Ungrowable @SeqUngrowable @Unshrinkable @Unreplaceable MyClass x;>.
 
-%% TODO add more examples, exhaustively if possible.
+However, some static types lack methods for one or more mutation
+capabilities.  In such cases, the Modifiability Checker weakens the
+structurally unavailable component to the corresponding top qualifier
+rather than to the negative qualifier.  For example, \<Iterator> has
+\<remove> but not \<add> or \<set>, so \<@Modifiable Iterator> carries
+\<@Shrinkable>, but its grow and replace components are weakened to
+\<@MaybeGrowable> and \<@MaybeReplaceable>.
+
+The following rules define this weakening.  The first qualifier in each
+capability row is used for \<@Modifiable>; the second is used for
+\<@Unmodifiable>.  If the weakening condition holds, both aliases use the
+corresponding \<@Maybe*> qualifier instead.
+
+\begin{tabular}{ll}
+Capability & Weakening condition \\
+\<Growable>/\<Ungrowable> &
+  \<Map.Entry> or an \<Iterator> that is not a \<ListIterator> \\
+\<SeqGrowable>/\<SeqUngrowable> &
+  not a \<SequencedCollection>, \<SequencedMap>, or \<Deque> \\
+\<Shrinkable>/\<Unshrinkable> &
+  \<Map.Entry> \\
+\<Replaceable>/\<Unreplaceable> &
+  exact \<Collection>, any \<Set>, any non-\<LinkedList> \<Queue>,
+  or an \<Iterator> that is not a \<ListIterator> \\
+\end{tabular}
+
+These rules describe alias expansion, not the full specification of every JDK
+type.  The JDK annotations may still give a more precise capability for a
+particular declaration.  For instance, \<SortedSet> is a
+\<SequencedCollection> and \<SortedMap> is a \<SequencedMap>, so their
+seq-grow component is structurally relevant and is not weakened to
+\<@MaybeSeqGrowable>.  Their JDK declarations are annotated
+\<@SeqUngrowable>, because their positional insertion methods such as
+\<addFirst>, \<addLast>, \<putFirst>, and \<putLast> always throw
+\UnsupportedOperationException.
+
+ The following are representative canonical expansions.
+
 \begin{tabular}{rlcrrrrl}
-% \<@Modifiable X>      & = & \<@Growable> & \<@SeqGrowable> & \<@Shrinkable> & \<@Replaceable> & \<X> \\
+\<@Modifiable> & \<Collection> & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Collection> \\
+\<@Unmodifiable> & \<Collection> & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Collection> \\
 \<@Modifiable> & \<Queue>    & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Queue> \\
 \<@Unmodifiable> & \<Queue>    & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Queue> \\
 \<@Modifiable> & \<Deque>    & = & \<@Growable> & \<@SeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Deque> \\
@@ -400,35 +435,28 @@ exceptions:
 \<@Unmodifiable> & \<Set>      & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Set> \\
 \<@Modifiable> & \<Iterator> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Iterator> \\
 \<@Unmodifiable> & \<Iterator> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Iterator> \\
+\<@Modifiable> & \<ListIterator> & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@Replaceable> & \<ListIterator> \\
+\<@Unmodifiable> & \<ListIterator> & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@Unreplaceable> & \<ListIterator> \\
+\<Map.@Modifiable> & \<Entry> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@MaybeShrinkable> & \<@Replaceable> & \<Map.Entry> \\
+\<Map.@Unmodifiable> & \<Entry> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@MaybeShrinkable> & \<@Unreplaceable> & \<Map.Entry> \\
 \end{tabular}
 
-When a programmer writes \<@Modifiable> or \<@Unmodifiable> on a type that
-has no methods for a given mutation, the Modifiability Checker uses the top
-qualifier.
-For example, \sunjavadoc{java.base/java/util/Queue.html}{\code{Queue}} has
-\<add> and \<remove> methods but no replacement methods.
-It is not a subtype of \<SequencedCollection> or \<SequencedMap>, so it also has no
-\<addFirst>, \<addLast>, \<putFirst>, or \<putLast> methods.  By contrast, \<SortedSet> is a
-\<SequencedCollection>, so its seq-grow capability is relevant; the JDK
-annotations mark it \<@SeqUngrowable> because its \<addFirst> and
-\<addLast> methods always throw \UnsupportedOperationException.  Likewise,
-\<SortedMap> is a \<SequencedMap>, so the JDK annotations mark it
-\<@SeqUngrowable> because its \<putFirst> and \<putLast> methods always throw
-\UnsupportedOperationException.
+Using a top qualifier for a structurally unavailable capability is important.
+For example, the static type \<Iterator> does not declare \<add> or \<set>, but
+\<ListIterator> is a subtype of \<Iterator> and does declare those methods.
+Therefore \<@Modifiable Iterator> should not mean that every possible runtime
+iterator is incapable of grow or replace; it means only that those capabilities
+are not known from the static type \<Iterator>.
 
-
-Although no object of class \<Queue> supports replace operations,
-the type
-\<@Replaceable Queue> still makes sense, because some objects of type
-\<Queue> do support replace operations.
-For example, \<@Replaceable Queue> is the type of
-\<q> in \<Queue q = new LinkedList();>.
-This behavior ensures that code like this type-checks:
+Similarly, exact \<Queue> does not declare replacement methods, but a
+\<Queue> reference can point to a \<LinkedList>, which does support
+replacement operations.  This behavior ensures that code like this
+type-checks:
 
 \begin{Verbatim}
-@Growable LinkedList list = ...;
+@Replaceable LinkedList list = ...;
 Queue q = list;
-@Growable LinkedList list2 = (Queue) q; // still @Growable
+@Replaceable LinkedList list2 = (LinkedList) q; // still @Replaceable
 \end{Verbatim}
 
 
