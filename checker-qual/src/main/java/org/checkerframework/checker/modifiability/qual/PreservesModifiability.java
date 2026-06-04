@@ -16,7 +16,8 @@ import java.lang.annotation.Target;
  * return type is also {@code @IteratorPolyMod}. If the first argument has any other qualifier in a
  * capability hierarchy, then the return type is the top qualifier in that hierarchy.
  *
- * <p>If the annotated method has no parameters, then this annotation has no effect on the method.
+ * <p>If the annotated method has no parameters or returns {@code void}, then this annotation has no
+ * effect on the method.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
