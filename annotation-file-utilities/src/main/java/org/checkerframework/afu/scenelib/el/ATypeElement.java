@@ -94,9 +94,8 @@ public class ATypeElement extends AElement {
       sb.append(' ');
     }
     sb.append('{');
-    String linePrefix = "  ";
     for (Map.Entry<List<TypePathEntry>, ATypeElement> entry : innerTypes.entrySet()) {
-      sb.append(linePrefix);
+      sb.append("  ");
       sb.append(entry.getKey().toString());
       sb.append(" => ");
       sb.append(entry.getValue().toString());
@@ -112,7 +111,7 @@ public class ATypeElement extends AElement {
   }
 
   static <K extends Object> VivifyingMap<K, ATypeElement> newVivifyingLHMap_ATE() {
-    return new VivifyingMap<K, ATypeElement>(new LinkedHashMap<>()) {
+    return new VivifyingMap<>(new LinkedHashMap<>()) {
       @Override
       public ATypeElement createValueFor(K k) {
         return new ATypeElement(k.toString());
