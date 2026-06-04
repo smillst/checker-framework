@@ -3,9 +3,10 @@
 \newcommand{\UnsupportedOperationException}{\<Un\-sup\-port\-ed\-Op\-er\-a\-tion\-Ex\-cep\-tion>}
 
 In the Java Collections Framework, an \emph{optional} method is one that a class may or may not support.
-If a method is unsupported, calling it throws \UnsupportedOperationException .
+If a method is unsupported, calling it throws \UnsupportedOperationException.
 The Modifiability Checker verifies that optional methods related to modifying collections are only
-called if they are supported, thus eliminating the possibility of an \UnsupportedOperationException  at runtime.
+called if they are supported, thus eliminating the possibility of an
+\UnsupportedOperationException\  at run time.
 (It is possible to write a checker that warns about other unsupported
 methods, but the Modifiability Checker focuses on those issued when modifying collections.)
 
@@ -24,7 +25,7 @@ optional method (such as
 \sunjavadoc{java.base/java/util/Collection.html\#remove(java.lang.Object)}{remove})
 on an unmodifiable collection.
 (For brevity, this chapter generally uses
-just ``collection'' to mean ``collection, map, or iterator''.).
+just ``collection'' to mean ``collection, map, or iterator''.)
 
 To run the Modifiability Checker:
 
@@ -48,28 +49,35 @@ The JDK provides many such collections, for example, the results of:
   \sunjavadoc{java.base/java/util/Map.html\#of(K,V,K,V)}{\code{Map.of()}},
   \sunjavadoc{java.base/java/util/Map.html\#copyOf(java.util.Map)}{\code{Map.copyOf()}}
 \item
-  \sunjavadoc{java/util/Collections.html\#emptyList()}{\code{Collections.emptyList()}}
-  \sunjavadoc{java/util/Collections.html\#emptySet()}{\code{Collections.emptySet()}}
+  \sunjavadoc{java/util/Collections.html\#emptyList()}{\code{Collections.emptyList()}},
+  \sunjavadoc{java/util/Collections.html\#emptySet()}{\code{Collections.emptySet()}},
   \sunjavadoc{java/util/Collections.html\#emptyMap()}{\code{Collections.emptyMap()}}
 \item
-  \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableList(java.util.List)}{\code{Collections.unmodifiableList()}}
-  \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableSet(java.util.Set)}{\code{Collections.unmodifiableSet()}}
+  \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableList(java.util.List)}{\code{Collections.unmodifiableList()}},
+  \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableSet(java.util.Set)}{\code{Collections.unmodifiableSet()}},
   \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableMap(java.util.Map)}{\code{Collections.unmodifiableMap()}}
 \end{itemize}
 
 A \emph{modifiable collection} supports calling at least one optional mutating method. In genernal,
 classes support groups of methods which correspond to four different ways a collection can be modified.
-A collection may support modifying a collection through one or more of the following capabilities.
-
+A collection may support modifying a collection through one or more of the capabilities
 \textbf{Grow}, \textbf{Sequential Grow}, \textbf{Shrink}, and \textbf{Replace}.
+
 \begin{itemize}
     \item \textbf{Grow}: The collection can grow by adding new elements
       (\<add>, \<addAll>, \<offer>, \ldots) at arbitrary locations.
-    \item \textbf{Sequential Grow}: A sequenced collection can grow by adding new
+    \item \textbf{Sequential Grow}: The sequenced collection can grow by adding new
       elements at the beginning or end (\<addFirst>, \<addLast>,
-      \<offerFirst>, \<offerLast>, \<push>, \ldots), and a sequenced map can
-      insert or replace mappings at the beginning or end (\<putFirst>,
-      \<putLast>). (This is shorted to SeqGrow in the rest of the manual.)
+      \<offerFirst>, \<offerLast>, \<push>, \<putFirst>,
+      \<putLast>, \ldots).
+
+      The Sequencial Grow capability is needed for collections, such as
+      \sunjavadoc{java.base/java/util/TreeSet.html}{\code{TreeSet}}, that
+      support grow operations (like \<add> and \<addAll>) but do not
+      support sequential grow operations (like \<addFirst> and
+      \<addLast>).  The declaration of \<TreeSet> is annotated as \<@Growable @SeqUngrowable>.
+
+      ``Sequential Grow'' is shorted to ``SeqGrow'' in the rest of the manual.
     \item \textbf{Shrink}: The collection can shrink by removing
       existing elements (\<remove>, \<removeAll>, \<clear>, \<retainAll>, \<poll>, \<pop>, \ldots).
     \item \textbf{Replace}: The collection can replace existing
@@ -135,7 +143,7 @@ each one into its constituent qualifiers when it appears in source code.
 
 \item[\refqualclass{checker/modifiability/qual}{Modifiable}]
 Alias for \code{@Growable @SeqGrowable @Shrinkable @Replaceable} (but see
-Section~\ref{modifiability-types-lacking-methods} for exceptions).  Calling
+Section \ref{modifiability-types-lacking-methods} for exceptions).  Calling
 any mutating operation on this collection will not throw
 \UnsupportedOperationException.
 
@@ -324,9 +332,14 @@ Polymorphic qualifier for the Grow hierarchy.
 The return type's growability matches the growability of whichever
 formal parameter is annotated with \<@PolyGrowable>.
 
+\item[\refqualclass{checker/modifiability/qual}{PolySeqGrowable}]
+Polymorphic qualifier for the SeqGrow hierarchy.
+The return type's seq-growability matches the seq-growability of
+whichever formal parameter is annotated with \<@PolySeqGrowable>.
+
 \item[\refqualclass{checker/modifiability/qual}{PolyShrinkable}]
 Polymorphic qualifier for the Shrink hierarchy.
-The return type's Shrink qualifier matches the Shrink qualifier of
+The return type's shrinkability qualifier matches the shrinkability of
 whichever formal parameter is annotated with \<@PolyShrinkable>.
 Useful for methods such as \code{Map.keySet()} that preserve shrinkability while
 returning an \<@Ungrowable> view.
@@ -335,11 +348,6 @@ returning an \<@Ungrowable> view.
 Polymorphic qualifier for the Replace hierarchy.
 The return type's replaceability matches the replaceability of
 whichever formal parameter is annotated with \<@PolyReplaceable>.
-
-\item[\refqualclass{checker/modifiability/qual}{PolySeqGrowable}]
-Polymorphic qualifier for the SeqGrow hierarchy.
-The return type's seq-growability matches the seq-growability of
-whichever formal parameter is annotated with \<@PolySeqGrowable>.
 
 \item[\refqualclass{checker/modifiability/qual}{PolyModifiable}]
 Alias for \code{@PolyGrowable @PolySeqGrowable @PolyShrinkable @PolyReplaceable}.
@@ -358,7 +366,8 @@ behavior.
 \begin{description}
 
 \item[\refqualclass{checker/modifiability/qual}{PreservesModifiability}]
-When written on a non-void, one-argument method declaration, it indicates that the
+Should only be written on a non-void, one-argument method declaration.
+It indicates that the
 method preserves positive modifiability capabilities from its argument to
 its return value.  If the argument is \<@Growable>, \<@Shrinkable>,
 \<@Replaceable>, \<@SeqGrowable>, or \<@IteratorPolyMod>, then the Modifiability Checker
@@ -369,8 +378,6 @@ the corresponding hierarchy.
 
 This is useful for methods that may return their argument, or may return a
 new modifiable collection.
-
-If put on a method with no parameters, then it has no effect.
 \end{description}
 
 \sectionAndLabel{\<@Modifiable> and \<@Unmodifiable> for types without grow, seq-grow, shrink, and/or replace methods}{modifiability-types-lacking-methods}
@@ -382,13 +389,39 @@ and
 \<@Unmodifiable MyClass x;> is equivalent to
 \<@Ungrowable @SeqUngrowable @Unshrinkable @Unreplaceable MyClass x;>.
 
-However, some static types lack methods for one or more mutation
+However, some types lack methods for one or more mutation
 capabilities.  In such cases, the Modifiability Checker weakens the
-structurally unavailable component to the corresponding top qualifier
-rather than to the negative qualifier.  For example, \<Iterator> has
+structurally unavailable component to the corresponding top qualifier.
+For example, \<Iterator> has
 \<remove> but not \<add> or \<set>, so \<@Modifiable Iterator> carries
 \<@Shrinkable>, but its grow and replace components are weakened to
 \<@MaybeGrowable> and \<@MaybeReplaceable>.
+
+
+\subsectionAndLabel{Alternative design: use negative capability rather than top qualifier}{modifiability-modifyiable-must-be-top}
+
+An alternative design would use the
+
+Using a top qualifier for a structurally unavailable capability is important.
+For example, the static type \<Iterator> does not declare \<add> or \<set>, but
+\<ListIterator> is a subtype of \<Iterator> and does declare those methods.
+Therefore \<@Modifiable Iterator> should not mean that every possible runtime
+iterator is incapable of grow or replace; it means only that those capabilities
+are not known from the static type \<Iterator>.
+
+Similarly, exact \<Queue> does not declare replacement methods, but a
+\<Queue> reference can point to a \<LinkedList>, which does support
+replacement operations.  This behavior ensures that code like this
+type-checks:
+
+\begin{Verbatim}
+@Replaceable LinkedList list = ...;
+Queue q = list;
+@Replaceable LinkedList list2 = (LinkedList) q; // still @Replaceable
+\end{Verbatim}
+
+
+\subsectionAndLabel{Expansion rules for \<@Modifiable> and \<@Unmodifiable>}{modifiability-modifiable-expansion-rules}
 
 The following rules define this weakening.  The first qualifier in each
 capability row is used for \<@Modifiable>; the second is used for
@@ -418,8 +451,13 @@ seq-grow component is structurally relevant and is not weakened to
 \<addFirst>, \<addLast>, \<putFirst>, and \<putLast> always throw
 \UnsupportedOperationException.
 
- The following are representative canonical expansions.
 
+\subsectionAndLabel{Example expansions for \<@Modifiable> and \<@Unmodifiable>}{modifiability-modifiable-expansion-examples}
+
+The following are representative canonical expansions.
+
+\noindent
+\begin{smaller}
 \begin{tabular}{rlcrrrrl}
 \<@Modifiable> & \<Collection> & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Collection> \\
 \<@Unmodifiable> & \<Collection> & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Collection> \\
@@ -440,24 +478,7 @@ seq-grow component is structurally relevant and is not weakened to
 \<Map.@Modifiable> & \<Entry> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@MaybeShrinkable> & \<@Replaceable> & \<Map.Entry> \\
 \<Map.@Unmodifiable> & \<Entry> & = & \<@MaybeGrowable> & \<@MaybeSeqGrowable> & \<@MaybeShrinkable> & \<@Unreplaceable> & \<Map.Entry> \\
 \end{tabular}
-
-Using a top qualifier for a structurally unavailable capability is important.
-For example, the static type \<Iterator> does not declare \<add> or \<set>, but
-\<ListIterator> is a subtype of \<Iterator> and does declare those methods.
-Therefore \<@Modifiable Iterator> should not mean that every possible runtime
-iterator is incapable of grow or replace; it means only that those capabilities
-are not known from the static type \<Iterator>.
-
-Similarly, exact \<Queue> does not declare replacement methods, but a
-\<Queue> reference can point to a \<LinkedList>, which does support
-replacement operations.  This behavior ensures that code like this
-type-checks:
-
-\begin{Verbatim}
-@Replaceable LinkedList list = ...;
-Queue q = list;
-@Replaceable LinkedList list2 = (LinkedList) q; // still @Replaceable
-\end{Verbatim}
+\end{smaller}
 
 
 \sectionAndLabel{Behavior of the \<iterator()> method}{modifiability-iterator-behavior}
