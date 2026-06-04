@@ -64,7 +64,7 @@ A collection may support modifying a collection through one or more of the follo
 \textbf{Grow}, \textbf{Sequential Grow}, \textbf{Shrink}, and \textbf{Replace}.
 \begin{itemize}
     \item \textbf{Grow}: The collection can grow by adding new elements
-      (\<add>, \<addAll>, \<offer>, \ldots) at arbitrary locations.
+      (\<add>, \<addAll>, \<offer>, \ldots) at arbitrary locations. Not to be confused with sequential grow.
     \item \textbf{Sequential Grow}: A sequenced collection can grow by adding new
       elements at the beginning or end (\<addFirst>, \<addLast>,
       \<offerFirst>, \<offerLast>, \<push>, \ldots), and a sequenced map can
@@ -80,10 +80,55 @@ A collection may support modifying a collection through one or more of the follo
 \noindent
 Some collections can also be modified through their iterator; see Section~\ref{modifiability-iterator-behavior}.
 
-%% TODO: For each category what methods may or may not be called? I would guess this is in the
-% annotated JDK, but where do I find this information?
+The following table summarizes the main method families that may be called
+for each capability.  It is not a list of every overload.  Read-only
+methods such as \<get>, \<contains>, \<size>, \<isEmpty>, \<iterator>, and
+\<entrySet> do not require a modifiability capability.
 
+\noindent
+\begin{tabular}{p{0.22\linewidth}p{0.70\linewidth}}
+Capability required & Method families \\
+\<@Growable> &
+  ordinary insertion: \<Collection.add>, \<addAll>, \<List.add>,
+  \<List.addAll>, \<Queue.add>, \<Queue.offer>, \<BlockingQueue.put>,
+  timed \<offer>, \<TransferQueue.transfer>, \<tryTransfer>,
+  \<Map.putIfAbsent>, \<Map.computeIfAbsent>, \<ListIterator.add>,
+  legacy \<Vector> insertion methods, and \<Collections.addAll> \\
+\<@SeqGrowable> &
+  front/back insertion or positioning (only applicable to sequenced collections and maps):
+  \<SequencedCollection.addFirst>, \<addLast>, \<Deque.addFirst>,
+  \<addLast>, \<offerFirst>, \<offerLast>, \<push>,
+  \<BlockingDeque.putFirst>, \<putLast>, timed \<offerFirst>,
+  timed \<offerLast>, \<SequencedMap.putFirst>, \<putLast> \\
+\<@Shrinkable> &
+  removal: \<Collection.remove>, \<removeAll>, \<retainAll>,
+  \<removeIf>, \<clear>, \<List.remove>, \<Queue.remove>, \<poll>,
+  \<BlockingQueue.take>, timed \<poll>, \<Deque.pop>, \<removeFirst>,
+  \<removeLast>, \<pollFirst>, \<pollLast>, occurrence-removal methods,
+  \<Map.remove>, conditional \<remove>, \<Map.clear>,
+  \<NavigableMap.pollFirstEntry>, \<pollLastEntry>, \<Iterator.remove>,
+  and legacy \<Vector> removal methods \\
+\<@Replaceable> &
+  replacement without changing size: \<List.set>, \<List.replaceAll>,
+  \<List.sort>, \<Map.replace>, \<Map.replaceAll>,
+  \<Map.Entry.setValue>, \<ListIterator.set>, and mutating
+  \<Collections> algorithms such as \<sort>, \<reverse>, \<shuffle>,
+  \<swap>, \<fill>, \<copy>, \<rotate>, and \<replaceAll>, plus
+  legacy \<Vector> replacement methods \\
+Combined capabilities &
+  \<Map.put> and \<putAll> require \<@Growable @Replaceable>;
+  \<Map.computeIfPresent> requires \<@Shrinkable @Replaceable>;
+  \<Map.compute> and \<merge> require
+  \<@Growable @Shrinkable @Replaceable>;
+  \<BlockingQueue.drainTo> requires a \<@Shrinkable> receiver and a
+  \<@Growable> target collection \\
+\end{tabular}
 
+An overriding method must preserve positive modifiability receiver
+requirements exactly.  For example, if a superclass method has a
+\<@Growable>, \<@SeqGrowable>, \<@Shrinkable>, or \<@Replaceable> receiver,
+then the overriding method must require that same positive receiver
+capability; it may not drop or weaken the requirement.
 
 \sectionAndLabel{Modifiability annotations}{modifiability-annotations}
 
