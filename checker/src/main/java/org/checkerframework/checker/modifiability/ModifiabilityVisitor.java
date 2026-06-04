@@ -25,9 +25,9 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * Base visitor for the modifiability sub-checkers (Grow, Shrink, Replace).
+ * Base visitor for the modifiability sub-checkers (Grow, SeqGrow, Shrink, Replace).
  *
- * <p>This class contains logic shared across all three sub-checkers:
+ * <p>This class contains logic shared across all four sub-checkers:
  *
  * <ul>
  *   <li>Suppressing the "constructor result must be TOP" check, since collection constructors may
@@ -221,7 +221,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
    *     constructor
    */
   private boolean hasExplicitWarningModifiabilityAnnotation(ClassTree classTree) {
-    // write explicit modifianility annotations on the class
+    // write explicit modifiability annotations on the class
     if (hasWarningModifiabilityAnnotation(classTree.getModifiers().getAnnotations())) {
       return true;
     }
@@ -241,7 +241,8 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
    * Returns true if the list {@code annotations} contains any explicit non-maybe modifiability
    * qualifier.
    *
-   * <p>Iterator throw the list of annotations and call isWarningModifiablityAnnotation(annotation)
+   * <p>Iterator through the list of annotations and call
+   * isWarningModifiablityAnnotation(annotation)
    *
    * @param annotations annotation trees to inspect
    * @return true if one annotation should trigger an unverified modifiability warning

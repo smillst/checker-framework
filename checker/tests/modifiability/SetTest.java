@@ -105,7 +105,7 @@ class SetTest {
     Map.@MaybeGrowable @MaybeShrinkable @Replaceable Entry<String, String> r3 = modifiable;
     // Explicit Grow/Shrink annotations are preserved on Map.Entry.
     // :: error: [assignment]
-    Map.@Growable @Replaceable Entry<String, String> gr1 = replaceable; // OK: same effective type
+    Map.@Growable @Replaceable Entry<String, String> gr1 = replaceable;
     // :: error: [assignment]
     Map.@Shrinkable @Replaceable Entry<String, String> sr1 = replaceable;
     Map.@Modifiable Entry<String, String> m1 = replaceable;

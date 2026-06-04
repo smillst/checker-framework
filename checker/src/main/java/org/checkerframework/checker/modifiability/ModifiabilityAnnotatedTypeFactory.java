@@ -43,7 +43,7 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
    * be imprecise to always use {@code @Maybe*}, because passing a positive type collection
    * guarantees a positive return type.
    *
-   * <p>This method is called by all three sub-checkers.
+   * <p>This method is called by all four sub-checkers.
    *
    * @param tree an invocation of a {@code @PreservesModifiability} method
    * @param methodType the annotated executable type of the invoked method

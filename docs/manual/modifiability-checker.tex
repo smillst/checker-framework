@@ -465,7 +465,7 @@ Queue q = list;
 By default, the signature of \<Collection.iterator()> is
 
 \begin{Verbatim}
-@Unshrinkable Iterator iterator()
+@MaybeShrinkable Iterator iterator()
 \end{Verbatim}
 
 However, for some subclasses of \<Collection>, the signature of
@@ -489,6 +489,10 @@ Here are examples of its use:
   @Unshrinkable List<String> list2 = ...;
   @Unshrinkable Iterator<String> it2 = list2.iterator();
   it2.remove();  // Error: it2 is @Unshrinkable
+
+  @Shrinkable List<String> list3 = ...;
+  @MaybeShrinkable Iterator<String> it3 = list3.iterator();
+  it3.remove();  // Error: list3 does not have @IteratorPolyMod
 \end{Verbatim}
 
 

@@ -7,12 +7,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Convenience alias meaning {@code @MaybeGrowable @MaybeShrinkable @MaybeReplaceable}. Represents
- * an unknown or arbitrary modifiability capability; the checker cannot determine whether the
- * collection is growable, shrinkable, or replaceable.
+ * Convenience alias meaning
+ * {@code @MaybeGrowable @MaybeSeqGrowable @MaybeShrinkable @MaybeReplaceable}. Represents an
+ * unknown or arbitrary modifiability capability; the checker cannot determine whether the
+ * collection is growable, sequenced-growable, shrinkable, or replaceable.
  *
  * <p>This annotation is not part of the type hierarchy; the Modifiability Checker expands it to
- * {@code @MaybeGrowable @MaybeShrinkable @MaybeReplaceable} on each annotated type.
+ * {@code @MaybeGrowable @MaybeSeqGrowable @MaybeShrinkable @MaybeReplaceable} on each annotated
+ * type.
  *
  * @checker_framework.manual #modifiability-checker Modifiability Checker
  */
