@@ -2,24 +2,20 @@
 
 \newcommand{\UnsupportedOperationException}{\<Un\-sup\-port\-ed\-Op\-er\-a\-tion\-Ex\-cep\-tion>}
 
-In Java, an \emph{optional} method is one that a class may or may not
-support.  (Optional methods are unrelated to the \<Optional> type.)
-An example is
+In the Java Collections Framework, an \emph{optional} method is one that a class may or may not support.
+If a method is unsupported, calling it throws \UnsupportedOperationException .
+The Modifiability Checker verifies that optional methods related to modifying collections are only
+called if they are supported, thus eliminating the possibility of an \UnsupportedOperationException  at runtime.
+(It is possible to write a checker that warns about other unsupported
+methods, but the Modifiability Checker focuses on those issued when modifying collections.)
+
+%% (Optional methods are unrelated to the \<Optional> type.) [[ I would just remove this sentence it is distracting.]]
+An example of an optional method is
 \sunjavadoc{java.base/java/util/Collection.html\#add(E)}{add}.  Some
 subclasses of \<Collection> support \<add>, and others (such as the
 result of calling
 \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableCollection(java.util.Collection)}{Collections.unmodifiableCollection})
 do not support \<add>.
-
-Calling an unsupported method throws \UnsupportedOperationException.  Thus,
-whenever a client calls an optional method, there is a possibility of an
-exception.  The Modifiability Checker eliminates that possibility.
-
-To run the Modifiability Checker:
-
-\begin{Verbatim}
-javac -processor org.checkerframework.checker.modifiability.ModifiabilityChecker MyFile.java
-\end{Verbatim}
 
 If the Modifiability Checker issues no warning, then your program is
 guaranteed not to throw \UnsupportedOperationException\ due to invoking an
@@ -28,12 +24,13 @@ optional method (such as
 \sunjavadoc{java.base/java/util/Collection.html\#remove(java.lang.Object)}{remove})
 on an unmodifiable collection.
 (For brevity, this chapter generally uses
-just ``collection'' to mean ``collection, map, or iterator''.)
+just ``collection'' to mean ``collection, map, or iterator''.).
 
-It is possible to write a checker that warns about other unsupported
-methods (beyond those in the Java Collections Framework), but the
-Modifiability Checker does not do so.
+To run the Modifiability Checker:
 
+\begin{Verbatim}
+javac -processor org.checkerframework.checker.modifiability.ModifiabilityChecker MyFile.java
+\end{Verbatim}
 
 \sectionAndLabel{Unmodifiable collections}{modifiability-unmodifiable-collections}
 
@@ -60,22 +57,19 @@ The JDK provides many such collections, for example, the results of:
   \sunjavadoc{java.base/java/util/Collections.html\#unmodifiableMap(java.util.Map)}{\code{Collections.unmodifiableMap()}}
 \end{itemize}
 
-A \emph{modifiable collection} is one on which mutating methods can be called
-without throwing \UnsupportedOperationException.  Non-optional methods, such
-as \code{size}, \code{get}, \code{contains}, \code{isEmpty}, and \code{toArray}, may be
-called on any collection, whether modifiable or unmodifiable.
+A \emph{modifiable collection} supports calling at least one optional mutating method. In genernal,
+classes support groups of methods which correspond to four different ways a collection can be modified.
+A collection may support modifying a collection through one or more of the following capabilities.
 
-Some collections and maps may be modified in some ways but not in others.
-A collection or map can be modified in four different ways:
-\textbf{Grow}, \textbf{SeqGrow}, \textbf{Shrink}, and \textbf{Replace}.
+\textbf{Grow}, \textbf{Sequential Grow}, \textbf{Shrink}, and \textbf{Replace}.
 \begin{itemize}
     \item \textbf{Grow}: The collection can grow by adding new elements
-      (\<add>, \<addAll>, \<offer>, \ldots).
-    \item \textbf{SeqGrow}: A sequenced collection can grow by adding new
+      (\<add>, \<addAll>, \<offer>, \ldots) at arbitrary locations.
+    \item \textbf{Sequential Grow}: A sequenced collection can grow by adding new
       elements at the beginning or end (\<addFirst>, \<addLast>,
       \<offerFirst>, \<offerLast>, \<push>, \ldots), and a sequenced map can
       insert or replace mappings at the beginning or end (\<putFirst>,
-      \<putLast>).
+      \<putLast>). (This is shorted to SeqGrow in the rest of the manual.)
     \item \textbf{Shrink}: The collection can shrink by removing
       existing elements (\<remove>, \<removeAll>, \<clear>, \<retainAll>, \<poll>, \<pop>, \ldots).
     \item \textbf{Replace}: The collection can replace existing
