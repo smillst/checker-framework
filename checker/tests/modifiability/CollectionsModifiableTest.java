@@ -55,11 +55,11 @@ public class CollectionsModifiableTest {
   void testCheckedWrappers() {
     @Modifiable Collection<String> c = new ArrayList<>();
     @Modifiable Collection<String> checkedC = Collections.checkedCollection(c, String.class);
-    checkedC.add("a");
+    checkedC.addAll(List.of("a"));
 
     @Modifiable List<String> l = new ArrayList<>();
     @Modifiable List<String> checkedL = Collections.checkedList(l, String.class);
-    checkedL.add("a");
+    checkedL.addAll(List.of("a"));
 
     @Modifiable Map<String, String> m = new HashMap<>();
     @Modifiable Map<String, String> checkedM = Collections.checkedMap(m, String.class, String.class);
@@ -253,11 +253,11 @@ public class CollectionsModifiableTest {
     // Synchronized wrappers pass through modifiability
     @Modifiable Collection<String> c = new ArrayList<>();
     @Modifiable Collection<String> syncC = Collections.synchronizedCollection(c);
-    syncC.add("a");
+    syncC.addAll(List.of("a"));
 
     @Modifiable List<String> l = new ArrayList<>();
     @Modifiable List<String> syncL = Collections.synchronizedList(l);
-    syncL.add("a");
+    syncL.addAll(List.of("a"));
   }
 
   void testUnmodifiableWrappers() {

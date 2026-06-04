@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
 import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
@@ -40,8 +41,8 @@ class AliasCanonicalizationTest {
     queue.remove();
   }
 
-  void modifiableCollection(@Modifiable Collection<String> collection) {
-    @Growable @Shrinkable @MaybeReplaceable Collection<String> canonical = collection;
+  void modifiableCollection(@Modifiable @IteratorPolyMod Collection<String> collection) {
+    @Growable @Shrinkable @IteratorPolyMod @MaybeReplaceable Collection<String> canonical = collection;
     collection.add("a");
     collection.remove("a");
   }

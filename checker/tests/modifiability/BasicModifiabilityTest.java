@@ -86,7 +86,8 @@ public class BasicModifiabilityTest {
     @Modifiable Iterator<String> badIt = unmodList.iterator();
   }
 
-  void testMutatingBulkOperations(@Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
+  void testMutatingBulkOperations(
+      @Modifiable @IteratorPolyMod List<String> mod, @Unmodifiable List<String> unmod) {
     List<String> other = new ArrayList<>();
     other.add("x");
 
@@ -121,7 +122,7 @@ public class BasicModifiabilityTest {
 
   void testSubList(@Modifiable List<String> mod, @Unmodifiable List<String> unmod) {
     List<String> sub = mod.subList(0, mod.size());
-    sub.clear(); //  OK because sub is modifiable
+    sub.addAll(List.of("test")); //  OK because sub is modifiable
 
     // :: error: [assignment]
     @Modifiable List<String> sub2 = unmod.subList(0, unmod.size());

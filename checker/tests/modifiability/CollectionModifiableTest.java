@@ -3,6 +3,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.stream.Stream;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -70,7 +71,7 @@ public class CollectionModifiableTest {
   }
 
   void testAnnotatedLocalsFromParams(
-      @Modifiable Collection<String> mod,
+      @Modifiable @IteratorPolyMod Collection<String> mod,
       @Unmodifiable Collection<String> unmod,
       @MaybeModifiable Collection<String> unknown) {
     mod.add("p");
