@@ -73,11 +73,6 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
   }
 
   @Override
-  protected AnnotationMirror maybeCapability() {
-    return MAYBE_SHRINKABLE;
-  }
-
-  @Override
   protected AnnotationMirror positiveCapability() {
     return SHRINKABLE;
   }

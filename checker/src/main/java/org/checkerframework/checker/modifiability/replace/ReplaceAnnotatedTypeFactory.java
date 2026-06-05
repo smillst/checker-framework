@@ -95,11 +95,6 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   }
 
   @Override
-  protected AnnotationMirror maybeCapability() {
-    return MAYBE_REPLACEABLE;
-  }
-
-  @Override
   protected AnnotationMirror positiveCapability() {
     return REPLACEABLE;
   }

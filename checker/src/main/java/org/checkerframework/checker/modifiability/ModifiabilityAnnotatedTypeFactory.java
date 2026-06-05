@@ -117,13 +117,6 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
   }
 
   /**
-   * Returns the top/unknown qualifier.
-   *
-   * @return the top/unknown qualifier
-   */
-  protected abstract AnnotationMirror maybeCapability();
-
-  /**
    * Returns the positive capability qualifier.
    *
    * @return the positive capability qualifier
