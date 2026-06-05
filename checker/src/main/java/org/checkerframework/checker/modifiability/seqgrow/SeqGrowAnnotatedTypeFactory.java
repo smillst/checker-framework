@@ -81,11 +81,6 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
   }
 
   @Override
-  protected AnnotationMirror maybeCapability() {
-    return MAYBE_SEQ_GROWABLE;
-  }
-
-  @Override
   protected AnnotationMirror positiveCapability() {
     return SEQ_GROWABLE;
   }

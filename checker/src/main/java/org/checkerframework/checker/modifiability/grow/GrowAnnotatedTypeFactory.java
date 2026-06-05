@@ -79,11 +79,6 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
   }
 
   @Override
-  protected AnnotationMirror maybeCapability() {
-    return MAYBE_GROWABLE;
-  }
-
-  @Override
   protected AnnotationMirror positiveCapability() {
     return GROWABLE;
   }
