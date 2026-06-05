@@ -156,6 +156,11 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
         overriderTree, overriderMethodType, overriderType, overriddenMethodType, overriddenType)) {
       return false;
     }
+    // Only capability checkers need to preserve receiver capabilities in overrides.
+    // @IteratorPolyMod does not follow this special override rule.
+    if (!shouldCheckReceiverOverrideCapabilityPreservation()) {
+      return true;
+    }
 
     AnnotatedDeclaredType overriderReceiver = overriderMethodType.getReceiverType();
     AnnotatedDeclaredType overriddenReceiver = overriddenMethodType.getReceiverType();
@@ -178,6 +183,16 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
           overriddenMethodType);
       return false;
     }
+    return true;
+  }
+
+  /**
+   * Returns true if overrides should preserve positive receiver capabilities from overridden
+   * methods.
+   *
+   * @return true if overrides should preserve positive receiver capabilities
+   */
+  protected boolean shouldCheckReceiverOverrideCapabilityPreservation() {
     return true;
   }
 
