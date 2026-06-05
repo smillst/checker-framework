@@ -14,10 +14,4 @@ public class SeqGrowVisitor extends ModifiabilityVisitor {
   public SeqGrowVisitor(BaseTypeChecker checker) {
     super(checker);
   }
-
-  @Override
-  protected boolean shouldCheckModifiabilityAnnotationValidity() {
-    // When running under ModifiabilityChecker, GrowChecker handles shared annotation diagnostics.
-    return checker.getParentChecker() == null;
-  }
 }

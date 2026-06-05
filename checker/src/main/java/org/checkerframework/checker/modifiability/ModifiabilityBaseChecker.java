@@ -16,4 +16,18 @@ public abstract class ModifiabilityBaseChecker extends BaseTypeChecker {
 
   /** Creates a new ModifiabilityBaseChecker. */
   protected ModifiabilityBaseChecker() {}
+
+  /**
+   * Returns true if this checker should report diagnostics about annotations whose validity is
+   * shared across all modifiability sub-checkers.
+   *
+   * <p>When a sub-checker runs on its own, it should report these diagnostics. When sub-checkers
+   * run under the aggregate {@link ModifiabilityChecker}, only {@link GrowChecker} reports them to
+   * avoid duplicate messages.
+   *
+   * @return true if this checker should report shared annotation diagnostics
+   */
+  protected boolean shouldCheckModifiabilityAnnotationValidity() {
+    return getParentChecker() == null || this instanceof GrowChecker;
+  }
 }
