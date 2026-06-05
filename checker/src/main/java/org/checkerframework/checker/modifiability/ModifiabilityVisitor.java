@@ -185,8 +185,8 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
    * Returns true if this checker should report diagnostics about modifiability annotations whose
    * validity is independent of a particular capability hierarchy.
    *
-   * <p>The default is {@code true}. SeqGrow, Shrink, and Replace override this to avoid repeating
-   * diagnostics when running under the aggregate {@link ModifiabilityChecker}.
+   * <p>The default is {@code true}. SeqGrow, Shrink, Replace, and Iterator override this to avoid
+   * repeating diagnostics when running under the aggregate {@link ModifiabilityChecker}.
    *
    * @return true if this visitor should report shared modifiability annotation diagnostics
    */

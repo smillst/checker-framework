@@ -14,4 +14,10 @@ public class ShrinkVisitor extends ModifiabilityVisitor {
   public ShrinkVisitor(BaseTypeChecker checker) {
     super(checker);
   }
+
+  @Override
+  protected boolean shouldCheckModifiabilityAnnotationValidity() {
+    // When running under ModifiabilityChecker, GrowChecker handles shared annotation diagnostics.
+    return checker.getParentChecker() == null;
+  }
 }
