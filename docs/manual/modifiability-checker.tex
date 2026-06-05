@@ -95,22 +95,21 @@ methods such as \<get>, \<contains>, \<size>, \<isEmpty>, \<iterator>, and
 \<entrySet> do not require a modifiability capability.
 
 \noindent
-\begin{tabular}{p{0.22\linewidth}p{0.70\linewidth}}
+\begin{tabular}{lp{0.75\linewidth}}
 Capability required & Method families \\
 \<@Growable> &
-  ordinary insertion: \<Collection.add>, \<addAll>, \<List.add>,
+  \<Collection.add>, \<addAll>, \<List.add>,
   \<List.addAll>, \<Queue.add>, \<Queue.offer>, \<BlockingQueue.put>,
   timed \<offer>, \<TransferQueue.transfer>, \<tryTransfer>,
   \<Map.putIfAbsent>, \<Map.computeIfAbsent>, \<ListIterator.add>,
   legacy \<Vector> insertion methods, and \<Collections.addAll> \\
 \<@SeqGrowable> &
-  front/back insertion or positioning (only applicable to sequenced collections and maps):
   \<SequencedCollection.addFirst>, \<addLast>, \<Deque.addFirst>,
   \<addLast>, \<offerFirst>, \<offerLast>, \<push>,
   \<BlockingDeque.putFirst>, \<putLast>, timed \<offerFirst>,
   timed \<offerLast>, \<SequencedMap.putFirst>, \<putLast> \\
 \<@Shrinkable> &
-  removal: \<Collection.remove>, \<removeAll>, \<retainAll>,
+  \<Collection.remove>, \<removeAll>, \<retainAll>,
   \<removeIf>, \<clear>, \<List.remove>, \<Queue.remove>, \<poll>,
   \<BlockingQueue.take>, timed \<poll>, \<Deque.pop>, \<removeFirst>,
   \<removeLast>, \<pollFirst>, \<pollLast>, occurrence-removal methods,
@@ -118,7 +117,7 @@ Capability required & Method families \\
   \<NavigableMap.pollFirstEntry>, \<pollLastEntry>, \<Iterator.remove>,
   and legacy \<Vector> removal methods \\
 \<@Replaceable> &
-  replacement without changing size: \<List.set>, \<List.replaceAll>,
+  \<List.set>, \<List.replaceAll>,
   \<List.sort>, \<Map.replace>, \<Map.replaceAll>,
   \<Map.Entry.setValue>, \<ListIterator.set>, and mutating
   \<Collections> algorithms such as \<sort>, \<reverse>, \<shuffle>,
@@ -363,6 +362,28 @@ collection \<c> is \<@Shrinkable>, then \<c.iterator()> is also
 
 \end{description}
 
+It might seem that it is sufficient to simply annotate \<iterator()>
+directly, as in
+
+\begin{Verbatim}
+class List {
+  @MaybeShrinkable Iterator iterator() { ... }
+}
+class ArrayList {
+  @PolyShrinkable Iterator iterator(@PolyShrinkable ArrayList this) { ... }
+}
+class CopyOnWriteArrayList {
+  @Unshrinkable Iterator iterator(@PolyShrinkable ArrayList this) { ... }
+}
+\end{Verbatim}
+
+That approach would be sound but imprecise.
+In practice, many expressions of static type \<List> evaluate to
+\<ArrayList>s or other classes with \<@PolyShrinkable> \<iterator()> methods.
+The \<@IteratorPolyMod> annotation is similar to writing the hypothetical
+annotation \<@RuntimeType("ArrayList")>:  it indicates a property that is
+more precise than the declared type.
+
 
 \subsectionAndLabel{Polymorphic qualifiers}{modifiability-polymorphic}
 
@@ -439,26 +460,29 @@ However, some types lack methods for one or more mutation
 capabilities.  In such cases, the Modifiability Checker weakens the
 structurally unavailable component to the corresponding top qualifier.
 For example, \<Iterator> has
-\<remove> but not \<add> or \<set>, so \<@Modifiable Iterator> carries
-\<@Shrinkable>, but its grow and replace components are weakened to
-\<@MaybeGrowable> and \<@MaybeReplaceable>.
+\<remove> but not \<add> or \<set>, so \<@Modifiable Iterator> expands to
+\<@MaybeGrowable @Shrinkable @MaybeReplaceable Iterator>.
 
 
-\subsectionAndLabel{Alternative design: use negative capability rather than top qualifier}{modifiability-modifyiable-must-be-top}
+\subsectionAndLabel{Alternative design: use negative capability rather than top qualifier}{modifiability-modifiable-must-be-top}
 
-An alternative design would use the
-
-Using a top qualifier for a structurally unavailable capability is important.
-For example, the static type \<Iterator> does not declare \<add> or \<set>, but
-\<ListIterator> is a subtype of \<Iterator> and does declare those methods.
-Therefore \<@Modifiable Iterator> should not mean that every possible runtime
-iterator is incapable of grow or replace; it means only that those capabilities
+An alternative design would make \<Modifiable Iterator> expand to
+\<@Ungrowable @Shrinkable @Unreplaceable Iterator>.
+That would be incorrect, because not every \<Iterator> is \<@Ungrowable> and \<@Unreplaceable>.
+For example, the static type \<Iterator> does not declare \<add> or \<set>
+(they are structurally unavailable), but its subtype
+\<ListIterator> and does declare those methods.
+Therefore \<@Modifiable Iterator> should not mean that every
+iterator is incapable of grow and replace; it means only that those capabilities
 are not known from the static type \<Iterator>.
 
-Similarly, exact \<Queue> does not declare replacement methods, but a
-\<Queue> reference can point to a \<LinkedList>, which does support
-replacement operations.  This behavior ensures that code like this
-type-checks:
+Similarly, \<Queue> does not declare replacement methods, but a variable
+with declared type
+\<Queue> may contain a \<LinkedList>, which does support
+replacement operations.
+
+Using the top qualifier for structurally unavailable methods ensures that
+code like this type-checks:
 
 \begin{Verbatim}
 @Replaceable LinkedList list = ...;
@@ -472,19 +496,29 @@ Queue q = list;
 The following rules define this weakening.  The first qualifier in each
 capability row is used for \<@Modifiable>; the second is used for
 \<@Unmodifiable>.  If the weakening condition holds, both aliases use the
-corresponding \<@Maybe*> qualifier instead.
+corresponding \<@Maybe*> qualifier instead.x
 
-\begin{tabular}{ll}
-Capability & Weakening condition \\
-\<Growable>/\<Ungrowable> &
-  \<Map.Entry> or an \<Iterator> that is not a \<ListIterator> \\
-\<SeqGrowable>/\<SeqUngrowable> &
-  not a \<SequencedCollection>, \<SequencedMap>, or \<Deque> \\
-\<Shrinkable>/\<Unshrinkable> &
-  \<Map.Entry> \\
-\<Replaceable>/\<Unreplaceable> &
-  exact \<Collection>, any \<Set>, any non-\<LinkedList> \<Queue>,
-  or an \<Iterator> that is not a \<ListIterator> \\
+
+
+\noindent
+\begin{tabular}{l|l|l}
+\multicolumn{3}{c}{Expansion for
+\<@Modifiable>/\<@Unmodifiable>. ``$\backslash$'' means set difference.  A
+type includes its subtypes.} \\ \hline
+& Usual expansion to \<@>(\<Un>)\<*> & Expands to \<@Maybe*> \\ \hline
+Grow
+& \<ListIterator>
+& \<Map.Entry> or (\<Iterator>$\backslash$\<ListIterator>) \\
+SeqGrow
+& \<SequencedCollection>, \<SequencedMap>, or \<Deque>
+& not \<SequencedCollection>, \<SequencedMap>, or \<Deque> \\
+Shrink
+& not \<Map.Entry>
+& \<Map.Entry> \\
+Replace
+& \<LinkedList> or \<ListIterator>
+& exact \<Collection>, any \<Set>, (\<Queue>$\backslash$\<LinkedList>), \\
+&&  or (\<Iterator>$\backslash$\<ListIterator>) \\
 \end{tabular}
 
 These rules describe alias expansion, not the full specification of every JDK
@@ -504,6 +538,7 @@ The following are representative canonical expansions.
 
 \noindent
 \begin{smaller}
+\setlength{\tabcolsep}{.33\tabcolsep}
 \begin{tabular}{rlcrrrrl}
 \<@Modifiable> & \<Collection> & = & \<@Growable> & \<@MaybeSeqGrowable> & \<@Shrinkable> & \<@MaybeReplaceable> & \<Collection> \\
 \<@Unmodifiable> & \<Collection> & = & \<@Ungrowable> & \<@MaybeSeqGrowable> & \<@Unshrinkable> & \<@MaybeReplaceable> & \<Collection> \\
@@ -564,7 +599,7 @@ Here are examples of its use:
 
 
 
-\sectionAndLabel{Examples}{modifiability-examples}
+\sectionAndLabel{Examples of Modifiability Checker warnings}{modifiability-examples}
 
 \begin{Verbatim}
 import java.util.*;
@@ -628,14 +663,20 @@ class Demo {
 
 % LocalWords:  Modifiability modifiability copyOf emptyList emptySet gsr
 % LocalWords:  emptyMap unmodifiableList unmodifiableSet unmodifiableMap
-% LocalWords:  toArray addAll removeAll retainAll replaceAll setValue
+% LocalWords:  toArray addAll removeAll retainAll replaceAll setValue Un
 % LocalWords:  MaybeModifiable UnmodifiableParam Growable MaybeGrowable MaybeShrinkable
 % LocalWords:  MaybeReplaceable MaybeSeqGrowable growable seq ListIterator
-% LocalWords:  PolyModifiable PolySeqGrowable addFirst synchronizedList
-% LocalWords:  PolyShrinkable PolyGrowable PolyReplaceable SeqGrow
+% LocalWords:  PolyModifiable PolySeqGrowable addFirst synchronizedList Un
+% LocalWords:  PolyShrinkable PolyGrowable PolyReplaceable SeqGrow Deque
 % LocalWords:  addLast offerFirst offerLast putFirst putLast unreplaceable seq-growability
-% LocalWords:  SequencedMap SortedMap
+% LocalWords:  SequencedMap SortedMap unmodifiableCollection entrySet
 % LocalWords:  SeqGrowable SeqUngrowable BottomSeqGrowable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrowable BottomShrinkable BottomReplaceable
 % LocalWords:  MaybeIteratorPolyMod IteratorPolyMod PreservesModifiability
+% LocalWords:  BlockingQueue TransferQueue tryTransfer putIfAbsent putAll
+% LocalWords:  SequencedCollection BlockingDeque removeIf removeFirst
+% LocalWords:  removeLast pollFirst pollLast NavigableMap pollFirstEntry
+% LocalWords:  pollLastEntry computeIfPresent drainTo unmodifiability
+% LocalWords:  seqgrow ConcurrentSkipListSet ConcurrentSkipListMap keySet
+% LocalWords:  RuntimeType MyClass SortedSet
