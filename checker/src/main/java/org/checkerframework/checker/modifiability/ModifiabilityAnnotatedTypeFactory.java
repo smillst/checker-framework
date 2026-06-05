@@ -3,6 +3,7 @@ package org.checkerframework.checker.modifiability;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -30,7 +31,7 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
   /**
    * Refines the return type of a {@code @PreservesModifiability} method.
    *
-   * <p>If the method has no parameters, then this annotation has no effect.
+   * <p>If the method has no parameters or returns {@code void}, then this annotation has no effect.
    *
    * <p>Otherwise, if the first argument is positive (i.e.{@code @Shrinkable}), then the return type
    * is also positive. If the first argument is {@code @IteratorPolyMod}, then the return type is
@@ -50,15 +51,17 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
    */
   protected void refinePreservesModifiabilityReturnType(
       MethodInvocationTree tree, AnnotatedExecutableType methodType) {
-    if (tree.getArguments().isEmpty()) {
+    AnnotatedTypeMirror returnType = methodType.getReturnType();
+    if (tree.getArguments().isEmpty()
+        || returnType.getUnderlyingType().getKind() == TypeKind.VOID) {
       return;
     }
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(positiveCapability())) {
-      methodType.getReturnType().replaceAnnotation(positiveCapability());
+      returnType.replaceAnnotation(positiveCapability());
     }
     if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      methodType.getReturnType().replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
+      returnType.replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
     }
   }
 

@@ -9,7 +9,7 @@ import org.checkerframework.framework.qual.DefaultQualifierInHierarchy;
 import org.checkerframework.framework.qual.SubtypeOf;
 
 /**
- * For the annotated collection, the return type of {@code iterator()} is {@code @Unshrinkable}.
+ * For the annotated collection, the return type of {@code iterator()} is {@code @MaybeShrinkable}.
  *
  * <p>This is the default qualifier for unannotated types.
  *

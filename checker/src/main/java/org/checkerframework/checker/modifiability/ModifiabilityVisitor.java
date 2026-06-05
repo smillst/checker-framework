@@ -126,7 +126,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
   /**
    * Returns the positive qualifier for this checker's modifiability hierarchy, such as
-   * {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable}.
+   * {@code @Growable}, {@code @SeqGrowable}, {@code @Shrinkable}, or {@code @Replaceable}.
    *
    * @return this checker's positive capability qualifier
    */

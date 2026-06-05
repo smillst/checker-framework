@@ -123,8 +123,7 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  @SuppressWarnings("modifiability:annotation.unverified")
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
   static @Modifiable class SuppressedList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -135,13 +134,22 @@ public class CustomModifiabilityAnnotationWarning {
     public int size() {
       return 1;
     }
+
+    @Override
+    // Only ShrinkChecker and ReplaceChecker report this receiver override.
+    // The class-level @Modifiable makes SuppressedList @SeqGrowable too, but
+    // SeqGrowChecker ignores @IteratorPolyMod. As a result, the receiver appears
+    // to match SuppressedList's declaration bound in the SeqGrow hierarchy, so
+    // BaseTypeVisitor's declaration-bound exception accepts the override.
+    // :: error: [override.receiver]
+    public boolean add(@IteratorPolyMod SuppressedList this, String e) {
+      return super.add(e);
+    }
   }
 
-  @SuppressWarnings("modifiability:annotation.unverified")
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
   abstract static @Unmodifiable class SuppressedMap implements Map<String, String> {}
 
-  @SuppressWarnings("modifiability:annotation.unverified")
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
   abstract static @IteratorPolyMod class SuppressedIterator implements Iterator<String> {}
 }

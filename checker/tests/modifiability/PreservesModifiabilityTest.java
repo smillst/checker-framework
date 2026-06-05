@@ -19,6 +19,9 @@ class PreservesModifiabilityTest {
     return new ArrayList<>(values);
   }
 
+  @PreservesModifiability
+  static <T> void annotatedVoid(Collection<T> values) {}
+
   void preservesCapabilities(
       @Growable List<String> growable,
       @Shrinkable List<String> shrinkable,
@@ -48,5 +51,9 @@ class PreservesModifiabilityTest {
     @IteratorPolyMod List<String> i = unannotated(iteratorPoly);
     // :: error: [assignment]
     @Modifiable List<String> m = unannotated(modifiable);
+  }
+
+  void voidAnnotatedMethodHasNoEffect(@Growable List<String> growable) {
+    annotatedVoid(growable);
   }
 }

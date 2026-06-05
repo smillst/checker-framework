@@ -1,13 +1,18 @@
+import java.util.Deque;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
+import org.checkerframework.checker.modifiability.qual.BottomSeqGrowable;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
 import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
+import org.checkerframework.checker.modifiability.qual.MaybeSeqGrowable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.SeqGrowable;
+import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
@@ -15,7 +20,7 @@ import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.modifiability.qual.Unshrinkable;
 
 /**
- * Tests the three independent 4-element lattices of the Modifiability Checker.
+ * Tests the four independent 4-element capability lattices of the Modifiability Checker.
  *
  * <p>Each hierarchy is: Maybe* (top/default), two incomparable siblings (*able and Un*able), and
  * Bottom* (bottom).
@@ -75,6 +80,34 @@ class HierarchyTest {
     @Unshrinkable Object us3 = u;
   }
 
+  void testSeqGrow(
+      @SeqGrowable Object sg,
+      @SeqUngrowable Object usg,
+      @MaybeSeqGrowable Object u,
+      @BottomSeqGrowable Object b) {
+    @MaybeSeqGrowable Object u1 = sg;
+    @MaybeSeqGrowable Object u2 = usg;
+    @MaybeSeqGrowable Object u3 = b;
+
+    @SeqGrowable Object sg1 = b;
+    @SeqUngrowable Object usg1 = b;
+
+    // :: error: [assignment]
+    @SeqGrowable Object sg2 = usg;
+    // :: error: [assignment]
+    @SeqUngrowable Object usg2 = sg;
+    // :: error: [assignment]
+    @SeqGrowable Object sg3 = u;
+    // :: error: [assignment]
+    @SeqUngrowable Object usg3 = u;
+    // :: error: [assignment]
+    @BottomSeqGrowable Object b1 = sg;
+    // :: error: [assignment]
+    @BottomSeqGrowable Object b2 = usg;
+    // :: error: [assignment]
+    @BottomSeqGrowable Object b3 = u;
+  }
+
   void testReplace(
       @Replaceable Object r,
       @Unreplaceable Object ur,
@@ -95,6 +128,46 @@ class HierarchyTest {
     @Replaceable Object r3 = u;
     // :: error: [assignment]
     @Unreplaceable Object ur3 = u;
+  }
+
+  void testSeqGrowCombinations(
+      @Growable @SeqGrowable Object gsg,
+      @Growable Object g,
+      @SeqGrowable Object sg,
+      @Ungrowable @SeqUngrowable Object none,
+      @MaybeGrowable @MaybeSeqGrowable Object unknown) {
+
+    @Growable Object gv1 = gsg;
+    @SeqGrowable Object sgv1 = gsg;
+
+    @Growable Object gv2 = g;
+    // :: error: [assignment]
+    @SeqGrowable Object sgv2 = g;
+
+    // :: error: [assignment]
+    @Growable Object gv3 = sg;
+    @SeqGrowable Object sgv3 = sg;
+
+    // :: error: [assignment]
+    @Growable Object gv4 = none;
+    // :: error: [assignment]
+    @SeqGrowable Object sgv4 = none;
+
+    // :: error: [assignment]
+    @Growable Object gv5 = unknown;
+    // :: error: [assignment]
+    @SeqGrowable Object sgv5 = unknown;
+
+    @MaybeGrowable @MaybeSeqGrowable
+    Object tv1 = gsg;
+    @MaybeGrowable @MaybeSeqGrowable
+    Object tv2 = g;
+    @MaybeGrowable @MaybeSeqGrowable
+    Object tv3 = sg;
+    @MaybeGrowable @MaybeSeqGrowable
+    Object tv4 = none;
+    @MaybeGrowable @MaybeSeqGrowable
+    Object tv5 = unknown;
   }
 
   void testCombinations(
@@ -173,6 +246,7 @@ class HierarchyTest {
     @Unreplaceable Object ur1 = unmod;
 
     @MaybeGrowable Object ug2 = unknown;
+    @MaybeSeqGrowable Object usg2 = unknown;
     @MaybeShrinkable Object us2 = unknown;
     @MaybeReplaceable Object ur2 = unknown;
 
@@ -185,7 +259,35 @@ class HierarchyTest {
     @Unmodifiable Object unmod2 = unknown;
     // :: error: [assignment]
     @Growable Object g2 = unmod;
+    // @Object cannot structurally support sequenced-grow operations, so whole-modifiability aliases
+    // use @MaybeSeqGrowable for their SeqGrow component.
+    @MaybeSeqGrowable Object maybeSeqGrowable1 = mod;
+    @MaybeSeqGrowable Object maybeSeqGrowable2 = unmod;
+    // :: error: [assignment]
+    @SeqGrowable Object sg1 = mod;
+    // :: error: [assignment]
+    @SeqUngrowable Object usg1 = unmod;
     // :: error: [assignment]
     @Modifiable Object mod1 = unmod;
+  }
+
+  void testAliasesOnSeqGrowableType(
+      @Modifiable Deque<String> mod,
+      @Unmodifiable Deque<String> unmod,
+      @MaybeModifiable Deque<String> unknown) {
+
+    @SeqGrowable Deque<String> sg1 = mod;
+    @SeqUngrowable Deque<String> usg1 = unmod;
+    @MaybeSeqGrowable Deque<String> msg1 = unknown;
+
+    @MaybeSeqGrowable Deque<String> msg2 = mod;
+    @MaybeSeqGrowable Deque<String> msg3 = unmod;
+
+    // :: error: [assignment]
+    @SeqUngrowable Deque<String> usg2 = mod;
+    // :: error: [assignment]
+    @SeqGrowable Deque<String> sg2 = unmod;
+    // :: error: [assignment]
+    @SeqGrowable Deque<String> sg3 = unknown;
   }
 }
