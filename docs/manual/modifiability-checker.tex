@@ -416,6 +416,12 @@ Polymorphic qualifier for the Replace hierarchy.
 The return type's replaceability matches the replaceability of
 whichever formal parameter is annotated with \<@PolyReplaceable>.
 
+\item[\refqualclass{checker/modifiability/qual}{PolyIteratorPolyMod}]
+Polymorphic qualifier for the Iterator hierarchy.
+The return type's iterator-preservation qualifier matches the
+iterator-preservation qualifier of whichever formal parameter is annotated
+with \<@PolyIteratorPolyMod>.
+
 \item[\refqualclass{checker/modifiability/qual}{PolyModifiable}]
 Alias for \code{@PolyGrowable @PolySeqGrowable @PolyShrinkable @PolyReplaceable}.
 Preserves all four capabilities simultaneously.
@@ -673,7 +679,7 @@ class Demo {
 % LocalWords:  SeqGrowable SeqUngrowable BottomSeqGrowable Growability shrinkability replacability
 % LocalWords:  growability Shrinkable Replaceable Ungrowable Unshrinkable
 % LocalWords:  Unreplaceable BottomGrowable BottomShrinkable BottomReplaceable
-% LocalWords:  MaybeIteratorPolyMod IteratorPolyMod PreservesModifiability
+% LocalWords:  MaybeIteratorPolyMod IteratorPolyMod PolyIteratorPolyMod PreservesModifiability
 % LocalWords:  BlockingQueue TransferQueue tryTransfer putIfAbsent putAll
 % LocalWords:  SequencedCollection BlockingDeque removeIf removeFirst
 % LocalWords:  removeLast pollFirst pollLast NavigableMap pollFirstEntry

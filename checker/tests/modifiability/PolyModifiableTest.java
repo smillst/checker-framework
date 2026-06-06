@@ -1,8 +1,10 @@
 import java.util.Deque;
 import java.util.List;
 import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.SeqGrowable;
@@ -12,13 +14,14 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 /**
  * Tests @PolyModifiable, which expands
- * to @PolyGrowable @PolySeqGrowable @PolyShrinkable @PolyReplaceable and thus preserves all four
- * capabilities independently.
+ * to @PolyGrowable @PolySeqGrowable @PolyShrinkable @PolyReplaceable @PolyIteratorPolyMod and thus
+ * preserves all five capabilities independently.
  */
 public class PolyModifiableTest {
 
   /** A simple polymorphic identity method that preserves all four capabilities. */
-  @PolyModifiable List<String> identity(@PolyModifiable List<String> x) {
+  @PolyModifiable @PolyIteratorPolyMod
+  List<String> identity(@PolyModifiable @PolyIteratorPolyMod List<String> x) {
     return x;
   }
 
@@ -29,6 +32,7 @@ public class PolyModifiableTest {
 
   void testPoly(
       @Modifiable List<String> mod,
+      @Modifiable @IteratorPolyMod List<String> modIteratorPoly,
       @Growable @Shrinkable List<String> gs, // Grow+Shrink; Replace = MaybeReplaceable (default)
       @Growable @Replaceable List<String> gr, // Grow+Replace; Shrink = MaybeShrinkable
       @Shrinkable @Replaceable List<String> sr, // Shrink+Replace; Grow = MaybeGrowable
@@ -43,6 +47,9 @@ public class PolyModifiableTest {
     // ============================================================
     @Modifiable List<String> m1 = identity(mod); // OK: poly resolves to @Modifiable
     @MaybeModifiable List<String> m2 = identity(mod); // OK: positive capabilities <: tops
+    @IteratorPolyMod List<String> m3 = identity(modIteratorPoly); // OK: preserves iterator poly
+    // :: error: [assignment]
+    @IteratorPolyMod List<String> m4 = identity(mod);
 
     // ============================================================
     // Identity on @Growable @Shrinkable (G+S; Seq=MaybeSeqGrowable, R=MaybeReplaceable)

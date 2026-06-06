@@ -18,6 +18,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
@@ -103,7 +104,8 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
             BottomGrowable.class,
             PolyGrowable.class,
             MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            IteratorPolyMod.class,
+            PolyIteratorPolyMod.class));
   }
 
   /**

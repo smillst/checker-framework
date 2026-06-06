@@ -15,6 +15,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
@@ -97,7 +98,8 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
             BottomShrinkable.class,
             PolyShrinkable.class,
             MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            IteratorPolyMod.class,
+            PolyIteratorPolyMod.class));
   }
 
   /**

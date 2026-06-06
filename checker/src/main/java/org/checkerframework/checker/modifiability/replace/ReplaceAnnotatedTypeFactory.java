@@ -16,6 +16,7 @@ import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplaceable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
@@ -119,7 +120,8 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFacto
             BottomReplaceable.class,
             PolyReplaceable.class,
             MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class));
+            IteratorPolyMod.class,
+            PolyIteratorPolyMod.class));
   }
 
   /**

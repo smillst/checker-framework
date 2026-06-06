@@ -5,8 +5,8 @@ import java.lang.annotation.Target;
 
 /**
  * Convenience alias meaning
- * {@code @PolyGrowable @PolyReplaceable @PolyShrinkable @PolySeqGrowable}. A polymorphic qualifier
- * for all four modifiability hierarchies.
+ * {@code @PolyGrowable @PolyReplaceable @PolyShrinkable @PolySeqGrowable @PolyIteratorPolyMod}. A
+ * polymorphic qualifier for all five modifiability hierarchies.
  *
  * <p>Write {@code @PolyModifiable} on methods that preserve or transfer modifiability, such as
  * {@code List.subList()}.

@@ -10,6 +10,7 @@ import javax.lang.model.element.ExecutableElement;
 import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -22,6 +23,9 @@ public class IteratorAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFact
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_POLY_MOD;
 
+  /** The {@code @}{@link PolyIteratorPolyMod} qualifier. */
+  private final AnnotationMirror POLY_ITERATOR_POLY_MOD;
+
   /**
    * Creates an IteratorAnnotatedTypeFactory.
    *
@@ -31,6 +35,7 @@ public class IteratorAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFact
   public IteratorAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
     this.ITERATOR_POLY_MOD = AnnotationBuilder.fromClass(elements, IteratorPolyMod.class);
+    this.POLY_ITERATOR_POLY_MOD = AnnotationBuilder.fromClass(elements, PolyIteratorPolyMod.class);
     postInit();
   }
 
@@ -46,12 +51,14 @@ public class IteratorAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFact
 
   @Override
   protected AnnotationMirror polyCapability() {
-    throw new UnsupportedOperationException("The iterator hierarchy has no polymorphic qualifier.");
+    return POLY_ITERATOR_POLY_MOD;
   }
 
   @Override
   protected Set<Class<? extends Annotation>> createSupportedTypeQualifiers() {
-    return new LinkedHashSet<>(Arrays.asList(MaybeIteratorPolyMod.class, IteratorPolyMod.class));
+    return new LinkedHashSet<>(
+        Arrays.asList(
+            MaybeIteratorPolyMod.class, IteratorPolyMod.class, PolyIteratorPolyMod.class));
   }
 
   @Override
