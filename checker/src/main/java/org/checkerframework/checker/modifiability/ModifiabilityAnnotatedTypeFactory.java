@@ -34,7 +34,10 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
    * <p>If the method has no parameters or returns {@code void}, then this annotation has no effect.
    *
    * <p>Otherwise, if the first argument is positive (i.e.{@code @Shrinkable}), then the return type
-   * is also positive. For every other case, the return type is top ({@code @Maybe*}).
+   * is also positive. If the first argument is {@code @IteratorPolyMod}, then the return type is
+   * also {@code @IteratorPolyMod}.
+   *
+   * <p>For every other case, the return type is top ({@code @Maybe*}).
    *
    * <p>Such method cannot be annotated as {@code @Poly*} because an negative (e.g.
    * {@code @Unshrinkable}) input could yield either a shrinkable or unshrinkable result. It would
@@ -56,6 +59,9 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
     AnnotatedTypeMirror argumentType = getAnnotatedType(tree.getArguments().get(0));
     if (argumentType.hasPrimaryAnnotation(positiveCapability())) {
       returnType.replaceAnnotation(positiveCapability());
+    }
+    if (argumentType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+      returnType.replaceAnnotation(ITERATOR_PRESERVE_REMOVE);
     }
   }
 
