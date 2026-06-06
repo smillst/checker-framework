@@ -117,7 +117,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
   public Void visitAnnotation(AnnotationTree tree, Void p) {
     if (shouldCheckModifiabilityAnnotationValidity() && isUnmodifiableParamAnnotation(tree)) {
       if (allowedUnmodifiableParamAnnotations.isEmpty()
-          || !allowedUnmodifiableParamAnnotations.peek().contains(tree)) {
+          || !allowedUnmodifiableParamAnnotations.getFirst().contains(tree)) {
         checker.reportError(tree, "unmodparam.location");
       }
     }
