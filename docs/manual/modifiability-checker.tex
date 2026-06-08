@@ -439,18 +439,21 @@ behavior.
 \begin{description}
 
 \item[\refqualclass{checker/modifiability/qual}{PreservesModifiability}]
-Should only be written on a non-void, one-argument method declaration.
-It indicates that the
-method preserves positive modifiability capabilities from its argument to
-its return value.  If the argument is \<@Growable>, \<@Shrinkable>,
+Indicates that if the argument to the method is modifiable, then the returned collection is
+also modifiable. However, if the argument is unmodifiable, then the returned collection may or may
+not be unmodifiable. This is useful for methods that may return their argument, or may return a
+new modifiable collection.
+For example, if the argument is \<@Growable>, then the returned collection is also
+\<@Growable>. But if the argument is \<@Ungrowable>, then the return collection is \<@MaybeGrowable>.
+More generally, if the argument is \<@Growable>, \<@Shrinkable>,
 \<@Replaceable>, \<@SeqGrowable>, or \<@IteratorPolyMod>, then the Modifiability Checker
 treats the return value as having that same capability. If the argument has
 any other qualifier, the return type is the top qualifier (\<@MaybeGrowable>,
 \<@MaybeSeqGrowable>, \<@MaybeShrinkable>, \<@MaybeReplaceable>, or \<@MaybeIteratorPolyMod>) in
 the corresponding hierarchy.
 
-This is useful for methods that may return their argument, or may return a
-new modifiable collection.
+This annotation should only be written on non-void, one-argument method declarations.
+
 \end{description}
 
 \sectionAndLabel{\<@Modifiable> and \<@Unmodifiable> for types without grow, seq-grow, shrink, and/or replace methods}{modifiability-types-lacking-methods}
