@@ -10,6 +10,10 @@ interface MyGodMap<K, V> {
   // With @PolyModifiable, which seems wrong.
   @PolyModifiable V getOrDefaultPoly(MyGodMap<K, V> this, Object key, @PolyModifiable V defaultValue);
 
+  // With @PolyModifiable on all three, this seems correct.
+  @PolyModifiable V getOrDefaultPoly2(
+      MyGodMap<K, @PolyModifiable V> this, Object key, @PolyModifiable V defaultValue);
+
   // Using a second type variable.
   <V2 extends V> V2 getOrDefault2(MyGodMap<K, V> this, Object key, V2 defaultValue);
 }
@@ -210,5 +214,40 @@ public class GetOrDefaultTest {
     // [type.arguments.not.inferred]
     @Modifiable List<String> d8 = m.getOrDefault2("hello", du);
     @Unmodifiable List<String> d9 = m.getOrDefault2("hello", du);
+  }
+
+  // this is the desired behavior.
+  void foo10(MyGodMap<String, @Modifiable List<String>> m) {
+    List<String> d1 = m.getOrDefaultPoly2("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefaultPoly2("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefaultPoly2("hello", d);
+    List<String> d4 = m.getOrDefaultPoly2("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefaultPoly2("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefaultPoly2("hello", dm);
+    List<String> d7 = m.getOrDefaultPoly2("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefaultPoly2("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d9 = m.getOrDefaultPoly2("hello", du);
+  }
+
+  void foo11(MyGodMap<String, @Unmodifiable List<String>> um) {
+    List<String> d1 = um.getOrDefaultPoly2("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d2 = um.getOrDefaultPoly2("hello", d);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d3 = um.getOrDefaultPoly2("hello", d);
+    List<String> d4 = um.getOrDefaultPoly2("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d5 = um.getOrDefaultPoly2("hello", dm);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Unmodifiable List<String> d6 = um.getOrDefaultPoly2("hello", dm);
+    List<String> d7 = um.getOrDefaultPoly2("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = um.getOrDefaultPoly2("hello", du);
+    @Unmodifiable List<String> d9 = um.getOrDefaultPoly2("hello", du);
   }
 }
