@@ -1,5 +1,6 @@
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -9,6 +10,10 @@ import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 // Tests for Map mutating and read-only methods with modifiability qualifiers.
 public class MapModifiableTest {
+
+  List<String> d;
+  @Modifiable List<String> dm;
+  @Unmodifiable List<String> du;
 
   void testBasicMutatingOperations() {
     @Modifiable Map<String, Integer> mod = new HashMap<>();
@@ -105,5 +110,40 @@ public class MapModifiableTest {
     // depending on defaults, this may be an error:
     // :: error: [method.invocation]
     any.put("q", 2);
+  }
+
+  // this is the desired behavior.
+  void foo10(Map<String, @Modifiable List<String>> m) {
+    List<String> d1 = m.getOrDefault("hello", d);
+    // :: error: [assignment]
+    @Modifiable List<String> d2 = m.getOrDefault("hello", d);
+    // :: error: [assignment]
+    @Unmodifiable List<String> d3 = m.getOrDefault("hello", d);
+    List<String> d4 = m.getOrDefault("hello", dm);
+    @Modifiable List<String> d5 = m.getOrDefault("hello", dm);
+    // :: error: [assignment]
+    @Unmodifiable List<String> d6 = m.getOrDefault("hello", dm);
+    List<String> d7 = m.getOrDefault("hello", du);
+    // :: error: [assignment]
+    @Modifiable List<String> d8 = m.getOrDefault("hello", du);
+    // :: error: [assignment]
+    @Unmodifiable List<String> d9 = m.getOrDefault("hello", du);
+  }
+
+  void foo11(Map<String, @Unmodifiable List<String>> um) {
+    List<String> d1 = um.getOrDefault("hello", d);
+    // :: error: [assignment]
+    @Modifiable List<String> d2 = um.getOrDefault("hello", d);
+    // :: error: [assignment]
+    @Unmodifiable List<String> d3 = um.getOrDefault("hello", d);
+    List<String> d4 = um.getOrDefault("hello", dm);
+    // :: error: [assignment]
+    @Modifiable List<String> d5 = um.getOrDefault("hello", dm);
+    // :: error: [assignment]
+    @Unmodifiable List<String> d6 = um.getOrDefault("hello", dm);
+    List<String> d7 = um.getOrDefault("hello", du);
+    // :: error: [assignment] :: error: [assignment] :: error: [assignment]
+    @Modifiable List<String> d8 = um.getOrDefault("hello", du);
+    @Unmodifiable List<String> d9 = um.getOrDefault("hello", du);
   }
 }
