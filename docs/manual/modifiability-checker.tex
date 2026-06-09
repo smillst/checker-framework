@@ -27,6 +27,10 @@ on an unmodifiable collection.
 (For brevity, this chapter generally uses
 just ``collection'' to mean ``collection, map, or iterator''.)
 
+In addition to preventing UOEs, the Modifiability Checker ensures that collections
+that the user intends to be unmodifiable have an unmodifiable run-time implementation.
+
+
 To run the Modifiability Checker:
 
 \begin{Verbatim}
@@ -146,7 +150,6 @@ one qualifier from each hierarchy.  The checker also uses an additional
 2-element hierarchy to express whether \<remove()> can be called on
 a collection's iterator.
 
-% TODO: add a figure that follows the structure of other checker manuals.
 \begin{figure}
 \begin{smaller}
   \centering
