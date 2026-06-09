@@ -1,4 +1,5 @@
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -49,6 +50,11 @@ public class CustomModifiabilityAnnotationWarning {
       return 1;
     }
   }
+
+  // The implicit super() call is fine because ArrayList's constructor already
+  // returns @Modifiable, but the subclass annotation is still an unverified modifiability claim.
+  // :: warning: [modifiability.annotation.unverified]
+  static @Modifiable class ModifiableSubclassWithoutSuperError extends ArrayList<String> {}
 
   // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
   abstract static @Growable class ClassLevelGrowableCollection implements Collection<String> {}
