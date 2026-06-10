@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability.seqgrow;
 
-import org.checkerframework.checker.modifiability.ModifiabilityVisitor;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 
 /** Visitor for the {@link SeqGrowChecker}. */
-public class SeqGrowVisitor extends ModifiabilityVisitor {
+public class SeqGrowVisitor extends ModifiabilityBaseVisitor {
 
   /**
    * Creates a visitor for the SeqGrow Checker.

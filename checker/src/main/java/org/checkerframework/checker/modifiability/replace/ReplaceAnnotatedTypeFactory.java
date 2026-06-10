@@ -9,7 +9,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
@@ -26,14 +26,13 @@ import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.modifiability.qual.Unreplaceable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
-import org.checkerframework.framework.type.AnnotatedTypeFactory.ParameterizedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link ReplaceChecker}. */
-public class ReplaceAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class ReplaceAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Set} type. */
   private final TypeMirror setErasure;

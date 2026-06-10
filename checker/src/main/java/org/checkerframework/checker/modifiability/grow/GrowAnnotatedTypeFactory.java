@@ -9,7 +9,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
@@ -32,7 +32,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link GrowChecker}. */
-public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class GrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Map.Entry} type. */
   private final TypeMirror mapEntryErasure;

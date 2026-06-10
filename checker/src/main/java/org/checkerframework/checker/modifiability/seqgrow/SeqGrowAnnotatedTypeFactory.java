@@ -10,7 +10,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomSeqGrowable;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeSeqGrowable;
@@ -30,7 +30,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link SeqGrowChecker}. */
-public class SeqGrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class SeqGrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.SequencedCollection} type. */
   private final @Nullable TypeMirror sequencedCollectionErasure;
