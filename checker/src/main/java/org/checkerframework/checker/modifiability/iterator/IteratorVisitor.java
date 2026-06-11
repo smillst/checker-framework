@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability.iterator;
 
-import org.checkerframework.checker.modifiability.ModifiabilityVisitor;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 
 /** Visitor for the {@link IteratorChecker}. */
-public class IteratorVisitor extends ModifiabilityVisitor {
+public class IteratorVisitor extends ModifiabilityBaseVisitor {
 
   /**
    * Creates a visitor for the Iterator Checker.

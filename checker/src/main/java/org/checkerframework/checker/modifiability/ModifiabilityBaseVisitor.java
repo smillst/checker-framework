@@ -34,7 +34,8 @@ import org.checkerframework.javacutil.TypesUtils;
  *       legitimately produce {@code @Modifiable}.
  * </ul>
  */
-public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotatedTypeFactory> {
+public class ModifiabilityBaseVisitor
+    extends BaseTypeVisitor<ModifiabilityBaseAnnotatedTypeFactory> {
 
   /** The erased {@code java.util.Collection} type. */
   private final TypeMirror collectionErasure;
@@ -53,11 +54,11 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
       "org.checkerframework.checker.modifiability.qual";
 
   /**
-   * Create a ModifiabilityVisitor.
+   * Create a ModifiabilityBaseVisitor.
    *
    * @param checker the checker that uses this visitor
    */
-  public ModifiabilityVisitor(BaseTypeChecker checker) {
+  public ModifiabilityBaseVisitor(BaseTypeChecker checker) {
     super(checker);
     this.collectionErasure =
         atypeFactory.types.erasure(
@@ -144,6 +145,8 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
    * <p>The framework's ordinary receiver override rule allows an overriding method to relax
    * receiver preconditions. For modifiability operations, that would allow a subtype method to drop
    * a required {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable} receiver capability.
+   * TODO: I don't understand why that's bad? Is it because the checker can't verify collection
+   * implementations.
    */
   @Override
   protected boolean checkOverride(
@@ -294,11 +297,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
     // Maybe* annotations and @UnmodifiableParam are unknown/top-like, so they do not warn.
     String simpleName = typeElement.getSimpleName().toString();
-    if (simpleName.startsWith("Maybe") || simpleName.equals("UnmodifiableParam")) {
-      return false;
-    }
-
-    return true;
+    return !simpleName.startsWith("Maybe") && !simpleName.equals("UnmodifiableParam");
   }
 
   /**
@@ -325,11 +324,7 @@ public class ModifiabilityVisitor extends BaseTypeVisitor<ModifiabilityAnnotated
 
     // Scan both javac locations for parameter type annotations.
     // search for method(@UnmodifiableParam List<> param)
-    scanner.scan(parameter.getModifiers().getAnnotations(), null);
-    if (parameter.getType() != null) {
-      // search for method(List<@UnmodifiableParam List<>> param)
-      scanner.scan(parameter.getType(), null);
-    }
+    scanner.scan(parameter, null);
     return annotations;
   }
 

@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability.shrink;
 
-import org.checkerframework.checker.modifiability.ModifiabilityVisitor;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 
 /** Visitor for the {@link ShrinkChecker}. */
-public class ShrinkVisitor extends ModifiabilityVisitor {
+public class ShrinkVisitor extends ModifiabilityBaseVisitor {
 
   /**
    * Create a visitor for the Shrink Checker.

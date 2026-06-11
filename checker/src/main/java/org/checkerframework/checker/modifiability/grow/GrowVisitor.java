@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability.grow;
 
-import org.checkerframework.checker.modifiability.ModifiabilityVisitor;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 
 /** Visitor for the {@link GrowChecker}. */
-public class GrowVisitor extends ModifiabilityVisitor {
+public class GrowVisitor extends ModifiabilityBaseVisitor {
 
   /**
    * Creates a visitor for the Grow Checker.
