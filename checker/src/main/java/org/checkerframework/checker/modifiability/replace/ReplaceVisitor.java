@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability.replace;
 
-import org.checkerframework.checker.modifiability.ModifiabilityVisitor;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseVisitor;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 
 /** Visitor for the {@link ReplaceChecker}. */
-public class ReplaceVisitor extends ModifiabilityVisitor {
+public class ReplaceVisitor extends ModifiabilityBaseVisitor {
 
   /**
    * Creates a visitor for the Replace Checker.

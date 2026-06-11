@@ -8,14 +8,11 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
@@ -31,7 +28,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link ShrinkChecker}. */
-public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class ShrinkAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Map.Entry} type. */
   private final TypeMirror mapEntryErasure;
@@ -96,10 +93,7 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactor
             Shrinkable.class,
             Unshrinkable.class,
             BottomShrinkable.class,
-            PolyShrinkable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class,
-            PolyIteratorPolyMod.class));
+            PolyShrinkable.class));
   }
 
   /**

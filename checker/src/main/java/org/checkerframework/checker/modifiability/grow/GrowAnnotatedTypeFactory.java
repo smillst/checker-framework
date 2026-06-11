@@ -9,16 +9,13 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
-import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
@@ -32,7 +29,7 @@ import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /** The annotated type factory for the {@link GrowChecker}. */
-public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class GrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The erased {@code java.util.Map.Entry} type. */
   private final TypeMirror mapEntryErasure;
@@ -102,10 +99,7 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory 
             Growable.class,
             Ungrowable.class,
             BottomGrowable.class,
-            PolyGrowable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class,
-            PolyIteratorPolyMod.class));
+            PolyGrowable.class));
   }
 
   /**

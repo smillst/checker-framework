@@ -7,7 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import org.checkerframework.checker.modifiability.ModifiabilityAnnotatedTypeFactory;
+import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
@@ -18,7 +18,7 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 
 /** The annotated type factory for the {@link IteratorChecker}. */
-public class IteratorAnnotatedTypeFactory extends ModifiabilityAnnotatedTypeFactory {
+public class IteratorAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_POLY_MOD;

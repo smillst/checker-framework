@@ -4,6 +4,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
+import org.checkerframework.checker.modifiability.iterator.IteratorChecker;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -13,17 +14,16 @@ import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.TreeUtils;
 
 /** Shared annotated type factory logic for the Modifiability sub-checkers. */
-public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
+public abstract class ModifiabilityBaseAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   protected final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
   /**
-   * Creates a ModifiabilityAnnotatedTypeFactory.
+   * Creates a ModifiabilityBaseAnnotatedTypeFactory.
    *
    * @param checker the associated type-checker
    */
-  @SuppressWarnings("this-escape")
-  protected ModifiabilityAnnotatedTypeFactory(BaseTypeChecker checker) {
+  protected ModifiabilityBaseAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
     this.ITERATOR_PRESERVE_REMOVE = AnnotationBuilder.fromClass(elements, IteratorPolyMod.class);
   }
@@ -39,7 +39,7 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
    *
    * <p>For every other case, the return type is top ({@code @Maybe*}).
    *
-   * <p>Such method cannot be annotated as {@code @Poly*} because an negative (e.g.
+   * <p>Such method cannot be annotated as {@code @Poly*} because a negative (e.g.
    * {@code @Unshrinkable}) input could yield either a shrinkable or unshrinkable result. It would
    * be imprecise to always use {@code @Maybe*}, because passing a positive type collection
    * guarantees a positive return type.
@@ -110,9 +110,11 @@ public abstract class ModifiabilityAnnotatedTypeFactory extends BaseAnnotatedTyp
     }
 
     // receiver type is @Modifiable and @IteratorPolyMod
-    if (receiverType.hasPrimaryAnnotation(positiveCapability())
-        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      returnType.replaceAnnotation(positiveCapability());
+    if (receiverType.hasPrimaryAnnotation(positiveCapability())) {
+      var type = getTypeFactoryOfSubchecker(IteratorChecker.class).getAnnotatedType(receiverTree);
+      if (type.hasAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+        returnType.replaceAnnotation(positiveCapability());
+      }
     }
   }
 
