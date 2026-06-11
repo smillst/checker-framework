@@ -10,12 +10,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomShrinkable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeShrinkable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
@@ -96,10 +93,7 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFa
             Shrinkable.class,
             Unshrinkable.class,
             BottomShrinkable.class,
-            PolyShrinkable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class,
-            PolyIteratorPolyMod.class));
+            PolyShrinkable.class));
   }
 
   /**

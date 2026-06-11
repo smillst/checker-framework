@@ -11,12 +11,9 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomReplaceable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeReplaceable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PolyReplaceable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
@@ -117,10 +114,7 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeF
             Replaceable.class,
             Unreplaceable.class,
             BottomReplaceable.class,
-            PolyReplaceable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class,
-            PolyIteratorPolyMod.class));
+            PolyReplaceable.class));
   }
 
   /**

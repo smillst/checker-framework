@@ -1,14 +1,13 @@
 import org.checkerframework.checker.modifiability.qual.Modifiable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 
 package com.github.javaparser.ast.stmt;
 
 class BlockStmt {
-  public @Modifiable @IteratorPolyMod NodeList<Statement> getStatements() {}
+  public @Modifiable NodeList<Statement> getStatements() {}
 }
 
 package com.github.javaparser.ast;
 
 class CompilationUnit {
-  public @Modifiable @IteratorPolyMod NodeList<ImportDeclaration> getImports() {}
+  public @Modifiable NodeList<ImportDeclaration> getImports() {}
 }

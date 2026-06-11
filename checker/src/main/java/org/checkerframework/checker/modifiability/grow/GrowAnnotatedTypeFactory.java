@@ -12,13 +12,10 @@ import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.modifiability.ModifiabilityBaseAnnotatedTypeFactory;
 import org.checkerframework.checker.modifiability.qual.BottomGrowable;
 import org.checkerframework.checker.modifiability.qual.Growable;
-import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
-import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.modifiability.qual.PolyGrowable;
-import org.checkerframework.checker.modifiability.qual.PolyIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.PreservesModifiability;
 import org.checkerframework.checker.modifiability.qual.Ungrowable;
@@ -102,10 +99,7 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFact
             Growable.class,
             Ungrowable.class,
             BottomGrowable.class,
-            PolyGrowable.class,
-            MaybeIteratorPolyMod.class,
-            IteratorPolyMod.class,
-            PolyIteratorPolyMod.class));
+            PolyGrowable.class));
   }
 
   /**

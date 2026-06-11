@@ -4,6 +4,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
+import org.checkerframework.checker.modifiability.iterator.IteratorChecker;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.common.basetype.BaseTypeChecker;
@@ -109,9 +110,11 @@ public abstract class ModifiabilityBaseAnnotatedTypeFactory extends BaseAnnotate
     }
 
     // receiver type is @Modifiable and @IteratorPolyMod
-    if (receiverType.hasPrimaryAnnotation(positiveCapability())
-        && receiverType.hasPrimaryAnnotation(ITERATOR_PRESERVE_REMOVE)) {
-      returnType.replaceAnnotation(positiveCapability());
+    if (receiverType.hasPrimaryAnnotation(positiveCapability())) {
+      var type = getTypeFactoryOfSubchecker(IteratorChecker.class).getAnnotatedType(receiverTree);
+      if (type.hasAnnotation(ITERATOR_PRESERVE_REMOVE)) {
+        returnType.replaceAnnotation(positiveCapability());
+      }
     }
   }
 
