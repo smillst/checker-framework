@@ -145,8 +145,26 @@ public class ModifiabilityBaseVisitor
    * <p>The framework's ordinary receiver override rule allows an overriding method to relax
    * receiver preconditions. For modifiability operations, that would allow a subtype method to drop
    * a required {@code @Growable}, {@code @Shrinkable}, or {@code @Replaceable} receiver capability.
-   * TODO: I don't understand why that's bad? Is it because the checker can't verify collection
-   * implementations.
+   *
+   * <p>For example:
+   *
+   * <pre>{@code
+   * class List {
+   *   void add(@Growable List<String> list) {
+   *     // ...
+   *   }
+   * }
+   *
+   * class A extends List {
+   *   @Override
+   *   void add() {
+   *     throw new UnsupportedOperationException();
+   *   }
+   * }
+   * }</pre>
+   *
+   * <p>Without requiring the override to preserve the {@code @Growable} receiver, {@code A.add()}
+   * would be permitted even when {@code A} is only {@code @MaybeMod}.
    */
   @Override
   protected boolean checkOverride(
