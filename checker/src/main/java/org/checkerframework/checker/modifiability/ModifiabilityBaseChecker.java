@@ -2,6 +2,7 @@ package org.checkerframework.checker.modifiability;
 
 import java.util.Set;
 import org.checkerframework.checker.modifiability.iterator.IteratorChecker;
+import org.checkerframework.checker.modifiability.seqgrow.SeqGrowChecker;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.source.SourceChecker;
 
@@ -23,7 +24,7 @@ public abstract class ModifiabilityBaseChecker extends BaseTypeChecker {
   @Override
   protected Set<Class<? extends SourceChecker>> getImmediateSubcheckerClasses() {
     Set<Class<? extends SourceChecker>> checkers = super.getImmediateSubcheckerClasses();
-    if (this instanceof IteratorChecker) {
+    if (this instanceof IteratorChecker || this instanceof SeqGrowChecker) {
       return checkers;
     }
     checkers.add(IteratorChecker.class);

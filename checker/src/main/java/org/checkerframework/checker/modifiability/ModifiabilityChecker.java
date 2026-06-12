@@ -36,10 +36,6 @@ public class ModifiabilityChecker extends AggregateChecker {
   @Override
   protected Collection<Class<? extends SourceChecker>> getSupportedCheckers() {
     return List.of(
-        GrowChecker.class,
-        SeqGrowChecker.class,
-        ShrinkChecker.class,
-        ReplaceChecker.class,
-        IteratorChecker.class);
+        GrowChecker.class, SeqGrowChecker.class, ShrinkChecker.class, ReplaceChecker.class);
   }
 }
