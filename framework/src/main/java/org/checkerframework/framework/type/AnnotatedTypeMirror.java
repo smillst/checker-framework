@@ -37,6 +37,7 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.TypeAnnotationUtils;
 import org.checkerframework.javacutil.TypeKindUtils;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.DeepCopyable;
@@ -100,7 +101,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    *     Elements, ...)
    */
   private AnnotatedTypeMirror(TypeMirror underlyingType, AnnotatedTypeFactory atypeFactory) {
-    this.underlyingType = underlyingType;
+    this.underlyingType = TypeAnnotationUtils.unannotatedType(underlyingType);
     assert atypeFactory != null;
     this.atypeFactory = atypeFactory;
   }
