@@ -2,6 +2,7 @@ package org.checkerframework.afu.scenelib.util.coll;
 
 import java.util.Iterator;
 import java.util.Map;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 
 /**
@@ -24,7 +25,7 @@ public abstract class VivifyingMap<K, V> extends WrapperMap<K, V> {
    * access the backing map directly; the parameter is given mainly so you can provide a new map of
    * your favorite class ({@link java.util.HashMap}, {@link java.util.LinkedHashMap}, etc.).
    */
-  public VivifyingMap(Map<K, V> back) {
+  public @PolyModifiable VivifyingMap(@PolyModifiable Map<K, V> back) {
     super(back);
   }
 
@@ -50,6 +51,7 @@ public abstract class VivifyingMap<K, V> extends WrapperMap<K, V> {
   protected abstract V createValueFor(K k);
 
   /** Prunes this map by deleting entries with empty values. */
+  @SuppressWarnings("modifiability:assignment") // TODO
   public void prune() {
     // It would be cleaner to write
     //   for (Map.Entry<K, V> entry : entrySet()) {

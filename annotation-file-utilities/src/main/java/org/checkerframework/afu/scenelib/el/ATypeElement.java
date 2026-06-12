@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.checkerframework.afu.scenelib.Annotation;
 import org.checkerframework.afu.scenelib.util.coll.VivifyingMap;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 
 /**
  * An {@link AElement} that represents a type might have annotations on inner types ("generic/array"
@@ -110,7 +111,7 @@ public class ATypeElement extends AElement {
     return v.visitTypeElement(this, t);
   }
 
-  static <K extends Object> VivifyingMap<K, ATypeElement> newVivifyingLHMap_ATE() {
+  static <K extends Object> @Modifiable VivifyingMap<K, ATypeElement> newVivifyingLHMap_ATE() {
     return new VivifyingMap<>(new LinkedHashMap<>()) {
       @Override
       public ATypeElement createValueFor(K k) {

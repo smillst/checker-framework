@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.framework.qual.AnnotatedFor;
@@ -211,7 +212,7 @@ public enum ConversionCategory {
     throw new IllegalArgumentException("Bad conversion character " + c);
   }
 
-  private static <E> Set<E> arrayToSet(E[] a) {
+  private static <E> @Modifiable Set<E> arrayToSet(E[] a) {
     return new HashSet<>(Arrays.asList(a));
   }
 

@@ -3,8 +3,12 @@ package org.checkerframework.afu.scenelib.util.coll;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
-import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Shrinkable;
 
 /**
  * A {@link WrapperMap} is a map all of whose methods delegate by default to those of a supplied
@@ -16,15 +20,15 @@ import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
  */
 public class WrapperMap<K, V> implements Map<K, V> {
   /** The backing map. */
-  protected final Map<K, V> back;
+  protected final @Modifiable Map<K, V> back;
 
   /** Constructs a new {@link WrapperMap} with the given backing map. */
-  protected WrapperMap(Map<K, V> back) {
+  protected WrapperMap(@Modifiable Map<K, V> back) {
     this.back = back;
   }
 
   @Override
-  public void clear() {
+  public void clear(@Shrinkable WrapperMap<K, V> this) {
     back.clear();
   }
 
@@ -40,8 +44,7 @@ public class WrapperMap<K, V> implements Map<K, V> {
 
   @SuppressWarnings("keyfor") // use of delegate object
   @Override
-  public @IteratorPolyMod @PolyShrinkable Set<Map.Entry<K, V>> entrySet(
-      @PolyShrinkable WrapperMap<K, V> this) {
+  public @PolyModifiable Set<Map.Entry<K, V>> entrySet(@PolyModifiable WrapperMap<K, V> this) {
     return back.entrySet();
   }
 
@@ -56,22 +59,23 @@ public class WrapperMap<K, V> implements Map<K, V> {
   }
 
   @Override
-  public Set<K> keySet() {
+  public @PolyModifiable Set<K> keySet(@PolyModifiable WrapperMap<K, V> this) {
     return back.keySet();
   }
 
   @Override
-  public V put(K key, V value) {
+  public V put(@Growable @Replaceable WrapperMap<K, V> this, K key, V value) {
     return back.put(key, value);
   }
 
   @Override
-  public void putAll(Map<? extends K, ? extends V> m) {
+  public void putAll(
+      @Growable @Replaceable WrapperMap<K, V> this, Map<? extends K, ? extends V> m) {
     back.putAll(m);
   }
 
   @Override
-  public V remove(Object key) {
+  public V remove(@Shrinkable WrapperMap<K, V> this, Object key) {
     return back.remove(key);
   }
 
@@ -81,7 +85,8 @@ public class WrapperMap<K, V> implements Map<K, V> {
   }
 
   @Override
-  public Collection<V> values() {
+  public @IteratorPolyMod @PolyModifiable Collection<V> values(
+      @PolyModifiable WrapperMap<K, V> this) {
     return back.values();
   }
 
