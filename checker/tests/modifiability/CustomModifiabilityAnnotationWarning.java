@@ -1,9 +1,12 @@
 import java.util.AbstractList;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import org.checkerframework.checker.modifiability.qual.Growable;
 import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeGrowable;
@@ -11,7 +14,10 @@ import org.checkerframework.checker.modifiability.qual.MaybeIteratorPolyMod;
 import org.checkerframework.checker.modifiability.qual.MaybeModifiable;
 import org.checkerframework.checker.modifiability.qual.MaybeSeqGrowable;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
+import org.checkerframework.checker.modifiability.qual.PolyModifiable;
+import org.checkerframework.checker.modifiability.qual.PolyShrinkable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
+import org.checkerframework.checker.modifiability.qual.Ungrowable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 public class CustomModifiabilityAnnotationWarning {
@@ -61,6 +67,32 @@ public class CustomModifiabilityAnnotationWarning {
 
   // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
   abstract static @Unmodifiable class ClassLevelUnmodifiableMap implements Map<String, String> {}
+
+  static class MapWithAnnotatedKeySet extends AbstractMap<String, String> {
+    @Override
+    public @Ungrowable @PolyShrinkable @IteratorPolyMod Set<
+            Map.@PolyModifiable Entry<String, String>>
+        entrySet() {
+      throw new UnsupportedOperationException();
+    }
+
+    // :: warning: [modifiability.annotation.unverified]
+    class KeySet extends AbstractSet<String> {
+
+      // :: error: [super.invocation]
+      public @Modifiable KeySet() {}
+
+      @Override
+      public Iterator<String> iterator() {
+        return java.util.Collections.emptyIterator();
+      }
+
+      @Override
+      public int size() {
+        return 0;
+      }
+    }
+  }
 
   // :: warning: [modifiability.annotation.unverified]
   abstract static @IteratorPolyMod class ClassLevelIteratorPolyModIterator
