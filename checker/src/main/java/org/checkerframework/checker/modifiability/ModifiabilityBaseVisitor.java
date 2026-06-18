@@ -65,14 +65,15 @@ public class ModifiabilityBaseVisitor
     AnnotatedTypeMirror returnType = constructorType.getReturnType();
     AnnotationMirrorSet topAnnotations = qualHierarchy.getTopAnnotations();
     for (AnnotationMirror topAnno : topAnnotations) {
-      if (!typeHierarchy.isSubtypeShallowEffective(superType, returnType, topAnno)) {
+      // You coud switch these if statements to change which error is shown.
+      if (isWarningModifiabilityAnnotation(returnType.getAnnotationInHierarchy(topAnno))) {
+        checker.reportWarning(
+            call, "modifiability.annotation.unverified", returnType.getUnderlyingType());
+      } else if (!typeHierarchy.isSubtypeShallowEffective(superType, returnType, topAnno)) {
         AnnotationMirror superAnno = superType.getPrimaryAnnotationInHierarchy(topAnno);
         AnnotationMirror constructorReturnAnno =
             returnType.getPrimaryAnnotationInHierarchy(topAnno);
         checker.reportError(call, errorKey, constructorReturnAnno, call, superAnno);
-      } else if (isWarningModifiabilityAnnotation(returnType.getAnnotationInHierarchy(topAnno))) {
-        checker.reportWarning(
-            call, "modifiability.annotation.unverified", returnType.getUnderlyingType());
       }
     }
   }

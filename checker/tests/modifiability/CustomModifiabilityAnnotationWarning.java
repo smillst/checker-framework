@@ -44,7 +44,7 @@ public class CustomModifiabilityAnnotationWarning {
 
   static class NonModifiabilityType {}
 
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class ClassLevelModifiableList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -62,10 +62,10 @@ public class CustomModifiabilityAnnotationWarning {
   // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class ModifiableSubclassWithoutSuperError extends ArrayList<String> {}
 
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified]
   abstract static @Growable class ClassLevelGrowableCollection implements Collection<String> {}
 
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified]
   abstract static @Unmodifiable class ClassLevelUnmodifiableMap implements Map<String, String> {}
 
   static class MapWithAnnotatedKeySet extends AbstractMap<String, String> {
@@ -78,7 +78,7 @@ public class CustomModifiabilityAnnotationWarning {
 
     class KeySet extends AbstractSet<String> {
 
-      // :: error: [super.invocation]
+      // :: warning: [modifiability.annotation.unverified]
       public @Modifiable KeySet() {}
 
       @Override
@@ -98,7 +98,7 @@ public class CustomModifiabilityAnnotationWarning {
       implements Iterator<String> {}
 
   static class ConstructorLevelShrinkableList extends AbstractList<String> {
-    // :: error: [super.invocation]
+    // :: warning: [modifiability.annotation.unverified]]
     @Shrinkable ConstructorLevelShrinkableList() {}
 
     @Override
@@ -159,7 +159,7 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class SuppressedList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -178,6 +178,6 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: error: [super.invocation]
+  // :: warning: [modifiability.annotation.unverified]
   abstract static @Unmodifiable class SuppressedMap implements Map<String, String> {}
 }
