@@ -44,7 +44,7 @@ public class CustomModifiabilityAnnotationWarning {
 
   static class NonModifiabilityType {}
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
+  // :: error: [super.invocation]
   static @Modifiable class ClassLevelModifiableList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -62,10 +62,10 @@ public class CustomModifiabilityAnnotationWarning {
   // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class ModifiableSubclassWithoutSuperError extends ArrayList<String> {}
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
+  // :: error: [super.invocation]
   abstract static @Growable class ClassLevelGrowableCollection implements Collection<String> {}
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
+  // :: error: [super.invocation]
   abstract static @Unmodifiable class ClassLevelUnmodifiableMap implements Map<String, String> {}
 
   static class MapWithAnnotatedKeySet extends AbstractMap<String, String> {
@@ -76,7 +76,6 @@ public class CustomModifiabilityAnnotationWarning {
       throw new UnsupportedOperationException();
     }
 
-    // :: warning: [modifiability.annotation.unverified]
     class KeySet extends AbstractSet<String> {
 
       // :: error: [super.invocation]
@@ -98,7 +97,6 @@ public class CustomModifiabilityAnnotationWarning {
   abstract static @IteratorPolyMod class ClassLevelIteratorPolyModIterator
       implements Iterator<String> {}
 
-  // :: warning: [modifiability.annotation.unverified]
   static class ConstructorLevelShrinkableList extends AbstractList<String> {
     // :: error: [super.invocation]
     @Shrinkable ConstructorLevelShrinkableList() {}
@@ -161,7 +159,7 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
+  // :: error: [super.invocation]
   static @Modifiable class SuppressedList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -180,6 +178,6 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation]
+  // :: error: [super.invocation]
   abstract static @Unmodifiable class SuppressedMap implements Map<String, String> {}
 }

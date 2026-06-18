@@ -21,8 +21,7 @@ import org.checkerframework.checker.modifiability.qual.SeqUngrowable;
 
 public class SeqGrowableTest {
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation] ::
-  // error:declaration.inconsistent.with.implements.clause
+  // :: error: [super.invocation] :: error:declaration.inconsistent.with.implements.clause
   abstract static @SeqGrowable class UserDefinedSortedSet implements SortedSet<String> {}
 
   void constructorPositiveCases() {

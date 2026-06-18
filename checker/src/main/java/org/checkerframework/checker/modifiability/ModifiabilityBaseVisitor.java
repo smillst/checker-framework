@@ -1,10 +1,10 @@
 package org.checkerframework.checker.modifiability;
 
 import com.sun.source.tree.AnnotationTree;
-import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
-import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import com.sun.source.util.TreeScanner;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -14,15 +14,16 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
-import org.checkerframework.javacutil.ElementUtils;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.checkerframework.javacutil.TreePathUtil;
 import org.checkerframework.javacutil.TreeUtils;
-import org.checkerframework.javacutil.TypesUtils;
 
 /**
  * Base visitor for the modifiability sub-checkers (Grow, SeqGrow, Shrink, Replace).
@@ -36,15 +37,6 @@ import org.checkerframework.javacutil.TypesUtils;
  */
 public class ModifiabilityBaseVisitor
     extends BaseTypeVisitor<ModifiabilityBaseAnnotatedTypeFactory> {
-
-  /** The erased {@code java.util.Collection} type. */
-  private final TypeMirror collectionErasure;
-
-  /** The erased {@code java.util.Map} type. */
-  private final TypeMirror mapErasure;
-
-  /** The erased {@code java.util.Iterator} type. */
-  private final TypeMirror iteratorErasure;
 
   /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
   private final Deque<Set<AnnotationTree>> allowedUnmodifiableParamAnnotations = new ArrayDeque<>();
@@ -60,35 +52,27 @@ public class ModifiabilityBaseVisitor
    */
   public ModifiabilityBaseVisitor(BaseTypeChecker checker) {
     super(checker);
-    this.collectionErasure =
-        atypeFactory.types.erasure(
-            atypeFactory.getElementUtils().getTypeElement("java.util.Collection").asType());
-    this.mapErasure =
-        atypeFactory.types.erasure(
-            atypeFactory.getElementUtils().getTypeElement("java.util.Map").asType());
-    this.iteratorErasure =
-        atypeFactory.types.erasure(
-            atypeFactory.getElementUtils().getTypeElement("java.util.Iterator").asType());
   }
 
-  /**
-   * Processes a class declaration and reports an unverified modifiability warning only when a
-   * source-defined collection-like type explicitly claims a concrete modifiability qualifier on the
-   * class or one of its constructors. Defaulted/unannotated types and Maybe* annotations do not
-   * make a verifiable modifiability claim.
-   *
-   * @param classTree the class declaration to process
-   */
   @Override
-  public void processClassTree(ClassTree classTree) {
-    super.processClassTree(classTree);
-    if (shouldCheckModifiabilityAnnotationValidity()) {
-      TypeElement typeElement = TreeUtils.elementFromDeclaration(classTree);
-      if (typeElement != null
-          && isCollectionFromSourceCode(typeElement)
-          && hasExplicitWarningModifiabilityAnnotation(classTree)) {
+  protected void checkThisOrSuperConstructorCall(
+      MethodInvocationTree call, @CompilerMessageKey String errorKey) {
+
+    TreePath path = atypeFactory.getPath(call);
+    MethodTree enclosingMethod = TreePathUtil.enclosingMethod(path);
+    AnnotatedTypeMirror superType = atypeFactory.getAnnotatedType(call);
+    AnnotatedExecutableType constructorType = atypeFactory.getAnnotatedType(enclosingMethod);
+    AnnotatedTypeMirror returnType = constructorType.getReturnType();
+    AnnotationMirrorSet topAnnotations = qualHierarchy.getTopAnnotations();
+    for (AnnotationMirror topAnno : topAnnotations) {
+      if (!typeHierarchy.isSubtypeShallowEffective(superType, returnType, topAnno)) {
+        AnnotationMirror superAnno = superType.getPrimaryAnnotationInHierarchy(topAnno);
+        AnnotationMirror constructorReturnAnno =
+            returnType.getPrimaryAnnotationInHierarchy(topAnno);
+        checker.reportError(call, errorKey, constructorReturnAnno, call, superAnno);
+      } else if (isWarningModifiabilityAnnotation(returnType.getAnnotationInHierarchy(topAnno))) {
         checker.reportWarning(
-            classTree, "modifiability.annotation.unverified", typeElement.getQualifiedName());
+            call, "modifiability.annotation.unverified", returnType.getUnderlyingType());
       }
     }
   }
@@ -249,52 +233,6 @@ public class ModifiabilityBaseVisitor
   }
 
   /**
-   * Returns true if {@code classTree} explicitly writes a warning-worthy modifiability qualifier on
-   * the class declaration or on any constructor.
-   *
-   * @param classTree a class declaration
-   * @return true if a warning-worthy modifiability annotation is written on the class or
-   *     constructor
-   */
-  private boolean hasExplicitWarningModifiabilityAnnotation(ClassTree classTree) {
-    // write explicit modifiability annotations on the class
-    if (hasWarningModifiabilityAnnotation(classTree.getModifiers().getAnnotations())) {
-      return true;
-    }
-
-    // write explicit modifiability annotations on any constructor
-    for (Tree member : classTree.getMembers()) {
-      if (member instanceof MethodTree methodTree
-          && TreeUtils.isConstructor(methodTree)
-          && hasWarningModifiabilityAnnotation(methodTree.getModifiers().getAnnotations())) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Returns true if the list {@code annotations} contains any explicit non-maybe modifiability
-   * qualifier.
-   *
-   * <p>Iterator through the list of annotations and call
-   * isWarningModifiablityAnnotation(annotation)
-   *
-   * @param annotations annotation trees to inspect
-   * @return true if one annotation should trigger an unverified modifiability warning
-   */
-  private boolean hasWarningModifiabilityAnnotation(
-      Iterable<? extends AnnotationTree> annotations) {
-    for (AnnotationTree annotationTree : annotations) {
-      AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(annotationTree);
-      if (annotation != null && isWarningModifiabilityAnnotation(annotation)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
    * Returns true if {@code annotation} is a non-maybe modifiability qualifier that should trigger
    * the unverified custom modifiability warning.
    *
@@ -354,22 +292,4 @@ public class ModifiabilityBaseVisitor
   @Override
   protected void checkConstructorResult(
       AnnotatedExecutableType constructorType, ExecutableElement constructorElement) {}
-
-  /**
-   * Returns true if {@code typeElement} is a user-defined subtype of {@link java.util.Collection},
-   * {@link java.util.Map}, or {@link java.util.Iterator}.
-   *
-   * @param typeElement the type element to test
-   * @return true if {@code typeElement} is a user-defined subtype of Collection, Map, or Iterator
-   */
-  private boolean isCollectionFromSourceCode(TypeElement typeElement) {
-    if (!ElementUtils.isElementFromSourceCode(typeElement)) {
-      return false;
-    }
-
-    TypeMirror type = typeElement.asType();
-    return TypesUtils.isErasedSubtype(type, collectionErasure, atypeFactory.types)
-        || TypesUtils.isErasedSubtype(type, mapErasure, atypeFactory.types)
-        || TypesUtils.isErasedSubtype(type, iteratorErasure, atypeFactory.types);
-  }
 }

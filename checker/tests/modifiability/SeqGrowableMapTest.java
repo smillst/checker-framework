@@ -16,8 +16,7 @@ import org.checkerframework.checker.modifiability.qual.Shrinkable;
 
 public class SeqGrowableMapTest {
 
-  // :: warning: [modifiability.annotation.unverified] :: error: [super.invocation] :: error:
-  // [declaration.inconsistent.with.implements.clause]
+  // :: error: [super.invocation] :: error: [declaration.inconsistent.with.implements.clause]
   abstract static @SeqGrowable class UserDefinedSortedMap implements SortedMap<String, Integer> {}
 
   void linkedHashMapSupportsSequencedMapGrow() {

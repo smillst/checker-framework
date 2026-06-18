@@ -22,6 +22,7 @@ public class ClassAnnosVSDefaultQualifierForUse {
 
   // use @DefaultQualifierForUse
   @DefaultQualifierForUse(Growable.class)
+  // :: warning: [modifiability.annotation.unverified]
   static class DefaultList<String> extends ArrayList<String> {}
 
   @MaybeGrowable DefaultList<String> list2 = new DefaultList<>();
