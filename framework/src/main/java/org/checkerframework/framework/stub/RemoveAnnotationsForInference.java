@@ -292,6 +292,7 @@ public final class RemoveAnnotationsForInference {
    * @param lineno the index of the line to be removed or replaced
    * @param newLine the new line for index {@code lineno}
    */
+  @SuppressWarnings("deprecation") // JDK's String.isBlank() only exists on JDK 11+.
   static void replaceLine(List<String> lines, int lineno, String newLine) {
     if (StringsPlume.isBlank(newLine)) {
       lines.remove(lineno);
