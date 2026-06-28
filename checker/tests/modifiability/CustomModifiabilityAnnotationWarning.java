@@ -44,7 +44,6 @@ public class CustomModifiabilityAnnotationWarning {
 
   static class NonModifiabilityType {}
 
-  // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class ClassLevelModifiableList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -59,13 +58,10 @@ public class CustomModifiabilityAnnotationWarning {
 
   // The implicit super() call is fine because ArrayList's constructor already
   // returns @Modifiable, but the subclass annotation is still an unverified modifiability claim.
-  // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class ModifiableSubclassWithoutSuperError extends ArrayList<String> {}
 
-  // :: warning: [modifiability.annotation.unverified]
   abstract static @Growable class ClassLevelGrowableCollection implements Collection<String> {}
 
-  // :: warning: [modifiability.annotation.unverified]
   abstract static @Unmodifiable class ClassLevelUnmodifiableMap implements Map<String, String> {}
 
   static class MapWithAnnotatedKeySet extends AbstractMap<String, String> {
@@ -78,7 +74,6 @@ public class CustomModifiabilityAnnotationWarning {
 
     class KeySet extends AbstractSet<String> {
 
-      // :: warning: [modifiability.annotation.unverified]
       public @Modifiable KeySet() {}
 
       @Override
@@ -93,12 +88,10 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: warning: [modifiability.annotation.unverified]
   abstract static @IteratorPolyMod class ClassLevelIteratorPolyModIterator
       implements Iterator<String> {}
 
   static class ConstructorLevelShrinkableList extends AbstractList<String> {
-    // :: warning: [modifiability.annotation.unverified]]
     @Shrinkable ConstructorLevelShrinkableList() {}
 
     @Override
@@ -159,7 +152,6 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: warning: [modifiability.annotation.unverified]
   static @Modifiable class SuppressedList extends AbstractList<String> {
     @Override
     public String get(int index) {
@@ -178,6 +170,5 @@ public class CustomModifiabilityAnnotationWarning {
     }
   }
 
-  // :: warning: [modifiability.annotation.unverified]
   abstract static @Unmodifiable class SuppressedMap implements Map<String, String> {}
 }

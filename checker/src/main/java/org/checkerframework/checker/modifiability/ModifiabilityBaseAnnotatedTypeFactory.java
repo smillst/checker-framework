@@ -18,6 +18,10 @@ public abstract class ModifiabilityBaseAnnotatedTypeFactory extends BaseAnnotate
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   protected final AnnotationMirror ITERATOR_PRESERVE_REMOVE;
 
+  /** The top qualifier in the hierarchy. Subclasses must set this after calling {@code super()}. */
+  // Non-final so subclasses can set it.
+  protected AnnotationMirror topAnnotation;
+
   /**
    * Creates a ModifiabilityBaseAnnotatedTypeFactory.
    *

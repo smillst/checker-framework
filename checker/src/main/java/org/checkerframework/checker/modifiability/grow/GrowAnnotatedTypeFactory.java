@@ -72,6 +72,7 @@ public class GrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFact
     this.GROWABLE = AnnotationBuilder.fromClass(elements, Growable.class);
     this.UNGROWABLE = AnnotationBuilder.fromClass(elements, Ungrowable.class);
     this.POLY_GROWABLE = AnnotationBuilder.fromClass(elements, PolyGrowable.class);
+    this.topAnnotation = MAYBE_GROWABLE;
 
     postInit();
   }

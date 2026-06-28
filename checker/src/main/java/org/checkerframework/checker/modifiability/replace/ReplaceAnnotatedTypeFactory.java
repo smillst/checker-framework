@@ -87,6 +87,7 @@ public class ReplaceAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeF
     this.REPLACEABLE = AnnotationBuilder.fromClass(elements, Replaceable.class);
     this.UNREPLACEABLE = AnnotationBuilder.fromClass(elements, Unreplaceable.class);
     this.POLY_REPLACEABLE = AnnotationBuilder.fromClass(elements, PolyReplaceable.class);
+    this.topAnnotation = MAYBE_REPLACEABLE;
 
     postInit();
   }

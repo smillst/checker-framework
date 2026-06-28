@@ -609,7 +609,7 @@ Here are examples of its use:
   it3.remove();  // Error: list3 does not have @IteratorPolyMod
 \end{Verbatim}
 
-\sectionAndLabel{Unverified collection implementation annotations}{modifiability-annotation-unverified}
+\sectionAndLabel{Unverified collection implementation annotations}{class.unverified}
 
 The Modifiability Checker verifies uses of collection modifiability annotations,
 but it does not verify collection implementations.
@@ -617,14 +617,14 @@ but it does not verify collection implementations.
 When a user-defined collection-like class (a \<Collection>, \<Map>,
 \<Iterator>, or subtype) explicitly writes a concrete modifiability qualifier
 on the class declaration or on a constructor, the checker issues a
-\<modifiability.annotation.unverified> warning.  The warning means that the
+\<class.unverified> warning.  The warning means that the
 annotation is a trusted specification of the custom implementation, not a fact
 verified from the implementation's method bodies.  After examining the
 implementation, suppress the warning with
-\<@SuppressWarnings("modifiability:annotation.unverified")>.
+\<@SuppressWarnings("class.unverified")>.
 
 For example, the class-level \<@Growable> annotation below triggers
-\<modifiability.annotation.unverified>. It is up to the programmer to verify that
+\<class.unverified>. It is up to the programmer to verify that
 the implementation of \<TestMod> is not \@Growable and remove it from the class declaration.
 \begin{Verbatim}
 public @Growable class TestMod extends ArrayList<String> {

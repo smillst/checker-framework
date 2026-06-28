@@ -66,6 +66,7 @@ public class ShrinkAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFa
     this.SHRINKABLE = AnnotationBuilder.fromClass(elements, Shrinkable.class);
     this.UNSHRINKABLE = AnnotationBuilder.fromClass(elements, Unshrinkable.class);
     this.POLY_SHRINKABLE = AnnotationBuilder.fromClass(elements, PolyShrinkable.class);
+    this.topAnnotation = MAYBE_SHRINKABLE;
 
     postInit();
   }

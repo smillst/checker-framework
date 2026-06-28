@@ -7,7 +7,6 @@ import org.checkerframework.framework.qual.DefaultQualifierForUse;
 public class ClassAnnosVSDefaultQualifierForUse {
 
   // write annotation on class declaration.
-  // :: warning: [modifiability.annotation.unverified]
   static @Growable class ModList<String> extends ArrayList<String> {}
 
   // :: error: [annotations.on.use]
@@ -22,7 +21,6 @@ public class ClassAnnosVSDefaultQualifierForUse {
 
   // use @DefaultQualifierForUse
   @DefaultQualifierForUse(Growable.class)
-  // :: warning: [modifiability.annotation.unverified]
   static class DefaultList<String> extends ArrayList<String> {}
 
   @MaybeGrowable DefaultList<String> list2 = new DefaultList<>();

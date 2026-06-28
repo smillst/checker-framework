@@ -20,6 +20,9 @@ import org.checkerframework.javacutil.TreeUtils;
 /** The annotated type factory for the {@link IteratorChecker}. */
 public class IteratorAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeFactory {
 
+  /** The {@code @}{@link MaybeIteratorPolyMod} qualifier. */
+  private final AnnotationMirror MAYBE_ITERATOR_POLY_MOD;
+
   /** The {@code @}{@link IteratorPolyMod} qualifier. */
   private final AnnotationMirror ITERATOR_POLY_MOD;
 
@@ -34,8 +37,11 @@ public class IteratorAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedType
   @SuppressWarnings("this-escape")
   public IteratorAnnotatedTypeFactory(BaseTypeChecker checker) {
     super(checker);
+    this.MAYBE_ITERATOR_POLY_MOD =
+        AnnotationBuilder.fromClass(elements, MaybeIteratorPolyMod.class);
     this.ITERATOR_POLY_MOD = AnnotationBuilder.fromClass(elements, IteratorPolyMod.class);
     this.POLY_ITERATOR_POLY_MOD = AnnotationBuilder.fromClass(elements, PolyIteratorPolyMod.class);
+    this.topAnnotation = MAYBE_ITERATOR_POLY_MOD;
     postInit();
   }
 

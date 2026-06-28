@@ -76,6 +76,7 @@ public class SeqGrowAnnotatedTypeFactory extends ModifiabilityBaseAnnotatedTypeF
     this.SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, SeqGrowable.class);
     this.SEQ_UNGROWABLE = AnnotationBuilder.fromClass(elements, SeqUngrowable.class);
     this.POLY_SEQ_GROWABLE = AnnotationBuilder.fromClass(elements, PolySeqGrowable.class);
+    this.topAnnotation = MAYBE_SEQ_GROWABLE;
 
     postInit();
   }

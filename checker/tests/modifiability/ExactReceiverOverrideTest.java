@@ -9,7 +9,7 @@ import org.checkerframework.checker.modifiability.qual.Replaceable;
 import org.checkerframework.checker.modifiability.qual.Shrinkable;
 import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
-@SuppressWarnings("modifiability:annotation.unverified")
+@SuppressWarnings("class.unverified")
 public class ExactReceiverOverrideTest {
 
   static class GrowParent extends ArrayList<String> {
@@ -98,6 +98,9 @@ public class ExactReceiverOverrideTest {
   }
 
   static class UnmodifiableArrayList<E> extends ArrayList<E> {
+
+    @Unmodifiable UnmodifiableArrayList() {}
+
     @Override
     public boolean add(@Growable UnmodifiableArrayList<E> this, E element) {
       throw new UnsupportedOperationException();
