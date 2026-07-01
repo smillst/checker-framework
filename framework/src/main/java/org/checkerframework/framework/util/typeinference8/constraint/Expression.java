@@ -14,8 +14,9 @@ import java.util.List;
 import javax.lang.model.type.TypeKind;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.util.typeinference8.bound.BoundSet;
+import org.checkerframework.framework.util.typeinference8.types.AbstractExecutableType;
 import org.checkerframework.framework.util.typeinference8.types.AbstractType;
-import org.checkerframework.framework.util.typeinference8.types.InferenceExecutableType;
+import org.checkerframework.framework.util.typeinference8.types.CompileTimeDeclarationType;
 import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
@@ -174,12 +175,13 @@ public class Expression extends TypeConstraint {
       args = methodInvocationTree.getArguments();
     }
 
-    InferenceExecutableType methodType =
+    AbstractExecutableType executableType =
         context.inferenceTypeFactory.getTypeOfMethodAdaptedToUse(expressionTree);
     Theta map =
-        context.inferenceTypeFactory.createThetaForInvocation(expressionTree, methodType, context);
-    BoundSet b2 = context.inference.createB2(methodType, args, map);
-    return context.inference.createB3(b2, expressionTree, methodType, T, map);
+        context.inferenceTypeFactory.createThetaForInvocation(
+            expressionTree, executableType, context);
+    BoundSet b2 = context.inference.createB2(executableType, args, map);
+    return context.inference.createB3(b2, expressionTree, executableType, T, map);
   }
 
   /**
@@ -192,7 +194,7 @@ public class Expression extends TypeConstraint {
   private ReductionResult reduceMethodRef(Java8InferenceContext context) {
     MemberReferenceTree memRef = (MemberReferenceTree) expression;
     if (TreeUtils.isExactMethodReference(memRef)) {
-      InferenceExecutableType typeOfPoAppMethod =
+      CompileTimeDeclarationType typeOfPoAppMethod =
           context.inferenceTypeFactory.compileTimeDeclarationType(memRef);
 
       ConstraintSet constraintSet = new ConstraintSet();
@@ -231,7 +233,7 @@ public class Expression extends TypeConstraint {
     // else the method reference is inexact.
 
     // Compile-time declaration of the member reference expression
-    InferenceExecutableType compileTimeDecl =
+    CompileTimeDeclarationType compileTimeDecl =
         context.inferenceTypeFactory.compileTimeDeclarationType(memRef);
     if (compileTimeDecl.isVoid()) {
       return ConstraintSet.TRUE;

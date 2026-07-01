@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.StringTokenizer;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -74,9 +75,13 @@ public class StubGenerator {
     this.out = new PrintStream(out);
   }
 
-  /** Generate the stub file for all the classes within the provided package. */
+  /**
+   * Generate the stub file for all the classes within the provided package.
+   *
+   * @param elt an element whose package to use
+   */
   public void stubFromField(Element elt) {
-    if (!(elt.getKind() == ElementKind.FIELD)) {
+    if (elt.getKind() != ElementKind.FIELD) {
       return;
     }
 
@@ -355,20 +360,11 @@ public class StubGenerator {
       out.print(method.getEnclosingElement().getSimpleName());
     }
 
-    out.print('(');
-
-    boolean isFirst = true;
+    StringJoiner params = new StringJoiner(", ", "(", ")");
     for (VariableElement param : method.getParameters()) {
-      if (!isFirst) {
-        out.print(", ");
-      }
-      out.print(formatType(param.asType()));
-      out.print(' ');
-      out.print(param.getSimpleName());
-      isFirst = false;
+      params.add(formatType(param.asType()) + " " + param.getSimpleName());
     }
-
-    out.print(')');
+    out.print(params.toString());
 
     if (!method.getThrownTypes().isEmpty()) {
       out.print(" throws ");

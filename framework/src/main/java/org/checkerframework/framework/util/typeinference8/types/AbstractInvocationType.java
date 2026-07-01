@@ -3,6 +3,7 @@ package org.checkerframework.framework.util.typeinference8.types;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewClassTree;
+import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
@@ -14,26 +15,29 @@ import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
 /**
- * An inference type for a method or constructor. This is a wrapper around {@link
- * AnnotatedExecutableType} that returns {@link AbstractType}s for the types in the {@link
- * AnnotatedExecutableType}
+ * An inference type for a method or constructor invocation. This is a wrapper around {@link
+ * AnnotatedExecutableType} whose methods return {@link AbstractType}.
  */
-public class InferenceMethodType extends InferenceExecutableType {
+public class AbstractInvocationType extends AbstractExecutableType {
+
+  /** The {@code NewClassTree} or {@code MethodInvocationTree} whose type this is. */
+  private final ExpressionTree invocation;
 
   /**
    * Creates an invocation type for a method or constructor invocation.
    *
-   * @param annotatedExecutableType annotated method type
-   * @param methodType java method type
+   * @param annotatedExecutableType annotated method or constructor type
+   * @param executableType the Java executable type
    * @param invocation a method or constructor invocation
    * @param context the context
    */
-  public InferenceMethodType(
+  public AbstractInvocationType(
       AnnotatedExecutableType annotatedExecutableType,
-      ExecutableType methodType,
+      ExecutableType executableType,
       ExpressionTree invocation,
       Java8InferenceContext context) {
-    super(annotatedExecutableType, methodType, invocation, context);
+    super(annotatedExecutableType, executableType, invocation, context);
+    this.invocation = invocation;
     assert invocation instanceof MethodInvocationTree || invocation instanceof NewClassTree;
   }
 
@@ -45,24 +49,30 @@ public class InferenceMethodType extends InferenceExecutableType {
    */
   @Override
   public AbstractType getReturnType(Theta map) {
-    TypeMirror returnType;
     AnnotatedTypeMirror annotatedReturnType;
+    TypeMirror returnType;
 
     if (TreeUtils.isDiamondTree(invocation)) {
       Element e = ElementUtils.enclosingTypeElement(TreeUtils.elementFromUse(invocation));
-      returnType = e.asType();
       annotatedReturnType = typeFactory.getAnnotatedType(e);
+      returnType = e.asType();
     } else if (invocation instanceof MethodInvocationTree) {
-      returnType = methodType.getReturnType();
       annotatedReturnType = annotatedExecutableType.getReturnType();
+      returnType = executableType.getReturnType();
     } else {
-      returnType = TreeUtils.typeOf(invocation);
       annotatedReturnType = typeFactory.getAnnotatedType(invocation);
+      returnType = TreeUtils.typeOf(invocation);
     }
 
     if (map == null) {
       return new ProperType(annotatedReturnType, returnType, context);
+    } else {
+      return InferenceType.create(annotatedReturnType, returnType, map, context);
     }
-    return InferenceType.create(annotatedReturnType, returnType, map, context);
+  }
+
+  @Override
+  public List<AbstractType> getParameterTypes(Theta map, int size) {
+    return getParameterTypes(map, size, null, TreeUtils.isVarargsCall(invocation));
   }
 }

@@ -137,7 +137,8 @@ import org.plumelib.util.SystemPlume;
  *
  * <p>The other entry point is {@link #parseJdkFileAsStub}.
  */
-public class AnnotationFileParser {
+@SuppressWarnings("PMD.GuardLogStatement") // `warn()` must be called to check for duplicates
+public final class AnnotationFileParser {
 
   /**
    * The type of file being parsed: stub file or ajava file. Also indicates its source, such as from
@@ -3064,7 +3065,7 @@ public class AnnotationFileParser {
         SystemPlume.sleep(1);
         processingEnv
             .getMessager()
-            .printMessage(javax.tools.Diagnostic.Kind.NOTE, "AnnotationFileParser: " + warning);
+            .printMessage(Diagnostic.Kind.NOTE, "AnnotationFileParser: " + warning);
         System.out.flush();
         SystemPlume.sleep(1);
       }
@@ -3088,7 +3089,7 @@ public class AnnotationFileParser {
       SystemPlume.sleep(1);
       processingEnv
           .getMessager()
-          .printMessage(javax.tools.Diagnostic.Kind.NOTE, "AnnotationFileParser: " + warning);
+          .printMessage(Diagnostic.Kind.NOTE, "AnnotationFileParser: " + warning);
       System.out.flush();
       SystemPlume.sleep(1);
     }
@@ -3101,7 +3102,10 @@ public class AnnotationFileParser {
    * corresponding to that construct, such as {@link #processCallableDeclaration} or {@link
    * #processField}.
    */
-  private class AjavaAnnotationCollectorVisitor extends DefaultJointVisitor {
+  private final class AjavaAnnotationCollectorVisitor extends DefaultJointVisitor {
+    /** Creates a new AjavaAnnotationCollectorVisitor. */
+    AjavaAnnotationCollectorVisitor() {}
+
     @Override
     public Void visitClass(ClassTree javacTree, Node javaParserNode) {
       List<AnnotatedTypeVariable> typeDeclTypeParameters = null;

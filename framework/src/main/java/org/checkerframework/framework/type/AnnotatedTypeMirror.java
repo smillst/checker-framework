@@ -1055,7 +1055,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
           TypeMirror wildcard =
               BoundsInitializer.getUpperBoundAsWildcard(typeParameterVar, atypeFactory.types);
           AnnotatedWildcardType atmWild =
-              (AnnotatedWildcardType) AnnotatedTypeMirror.createType(wildcard, atypeFactory, false);
+              (AnnotatedWildcardType) createType(wildcard, atypeFactory, false);
           atmWild.setTypeArgOfRawType();
           BoundsInitializer.initializeBounds(atmWild);
           typeArgs.add(atmWild);
@@ -1071,14 +1071,12 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       } else if (isDeclaration()) {
         for (TypeMirror javaTypeArg : t.getTypeArguments()) {
           AnnotatedTypeVariable tv =
-              (AnnotatedTypeVariable)
-                  AnnotatedTypeMirror.createType(javaTypeArg, atypeFactory, true);
+              (AnnotatedTypeVariable) createType(javaTypeArg, atypeFactory, true);
           typeArgs.add(tv);
         }
       } else {
         for (TypeMirror javaTypeArg : t.getTypeArguments()) {
-          AnnotatedTypeMirror typeArg =
-              AnnotatedTypeMirror.createType(javaTypeArg, atypeFactory, false);
+          AnnotatedTypeMirror typeArg = createType(javaTypeArg, atypeFactory, false);
           typeArgs.add(typeArg);
         }
       }
@@ -1140,8 +1138,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     public AnnotatedDeclaredType getErased() {
       AnnotatedDeclaredType erased =
           (AnnotatedDeclaredType)
-              AnnotatedTypeMirror.createType(
-                  atypeFactory.types.erasure(underlyingType), atypeFactory, false);
+              createType(atypeFactory.types.erasure(underlyingType), atypeFactory, false);
       erased.addAnnotations(this.getPrimaryAnnotations());
       AnnotatedDeclaredType erasedEnclosing = erased.getEnclosingType();
       AnnotatedDeclaredType thisEnclosing = this.getEnclosingType();
@@ -1196,7 +1193,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    * This is a subclass of {@link AnnotatedDeclaredType} that adds annotations even if they are not
    * supported by the type system.
    */
-  private static class AnnotatedDeclaredTypeNoHierarchy extends AnnotatedDeclaredType {
+  private static final class AnnotatedDeclaredTypeNoHierarchy extends AnnotatedDeclaredType {
 
     /**
      * Constructor for this type. The result contains no annotations.
@@ -1215,7 +1212,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
   }
 
   /** Represents a type of an executable. An executable is a method, constructor, or initializer. */
-  public static class AnnotatedExecutableType extends AnnotatedTypeMirror {
+  public static final class AnnotatedExecutableType extends AnnotatedTypeMirror {
 
     /** The element of the method. */
     /*package-private*/ @MonotonicNonNull ExecutableElement element;
@@ -1560,8 +1557,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    * Represents Array types in java. A multidimensional array type is represented as an array type
    * whose component type is also an array type.
    */
-  public static class AnnotatedArrayType extends AnnotatedTypeMirror {
+  public static final class AnnotatedArrayType extends AnnotatedTypeMirror {
 
+    /**
+     * Creates a new AnnotatedArrayType.
+     *
+     * @param type the underlying array type
+     * @param factory the annotated type factory
+     */
     private AnnotatedArrayType(ArrayType type, AnnotatedTypeFactory factory) {
       super(type, factory);
     }
@@ -1661,13 +1664,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    * capture conversion of a wildcard type argument (see chapter 5 of The Java Language
    * Specification, Third Edition).
    */
-  public static class AnnotatedTypeVariable extends AnnotatedTypeMirror {
-
-    private AnnotatedTypeVariable(
-        TypeVariable type, AnnotatedTypeFactory atypeFactory, boolean declaration) {
-      super(type, atypeFactory);
-      this.declaration = declaration;
-    }
+  public static final class AnnotatedTypeVariable extends AnnotatedTypeMirror {
 
     /** The lower bound of the type variable. */
     private AnnotatedTypeMirror lowerBound;
@@ -1675,7 +1672,21 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     /** The upper bound of the type variable. */
     private AnnotatedTypeMirror upperBound;
 
+    /** True if this is a declaration, false if this is a use. */
     private boolean declaration;
+
+    /**
+     * Creates a new AnnotatedTypeVariable.
+     *
+     * @param type the underlying type variable
+     * @param atypeFactory the annotated type factory
+     * @param declaration true if representing a declaration, false if representing a use
+     */
+    private AnnotatedTypeVariable(
+        TypeVariable type, AnnotatedTypeFactory atypeFactory, boolean declaration) {
+      super(type, atypeFactory);
+      this.declaration = declaration;
+    }
 
     @Override
     public boolean isDeclaration() {
@@ -1897,8 +1908,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    *       superclass of java.lang.Object.
    * </ul>
    */
-  public static class AnnotatedNoType extends AnnotatedTypeMirror {
+  public static final class AnnotatedNoType extends AnnotatedTypeMirror {
 
+    /**
+     * Creates a new AnnotatedNoType
+     *
+     * @param type the underlying {@code NoType}
+     * @param factory the annotated type factory
+     */
     private AnnotatedNoType(NoType type, AnnotatedTypeFactory factory) {
       super(type, factory);
     }
@@ -1943,8 +1960,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
   }
 
   /** Represents the null type. This is the type of the expression {@code null}. */
-  public static class AnnotatedNullType extends AnnotatedTypeMirror {
+  public static final class AnnotatedNullType extends AnnotatedTypeMirror {
 
+    /**
+     * Creates a new AnnotatedNullType.
+     *
+     * @param type the underlying {@code NullType}
+     * @param factory the annotated type factory
+     */
     private AnnotatedNullType(NullType type, AnnotatedTypeFactory factory) {
       super(type, factory);
     }
@@ -1988,8 +2011,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    * Represents a primitive type. These include {@code boolean}, {@code byte}, {@code short}, {@code
    * int}, {@code long}, {@code char}, {@code float}, and {@code double}.
    */
-  public static class AnnotatedPrimitiveType extends AnnotatedTypeMirror {
+  public static final class AnnotatedPrimitiveType extends AnnotatedTypeMirror {
 
+    /**
+     * Creates a new AnnotatedPrimitiveType.
+     *
+     * @param type the underlying primitive type
+     * @param factory the annotated type factory
+     */
     private AnnotatedPrimitiveType(PrimitiveType type, AnnotatedTypeFactory factory) {
       super(type, factory);
     }
@@ -2038,7 +2067,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    * <p>A wildcard may have its upper bound explicitly set by an extends clause, its lower bound
    * explicitly set by a super clause, or neither (but not both).
    */
-  public static class AnnotatedWildcardType extends AnnotatedTypeMirror {
+  public static final class AnnotatedWildcardType extends AnnotatedTypeMirror {
     /** Lower ({@code super}) bound. */
     private AnnotatedTypeMirror superBound;
 
@@ -2238,14 +2267,14 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    *
    * <p>For example: {@code MyObject & Serializable & Comparable<MyObject>}
    */
-  public static class AnnotatedIntersectionType extends AnnotatedTypeMirror {
+  public static final class AnnotatedIntersectionType extends AnnotatedTypeMirror {
 
     /**
      * A list of the bounds of this which are also its direct super types.
      *
      * <p>Is set by {@link #shallowCopy}.
      */
-    protected List<AnnotatedTypeMirror> bounds;
+    /*package-protected*/ List<AnnotatedTypeMirror> bounds;
 
     /**
      * Creates an {@code AnnotatedIntersectionType} with the underlying type {@code type}. The
@@ -2387,9 +2416,10 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     }
   }
 
+  /** Represents a union type. */
   // TODO: Ensure union types are handled everywhere.
   // TODO: Should field "annotations" contain anything?
-  public static class AnnotatedUnionType extends AnnotatedTypeMirror {
+  public static final class AnnotatedUnionType extends AnnotatedTypeMirror {
 
     /**
      * Creates a new AnnotatedUnionType.
@@ -2436,7 +2466,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * <p>Is set by {@link #getAlternatives} and {@link #shallowCopy}.
      */
-    protected @MonotonicNonNull List<AnnotatedDeclaredType> alternatives;
+    /*package-protected*/ @MonotonicNonNull List<AnnotatedDeclaredType> alternatives;
 
     /**
      * Returns the types that are unioned to form this AnnotatedUnionType.

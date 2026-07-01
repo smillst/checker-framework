@@ -215,7 +215,12 @@ public final class ElementAnnotationApplier {
    * Annotates uses of type variables with annotation written explicitly on the type parameter
    * declaration and/or its upper bound.
    */
-  private static class TypeVarAnnotator extends AnnotatedTypeScanner<Void, AnnotatedTypeFactory> {
+  private static final class TypeVarAnnotator
+      extends AnnotatedTypeScanner<Void, AnnotatedTypeFactory> {
+
+    /** Creates a new TypeVarAnnotator. */
+    TypeVarAnnotator() {}
+
     @Override
     public Void visitTypeVariable(AnnotatedTypeVariable type, AnnotatedTypeFactory factory) {
       TypeParameterElement tpelt = (TypeParameterElement) type.getUnderlyingType().asElement();
@@ -224,7 +229,7 @@ public final class ElementAnnotationApplier {
           && type.getUpperBound().getPrimaryAnnotations().isEmpty()
           && tpelt.getEnclosingElement().getKind() != ElementKind.TYPE_PARAMETER) {
         try {
-          ElementAnnotationApplier.applyInternal(type, tpelt, factory);
+          applyInternal(type, tpelt, factory);
         } catch (UnexpectedAnnotationLocationException e) {
           // The above is the second call to applyInternal on this type and element, so
           // any errors were already reported by the first call. (See the only use of this

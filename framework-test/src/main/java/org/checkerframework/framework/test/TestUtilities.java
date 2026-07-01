@@ -35,7 +35,7 @@ import org.plumelib.util.StringsPlume;
 import org.plumelib.util.SystemPlume;
 
 /** Utilities for testing. */
-public class TestUtilities {
+public final class TestUtilities {
 
   /** Do not instantiate. */
   private TestUtilities() {
@@ -551,6 +551,7 @@ public class TestUtilities {
    *
    * @return the value of system property "emit.test.debug"
    */
+  @SuppressWarnings("PMD.BooleanGetMethodName")
   public static boolean getShouldEmitDebugInfo() {
     return SystemPlume.getBooleanSystemProperty("emit.test.debug");
   }

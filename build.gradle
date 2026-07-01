@@ -98,9 +98,9 @@ tasks.register("installGitHooks", Copy) {
 }
 subprojects { subProject ->
   if (subProject.name.equals("checker")
-      || subProject.name.equals("annotation-file-utilities")
-      || subProject.name.equals("dataflow")
-      || subProject.name.equals("framework")) {
+  || subProject.name.equals("annotation-file-utilities")
+  || subProject.name.equals("dataflow")
+  || subProject.name.equals("framework")) {
     apply plugin: "com.gradleup.shadow"
     shadow {
       addShadowVariantIntoJavaComponent = false
@@ -143,6 +143,7 @@ allprojects { currentProj ->
   apply plugin: "eclipse"
   apply plugin: "de.undercouch.download"
   apply plugin: "net.ltgt.errorprone"
+  // apply plugin: "pmd"
 
   group = "org.checkerframework"
 
@@ -235,6 +236,14 @@ allprojects { currentProj ->
   dependencies {
     checkerFatJar(project(path: ":checker", configuration: "fatJar"))
   }
+
+  /*
+   pmd {
+   toolVersion = "7.25.0"
+   consoleOutput = true
+   ruleSetFiles = files("${rootDir}/.pmd-ruleset.xml")
+   }
+   */
 
   // After all the tasks have been created, modify some of them.
   afterEvaluate {
@@ -393,8 +402,6 @@ allprojects { currentProj ->
           "-Xep:ASTHelpersSuggestions:OFF",
           // Removing "public" from private class members loses information about the abstraction.
           "-Xep:EffectivelyPrivate:OFF",
-          // Broken in Error Prone 2.49.0; see https://github.com/google/error-prone/issues/5710.
-          "-Xep:AlreadyChecked:OFF",
           // -Werror halts the build if Error Prone issues a warning, which ensures that
           // the errors get fixed.  On the downside, Error Prone (or maybe the compiler?)
           // stops as soon as it issues one warning, rather than outputting them all.
@@ -529,13 +536,13 @@ tasks.register("zip", Zip) {
 
   from(layout.projectDirectory) {
     exclude("api/**",
-        "checker/bin/README",
-        "checker/dist/*.asc",
-        "docs/tutorial/tests/**",
-        "docs/tutorial/src/**",
-        "docs/tutorial/test/**",
-        "docs/tutorial/Makefile",
-        "docs/tutorial/README")
+    "checker/bin/README",
+    "checker/dist/*.asc",
+    "docs/tutorial/tests/**",
+    "docs/tutorial/src/**",
+    "docs/tutorial/test/**",
+    "docs/tutorial/Makefile",
+    "docs/tutorial/README")
 
     include("README.html",
         "LICENSE.txt",
