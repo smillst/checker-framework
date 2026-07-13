@@ -9,6 +9,7 @@ import org.checkerframework.checker.modifiability.seqgrow.SeqGrowChecker;
 import org.checkerframework.checker.modifiability.shrink.ShrinkChecker;
 import org.checkerframework.framework.source.AggregateChecker;
 import org.checkerframework.framework.source.SourceChecker;
+import org.checkerframework.framework.source.SourceVisitor;
 
 /**
  * A type-checker that warns, at compile time, if a program might throw {@link
@@ -37,5 +38,10 @@ public class ModifiabilityChecker extends AggregateChecker {
   protected Collection<Class<? extends SourceChecker>> getSupportedCheckers() {
     return List.of(
         GrowChecker.class, SeqGrowChecker.class, ShrinkChecker.class, ReplaceChecker.class);
+  }
+
+  @Override
+  protected SourceVisitor<?, ?> createSourceVisitor() {
+    return new ModifiabilityVisitor(this);
   }
 }

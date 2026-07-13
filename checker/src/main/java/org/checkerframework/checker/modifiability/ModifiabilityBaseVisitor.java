@@ -1,6 +1,5 @@
 package org.checkerframework.checker.modifiability;
 
-import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.BlockTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.ExpressionTree;
@@ -12,11 +11,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
-import com.sun.source.util.TreeScanner;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +19,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
-import org.checkerframework.checker.modifiability.qual.UnmodifiableParam;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -47,9 +41,6 @@ import org.checkerframework.javacutil.TreeUtils;
 public class ModifiabilityBaseVisitor
     extends BaseTypeVisitor<ModifiabilityBaseAnnotatedTypeFactory> {
 
-  /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
-  private final Deque<Set<AnnotationTree>> allowedUnmodifiableParamAnnotations = new ArrayDeque<>();
-
   // /** Package that contains the modifiability type-use qualifiers. */
   // private static final String MODIFIABILITY_QUAL_PACKAGE =
   //     "org.checkerframework.checker.modifiability.qual";
@@ -70,38 +61,6 @@ public class ModifiabilityBaseVisitor
   protected void checkThisOrSuperConstructorCall(
       MethodInvocationTree call, @CompilerMessageKey String errorKey) {
     // Nothing to do; it is handled by `processClassTree()`.
-  }
-
-  /**
-   * Collects the {@code @UnmodifiableParam} annotations that are permitted in this method's formal
-   * and receiver parameters before visiting the method body. {@link #visitAnnotation} uses the
-   * stack entry to distinguish allowed parameter annotations from disallowed uses elsewhere in the
-   * same method.
-   */
-  @Override
-  public void processMethodTree(String className, MethodTree tree) {
-    Set<AnnotationTree> allowedAnnotations = new HashSet<>();
-    for (VariableTree parameter : tree.getParameters()) {
-      allowedAnnotations.addAll(unmodifiableParamAnnotations(parameter));
-    }
-    VariableTree receiverParameter = tree.getReceiverParameter();
-    if (receiverParameter != null) {
-      allowedAnnotations.addAll(unmodifiableParamAnnotations(receiverParameter));
-    }
-    allowedUnmodifiableParamAnnotations.push(allowedAnnotations);
-    super.processMethodTree(className, tree);
-    allowedUnmodifiableParamAnnotations.pop();
-  }
-
-  @Override
-  public Void visitAnnotation(AnnotationTree tree, Void p) {
-    if (shouldCheckModifiabilityAnnotationValidity() && isUnmodifiableParamAnnotation(tree)) {
-      if (allowedUnmodifiableParamAnnotations.isEmpty()
-          || !allowedUnmodifiableParamAnnotations.getFirst().contains(tree)) {
-        checker.reportError(tree, "unmodparam.location");
-      }
-    }
-    return super.visitAnnotation(tree, p);
   }
 
   @Override
@@ -245,6 +204,8 @@ public class ModifiabilityBaseVisitor
     ExpressionTree identifier = nct.getIdentifier();
     if (identifier instanceof IdentifierTree it) {
       // TODO: This can be fooled if a different UnsupportedOperationException is imported.
+      // You can check the type of exception:
+      // types.isSameType(TreeUtils.typeOf(exception), ...);
       return it.getName().contentEquals("UnsupportedOperationException");
     } else if (identifier instanceof MemberSelectTree mst) {
       // TODO: For efficiency, to avoid call to `toString()`, could walk down the MemberSelectTree.
@@ -345,37 +306,6 @@ public class ModifiabilityBaseVisitor
     return true;
   }
 
-  /**
-   * Returns true if this checker should report diagnostics about modifiability annotations whose
-   * validity is independent of a particular capability hierarchy.
-   *
-   * <p>The default is {@code true}. SeqGrow, Shrink, Replace, and Iterator override this to avoid
-   * repeating diagnostics when running under the aggregate {@link ModifiabilityChecker}.
-   *
-   * @return true if this visitor should report shared modifiability annotation diagnostics
-   */
-  protected boolean shouldCheckModifiabilityAnnotationValidity() {
-    return true;
-  }
-
-  /**
-   * Returns true if {@code tree} is an {@code @}{@link UnmodifiableParam} annotation.
-   *
-   * @param tree an annotation tree
-   * @return true if {@code tree} is an {@code @UnmodifiableParam} annotation
-   */
-  private boolean isUnmodifiableParamAnnotation(AnnotationTree tree) {
-    String annotationName = tree.getAnnotationType().toString();
-    // Quick check to avoid expensive annotation resolution for most annotations.
-    if (!annotationName.equals("UnmodifiableParam")
-        && !annotationName.endsWith(".UnmodifiableParam")) {
-      return false;
-    }
-
-    AnnotationMirror annotation = TreeUtils.annotationFromAnnotationTree(tree);
-    return annotation != null && atypeFactory.areSameByClass(annotation, UnmodifiableParam.class);
-  }
-
   // /**
   //  * Returns true if {@code annotation} is a non-maybe modifiability qualifier that (if written
   // on a
@@ -403,34 +333,6 @@ public class ModifiabilityBaseVisitor
   //       simpleName.startsWith("Maybe") || simpleName.equals("UnmodifiableParam");
   //   return !isTopQualifier;
   // }
-
-  /**
-   * Returns all {@code @UnmodifiableParam} annotations written on a formal or receiver parameter's
-   * type. An annotation before the parameter type may appear in the parameter's modifiers, while an
-   * annotation inside a generic or array type appears in the parameter's type tree.
-   *
-   * @param parameter a formal or receiver parameter
-   * @return the {@code @UnmodifiableParam} annotation trees that are allowed by this parameter
-   *     location
-   */
-  private Set<AnnotationTree> unmodifiableParamAnnotations(VariableTree parameter) {
-    Set<AnnotationTree> annotations = new HashSet<>();
-    TreeScanner<Void, Void> scanner =
-        new TreeScanner<>() {
-          @Override
-          public Void visitAnnotation(AnnotationTree tree, Void p) {
-            if (isUnmodifiableParamAnnotation(tree)) {
-              annotations.add(tree);
-            }
-            return super.visitAnnotation(tree, p);
-          }
-        };
-
-    // Scan both javac locations for parameter type annotations.
-    // search for method(@UnmodifiableParam List<> param)
-    scanner.scan(parameter, null);
-    return annotations;
-  }
 
   // Suppresses the framework's "constructor result must be TOP" check.
   // Collection constructors (e.g., new ArrayList()) legitimately produce @Modifiable, which is a

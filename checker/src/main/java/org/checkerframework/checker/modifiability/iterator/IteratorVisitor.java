@@ -22,10 +22,4 @@ public class IteratorVisitor extends ModifiabilityBaseVisitor {
   protected boolean shouldCheckReceiverOverrideCapabilityPreservation() {
     return false;
   }
-
-  @Override
-  protected boolean shouldCheckModifiabilityAnnotationValidity() {
-    // When running under ModifiabilityChecker, GrowChecker handles shared annotation diagnostics.
-    return checker.getParentChecker() == null;
-  }
 }
