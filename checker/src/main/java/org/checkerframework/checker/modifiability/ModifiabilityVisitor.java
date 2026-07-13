@@ -14,6 +14,7 @@ import org.checkerframework.framework.source.SourceVisitor;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
 
+/** Visitor for the aggregate ModifiabilityChecker. */
 public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
 
   /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
