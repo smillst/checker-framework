@@ -145,7 +145,7 @@ public class ModifiabilityBaseVisitor
       MethodTree method,
       AnnotationMirror receiverAnno,
       AnnotationMirror constructorAnno,
-      String className) {
+      @FullyQualifiedName String className) {
     if (AnnotationUtils.areSameByName(receiverAnno, atypeFactory.topAnnotation)) {
       return;
     }
