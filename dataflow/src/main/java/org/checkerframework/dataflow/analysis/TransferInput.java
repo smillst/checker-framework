@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.cfg.node.Node;
-import org.plumelib.util.StringsPlume;
+import org.plumelib.util.StringsP;
 import org.plumelib.util.UniqueId;
 
 /**
@@ -299,11 +299,11 @@ public class TransferInput<V extends AbstractValue<V>, S extends Store<S>> imple
   public String toString() {
     if (store == null) {
       return "[then="
-          + StringsPlume.indentLinesExceptFirst(2, thenStore)
+          + StringsP.indentLinesExceptFirst(2, thenStore)
           + ","
           + System.lineSeparator()
           + "  else="
-          + StringsPlume.indentLinesExceptFirst(2, elseStore)
+          + StringsP.indentLinesExceptFirst(2, elseStore)
           + "]";
     } else {
       return "[" + store + "]";
