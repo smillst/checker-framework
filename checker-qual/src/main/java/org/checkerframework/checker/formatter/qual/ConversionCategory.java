@@ -269,7 +269,7 @@ public enum ConversionCategory {
         return v;
       }
     }
-    throw new RuntimeException();
+    throw new RuntimeException("Could not compute intersect(" + a + ", " + b + ")");
   }
 
   /** Conversion categories that need to be considered by {@link #union}. */
