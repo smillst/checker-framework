@@ -3,6 +3,7 @@ package org.checkerframework.afu.scenelib.el;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.checkerframework.afu.scenelib.Annotation;
 import org.checkerframework.afu.scenelib.util.coll.VivifyingMap;
 import org.checkerframework.checker.modifiability.qual.Modifiable;
@@ -67,7 +68,7 @@ public class ATypeElement extends AElement {
   @Override
   public int hashCode() {
     checkRep();
-    return tlAnnotationsHere.hashCode() + innerTypes.hashCode();
+    return Objects.hash(tlAnnotationsHere, innerTypes);
   }
 
   @Override
