@@ -77,7 +77,7 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
   }
 
   /**
-   * Adds to the given list all {@code @UnmodifiableParam} annotations written on a formal or
+   * Adds to the given set all {@code @UnmodifiableParam} annotations written on a formal or
    * receiver parameter's type. An annotation before the parameter type appears in the parameter's
    * modifiers, while an annotation inside a generic or array type appears in the parameter's type
    * tree.
@@ -86,7 +86,11 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
     /** Where this puts {@link UnmodifiableParam} annotations. */
     Set<AnnotationTree> sink;
 
-    /** Creates an UnmodifiableParamAnnotationCollector. */
+    /**
+     * Creates an UnmodifiableParamAnnotationCollector.
+     *
+     * @para sink where {@code @UnmodifiableParam} annotations are saved
+     */
     UnmodifiableParamAnnotationCollector(Set<AnnotationTree> sink) {
       this.sink = sink;
     }
