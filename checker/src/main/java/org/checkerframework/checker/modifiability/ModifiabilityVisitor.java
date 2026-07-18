@@ -17,7 +17,13 @@ import org.checkerframework.javacutil.TreeUtils;
 /** Visitor for the aggregate ModifiabilityChecker. */
 public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
 
-  /** Method-scoped {@code @UnmodifiableParam} annotations allowed by their parameter location. */
+  /** Fully-qualified name for {@link UnmodifiableParam}. */
+  private static final String unmodifiableParamQualifiedName = UnmodifiableParam.class.getName();
+
+  /**
+   * A stack (one element per nested method) of method-scoped {@code @UnmodifiableParam} annotations
+   * allowed by their parameter location.
+   */
   private final Deque<Set<AnnotationTree>> allowedUnmodifiableParamAnnotations = new ArrayDeque<>();
 
   /** {@link ModifiabilityChecker}. */
@@ -26,7 +32,7 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
   /**
    * Creates a {@link SourceVisitor} to use for scanning a source tree.
    *
-   * @param checker the checker to invoke on the input source tree
+   * @param checker the modifiability checker to invoke on the input source tree
    */
   protected ModifiabilityVisitor(ModifiabilityChecker checker) {
     super(checker);
@@ -35,23 +41,27 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
 
   /**
    * Collects the {@code @UnmodifiableParam} annotations that are permitted in this method's formal
-   * and receiver parameters before visiting the method body. {@link #visitAnnotation} uses the
-   * stack entry to distinguish allowed parameter annotations from disallowed uses elsewhere in the
-   * same method.
+   * and receiver parameters. Pushes them on the stack before visiting the method body, then pops
+   * the stack. {@link #visitAnnotation} uses the stack entry to distinguish allowed parameter
+   * annotations from disallowed uses elsewhere in the same method.
    */
   @Override
   public Void visitMethod(MethodTree tree, Void unused) {
     Set<AnnotationTree> allowedAnnotations = new HashSet<>();
+    UnmodifiableParamAnnotationCollector scanner =
+        new UnmodifiableParamAnnotationCollector(allowedAnnotations);
     for (VariableTree parameter : tree.getParameters()) {
-      allowedAnnotations.addAll(unmodifiableParamAnnotations(parameter));
+      scanner.scan(parameter, null);
     }
     VariableTree receiverParameter = tree.getReceiverParameter();
     if (receiverParameter != null) {
-      allowedAnnotations.addAll(unmodifiableParamAnnotations(receiverParameter));
+      scanner.scan(receiverParameter, null);
     }
+
     allowedUnmodifiableParamAnnotations.push(allowedAnnotations);
     super.visitMethod(tree, unused);
     allowedUnmodifiableParamAnnotations.pop();
+
     return null;
   }
 
@@ -67,35 +77,28 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
   }
 
   /**
-   * Returns all {@code @UnmodifiableParam} annotations written on a formal or receiver parameter's
-   * type. An annotation before the parameter type may appear in the parameter's modifiers, while an
-   * annotation inside a generic or array type appears in the parameter's type tree.
-   *
-   * @param parameter a formal or receiver parameter
-   * @return the {@code @UnmodifiableParam} annotation trees that are allowed by this parameter
-   *     location
+   * Adds to the given list all {@code @UnmodifiableParam} annotations written on a formal or
+   * receiver parameter's type. An annotation before the parameter type appears in the parameter's
+   * modifiers, while an annotation inside a generic or array type appears in the parameter's type
+   * tree.
    */
-  private Set<AnnotationTree> unmodifiableParamAnnotations(VariableTree parameter) {
-    Set<AnnotationTree> annotations = new HashSet<>();
-    TreeScanner<Void, Void> scanner =
-        new TreeScanner<>() {
-          @Override
-          public Void visitAnnotation(AnnotationTree tree, Void p) {
-            if (isUnmodifiableParamAnnotation(tree)) {
-              annotations.add(tree);
-            }
-            return super.visitAnnotation(tree, p);
-          }
-        };
+  private class UnmodifiableParamAnnotationCollector extends TreeScanner<Void, Void> {
+    /** Where this puts {@link UnmodifiableParam} annotations. */
+    Set<AnnotationTree> sink;
 
-    // Scan both javac locations for parameter type annotations.
-    // search for method(@UnmodifiableParam List<> param)
-    scanner.scan(parameter, null);
-    return annotations;
+    /** Creates an UnmodifiableParamAnnotationCollector. */
+    UnmodifiableParamAnnotationCollector(Set<AnnotationTree> sink) {
+      this.sink = sink;
+    }
+
+    @Override
+    public Void visitAnnotation(AnnotationTree tree, Void p) {
+      if (isUnmodifiableParamAnnotation(tree)) {
+        sink.add(tree);
+      }
+      return super.visitAnnotation(tree, p);
+    }
   }
-
-  /** Fully-qualified name for {@link UnmodifiableParam}. */
-  private static final String unmodifiableParamQualifiedName = UnmodifiableParam.class.getName();
 
   /**
    * Returns true if {@code tree} is an {@code @}{@link UnmodifiableParam} annotation.
