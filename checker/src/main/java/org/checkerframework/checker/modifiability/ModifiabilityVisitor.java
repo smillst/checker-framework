@@ -89,7 +89,7 @@ public class ModifiabilityVisitor extends SourceVisitor<Void, Void> {
     /**
      * Creates an UnmodifiableParamAnnotationCollector.
      *
-     * @para sink where {@code @UnmodifiableParam} annotations are saved
+     * @param sink where {@code @UnmodifiableParam} annotations are saved
      */
     UnmodifiableParamAnnotationCollector(Set<AnnotationTree> sink) {
       this.sink = sink;
