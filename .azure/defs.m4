@@ -233,6 +233,7 @@ dnl
 define([guava_job], [dnl
   - job: guava_jdk$1
     dependsOn:
+      - canary_jobs
 ifelse($1,canary_version,,[dnl
       - guava_jdk[]canary_version
 ])dnl
