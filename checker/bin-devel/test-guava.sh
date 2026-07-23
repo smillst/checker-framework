@@ -40,4 +40,4 @@ fi
 # (I saw Maven take 30 minutes to download a dependency even with all these flags.)
 (cd guava \
   && time mvn --debug -B compile -P checkerframework-local \
-    -Dhttp.keepAlive=false -Daether.connector.http.connectionMaxTtl=25 -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120)
+    -Dhttp.keepAlive=false -Daether.connector.http.connectionMaxTtl=25 -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Dcheckerframework.checkers=org.checkerframework.checker.index.IndexChecker)
