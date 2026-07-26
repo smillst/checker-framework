@@ -47,4 +47,24 @@ class UnmodParamLocationTest<
 
   // :: error: [unmodparam.location]
   <@UnmodifiableParam S> void methodTypeParameter(S value) {}
+
+  // A method declared within a method, to test that each method's permitted annotations apply only
+  // to that method.
+  void nestedMethod(@UnmodifiableParam List<String> parameter) {
+    class Local {
+      void innerParameter(@UnmodifiableParam List<String> innerParameter) {}
+
+      void innerLocal() {
+        // :: error: [unmodparam.location]
+        @UnmodifiableParam List<String> local = null;
+        local = null;
+      }
+    }
+    new Local().innerLocal();
+  }
+
+  // A field declared after a method, to test that a method's permitted annotations do not leak into
+  // the enclosing class.
+  // :: error: [unmodparam.location]
+  @UnmodifiableParam List<String> fieldAfterMethod;
 }

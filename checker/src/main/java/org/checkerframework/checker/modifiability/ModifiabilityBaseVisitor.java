@@ -11,6 +11,7 @@ import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.StatementTree;
 import com.sun.source.tree.ThrowTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.checkerframework.checker.compilermsgs.qual.CompilerMessageKey;
 import org.checkerframework.checker.signature.qual.FullyQualifiedName;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
+import org.checkerframework.framework.source.SourceChecker;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -36,6 +38,8 @@ import org.checkerframework.javacutil.TreeUtils;
  * <ul>
  *   <li>Suppressing the "constructor result must be TOP" check, since collection constructors may
  *       legitimately produce {@code @Modifiable}.
+ *   <li>Checking the locations of {@code @UnmodifiableParam} annotations, when no ancestor checker
+ *       already does so; see {@link #checksUnmodifiableParamLocations}.
  * </ul>
  */
 public class ModifiabilityBaseVisitor
@@ -49,12 +53,53 @@ public class ModifiabilityBaseVisitor
   private static final Set<@FullyQualifiedName String> classWarned = new HashSet<>();
 
   /**
+   * Issues errors about {@code @UnmodifiableParam} annotations in disallowed locations. Used only
+   * when {@link #checksUnmodifiableParamLocations} returns true.
+   */
+  private final UnmodifiableParamLocationScanner unmodifiableParamLocationScanner;
+
+  /**
    * Create a ModifiabilityBaseVisitor.
    *
    * @param checker the checker that uses this visitor
    */
   public ModifiabilityBaseVisitor(BaseTypeChecker checker) {
     super(checker);
+    this.unmodifiableParamLocationScanner = new UnmodifiableParamLocationScanner(checker);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Additionally checks the locations of {@code @UnmodifiableParam} annotations, if this checker
+   * is the one responsible for doing so; see {@link #checksUnmodifiableParamLocations}.
+   */
+  @Override
+  public void visit(TreePath path) {
+    super.visit(path);
+    if (checksUnmodifiableParamLocations()) {
+      unmodifiableParamLocationScanner.scan(path.getLeaf(), null);
+    }
+  }
+
+  /**
+   * Returns true if this checker, rather than one of its ancestor checkers, checks the locations of
+   * {@code @UnmodifiableParam} annotations.
+   *
+   * <p>That check does not depend on a particular modifiability hierarchy, so the outermost
+   * modifiability checker performs it exactly once, rather than each modifiability checker
+   * repeating it. When the aggregate {@link ModifiabilityChecker} is run, its own visitor performs
+   * the check; see {@link ModifiabilityVisitor}.
+   *
+   * @return true if this checker checks {@code @UnmodifiableParam} locations
+   */
+  private boolean checksUnmodifiableParamLocations() {
+    for (SourceChecker c = checker.getParentChecker(); c != null; c = c.getParentChecker()) {
+      if (c instanceof ModifiabilityChecker || c instanceof ModifiabilityBaseChecker) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -203,9 +248,9 @@ public class ModifiabilityBaseVisitor
     }
     ExpressionTree identifier = nct.getIdentifier();
     if (identifier instanceof IdentifierTree it) {
-      // TODO: This can be fooled if a different UnsupportedOperationException is imported.
-      // You can check the type of exception:
-      // types.isSameType(TreeUtils.typeOf(exception), ...);
+      // TODO: This can be fooled if a different UnsupportedOperationException is imported.  To fix,
+      // compare the type of the exception rather than its name, as in
+      // `types.isSameType(TreeUtils.typeOf(exception), unsupportedOperationExceptionType)`.
       return it.getName().contentEquals("UnsupportedOperationException");
     } else if (identifier instanceof MemberSelectTree mst) {
       // TODO: For efficiency, to avoid call to `toString()`, could walk down the MemberSelectTree.
