@@ -24,9 +24,9 @@ public class AClass extends ADeclaration {
   public final @Growable @Replaceable VivifyingMap<BoundLocation, ATypeElement> bounds =
       ATypeElement.<BoundLocation>newVivifyingLHMap_ATE();
 
-  // -1 maps to superclass, non-negative integers map to implemented interfaces
-  public final @Growable @Replaceable VivifyingMap<TypeIndexLocation, ATypeElement>
-      extendsImplements = ATypeElement.<TypeIndexLocation>newVivifyingLHMap_ATE();
+  /** -1 maps to superclass, non-negative integers map to implemented or extended interfaces. */
+  public final VivifyingMap<TypeIndexLocation, ATypeElement> extendsImplements =
+      ATypeElement.<TypeIndexLocation>newVivifyingLHMap_ATE();
 
   /**
    * The class's annotated methods; a method's key consists of its name followed by its erased

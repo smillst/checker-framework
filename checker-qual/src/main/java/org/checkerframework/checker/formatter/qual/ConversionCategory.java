@@ -212,6 +212,13 @@ public enum ConversionCategory {
     throw new IllegalArgumentException("Bad conversion character " + c);
   }
 
+  /**
+   * Converts an array to a set.
+   *
+   * @param a an array
+   * @param <E> the type of array and set elements
+   * @return a set containing the array's elements
+   */
   private static <E> @Modifiable Set<E> arrayToSet(E[] a) {
     return new HashSet<>(Arrays.asList(a));
   }
