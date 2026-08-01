@@ -114,6 +114,11 @@ public class ModifiabilityBaseVisitor
     processClassConstructors(tree);
   }
 
+  /**
+   * Processes the constructors of a class.
+   *
+   * @param tree a class
+   */
   private void processClassConstructors(ClassTree tree) {
     TypeMirror classTM = TreeUtils.elementFromDeclaration(tree).asType();
     if (!atypeFactory.isRelevant(classTM)) {
