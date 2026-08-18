@@ -17,8 +17,9 @@ public class LambdaParamTypeFromInference {
   // default qualifiers is unsound here, not merely imprecise: it would strengthen `p` from
   // `@Nullable String` to `@NonNull String`, and the dereference below would go unreported.
   //
-  // The error is issued while checking the lambda body, after inference has finished, because the
-  // type computed for the parameter during inference is cached and reused then.
+  // The error is issued while checking the lambda body, after inference for `map` has finished.
+  // The type of `p` is recomputed then, by re-running that inference, which again asks the running
+  // inference for the type of `p`.
   void deref(@Nullable String s) {
     // :: error: [dereference.of.nullable]
     map(s, p -> p.hashCode());

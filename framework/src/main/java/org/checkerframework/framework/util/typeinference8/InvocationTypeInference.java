@@ -164,7 +164,10 @@ public class InvocationTypeInference {
     if (!paramType.isProper()) {
       return null;
     }
-    return paramType.getAnnotatedType();
+    // Copy, because AbstractType.getAnnotatedType() returns a type that inference itself uses:
+    // it is a component of the memoized AbstractType.functionType, and the caller is permitted
+    // to side-effect the type that this method returns.
+    return paramType.getAnnotatedType().deepCopy();
   }
 
   /**

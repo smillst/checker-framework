@@ -536,6 +536,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   private final Map<Element, AnnotatedTypeMirror> elementCache;
 
+  /**
+   * Implicitly typed lambda parameters whose type was most recently computed from a type argument
+   * inference that had not yet finished; see {@code
+   * TypeFromMemberVisitor.inferLambdaParamAnnotations}. Such a type is provisional: the inference
+   * might still replace the instantiation it was derived from by one with different qualifiers, so
+   * the type must not be cached. An element is removed once its type is computed again with no
+   * inference in progress.
+   */
+  private final Set<Element> provisionalLambdaParams = new HashSet<>(2);
+
   /** Mapping from an Element to the source Tree of the declaration. */
   private final Map<Element, Tree> elementToTreeCache;
 
@@ -929,6 +939,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     this.root = newRoot;
     // Do not clear here. Only the primary checker should clear this cache.
     // treePathCache.clear();
+
+    // The lambda parameters of the previous compilation unit will not be queried again.
+    provisionalLambdaParams.clear();
 
     // setRoot in a GenericAnnotatedTypeFactory will clear this;
     // if this isn't a GenericATF, then it must clear it itself.
@@ -1629,7 +1642,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     if (shouldCache
         && !stubTypes.isParsing()
         && !ajavaTypes.isParsing()
-        && (currentFileAjavaTypes == null || !currentFileAjavaTypes.isParsing())) {
+        && (currentFileAjavaTypes == null || !currentFileAjavaTypes.isParsing())
+        && !provisionalLambdaParams.contains(elt)) {
       elementCache.put(elt, type.deepCopy());
     }
     return type;
@@ -1669,6 +1683,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return fromMemberTreeCache.get(tree).deepCopy();
     }
     AnnotatedTypeMirror result = TypeFromTree.fromMember(this, tree);
+    // Whether TypeFromTree.fromMember just computed a provisional type; compute it here, because
+    // the calls below can compute the type of some other member and thereby update the set.
+    boolean isProvisional =
+        !provisionalLambdaParams.isEmpty()
+            && tree instanceof VariableTree vt
+            && provisionalLambdaParams.contains(TreeUtils.elementFromDeclaration(vt));
 
     result = mergeAnnotationFileAnnosIntoType(result, tree, ajavaTypes);
     if (currentFileAjavaTypes != null) {
@@ -1685,11 +1705,26 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       }
     }
 
-    if (shouldCache) {
+    if (shouldCache && !isProvisional) {
       fromMemberTreeCache.put(tree, result.deepCopy());
     }
 
     return result;
+  }
+
+  /**
+   * Records whether the type just computed for the implicitly typed lambda parameter {@code elt}
+   * came from a type argument inference that had not yet finished, and is therefore provisional.
+   *
+   * @param elt an implicitly typed lambda parameter
+   * @param provisional true if the type of {@code elt} was computed from an unfinished inference
+   */
+  /*package-private*/ void setLambdaParamTypeIsProvisional(Element elt, boolean provisional) {
+    if (provisional) {
+      provisionalLambdaParams.add(elt);
+    } else {
+      provisionalLambdaParams.remove(elt);
+    }
   }
 
   /**

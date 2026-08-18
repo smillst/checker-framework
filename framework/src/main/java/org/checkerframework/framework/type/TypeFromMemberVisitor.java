@@ -200,6 +200,12 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
         // instantiated to a value that later constraints would have refined (see the note at the
         // end of JLS 18.5.2.1), so the structure can disagree with javac's final answer, and
         // callers of this method require the two to agree.
+        //
+        // Whichever of the two answers is used, it is provisional: it was computed from inference
+        // state that is still changing (the note at the end of JLS 18.5.2.1 again), so it must not
+        // be cached.  Once inference has finished, the type of this parameter is computed again,
+        // by the code below, which both gives the final answer and permits it to be cached.
+        f.setLambdaParamTypeIsProvisional(paramElement, true);
         if (fromInference != null
             && f.getProcessingEnv()
                 .getTypeUtils()
@@ -212,6 +218,7 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
       }
 
       AnnotatedExecutableType functionType = f.getFunctionTypeFromTree(lambdaDecl);
+      f.setLambdaParamTypeIsProvisional(paramElement, false);
       return functionType.getParameterTypes().get(index);
     }
     return null;
