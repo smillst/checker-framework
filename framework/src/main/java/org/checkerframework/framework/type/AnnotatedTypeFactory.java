@@ -546,6 +546,16 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   private final Set<Element> provisionalLambdaParams = new HashSet<>(2);
 
+  /**
+   * How many times a provisional type has been computed for an implicitly typed lambda parameter;
+   * see {@link #provisionalLambdaParams}. A computation that increments this counter consulted a
+   * provisional type, so its result is provisional as well and must not be cached. Comparing the
+   * counter before and after a computation is more precise than testing whether {@link
+   * #provisionalLambdaParams} is non-empty, which would suppress caching for every expression until
+   * the parameter's type is computed again.
+   */
+  private int provisionalLambdaParamTypesComputed = 0;
+
   /** Mapping from an Element to the source Tree of the declaration. */
   private final Map<Element, Tree> elementToTreeCache;
 
@@ -1722,6 +1732,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   /*package-private*/ void setLambdaParamTypeIsProvisional(Element elt, boolean provisional) {
     if (provisional) {
       provisionalLambdaParams.add(elt);
+      provisionalLambdaParamTypesComputed++;
     } else {
       provisionalLambdaParams.remove(elt);
     }
@@ -1799,6 +1810,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return fromExpressionTreeCache.get(tree).deepCopy();
     }
 
+    int provisionalTypesBefore = provisionalLambdaParamTypesComputed;
     AnnotatedTypeMirror result = TypeFromTree.fromExpression(this, tree);
 
     if (shouldCache
@@ -1806,7 +1818,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         // cached during dataflow analysis. See Issue #602.
         && !(tree instanceof NewClassTree)
         && !(tree instanceof NewArrayTree)
-        && !(tree instanceof ConditionalExpressionTree)) {
+        && !(tree instanceof ConditionalExpressionTree)
+        // If computing `result` consulted the provisional type of an implicitly typed lambda
+        // parameter -- which an expression that mentions such a parameter does -- then `result`
+        // is provisional too and must not be cached.
+        && provisionalLambdaParamTypesComputed == provisionalTypesBefore) {
       fromExpressionTreeCache.put(tree, result.deepCopy());
     }
     logGat("fromExpression(%s) => %s%n", tree, result);
