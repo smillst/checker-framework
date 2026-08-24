@@ -192,6 +192,19 @@ public class Typing extends TypeConstraint {
       return ConstraintSet.TRUE;
     }
 
+    // The JLS has no rule for a capture variable as S, because under the JLS one never
+    // appears here: JLS 18.2.3 reduces a subtyping constraint between parameterized types to
+    // containment constraints between their type arguments, which may be wildcards.
+    // reduceSubtypeClass captures instead (see the comment there), so a wildcard type
+    // argument reaches this method as a capture variable.  Reduce to a constraint on the
+    // capture variable's upper bound, which is what the JLS containment rule for
+    // `? extends S' <= ? extends T'` would have produced.
+    if (TypesUtils.isCapturedTypeVariable(S.getJavaType())
+        && S.getTypeKind() == TypeKind.TYPEVAR
+        && T.getTypeKind() != TypeKind.TYPEVAR) {
+      return new Typing(this, S.getTypeVarUpperBound(), T, Kind.SUBTYPE);
+    }
+
     return switch (T.getTypeKind()) {
       case DECLARED -> reduceSubtypeClass(context);
       case ARRAY -> reduceSubtypeArray();
@@ -318,6 +331,9 @@ public class Typing extends TypeConstraint {
       return new Typing(this, S, T.getTypeVarLowerBound(), Kind.SUBTYPE);
     } else if (T.getTypeKind() == TypeKind.WILDCARD && T.isLowerBoundedWildcard()) {
       return new Typing(this, S, T.getWildcardLowerBound(), Kind.SUBTYPE);
+    } else if (TypesUtils.isCapturedTypeVariable(S.getJavaType())) {
+      // Not in the JLS; see the comment on the same test in reduceSubtyping.
+      return new Typing(this, S.getTypeVarUpperBound(), T, Kind.SUBTYPE);
     } else {
       return ConstraintSet.FALSE;
     }
