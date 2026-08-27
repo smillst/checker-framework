@@ -3,6 +3,7 @@ package org.checkerframework.framework.util.typeinference8.types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -549,16 +550,35 @@ public class VariableBounds {
   public boolean applyInstantiationsToBounds() {
     boolean changed = false;
     for (Set<AbstractType> boundList : bounds.values()) {
-      LinkedHashSet<AbstractType> newBounds = new LinkedHashSet<>(boundList.size());
+      // Usually no bound in the list has an instantiation to apply, and applyInstantiations()
+      // returns its receiver.  In that case the set does not need to be rebuilt at all, so build
+      // `newBounds` lazily: it stays null until some bound actually changes, and then it is
+      // seeded with the bounds already processed.
+      LinkedHashSet<AbstractType> newBounds = null;
+      int processed = 0;
       for (AbstractType bound : boundList) {
         AbstractType newBound = bound.applyInstantiations();
-        if (newBound != bound && !boundList.contains(newBound)) {
-          changed = true;
+        if (newBound != bound) {
+          if (newBounds == null) {
+            newBounds = new LinkedHashSet<>(boundList.size());
+            Iterator<AbstractType> itor = boundList.iterator();
+            for (int i = 0; i < processed; i++) {
+              newBounds.add(itor.next());
+            }
+          }
+          if (!boundList.contains(newBound)) {
+            changed = true;
+          }
         }
-        newBounds.add(newBound);
+        if (newBounds != null) {
+          newBounds.add(newBound);
+        }
+        processed++;
       }
-      boundList.clear();
-      boundList.addAll(newBounds);
+      if (newBounds != null) {
+        boundList.clear();
+        boundList.addAll(newBounds);
+      }
     }
     constraints.applyInstantiations();
 
