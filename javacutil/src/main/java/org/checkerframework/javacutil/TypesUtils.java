@@ -1558,11 +1558,37 @@ public final class TypesUtils {
     if (typeVariable1 == typeVariable2) {
       return true;
     }
-    Name otherName = typeVariable2.asElement().getSimpleName();
-    Element otherEnclosingElement = typeVariable2.asElement().getEnclosingElement();
+    Element element1 = typeVariable1.asElement();
+    Element element2 = typeVariable2.asElement();
 
-    return typeVariable1.asElement().getSimpleName().contentEquals(otherName)
-        && otherEnclosingElement.equals(typeVariable1.asElement().getEnclosingElement());
+    return contentEquals(element1.getSimpleName(), element2.getSimpleName())
+        && element2.getEnclosingElement().equals(element1.getEnclosingElement());
+  }
+
+  /**
+   * Returns true if the two names have the same characters.
+   *
+   * <p>This is {@code Name.contentEquals} without its string allocations: javac implements {@code
+   * contentEquals} by calling {@code toString()} on both operands, and {@code Name.toString()}
+   * decodes the name's UTF-8 bytes into a fresh string every time. That cost matters here, because
+   * names are compared in a loop whenever a collection of type variables is searched. ({@code
+   * Name.charAt} and {@code Name.length} are no cheaper; they too go through {@code toString()}.)
+   *
+   * @param n1 the first name to compare
+   * @param n2 the second name to compare
+   * @return true if the two names represent the same string
+   */
+  @SuppressWarnings(
+      "interning:unnecessary.equals" // Name is interned within a single instance of javac,
+  // but call equals anyway out of paranoia.
+  )
+  private static boolean contentEquals(Name n1, Name n2) {
+    if (n1.getClass() == n2.getClass()) {
+      return n1.equals(n2);
+    } else {
+      // Slightly less efficient because it makes a copy.
+      return n1.contentEquals(n2);
+    }
   }
 
   /**
@@ -1578,10 +1604,9 @@ public final class TypesUtils {
    * @return a hash code consistent with {@code areSame}
    */
   public static int hashCodeForAreSame(TypeVariable typeVariable) {
-    // areSame compares asElement()'s getSimpleName() and getEnclosingElement().  The name is
-    // converted to a String because areSame compares names with Name.contentEquals, and Name does
-    // not specify that its hashCode is consistent with contentEquals.
+    // areSame compares asElement()'s getSimpleName() and getEnclosingElement().  Name.hashCode is
+    // consistent with Name.equals, which is what areSame uses to compare the names.
     Element element = typeVariable.asElement();
-    return Objects.hash(element.getSimpleName().toString(), element.getEnclosingElement());
+    return Objects.hash(element.getSimpleName().hashCode(), element.getEnclosingElement());
   }
 }
