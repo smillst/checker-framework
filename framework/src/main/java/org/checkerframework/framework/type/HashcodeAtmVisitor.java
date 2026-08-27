@@ -1,6 +1,5 @@
 package org.checkerframework.framework.type;
 
-import java.util.Objects;
 import org.checkerframework.framework.type.visitor.SimpleAnnotatedTypeScanner;
 
 /**
@@ -32,6 +31,13 @@ public class HashcodeAtmVisitor extends SimpleAnnotatedTypeScanner<Integer, Void
     if (type == null) {
       return 0;
     }
-    return Objects.hash(type.getUnderlyingTypeHashCode(), type.getPrimaryAnnotations().toString());
+    // Use getPrimaryAnnotationsField() rather than getPrimaryAnnotations(): the latter copies
+    // the annotations into a fresh TreeSet and wraps it, which is pure overhead here because
+    // this method only reads the set.  Both have the same iteration order and toString(), so
+    // the computed hashcode is unchanged.
+    // The arithmetic is what Objects.hash(underlyingHash, annosString) computes, without
+    // allocating the varargs array or boxing the int.
+    int result = 31 + type.getUnderlyingTypeHashCode();
+    return 31 * result + type.getPrimaryAnnotationsField().stringHashCode();
   }
 }

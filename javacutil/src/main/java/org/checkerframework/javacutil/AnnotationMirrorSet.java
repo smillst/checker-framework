@@ -40,6 +40,12 @@ public class AnnotationMirrorSet
   private NavigableSet<@KeyFor("this") AnnotationMirror> shadowSet =
       new TreeSet<>(AnnotationUtils::compareAnnotationMirrors);
 
+  /**
+   * Cached value of {@code toString().hashCode()}, or 0 if it has not been computed since this set
+   * was last modified. See {@link #stringHashCode}.
+   */
+  private int cachedStringHashCode = 0;
+
   /** The canonical unmodifiable empty set. */
   private static AnnotationMirrorSet emptySet = unmodifiableSet(Collections.emptySet());
 
@@ -144,7 +150,32 @@ public class AnnotationMirrorSet
 
   @Override
   public Iterator<@KeyFor("this") AnnotationMirror> iterator() {
-    return shadowSet.iterator();
+    Iterator<@KeyFor("this") AnnotationMirror> shadowItor = shadowSet.iterator();
+    // Wrap the iterator so that removing through it invalidates cachedStringHashCode; that is
+    // the only way to modify this set without going through one of its own methods.  Inside the
+    // anonymous class, `this` would denote the iterator rather than this set, so the element
+    // type cannot be written as @KeyFor("this") there; it is unchanged, since the wrapper
+    // yields exactly the elements of shadowSet.
+    @SuppressWarnings("keyfor:assignment")
+    Iterator<@KeyFor("this") AnnotationMirror> result =
+        new Iterator<AnnotationMirror>() {
+          @Override
+          public boolean hasNext() {
+            return shadowItor.hasNext();
+          }
+
+          @Override
+          public AnnotationMirror next() {
+            return shadowItor.next();
+          }
+
+          @Override
+          public void remove() {
+            cachedStringHashCode = 0;
+            shadowItor.remove();
+          }
+        };
+    return result;
   }
 
   @Override
@@ -167,6 +198,7 @@ public class AnnotationMirrorSet
     if (contains(annotationMirror)) {
       return false;
     }
+    cachedStringHashCode = 0;
     shadowSet.add(annotationMirror);
     return true;
   }
@@ -176,7 +208,11 @@ public class AnnotationMirrorSet
   public boolean remove(@Nullable Object o) {
     if (o instanceof AnnotationMirror am) {
       AnnotationMirror found = AnnotationUtils.getSame(shadowSet, am);
-      return found != null && shadowSet.remove(found);
+      if (found == null) {
+        return false;
+      }
+      cachedStringHashCode = 0;
+      return shadowSet.remove(found);
     }
     return false;
   }
@@ -218,6 +254,7 @@ public class AnnotationMirrorSet
       }
     }
     if (newSet.size() != shadowSet.size()) {
+      cachedStringHashCode = 0;
       shadowSet = newSet;
       return true;
     }
@@ -239,7 +276,27 @@ public class AnnotationMirrorSet
   @Override
   @SideEffectsOnly("this")
   public void clear() {
+    cachedStringHashCode = 0;
     shadowSet.clear();
+  }
+
+  /**
+   * Returns {@code toString().hashCode()}, caching the result until this set is next modified.
+   *
+   * <p>This exists for {@link Object#hashCode} implementations that hash a set of annotations.
+   * {@code AnnotatedTypeMirror.hashCode()} is called tens of millions of times while type-checking
+   * some files, and rebuilding the string each time dominated its cost.
+   *
+   * @return {@code toString().hashCode()}
+   */
+  public int stringHashCode() {
+    int result = cachedStringHashCode;
+    if (result == 0) {
+      // If the hash really is 0, it is recomputed on each call; that is a small and rare cost.
+      result = shadowSet.toString().hashCode();
+      cachedStringHashCode = result;
+    }
+    return result;
   }
 
   @Override
@@ -324,12 +381,14 @@ public class AnnotationMirrorSet
   @Override
   @SideEffectsOnly("this")
   public @Nullable @KeyFor("this") AnnotationMirror pollFirst() {
+    cachedStringHashCode = 0;
     return shadowSet.pollFirst();
   }
 
   @Override
   @SideEffectsOnly("this")
   public @Nullable @KeyFor("this") AnnotationMirror pollLast() {
+    cachedStringHashCode = 0;
     return shadowSet.pollLast();
   }
 
