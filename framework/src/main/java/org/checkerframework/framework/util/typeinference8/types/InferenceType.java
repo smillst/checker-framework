@@ -221,9 +221,16 @@ public final class InferenceType extends AbstractType {
     return map == that.map && type.equals(that.type);
   }
 
+  /** The cached hash code, or 0 if it has not yet been computed. */
+  private int cachedHashCode = 0;
+
   @Override
   public int hashCode() {
-    return Objects.hash(inferenceProblemHashCode(), qualifierVars, type, Kind.INFERENCE_TYPE);
+    if (cachedHashCode == 0) {
+      cachedHashCode =
+          Objects.hash(inferenceProblemHashCode(), qualifierVars, type, Kind.INFERENCE_TYPE);
+    }
+    return cachedHashCode;
   }
 
   @Override

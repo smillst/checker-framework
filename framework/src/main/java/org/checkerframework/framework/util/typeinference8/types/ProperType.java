@@ -220,9 +220,15 @@ public class ProperType extends AbstractType {
     return type.equals(that.type);
   }
 
+  /** The cached hash code, or 0 if it has not yet been computed. */
+  private int cachedHashCode = 0;
+
   @Override
   public int hashCode() {
-    return Objects.hash(inferenceProblemHashCode(), qualifierVars, type, Kind.PROPER);
+    if (cachedHashCode == 0) {
+      cachedHashCode = Objects.hash(inferenceProblemHashCode(), qualifierVars, type, Kind.PROPER);
+    }
+    return cachedHashCode;
   }
 
   @Override

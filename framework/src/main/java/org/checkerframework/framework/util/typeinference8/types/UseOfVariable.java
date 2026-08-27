@@ -251,9 +251,22 @@ public class UseOfVariable extends AbstractType {
     return type.equals(that.type);
   }
 
+  /** The cached hash code, or 0 if it has not yet been computed. */
+  private int cachedHashCode = 0;
+
   @Override
   public int hashCode() {
-    return Objects.hash(
-        inferenceProblemHashCode(), variable, hasPrimaryAnno, bots, tops, qualifierVars, type);
+    if (cachedHashCode == 0) {
+      cachedHashCode =
+          Objects.hash(
+              inferenceProblemHashCode(),
+              variable,
+              hasPrimaryAnno,
+              bots,
+              tops,
+              qualifierVars,
+              type);
+    }
+    return cachedHashCode;
   }
 }
