@@ -95,10 +95,7 @@ public class Expression extends TypeConstraint {
     if (getT().isProper()) {
       return reduceProperType();
     } else if (TreeUtils.isStandaloneExpression(expression)) {
-      AbstractType s;
-
-      s = new ProperType(expression, context);
-
+      AbstractType s = new ProperType(expression, context);
       return new Typing(this, s, T, TypeConstraint.Kind.TYPE_COMPATIBILITY);
     }
     switch (expression.getKind()) {
@@ -359,8 +356,6 @@ public class Expression extends TypeConstraint {
       if (tPrimeNotSameAsT) {
         constraintSet.add(new Typing(this, tPrime, T, TypeConstraint.Kind.SUBTYPE));
       }
-    } else {
-      context.addLambdaParms(lambda.getParameters());
     }
 
     AbstractType R = tPrime.getFunctionTypeReturnType();
