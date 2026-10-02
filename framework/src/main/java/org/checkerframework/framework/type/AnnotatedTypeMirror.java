@@ -26,6 +26,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -395,7 +396,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    *
    * @return the annotation on this type, or null if there is none
    */
-  public final AnnotationMirror getAnnotation() {
+  public final @Nullable AnnotationMirror getAnnotation() {
     AnnotationMirrorSet effectiveAnnotations = getAnnotations();
     if (effectiveAnnotations.isEmpty()) {
       // This AnnotatedTypeMirror must be a type variable or wildcard.
@@ -981,14 +982,15 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         result.enclosingType = this.enclosingType.asUse();
       }
       // setTypeArguments calls asUse on all the new type arguments.
-      result.setTypeArguments(typeArgs);
+      result.setTypeArguments(getTypeArguments());
 
       // If "this" is a type declaration with a type variable that references itself, e.g.
       // MyClass<T extends List<T>>, then the type variable is a declaration, i.e. the first
       // T, but the reference to the type variable is a use, i.e. the second T.  When "this"
       // is converted to a use, then both type variables are uses and should be the same
       // object.  The code below does this.
-      Map<TypeVariable, AnnotatedTypeMirror> mapping = new HashMap<>(typeArgs.size());
+      Map<TypeVariable, AnnotatedTypeMirror> mapping =
+          new HashMap<>(result.getTypeArguments().size());
       for (AnnotatedTypeMirror typeArg : result.getTypeArguments()) {
         AnnotatedTypeVariable typeVar = (AnnotatedTypeVariable) typeArg;
         mapping.put(typeVar.getUnderlyingType(), typeVar);
@@ -1051,7 +1053,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       typeArgs = new ArrayList<>(t.getTypeArguments().size());
 
       if (isUnderlyingTypeRaw()) {
-        TypeElement typeElement = (TypeElement) atypeFactory.types.asElement(t);
+        TypeElement typeElement = (TypeElement) t.asElement();
         Map<TypeVariable, AnnotatedTypeMirror> typeParameterToWildcard = new HashMap<>();
         for (TypeParameterElement typeParameterEle : typeElement.getTypeParameters()) {
           TypeVariable typeParameterVar = (TypeVariable) typeParameterEle.asType();
@@ -1237,9 +1239,6 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     /** The parameter types; an unmodifiable list. */
     /*package-private*/ @MonotonicNonNull List<AnnotatedTypeMirror> paramTypes = null;
 
-    /** True if {@link #paramTypes} has been computed. */
-    private boolean paramTypesComputed = false;
-
     /**
      * The receiver type of this executable type; null for static methods and constructors of
      * top-level classes.
@@ -1258,14 +1257,8 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
     /** The thrown types; an unmodifiable list. */
     /*package-private*/ @MonotonicNonNull List<AnnotatedTypeMirror> thrownTypes;
 
-    /** True if {@link #thrownTypes} has been computed. */
-    private boolean thrownTypesComputed = false;
-
     /** The type variables; an unmodifiable list. */
     /*package-private*/ @MonotonicNonNull List<AnnotatedTypeVariable> typeVarTypes;
-
-    /** True if {@link #typeVarTypes} has been computed. */
-    private boolean typeVarTypesComputed = false;
 
     /**
      * Returns true if this type represents a varargs method.
@@ -1273,7 +1266,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      * @return true if this type represents a varargs method
      */
     public boolean isVarargs() {
-      return this.element.isVarArgs();
+      return getElement().isVarArgs();
     }
 
     @Override
@@ -1305,9 +1298,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @param params the parameter types, excluding the receiver
      */
+    @EnsuresNonNull("this.paramTypes")
     /*package-private*/ void setParameterTypes(List<? extends AnnotatedTypeMirror> params) {
       paramTypes = params.isEmpty() ? Collections.emptyList() : List.copyOf(params);
-      paramTypesComputed = true;
     }
 
     /**
@@ -1316,8 +1309,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      * @return the parameter types of this executable type, excluding the receiver
      */
     public List<AnnotatedTypeMirror> getParameterTypes() {
-      if (!paramTypesComputed) {
-        assert paramTypes == null;
+      if (paramTypes == null) {
         List<? extends TypeMirror> underlyingParameterTypes =
             ((ExecutableType) underlyingType).getParameterTypes();
         List<AnnotatedTypeMirror> newParamTypes = new ArrayList<>(underlyingParameterTypes.size());
@@ -1342,7 +1334,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
 
     /** Replaces the return type by a shallow copy of itself. */
     public void shallowCopyReturnType() {
-      setReturnType(returnType.shallowCopy());
+      setReturnType(getReturnType().shallowCopy());
     }
 
     /**
@@ -1351,6 +1343,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the return type of this executable type
      */
+    @SuppressWarnings("nullness:return") // null only if called before setElement()
     public AnnotatedTypeMirror getReturnType() {
       if (!returnTypeComputed) {
         assert returnType == null : "returnType = " + returnType;
@@ -1410,9 +1403,12 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         if (ElementUtils.hasReceiver(element)) {
           // Initial value of `encl`; might be updated.
           TypeElement encl = ElementUtils.enclosingTypeElement(element);
+          assert encl != null
+              : "@AssumeAssertion(nullness): an element with a receiver is in a type";
           if (element.getKind() == ElementKind.CONSTRUCTOR) {
             // Can only reach this branch if we're the constructor of a nested class
             encl = ElementUtils.enclosingTypeElement(encl.getEnclosingElement());
+            assert encl != null : "@AssumeAssertion(nullness): a nested class is in a type";
           }
           AnnotatedTypeMirror type = createType(encl.asType(), atypeFactory, false);
           assert type instanceof AnnotatedDeclaredType;
@@ -1428,9 +1424,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @param thrownTypes the thrown types
      */
+    @EnsuresNonNull("this.thrownTypes")
     /*package-private*/ void setThrownTypes(List<? extends AnnotatedTypeMirror> thrownTypes) {
       this.thrownTypes = thrownTypes.isEmpty() ? Collections.emptyList() : List.copyOf(thrownTypes);
-      thrownTypesComputed = true;
     }
 
     /**
@@ -1439,8 +1435,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      * @return the thrown types of this executable type
      */
     public List<AnnotatedTypeMirror> getThrownTypes() {
-      if (!thrownTypesComputed) {
-        assert thrownTypes == null;
+      if (thrownTypes == null) {
         List<? extends TypeMirror> underlyingThrownTypes =
             ((ExecutableType) underlyingType).getThrownTypes();
         List<AnnotatedTypeMirror> newThrownTypes = new ArrayList<>(underlyingThrownTypes.size());
@@ -1458,9 +1453,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @param types the type variables of this executable type
      */
+    @EnsuresNonNull("this.typeVarTypes")
     /*package-private*/ void setTypeVariables(List<AnnotatedTypeVariable> types) {
       typeVarTypes = types.isEmpty() ? Collections.emptyList() : List.copyOf(types);
-      typeVarTypesComputed = true;
     }
 
     /**
@@ -1469,8 +1464,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      * @return the type variables of this executable type, if any
      */
     public List<AnnotatedTypeVariable> getTypeVariables() {
-      if (!typeVarTypesComputed) {
-        assert typeVarTypes == null;
+      if (typeVarTypes == null) {
         List<? extends TypeVariable> underlyingTypeVariables =
             ((ExecutableType) underlyingType).getTypeVariables();
         List<AnnotatedTypeVariable> newTypeVarTypes =
@@ -1518,6 +1512,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the element of this AnnotatedExecutableType
      */
+    @SuppressWarnings("nullness:return") // the factory calls setElement() after creating the type
     public ExecutableElement getElement() {
       return element;
     }
@@ -1538,8 +1533,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
               (ExecutableType) atypeFactory.types.erasure(getUnderlyingType()), atypeFactory);
       type.setElement(getElement());
       type.setParameterTypes(erasureList(getParameterTypes()));
-      if (getReceiverType() != null) {
-        type.setReceiverType(getReceiverType().getErased());
+      AnnotatedDeclaredType receiver = getReceiverType();
+      if (receiver != null) {
+        type.setReceiverType(receiver.getErased());
       } else {
         type.setReceiverType(null);
       }
@@ -1594,6 +1590,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @param type the component type
      */
+    @EnsuresNonNull("this.componentType")
     public void setComponentType(AnnotatedTypeMirror type) {
       this.componentType = type;
     }
@@ -1674,10 +1671,10 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
   public static final class AnnotatedTypeVariable extends AnnotatedTypeMirror {
 
     /** The lower bound of the type variable. */
-    private AnnotatedTypeMirror lowerBound;
+    private @MonotonicNonNull AnnotatedTypeMirror lowerBound;
 
     /** The upper bound of the type variable. */
-    private AnnotatedTypeMirror upperBound;
+    private @MonotonicNonNull AnnotatedTypeMirror upperBound;
 
     /** True if this is a declaration, false if this is a use. */
     private boolean declaration;
@@ -1766,7 +1763,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the lower bound field
      */
-    public AnnotatedTypeMirror getLowerBoundField() {
+    public @Nullable AnnotatedTypeMirror getLowerBoundField() {
       return lowerBound;
     }
 
@@ -1780,6 +1777,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         BoundsInitializer.initializeBounds(this);
         fixupBoundAnnotations();
       }
+      assert lowerBound != null : "@AssumeAssertion(nullness): initializeBounds sets the bounds";
       return lowerBound;
     }
 
@@ -1832,7 +1830,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the upper bound field
      */
-    public AnnotatedTypeMirror getUpperBoundField() {
+    public @Nullable AnnotatedTypeMirror getUpperBoundField() {
       return upperBound;
     }
 
@@ -1848,6 +1846,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         BoundsInitializer.initializeBounds(this);
         fixupBoundAnnotations();
       }
+      assert upperBound != null : "@AssumeAssertion(nullness): initializeBounds sets the bounds";
       return upperBound;
     }
 
@@ -1855,6 +1854,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       return new AnnotatedTypeParameterBounds(getUpperBound(), getLowerBound());
     }
 
+    @SuppressWarnings("nullness:argument") // the bound fields are null until initialized
     public AnnotatedTypeParameterBounds getBoundFields() {
       return new AnnotatedTypeParameterBounds(getUpperBoundField(), getLowerBoundField());
     }
@@ -2076,10 +2076,10 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
    */
   public static final class AnnotatedWildcardType extends AnnotatedTypeMirror {
     /** Lower ({@code super}) bound. */
-    private AnnotatedTypeMirror superBound;
+    private @MonotonicNonNull AnnotatedTypeMirror superBound;
 
     /** Upper ({@code extends} bound. */
-    private AnnotatedTypeMirror extendsBound;
+    private @MonotonicNonNull AnnotatedTypeMirror extendsBound;
 
     /**
      * True if this is a type argument for a type whose {@code #underlyingType} is raw. The Checker
@@ -2116,7 +2116,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       fixupBoundAnnotations();
     }
 
-    public AnnotatedTypeMirror getSuperBoundField() {
+    public @Nullable AnnotatedTypeMirror getSuperBoundField() {
       return superBound;
     }
 
@@ -2132,6 +2132,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         BoundsInitializer.initializeBounds(this);
         fixupBoundAnnotations();
       }
+      assert superBound != null : "@AssumeAssertion(nullness): initializeBounds sets the bounds";
       return this.superBound;
     }
 
@@ -2146,7 +2147,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       fixupBoundAnnotations();
     }
 
-    public AnnotatedTypeMirror getExtendsBoundField() {
+    public @Nullable AnnotatedTypeMirror getExtendsBoundField() {
       return extendsBound;
     }
 
@@ -2162,6 +2163,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
         BoundsInitializer.initializeBounds(this);
         fixupBoundAnnotations();
       }
+      assert extendsBound != null : "@AssumeAssertion(nullness): initializeBounds sets the bounds";
       return this.extendsBound;
     }
 
@@ -2281,7 +2283,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * <p>Is set by {@link #shallowCopy}.
      */
-    /*package-protected*/ List<AnnotatedTypeMirror> bounds;
+    /*package-protected*/ @MonotonicNonNull List<AnnotatedTypeMirror> bounds;
 
     /**
      * Creates an {@code AnnotatedIntersectionType} with the underlying type {@code type}. The
@@ -2351,7 +2353,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       if (copyAnnotations) {
         type.addAnnotations(this.getPrimaryAnnotationsField());
       }
-      type.bounds = this.bounds;
+      if (this.bounds != null) {
+        type.bounds = this.bounds;
+      }
       return type;
     }
 
@@ -2458,7 +2462,9 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       if (copyAnnotations) {
         type.addAnnotations(this.getPrimaryAnnotationsField());
       }
-      type.alternatives = this.alternatives;
+      if (this.alternatives != null) {
+        type.alternatives = this.alternatives;
+      }
       return type;
     }
 

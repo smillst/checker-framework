@@ -1005,9 +1005,35 @@ subprojects {
 
     // The checkNullness task runs on all code, but it only *checks* the following code:
     //  * All files outside the "framework", "checker", and "annotation-file-utilities" subprojects.
-    //  * In the "framework", "checker", and "annotation-file-utilities" subprojects, files with `@AnnotatedFor("nullness")`.
+    //  * In the "framework" subproject, files that match `frameworkNullnessCheckedFiles`.
+    //  * In the "checker" and "annotation-file-utilities" subprojects, files with `@AnnotatedFor("nullness")`.
+    // Passing `-PnullnessAll` checks all files.
     boolean nullnessAll = providers.gradleProperty("nullnessAll").isPresent()
-    if (!nullnessAll && (project.name.equals("framework") || project.name.equals("checker") || project.name.equals("annotation-file-utilities"))) {
+    if (!nullnessAll && project.name.equals("framework")) {
+      // Regexes for the files, relative to framework/src/main/java/org/checkerframework/, that
+      // the checkNullness task checks.  Code in other files is trusted, not conservatively
+      // defaulted, so a file can be added here as soon as it has no nullness errors.
+      def frameworkNullnessCheckedFiles = [
+        "framework/source/DiagMessage\\.java",
+        "framework/type/AnnotatedTypeMirror\\.java",
+        "framework/type/ElementQualifierHierarchy\\.java",
+        "framework/type/MostlyNoElementQualifierHierarchy\\.java",
+        "framework/type/NoElementQualifierHierarchy\\.java",
+        "framework/type/QualifierHierarchy\\.java",
+        "framework/type/SubtypeIsSubsetQualifierHierarchy\\.java",
+        "framework/type/SubtypeIsSupersetQualifierHierarchy\\.java",
+        "framework/util/DefaultQualifierKindHierarchy\\.java",
+        "framework/util/QualifierKind\\.java",
+        "framework/util/QualifierKindHierarchy\\.java",
+        "framework/util/typeinference8/.*\\.java",
+      ]
+      rootProject.createCheckTypeTask(project.name, "Nullness",
+          "org.checkerframework.checker.nullness.NullnessChecker",
+          [
+            "-AskipUses=com\\.sun\\.*",
+            "-AonlyFiles=/org/checkerframework/(" + frameworkNullnessCheckedFiles.join("|") + ")\$",
+          ])
+    } else if (!nullnessAll && (project.name.equals("checker") || project.name.equals("annotation-file-utilities"))) {
       rootProject.createCheckTypeTask(project.name, "Nullness",
           "org.checkerframework.checker.nullness.NullnessChecker",
           [

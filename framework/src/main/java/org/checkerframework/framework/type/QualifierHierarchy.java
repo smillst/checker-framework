@@ -187,7 +187,6 @@ public abstract class QualifierHierarchy {
    * @param superType the Java basetype associated with {@code superQualifier}
    * @return true iff {@code subQualifier} is a subqualifier of, or equal to, {@code superQualifier}
    */
-  @SuppressWarnings({"nullness", "keyfor"}) // AnnotatedTypeFactory hasn't been annotated.
   public boolean isSubtypeShallow(
       AnnotationMirror subQualifier,
       TypeMirror subType,
@@ -434,7 +433,6 @@ public abstract class QualifierHierarchy {
    */
   // The fact that null is returned if the qualifiers are not in the same hierarchy is used by the
   // collection version of LUB below.
-  @SuppressWarnings({"nullness", "keyfor"}) // AnnotatedTypeFactory hasn't been annotated.
   public @Nullable AnnotationMirror leastUpperBoundShallow(
       AnnotationMirror qualifier1, TypeMirror tm1, AnnotationMirror qualifier2, TypeMirror tm2) {
     boolean tm1IsRelevant = atypeFactory.isRelevant(tm1);
@@ -567,7 +565,6 @@ public abstract class QualifierHierarchy {
    * @return greatest lower bound of the two annotations, or null if the two annotations are not
    *     from the same hierarchy
    */
-  @SuppressWarnings({"nullness", "keyfor"}) // AnnotatedTypeFactory hasn't been annotated.
   public @Nullable AnnotationMirror greatestLowerBoundShallow(
       AnnotationMirror qualifier1, TypeMirror tm1, AnnotationMirror qualifier2, TypeMirror tm2) {
     boolean tm1IsRelevant = atypeFactory.isRelevant(tm1);
