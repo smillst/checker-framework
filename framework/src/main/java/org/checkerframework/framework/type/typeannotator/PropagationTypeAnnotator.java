@@ -222,7 +222,7 @@ public class PropagationTypeAnnotator extends TypeAnnotator {
       @FindDistinct AnnotatedTypeMirror typeArg, AnnotatedDeclaredType declaredType) {
     for (int i = 0; i < declaredType.getTypeArguments().size(); i++) {
       if (declaredType.getTypeArguments().get(i) == typeArg) {
-        TypeElement typeElement = TypesUtils.getTypeElement(declaredType.getUnderlyingType());
+        TypeElement typeElement = (TypeElement) declaredType.getUnderlyingType().asElement();
         return typeElement.getTypeParameters().get(i);
       }
     }

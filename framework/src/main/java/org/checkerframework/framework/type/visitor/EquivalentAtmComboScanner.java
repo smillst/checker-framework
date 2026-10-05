@@ -21,7 +21,9 @@ import org.checkerframework.framework.util.AtmCombo;
  * TypeMirror structure but might differ in contained AnnotationMirrors. This method will scan the
  * individual components of the visited type pairs together.
  */
-public abstract class EquivalentAtmComboScanner<RETURN_TYPE, PARAM>
+@SuppressWarnings(
+    "NullableTypeParameter") // the Checker Framework reads it as a nullable lower bound
+public abstract class EquivalentAtmComboScanner<@Nullable RETURN_TYPE, PARAM>
     extends AbstractAtmComboVisitor<RETURN_TYPE, PARAM> {
 
   /** A history of type pairs that have already been visited and the return type of their visit. */
@@ -44,9 +46,10 @@ public abstract class EquivalentAtmComboScanner<RETURN_TYPE, PARAM>
    * @return a subclass specific return type/value
    */
   protected abstract RETURN_TYPE scanWithNull(
-      AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, PARAM param);
+      @Nullable AnnotatedTypeMirror type1, @Nullable AnnotatedTypeMirror type2, PARAM param);
 
-  protected RETURN_TYPE scan(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, PARAM param) {
+  protected RETURN_TYPE scan(
+      @Nullable AnnotatedTypeMirror type1, @Nullable AnnotatedTypeMirror type2, PARAM param) {
     if (type1 == null || type2 == null) {
       return scanWithNull(type1, type2, param);
     }
@@ -83,7 +86,10 @@ public abstract class EquivalentAtmComboScanner<RETURN_TYPE, PARAM>
   }
 
   protected RETURN_TYPE scanAndReduce(
-      AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, PARAM param, RETURN_TYPE r) {
+      @Nullable AnnotatedTypeMirror type1,
+      @Nullable AnnotatedTypeMirror type2,
+      PARAM param,
+      RETURN_TYPE r) {
     return reduce(scan(type1, type2, param), r);
   }
 
@@ -144,19 +150,17 @@ public abstract class EquivalentAtmComboScanner<RETURN_TYPE, PARAM>
   }
 
   @Override
-  public @Nullable RETURN_TYPE visitNone_None(
-      AnnotatedNoType type1, AnnotatedNoType type2, PARAM param) {
+  public RETURN_TYPE visitNone_None(AnnotatedNoType type1, AnnotatedNoType type2, PARAM param) {
     return null;
   }
 
   @Override
-  public @Nullable RETURN_TYPE visitNull_Null(
-      AnnotatedNullType type1, AnnotatedNullType type2, PARAM param) {
+  public RETURN_TYPE visitNull_Null(AnnotatedNullType type1, AnnotatedNullType type2, PARAM param) {
     return null;
   }
 
   @Override
-  public @Nullable RETURN_TYPE visitPrimitive_Primitive(
+  public RETURN_TYPE visitPrimitive_Primitive(
       AnnotatedPrimitiveType type1, AnnotatedPrimitiveType type2, PARAM param) {
     return null;
   }

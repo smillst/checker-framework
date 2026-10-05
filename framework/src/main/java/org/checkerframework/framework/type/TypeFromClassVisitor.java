@@ -14,6 +14,7 @@ class TypeFromClassVisitor extends TypeFromTreeVisitor {
   @Override
   public AnnotatedTypeMirror visitClass(ClassTree tree, AnnotatedTypeFactory f) {
     TypeElement elt = TreeUtils.elementFromDeclaration(tree);
+    assert elt != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     AnnotatedTypeMirror result = f.toAnnotatedType(elt.asType(), true);
 
     ElementAnnotationApplier.apply(result, elt, f);

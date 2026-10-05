@@ -122,6 +122,7 @@ class TypeFromTypeTreeVisitor extends TypeFromTreeVisitor {
       ParameterizedTypeTree tree, AnnotatedTypeFactory f) {
 
     ClassSymbol baseType = (ClassSymbol) TreeUtils.elementFromTree(tree.getType());
+    assert baseType != null : "@AssumeAssertion(nullness): the tree is being type-checked";
     updateWildcardBounds(tree.getTypeArguments(), baseType.getTypeParameters());
 
     List<AnnotatedTypeMirror> args =

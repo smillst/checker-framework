@@ -35,13 +35,13 @@ public class DefaultQualifierPolymorphism extends AbstractQualifierPolymorphism 
   @Override
   protected void replace(
       AnnotatedTypeMirror type, AnnotationMirrorMap<AnnotationMirror> replacements) {
-    if (replacements.isEmpty() && type.getAnnotation() != null) {
+    if (replacements.isEmpty()) {
       // If the 'replacements' map is empty, it is likely a case where a method with
       // a varargs parameter was invoked with zero varargs actuals.
       // In this case, the polymorphic qualifiers should be replaced with the top type in
       // the qualifier hierarchy, since there is no further information to deduce.
       AnnotationMirror effectiveAnno = type.getAnnotation();
-      if (qualHierarchy.isPolymorphicQualifier(effectiveAnno)) {
+      if (effectiveAnno != null && qualHierarchy.isPolymorphicQualifier(effectiveAnno)) {
         replacements.put(effectiveAnno, qualHierarchy.getTopAnnotation(effectiveAnno));
       }
     }
@@ -73,6 +73,8 @@ public class DefaultQualifierPolymorphism extends AbstractQualifierPolymorphism 
     } else if (a2 == null) {
       return a1;
     }
-    return qualHierarchy.leastUpperBoundQualifiersOnly(a1, a2);
+    AnnotationMirror lub = qualHierarchy.leastUpperBoundQualifiersOnly(a1, a2);
+    assert lub != null : "@AssumeAssertion(nullness): the qualifiers are in one hierarchy";
+    return lub;
   }
 }

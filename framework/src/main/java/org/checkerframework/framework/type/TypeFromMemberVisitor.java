@@ -5,6 +5,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
@@ -32,6 +33,7 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
   @Override
   public AnnotatedTypeMirror visitVariable(VariableTree variableTree, AnnotatedTypeFactory f) {
     Element elt = TreeUtils.elementFromDeclaration(variableTree);
+    assert elt != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
 
     // Create the ATM and add non-primary annotations
     AnnotatedTypeMirror result;
@@ -129,6 +131,7 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
   @Override
   public AnnotatedTypeMirror visitMethod(MethodTree tree, AnnotatedTypeFactory f) {
     ExecutableElement elt = TreeUtils.elementFromDeclaration(tree);
+    assert elt != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
 
     AnnotatedExecutableType result =
         (AnnotatedExecutableType) f.toAnnotatedType(elt.asType(), false);
@@ -161,18 +164,25 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
    */
   private static @Nullable AnnotatedTypeMirror inferLambdaParamAnnotations(
       AnnotatedTypeFactory f, AnnotatedTypeMirror lambdaParam, Element paramElement) {
-    if (paramElement.getKind() != ElementKind.PARAMETER
-        || f.declarationFromElement(paramElement) == null
-        || f.getPath(f.declarationFromElement(paramElement)) == null
-        || f.getPath(f.declarationFromElement(paramElement)).getParentPath() == null) {
-
+    if (paramElement.getKind() != ElementKind.PARAMETER) {
       return null;
     }
-    Tree declaredInTree =
-        f.getPath(f.declarationFromElement(paramElement)).getParentPath().getLeaf();
+    Tree paramDecl = f.declarationFromElement(paramElement);
+    if (paramDecl == null) {
+      return null;
+    }
+    TreePath paramPath = f.getPath(paramDecl);
+    if (paramPath == null) {
+      return null;
+    }
+    TreePath parentPath = paramPath.getParentPath();
+    if (parentPath == null) {
+      return null;
+    }
+    Tree declaredInTree = parentPath.getLeaf();
     if (declaredInTree instanceof LambdaExpressionTree lambdaDecl
         && TreeUtils.isImplicitlyTypedLambda(declaredInTree)) {
-      int index = lambdaDecl.getParameters().indexOf(f.declarationFromElement(paramElement));
+      int index = lambdaDecl.getParameters().indexOf(paramDecl);
       // If an inference that is currently running has already determined this parameter's type,
       // use it.  (Otherwise, inference would start again.)
       AnnotatedTypeMirror funcTypeParam =

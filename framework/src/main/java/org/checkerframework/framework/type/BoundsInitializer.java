@@ -209,7 +209,7 @@ public final class BoundsInitializer {
         annotatedDeclaredType.setEnclosingType((AnnotatedDeclaredType) visit(t.getEnclosingType()));
       }
 
-      TypeElement typeElement = (TypeElement) atypeFactory.types.asElement(t);
+      TypeElement typeElement = (TypeElement) t.asElement();
       List<AnnotatedTypeMirror> typeArgs = new ArrayList<>(typeElement.getTypeParameters().size());
       if (annotatedDeclaredType.isUnderlyingTypeRaw()) {
         for (TypeParameterElement typeParameterEle : typeElement.getTypeParameters()) {

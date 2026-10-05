@@ -161,7 +161,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       return false;
     }
 
-    return EQUALITY_COMPARER.visit(this, atm, null);
+    return Boolean.TRUE.equals(EQUALITY_COMPARER.visit(this, atm, null));
   }
 
   /**
@@ -1174,6 +1174,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return enclosingType the enclosing type, or null if this is a top-level type
      */
+    @Pure
     public @Nullable AnnotatedDeclaredType getEnclosingType() {
       return enclosingType;
     }
@@ -1763,6 +1764,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the lower bound field
      */
+    @Pure
     public @Nullable AnnotatedTypeMirror getLowerBoundField() {
       return lowerBound;
     }
@@ -1830,6 +1832,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
      *
      * @return the upper bound field
      */
+    @Pure
     public @Nullable AnnotatedTypeMirror getUpperBoundField() {
       return upperBound;
     }
@@ -2116,6 +2119,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       fixupBoundAnnotations();
     }
 
+    @Pure
     public @Nullable AnnotatedTypeMirror getSuperBoundField() {
       return superBound;
     }
@@ -2147,6 +2151,7 @@ public abstract class AnnotatedTypeMirror implements DeepCopyable<AnnotatedTypeM
       fixupBoundAnnotations();
     }
 
+    @Pure
     public @Nullable AnnotatedTypeMirror getExtendsBoundField() {
       return extendsBound;
     }

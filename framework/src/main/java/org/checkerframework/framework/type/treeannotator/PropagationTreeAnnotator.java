@@ -106,7 +106,8 @@ public class PropagationTreeAnnotator extends TreeAnnotator {
     }
 
     assert prev != null
-        : "PropagationTreeAnnotator.visitNewArray: violated assumption about qualifiers";
+        : "@AssumeAssertion(nullness): PropagationTreeAnnotator.visitNewArray: violated assumption"
+            + " about qualifiers";
 
     TreePath path = atypeFactory.getPath(arrayTree);
     AnnotatedTypeMirror contextType = null;
@@ -167,12 +168,9 @@ public class PropagationTreeAnnotator extends TreeAnnotator {
       TypeMirror contextCTM = contextComponentType.getUnderlyingType();
       boolean prevIsSubtype = true;
       for (AnnotationMirror am : prev) {
-        if (contextComponentType.hasPrimaryAnnotationInHierarchy(am)
-            && !this.qualHierarchy.isSubtypeShallow(
-                am,
-                contextCTM,
-                contextComponentType.getPrimaryAnnotationInHierarchy(am),
-                contextCTM)) {
+        AnnotationMirror contextAnno = contextComponentType.getPrimaryAnnotationInHierarchy(am);
+        if (contextAnno != null
+            && !this.qualHierarchy.isSubtypeShallow(am, contextCTM, contextAnno, contextCTM)) {
           prevIsSubtype = false;
         }
       }

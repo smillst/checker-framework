@@ -31,8 +31,10 @@ import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
@@ -194,7 +196,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
       SwitchExpressionTree switchExpressionTree, AnnotatedTypeFactory f) {
 
     TypeMirror switchTypeMirror = TreeUtils.typeOf(switchExpressionTree);
-    SwitchExpressionScanner<AnnotatedTypeMirror, Void> luber =
+    SwitchExpressionScanner<@Nullable AnnotatedTypeMirror, Void> luber =
         new FunctionalSwitchExpressionScanner<>(
             // Function applied to each result expression of the switch expression.
             (valueTree, unused) -> f.getAnnotatedType(valueTree),
@@ -208,13 +210,17 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
                 return AnnotatedTypes.leastUpperBound(f, type1, type2, switchTypeMirror);
               }
             });
-    return luber.scanSwitchExpression(switchExpressionTree, null);
+    AnnotatedTypeMirror result = luber.scanSwitchExpression(switchExpressionTree, null);
+    assert result != null
+        : "@AssumeAssertion(nullness): a switch expression has a result expression";
+    return result;
   }
 
   @Override
   public AnnotatedTypeMirror visitIdentifier(IdentifierTree tree, AnnotatedTypeFactory f) {
     if (tree.getName().contentEquals("this") || tree.getName().contentEquals("super")) {
       AnnotatedDeclaredType res = f.getSelfType(tree);
+      assert res != null : "@AssumeAssertion(nullness): `this` and `super` have a type here";
       return res;
     }
 
@@ -255,12 +261,13 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     if (tree.getIdentifier().contentEquals("this")) {
       // Tree is "MyClass.this", where "MyClass" may be the innermost enclosing type or any
       // outer type.
-      return f.getEnclosingType(TypesUtils.getTypeElement(TreeUtils.typeOf(tree)), tree);
+      return f.getEnclosingType(
+          (TypeElement) ((DeclaredType) TreeUtils.typeOf(tree)).asElement(), tree);
     } else if (tree.getIdentifier().contentEquals("super")) {
       // Tree is "MyClass.super", where "MyClass" may be the innermost enclosing type or any
       // outer type.
       TypeMirror superTypeMirror = TreeUtils.typeOf(tree);
-      TypeElement superTypeElement = TypesUtils.getTypeElement(superTypeMirror);
+      TypeElement superTypeElement = (TypeElement) ((DeclaredType) superTypeMirror).asElement();
       AnnotatedDeclaredType thisType = f.getEnclosingSubType(superTypeElement, tree);
       return AnnotatedTypes.asSuper(
           f, thisType, AnnotatedTypeMirror.createType(superTypeMirror, f, false));

@@ -1,5 +1,6 @@
 package org.checkerframework.framework.type.visitor;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
@@ -47,15 +48,17 @@ public class SimpleAnnotatedTypeScanner<R, P> extends AnnotatedTypeScanner<R, P>
   }
 
   /** The action to perform on every type. */
-  protected final DefaultAction<R, P> defaultAction;
+  protected final @Nullable DefaultAction<R, P> defaultAction;
 
   /**
    * Creates a scanner that performs {@code defaultAction} on every type.
    *
-   * <p>Use this constructor if the type of result of the default action is {@link Void}.
+   * <p>Use this constructor if the type of result of the default action is {@link Void}. The
+   * default result is {@code null}, so {@code R} must be nullable.
    *
    * @param defaultAction action to perform on every type
    */
+  @SuppressWarnings("nullness:argument") // R is nullable when this constructor is used
   public SimpleAnnotatedTypeScanner(DefaultAction<R, P> defaultAction) {
     this(defaultAction, null, null);
   }
@@ -71,15 +74,17 @@ public class SimpleAnnotatedTypeScanner<R, P> extends AnnotatedTypeScanner<R, P>
    * @param defaultResult result to use by default
    */
   public SimpleAnnotatedTypeScanner(
-      DefaultAction<R, P> defaultAction, Reduce<R> reduce, R defaultResult) {
+      @Nullable DefaultAction<R, P> defaultAction, @Nullable Reduce<R> reduce, R defaultResult) {
     super(reduce, defaultResult);
     this.defaultAction = defaultAction;
   }
 
   /**
    * Creates a scanner without specifying the default action. Subclasses may only use this
-   * constructor if they also override {@link #defaultAction(AnnotatedTypeMirror, Object)}.
+   * constructor if they also override {@link #defaultAction(AnnotatedTypeMirror, Object)}. The
+   * default result is {@code null}, so {@code R} must be nullable, such as {@link Void}.
    */
+  @SuppressWarnings("nullness:argument") // R is nullable when this constructor is used
   protected SimpleAnnotatedTypeScanner() {
     this(null, null, null);
   }
@@ -91,7 +96,7 @@ public class SimpleAnnotatedTypeScanner<R, P> extends AnnotatedTypeScanner<R, P>
    * @param reduce function used to combine results
    * @param defaultResult result to use by default
    */
-  protected SimpleAnnotatedTypeScanner(Reduce<R> reduce, R defaultResult) {
+  protected SimpleAnnotatedTypeScanner(@Nullable Reduce<R> reduce, R defaultResult) {
     this(null, reduce, defaultResult);
   }
 

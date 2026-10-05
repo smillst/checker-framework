@@ -38,6 +38,7 @@ public final class ListTypeAnnotator extends TypeAnnotator {
    * @param annotators the annotators that will be executed for each type scanned by this
    *     TypeAnnotator. They are executed in the order passed in.
    */
+  @SuppressWarnings("nullness:argument") // this delegates to `annotators`; it has no factory
   public ListTypeAnnotator(List<TypeAnnotator> annotators) {
     super(null);
     List<TypeAnnotator> annotatorList = new ArrayList<>(annotators.size());

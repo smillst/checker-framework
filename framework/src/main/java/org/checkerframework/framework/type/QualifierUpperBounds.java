@@ -35,7 +35,10 @@ public class QualifierUpperBounds {
    * Creates a {@link QualifierUpperBounds} from the given checker, using that checker to determine
    * the annotations that are in the type hierarchy.
    */
-  @SuppressWarnings("this-escape")
+  @SuppressWarnings({
+    "this-escape",
+    "nullness:method.invocation" // overridable methods are called during construction
+  })
   public QualifierUpperBounds(AnnotatedTypeFactory typeFactory) {
     this.atypeFactory = typeFactory;
     this.typeKinds = new EnumMap<>(TypeKind.class);
@@ -89,6 +92,8 @@ public class QualifierUpperBounds {
   /** Add default qualifier, {@code theQual}, for the given class. */
   public void addType(Class<?> type, AnnotationMirror theQual) {
     String typeNameString = type.getCanonicalName();
+    assert typeNameString != null
+        : "@AssumeAssertion(nullness): a class in @UpperBoundFor has a canonical name";
     boolean res = qualHierarchy.updateMappingToMutableSet(types, typeNameString, theQual);
     if (!res) {
       throw new BugInCF(

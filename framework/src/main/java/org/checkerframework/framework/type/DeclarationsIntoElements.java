@@ -95,6 +95,7 @@ public final class DeclarationsIntoElements {
   private static void storeMethod(
       ProcessingEnvironment env, AnnotatedTypeFactory atypeFactory, MethodTree meth) {
     ExecutableElement element = TreeUtils.elementFromDeclaration(meth);
+    assert element != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     MethodSymbol sym = (MethodSymbol) element;
     java.util.List<? extends AnnotationMirror> elementAnnos = element.getAnnotationMirrors();
 

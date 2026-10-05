@@ -132,10 +132,12 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
   /**
    * Constructs an AnnotatedTypeScanner with the given reduce function. If {@code reduceFunction} is
    * null, then the reduce function returns the first result if it is nonnull; otherwise the second
-   * result is returned. The default result is {@code null}
+   * result is returned. The default result is {@code null}, so {@code R} must be nullable, such as
+   * {@link Void}.
    *
    * @param reduceFunction function used to combine two results
    */
+  @SuppressWarnings("nullness:argument") // R is nullable when this constructor is used
   protected AnnotatedTypeScanner(@Nullable Reduce<R> reduceFunction) {
     this(reduceFunction, null);
   }
@@ -153,8 +155,10 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
 
   /**
    * Constructs an AnnotatedTypeScanner where the reduce function returns the first result if it is
-   * nonnull; otherwise the second result is returned. The default result is {@code null}.
+   * nonnull; otherwise the second result is returned. The default result is {@code null}, so {@code
+   * R} must be nullable, such as {@link Void}.
    */
+  @SuppressWarnings("nullness:argument") // R is nullable when this constructor is used
   protected AnnotatedTypeScanner() {
     this(null, null);
   }
@@ -171,12 +175,14 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
   }
 
   /**
-   * Calls {@link #reset()} and then scans {@code type} using null as the parameter.
+   * Calls {@link #reset()} and then scans {@code type} using null as the parameter, so {@code P}
+   * must be nullable, such as {@link Void}.
    *
    * @param type type to scan
    * @return result of scanning {@code type}
    */
   @Override
+  @SuppressWarnings("nullness:argument") // P is nullable when this method is used
   public final R visit(AnnotatedTypeMirror type) {
     return visit(type, null);
   }
@@ -311,8 +317,9 @@ public abstract class AnnotatedTypeScanner<R, P> implements AnnotatedTypeVisitor
   @Override
   public R visitExecutable(AnnotatedExecutableType type, P p) {
     R r = scan(type.getReturnType(), p);
-    if (type.getReceiverType() != null) {
-      r = scanAndReduce(type.getReceiverType(), p, r);
+    AnnotatedDeclaredType receiverType = type.getReceiverType();
+    if (receiverType != null) {
+      r = scanAndReduce(receiverType, p, r);
     }
     r = scanAndReduce(type.getParameterTypes(), p, r);
     r = scanAndReduce(type.getThrownTypes(), p, r);

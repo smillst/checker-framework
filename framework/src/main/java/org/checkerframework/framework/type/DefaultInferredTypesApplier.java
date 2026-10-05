@@ -5,6 +5,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
@@ -42,7 +43,9 @@ public class DefaultInferredTypesApplier {
    * @param inferredTypeMirror underlying inferred type
    */
   public void applyInferredType(
-      AnnotatedTypeMirror type, AnnotationMirrorSet inferredSet, TypeMirror inferredTypeMirror) {
+      AnnotatedTypeMirror type,
+      @Nullable AnnotationMirrorSet inferredSet,
+      TypeMirror inferredTypeMirror) {
     if (inferredSet == null) {
       return;
     }
@@ -63,7 +66,7 @@ public class DefaultInferredTypesApplier {
 
   private void apply(
       AnnotatedTypeMirror type,
-      AnnotationMirror inferred,
+      @Nullable AnnotationMirror inferred,
       TypeMirror inferredTypeMirror,
       AnnotationMirror top) {
     AnnotationMirror primary = type.getPrimaryAnnotationInHierarchy(top);
@@ -82,6 +85,8 @@ public class DefaultInferredTypesApplier {
         AnnotationMirrorSet lowerbounds =
             AnnotatedTypes.findEffectiveLowerBoundAnnotations(hierarchy, type);
         primary = hierarchy.findAnnotationInHierarchy(lowerbounds, top);
+        assert primary != null
+            : "@AssumeAssertion(nullness): the lower bound has an annotation in every hierarchy";
       }
       if ((omitSubtypingCheck
           || hierarchy.isSubtypeShallow(
@@ -107,6 +112,8 @@ public class DefaultInferredTypesApplier {
     AnnotatedTypeVariable typeVariableDecl =
         (AnnotatedTypeVariable) factory.getAnnotatedType(typeVar.asElement());
     AnnotationMirror upperBound = typeVariableDecl.getAnnotationInHierarchy(top);
+    assert upperBound != null
+        : "@AssumeAssertion(nullness): a type variable has an annotation in every hierarchy";
 
     if (omitSubtypingCheck
         || hierarchy.isSubtypeShallow(upperBound, typeVar, notInferred, type.getUnderlyingType())) {
@@ -126,6 +133,8 @@ public class DefaultInferredTypesApplier {
     AnnotatedTypeVariable typeVariableDecl =
         (AnnotatedTypeVariable) factory.getAnnotatedType(typeVar.asElement());
     AnnotationMirror upperBound = typeVariableDecl.getAnnotationInHierarchy(top);
+    assert upperBound != null
+        : "@AssumeAssertion(nullness): a type variable has an annotation in every hierarchy";
     if (omitSubtypingCheck
         || hierarchy.isSubtypeShallow(
             upperBound,

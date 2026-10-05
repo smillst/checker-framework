@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
@@ -19,6 +20,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedPrimitiveType;
@@ -259,7 +261,7 @@ final class SupertypeFinder {
      * @param enclosing a type
      */
     private void addTypeVarsFromEnclosingTypes(
-        AnnotatedDeclaredType enclosing, Map<TypeVariable, AnnotatedTypeMirror> mapping) {
+        @Nullable AnnotatedDeclaredType enclosing, Map<TypeVariable, AnnotatedTypeMirror> mapping) {
       while (enclosing != null) {
         addTypeVariablesToMapping(enclosing, mapping);
         for (AnnotatedDeclaredType enclSuper : directSupertypes(enclosing)) {
@@ -301,8 +303,10 @@ final class SupertypeFinder {
             List<? extends TypeMirror> typeArgs = ((DeclaredType) st).getTypeArguments();
             List<AnnotatedTypeMirror> annotatedTypeArgs = ast.getTypeArguments();
             for (int i = 0; i < typeArgs.size(); i++) {
-              atypeFactory.addComputedTypeAnnotations(
-                  types.asElement(typeArgs.get(i)), annotatedTypeArgs.get(i));
+              Element typeArgElt = types.asElement(typeArgs.get(i));
+              assert typeArgElt != null
+                  : "@AssumeAssertion(nullness): a type argument of a supertype has an element";
+              atypeFactory.addComputedTypeAnnotations(typeArgElt, annotatedTypeArgs.get(i));
             }
           }
         }
@@ -320,12 +324,14 @@ final class SupertypeFinder {
     private List<AnnotatedDeclaredType> supertypesFromTree(
         AnnotatedDeclaredType type, ClassTree classTree) {
       List<AnnotatedDeclaredType> supertypes = new ArrayList<>();
+      TypeElement elem = TreeUtils.elementFromDeclaration(classTree);
+      assert elem != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
       if (classTree.getExtendsClause() != null) {
         AnnotatedDeclaredType adt =
             (AnnotatedDeclaredType)
                 atypeFactory.getAnnotatedTypeFromTypeTree(classTree.getExtendsClause());
         supertypes.add(adt);
-      } else if (!ElementUtils.isObject(TreeUtils.elementFromDeclaration(classTree))) {
+      } else if (!ElementUtils.isObject(elem)) {
         if (classTree.getKind() == Kind.RECORD) {
           supertypes.add(AnnotatedTypeMirror.createTypeOfRecord(atypeFactory));
         } else {
@@ -339,7 +345,6 @@ final class SupertypeFinder {
         supertypes.add(adt);
       }
 
-      TypeElement elem = TreeUtils.elementFromDeclaration(classTree);
       if (elem.getKind() == ElementKind.ENUM) {
         supertypes.add(createEnumSuperType(type, elem));
       }

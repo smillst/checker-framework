@@ -7,6 +7,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
@@ -106,7 +107,11 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
    * @param invariantArrayComponents if true, make array subtyping invariant with respect to array
    *     component types
    */
-  @SuppressWarnings("this-escape")
+  @SuppressWarnings({
+    "this-escape",
+    "nullness:method.invocation", // overridable methods are called during construction
+    "nullness:initialization.fields.uninitialized" // isSubtype() sets currentTop before use
+  })
   public DefaultTypeHierarchy(
       BaseTypeChecker checker,
       QualifierHierarchy qualHierarchy,
@@ -165,6 +170,20 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
     }
   }
 
+  /**
+   * Returns the annotation in {@code annos} that is in the same hierarchy as {@code hierarchy}.
+   *
+   * @param annos a set of annotations, with one in every hierarchy
+   * @param hierarchy an annotation in the hierarchy of interest
+   * @return the annotation in {@code annos} that is in the same hierarchy as {@code hierarchy}
+   */
+  private AnnotationMirror findInSameHierarchy(
+      AnnotationMirrorSet annos, AnnotationMirror hierarchy) {
+    AnnotationMirror result = qualHierarchy.findAnnotationInSameHierarchy(annos, hierarchy);
+    assert result != null : "@AssumeAssertion(nullness): annos has one in every hierarchy";
+    return result;
+  }
+
   /** A set of annotations and a {@link TypeMirror}. */
   @AnnotatedFor("nullness")
   private static final class ShallowType {
@@ -193,7 +212,6 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
      * @param type an annotated type to convert to a {@code ShallowType}
      * @return a shallow type created from {@code type}
      */
-    @SuppressWarnings("nullness") // AnnotatedTypeMirror isn't annotated for nullness.
     public static ShallowType create(AnnotatedTypeMirror type) {
       AnnotatedTypeMirror erasedType = type.getErased();
       TypeMirror typeMirror =
@@ -245,9 +263,9 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
     ShallowType subShallowType = ShallowType.create(subtype);
     ShallowType superShallowType = ShallowType.create(supertype);
     return qualHierarchy.isSubtypeShallow(
-        qualHierarchy.findAnnotationInSameHierarchy(subShallowType.annos, hierarchy),
+        findInSameHierarchy(subShallowType.annos, hierarchy),
         subShallowType.typeMirror,
-        qualHierarchy.findAnnotationInSameHierarchy(superShallowType.annos, hierarchy),
+        findInSameHierarchy(superShallowType.annos, hierarchy),
         superShallowType.typeMirror);
   }
 
@@ -272,7 +290,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
       AnnotatedTypeMirror subtype, AnnotationMirror superQualifier) {
     ShallowType subShallowType = ShallowType.create(subtype);
     return qualHierarchy.isSubtypeShallow(
-        qualHierarchy.findAnnotationInSameHierarchy(subShallowType.annos, superQualifier),
+        findInSameHierarchy(subShallowType.annos, superQualifier),
         superQualifier,
         subShallowType.typeMirror);
   }
@@ -283,7 +301,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
     ShallowType superShallowType = ShallowType.create(supertype);
     return qualHierarchy.isSubtypeShallow(
         subQualifier,
-        qualHierarchy.findAnnotationInSameHierarchy(superShallowType.annos, subQualifier),
+        findInSameHierarchy(superShallowType.annos, subQualifier),
         superShallowType.typeMirror);
   }
 
@@ -333,6 +351,8 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
 
     AnnotationMirror subtypeAnno = subtype.getPrimaryAnnotationInHierarchy(currentTop);
     AnnotationMirror supertypeAnno = supertype.getPrimaryAnnotationInHierarchy(currentTop);
+    assert subtypeAnno != null && supertypeAnno != null
+        : "@AssumeAssertion(nullness): neither type can be missing annotations";
     if (checker.getTypeFactory().hasQualifierParameterInHierarchy(supertype, currentTop)
         && checker.getTypeFactory().hasQualifierParameterInHierarchy(subtype, currentTop)) {
       // If the types have a class qualifier parameter, the qualifiers must be equivalent.
@@ -511,7 +531,8 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
     } catch (Throwable ex) {
       // Work around:
       // https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8265255
-      if (ex.getMessage().contains("AsSuperVisitor")) {
+      String message = ex.getMessage();
+      if (message != null && message.contains("AsSuperVisitor")) {
         return false;
       }
       throw ex;
@@ -992,15 +1013,17 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
         AnnotationMirrorSet superLBs =
             AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualHierarchy, supertype);
         AnnotationMirror superLB = qualHierarchy.findAnnotationInHierarchy(superLBs, currentTop);
-        return qualHierarchy.isSubtypeShallow(
-            subtype.getPrimaryAnnotationInHierarchy(currentTop), subTM, superLB, superTM);
+        AnnotationMirror subAnno = subtype.getPrimaryAnnotationInHierarchy(currentTop);
+        assert superLB != null && subAnno != null
+            : "@AssumeAssertion(nullness): the type has an annotation in every hierarchy";
+        return qualHierarchy.isSubtypeShallow(subAnno, subTM, superLB, superTM);
       } else if (!subtypeHasAnno && supertypeHasAnno) {
         // This is the case "T <: @A T" where T is a type variable.
-        return qualHierarchy.isSubtypeShallow(
-            subtype.getAnnotationInHierarchy(currentTop),
-            subTM,
-            supertype.getPrimaryAnnotationInHierarchy(currentTop),
-            superTM);
+        AnnotationMirror subAnno = subtype.getAnnotationInHierarchy(currentTop);
+        AnnotationMirror superAnno = supertype.getPrimaryAnnotationInHierarchy(currentTop);
+        assert subAnno != null && superAnno != null
+            : "@AssumeAssertion(nullness): the type has an annotation in every hierarchy";
+        return qualHierarchy.isSubtypeShallow(subAnno, subTM, superAnno, superTM);
       }
     }
 
@@ -1229,7 +1252,7 @@ public class DefaultTypeHierarchy extends AbstractAtmComboVisitor<Boolean, Void>
           subtype.atypeFactory.getUnboxedType((AnnotatedDeclaredType) subtypeUpperBound);
     }
     if (supertype.getKind() == TypeKind.DECLARED
-        && TypesUtils.getTypeElement(supertype.getUnderlyingType()).getKind()
+        && ((DeclaredType) supertype.getUnderlyingType()).asElement().getKind()
             == ElementKind.INTERFACE) {
       // The supertype is an interface.
       subtypeUpperBound = getNonWildcardOrTypeVarUpperBound(subtypeUpperBound);

@@ -167,7 +167,7 @@ public class DefaultQualifierForUseTypeAnnotator extends TypeAnnotator {
     AnnotationMirrorSet supportAnnos = new AnnotationMirrorSet();
     for (Name annoName : annoClassNames) {
       AnnotationMirror anno = AnnotationBuilder.fromName(atypeFactory.getElementUtils(), annoName);
-      if (atypeFactory.isSupportedQualifier(anno)) {
+      if (anno != null && atypeFactory.isSupportedQualifier(anno)) {
         supportAnnos.add(anno);
       }
     }

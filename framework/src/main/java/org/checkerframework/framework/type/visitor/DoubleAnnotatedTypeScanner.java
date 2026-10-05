@@ -1,6 +1,7 @@
 package org.checkerframework.framework.type.visitor;
 
 import java.util.Iterator;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
@@ -23,9 +24,12 @@ import org.checkerframework.javacutil.BugInCF;
  * DoubleAnnotatedTypeScanner(Reduce, Object)}.
  *
  * @see AnnotatedTypeScanner
- * @param <R> the result of scanning the two {@code AnnotatedTypeMirror}s
+ * @param <R> the result of scanning the two {@code AnnotatedTypeMirror}s. It is nullable, because a
+ *     type variable or wildcard that is visited again while it is being scanned yields null.
  */
-public abstract class DoubleAnnotatedTypeScanner<R>
+@SuppressWarnings(
+    "NullableTypeParameter") // the Checker Framework reads it as a nullable lower bound
+public abstract class DoubleAnnotatedTypeScanner<@Nullable R>
     extends AnnotatedTypeScanner<R, AnnotatedTypeMirror> {
 
   /**
@@ -110,8 +114,12 @@ public abstract class DoubleAnnotatedTypeScanner<R>
   public final R visitDeclared(AnnotatedDeclaredType type, AnnotatedTypeMirror p) {
     assert p instanceof AnnotatedDeclaredType : p;
     R r = scan(type.getTypeArguments(), ((AnnotatedDeclaredType) p).getTypeArguments());
-    if (type.getEnclosingType() != null) {
-      r = scanAndReduce(type.getEnclosingType(), ((AnnotatedDeclaredType) p).getEnclosingType(), r);
+    AnnotatedDeclaredType enclosingType = type.getEnclosingType();
+    if (enclosingType != null) {
+      AnnotatedDeclaredType pEnclosingType = ((AnnotatedDeclaredType) p).getEnclosingType();
+      assert pEnclosingType != null
+          : "@AssumeAssertion(nullness): the two types have the same structure";
+      r = scanAndReduce(enclosingType, pEnclosingType, r);
     }
     return r;
   }
@@ -128,8 +136,12 @@ public abstract class DoubleAnnotatedTypeScanner<R>
     assert p instanceof AnnotatedExecutableType : p;
     AnnotatedExecutableType ex = (AnnotatedExecutableType) p;
     R r = scan(type.getReturnType(), ex.getReturnType());
-    if (type.getReceiverType() != null) {
-      r = scanAndReduce(type.getReceiverType(), ex.getReceiverType(), r);
+    AnnotatedDeclaredType receiverType = type.getReceiverType();
+    if (receiverType != null) {
+      AnnotatedDeclaredType exReceiverType = ex.getReceiverType();
+      assert exReceiverType != null
+          : "@AssumeAssertion(nullness): the two types have the same structure";
+      r = scanAndReduce(receiverType, exReceiverType, r);
     }
     r = scanAndReduce(type.getParameterTypes(), ex.getParameterTypes(), r);
     r = scanAndReduce(type.getThrownTypes(), ex.getThrownTypes(), r);

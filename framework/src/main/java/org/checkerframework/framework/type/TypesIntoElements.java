@@ -59,6 +59,7 @@ public final class TypesIntoElements {
   public static void store(
       ProcessingEnvironment processingEnv, AnnotatedTypeFactory atypeFactory, ClassTree tree) {
     Symbol.ClassSymbol csym = (Symbol.ClassSymbol) TreeUtils.elementFromDeclaration(tree);
+    assert csym != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     Types types = processingEnv.getTypeUtils();
 
     storeTypeParameters(processingEnv, types, atypeFactory, tree.getTypeParameters(), csym);
@@ -101,6 +102,7 @@ public final class TypesIntoElements {
       MethodTree meth) {
     AnnotatedExecutableType mtype = atypeFactory.getAnnotatedType(meth);
     MethodSymbol sym = (MethodSymbol) TreeUtils.elementFromDeclaration(meth);
+    assert sym != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     TypeAnnotationPosition tapos;
     List<Attribute.TypeCompound> tcs = List.nil();
 
@@ -117,9 +119,10 @@ public final class TypesIntoElements {
     {
       // receiver
       JCTree receiverTree = ((JCTree.JCMethodDecl) meth).getReceiverParameter();
-      if (receiverTree != null) {
+      AnnotatedDeclaredType receiverType = mtype.getReceiverType();
+      if (receiverTree != null && receiverType != null) {
         tapos = TypeAnnotationUtils.methodReceiverTAPosition(receiverTree.pos);
-        tcs = tcs.appendList(generateTypeCompounds(processingEnv, mtype.getReceiverType(), tapos));
+        tcs = tcs.appendList(generateTypeCompounds(processingEnv, receiverType, tapos));
       }
     }
     {
@@ -152,6 +155,7 @@ public final class TypesIntoElements {
       AnnotatedTypeFactory atypeFactory,
       VariableTree var) {
     VarSymbol sym = (VarSymbol) TreeUtils.elementFromDeclaration(var);
+    assert sym != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     AnnotatedTypeMirror type;
     if (atypeFactory instanceof GenericAnnotatedTypeFactory) {
       // TODO: this is rather ugly: we do not want refinement from the

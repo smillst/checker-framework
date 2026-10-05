@@ -33,6 +33,7 @@ public class ListTreeAnnotator extends TreeAnnotator {
    * @param annotators the annotators that will be executed for each tree scanned by this
    *     TreeAnnotator. They are executed in the order passed in.
    */
+  @SuppressWarnings("nullness:argument") // this delegates to `annotators`; it has no factory
   public ListTreeAnnotator(List<TreeAnnotator> annotators) {
     super(null);
     List<TreeAnnotator> annotatorList = new ArrayList<>(annotators.size());

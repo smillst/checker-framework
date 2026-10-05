@@ -65,7 +65,10 @@ public class DefaultForTypeAnnotator extends TypeAnnotator {
    * Creates a {@link DefaultForTypeAnnotator} from the given checker, using that checker to
    * determine the annotations that are in the type hierarchy.
    */
-  @SuppressWarnings("this-escape")
+  @SuppressWarnings({
+    "this-escape",
+    "nullness:method.invocation" // overridable methods are called during construction
+  })
   public DefaultForTypeAnnotator(AnnotatedTypeFactory typeFactory) {
     super(typeFactory);
     this.typeKinds = new EnumMap<>(TypeKind.class);
@@ -144,6 +147,8 @@ public class DefaultForTypeAnnotator extends TypeAnnotator {
   /** Add default qualifier, {@code theQual}, for the given type. */
   public void addTypes(Class<?> clazz, AnnotationMirror theQual) {
     String typeNameString = clazz.getCanonicalName();
+    assert typeNameString != null
+        : "@AssumeAssertion(nullness): a class in @DefaultFor has a canonical name";
     boolean res = qualHierarchy.updateMappingToMutableSet(types, typeNameString, theQual);
     if (!res) {
       throw new BugInCF(

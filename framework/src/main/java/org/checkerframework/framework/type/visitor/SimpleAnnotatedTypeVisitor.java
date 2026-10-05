@@ -27,8 +27,9 @@ public abstract class SimpleAnnotatedTypeVisitor<R, P> implements AnnotatedTypeV
 
   /**
    * Creates an instance of {@link SimpleAnnotatedTypeVisitor} with default value being {@code
-   * null}.
+   * null}, so {@code R} must be nullable, such as {@link Void}.
    */
+  @SuppressWarnings("nullness:argument") // R is nullable when this constructor is used
   protected SimpleAnnotatedTypeVisitor() {
     this(null);
   }
@@ -54,14 +55,20 @@ public abstract class SimpleAnnotatedTypeVisitor<R, P> implements AnnotatedTypeV
     return DEFAULT_VALUE;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>{@code P} must be nullable, such as {@link Void}.
+   */
   @Override
+  @SuppressWarnings("nullness:argument") // P is nullable when this method is used
   public R visit(AnnotatedTypeMirror type) {
     return visit(type, null);
   }
 
   @Override
   public R visit(AnnotatedTypeMirror type, P p) {
-    return (type == null) ? null : type.accept(this, p);
+    return type.accept(this, p);
   }
 
   @Override

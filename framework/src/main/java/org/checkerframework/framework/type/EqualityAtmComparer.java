@@ -1,6 +1,7 @@
 package org.checkerframework.framework.type;
 
 import org.checkerframework.checker.interning.qual.EqualsMethod;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.visitor.EquivalentAtmComboScanner;
 import org.checkerframework.javacutil.AnnotationUtils;
 
@@ -16,7 +17,7 @@ import org.checkerframework.javacutil.AnnotationUtils;
  * that this class compares. That is consistent -- unequal types may share a hash code -- and is
  * explained there.
  */
-public class EqualityAtmComparer extends EquivalentAtmComboScanner<Boolean, Void> {
+public class EqualityAtmComparer extends EquivalentAtmComboScanner<@Nullable Boolean, Void> {
 
   /** Creates an {@code EqualityAtmComparer}. */
   public EqualityAtmComparer() {
@@ -42,7 +43,8 @@ public class EqualityAtmComparer extends EquivalentAtmComboScanner<Boolean, Void
    * @return true if the two types are the same
    */
   @EqualsMethod // to make Interning Checker permit the == comparison
-  protected boolean compare(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
+  protected boolean compare(
+      @Nullable AnnotatedTypeMirror type1, @Nullable AnnotatedTypeMirror type2) {
     if (type1 == type2) {
       return true;
     }
@@ -58,19 +60,21 @@ public class EqualityAtmComparer extends EquivalentAtmComboScanner<Boolean, Void
 
   @SuppressWarnings("interning:not.interned")
   @Override
-  protected Boolean scanWithNull(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, Void aVoid) {
+  protected Boolean scanWithNull(
+      @Nullable AnnotatedTypeMirror type1, @Nullable AnnotatedTypeMirror type2, Void aVoid) {
     // one of them should be null, therefore they are only equal if the other is null
     return type1 == type2;
   }
 
   @Override
-  protected Boolean scan(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2, Void v) {
-    return compare(type1, type2) && reduce(true, super.scan(type1, type2, v));
+  protected Boolean scan(
+      @Nullable AnnotatedTypeMirror type1, @Nullable AnnotatedTypeMirror type2, Void v) {
+    return compare(type1, type2) && Boolean.TRUE.equals(reduce(true, super.scan(type1, type2, v)));
   }
 
   /** Used to combine the results from component types or a type and its component types. */
   @Override
-  protected Boolean reduce(Boolean r1, Boolean r2) {
+  protected @Nullable Boolean reduce(@Nullable Boolean r1, @Nullable Boolean r2) {
     if (r1 == null) {
       return r2;
     } else if (r2 == null) {

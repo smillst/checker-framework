@@ -125,13 +125,19 @@ public class AsSuperVisitor extends AbstractAtmComboVisitor<AnnotatedTypeMirror,
           AnnotationMirrorSet newLubs = new AnnotationMirrorSet();
           for (AnnotationMirror lub : lubs) {
             AnnotationMirror anno = altern.getPrimaryAnnotationInHierarchy(lub);
-            newLubs.add(
+            assert anno != null
+                : "@AssumeAssertion(nullness): altern has an annotation in every hierarchy";
+            AnnotationMirror newLub =
                 qualHierarchy.leastUpperBoundShallow(
-                    anno, altern.getUnderlyingType(), lub, typeMirror));
+                    anno, altern.getUnderlyingType(), lub, typeMirror);
+            assert newLub != null
+                : "@AssumeAssertion(nullness): the qualifiers are in one hierarchy";
+            newLubs.add(newLub);
           }
           lubs = newLubs;
         }
       }
+      assert lubs != null : "@AssumeAssertion(nullness): a union has alternatives";
       type.replaceAnnotations(lubs);
     }
   }
@@ -291,11 +297,12 @@ public class AsSuperVisitor extends AbstractAtmComboVisitor<AnnotatedTypeMirror,
       AnnotatedArrayType type, AnnotatedDeclaredType superType, Void p) {
 
     TypeElement array = TypesUtils.getTypeElement(type.getUnderlyingType());
+    assert array != null : "@AssumeAssertion(nullness): javac gives array types an element";
     TypeElement possibleArray = TypesUtils.getTypeElement(superType.getUnderlyingType());
     // If the TypeElements of type and superType are equal, then superType's underlyingType is
     // Array.class.  Array.class is the receiver of methods such as clone() of which an array
     // can be the receiver. (new int[].clone())
-    boolean isArrayClass = array.equals(possibleArray);
+    boolean isArrayClass = possibleArray != null && array.equals(possibleArray);
 
     if (isArrayClass
         || TypesUtils.isObject(superType.getUnderlyingType())

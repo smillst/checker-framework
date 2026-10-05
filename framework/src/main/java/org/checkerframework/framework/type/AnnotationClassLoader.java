@@ -111,11 +111,11 @@ public class AnnotationClassLoader implements Closeable {
   protected final ProcessingEnvironment processingEnv;
 
   /** The resource URL of the qual directory of a checker class. */
-  private final URL resourceURL;
+  private final @Nullable URL resourceURL;
 
   /** The class loader used to load annotation classes. */
   @SuppressWarnings("rlccalledmethods:required.method.not.called") // this class is @MustCall({})
-  protected final @Owning URLClassLoader classLoader;
+  protected final @Owning @Nullable URLClassLoader classLoader;
 
   /**
    * The annotation classes bundled with a checker (located in its qual directory) that are deemed
@@ -132,7 +132,8 @@ public class AnnotationClassLoader implements Closeable {
    */
   @SuppressWarnings({
     "signature", // TODO: reduce use of string manipulation
-    "this-escape"
+    "this-escape",
+    "nullness:method.invocation" // overridable methods are called during construction
   })
   public AnnotationClassLoader(BaseTypeChecker checker) {
     this.checker = checker;
@@ -190,6 +191,9 @@ public class AnnotationClassLoader implements Closeable {
   @EnsuresCalledMethods(value = "classLoader", methods = "close")
   @Override
   public void close() {
+    if (classLoader == null) {
+      return;
+    }
     try {
       classLoader.close();
     } catch (IOException e) {
@@ -344,7 +348,7 @@ public class AnnotationClassLoader implements Closeable {
    *     name
    * @return true if the qual package exists within the root directory, false otherwise
    */
-  private boolean checkDirForPackage(File currentDir, Iterator<String> pkgNames) {
+  private boolean checkDirForPackage(@Nullable File currentDir, Iterator<String> pkgNames) {
     // if the iterator has no more package name segments, then we've found
     // the qual directory of interest
     if (!pkgNames.hasNext()) {
@@ -360,7 +364,11 @@ public class AnnotationClassLoader implements Closeable {
 
     // scan current directory to see if there's a sub-directory that has a
     // matching name as the package name segment
-    for (File file : currentDir.listFiles()) {
+    File[] files = currentDir.listFiles();
+    if (files == null) {
+      return false;
+    }
+    for (File file : files) {
       if (file.isDirectory() && file.getName().equals(currentPackageDirName)) {
         // if so, recursively descend and look at the next segment of
         // the package name

@@ -7,6 +7,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.checkerframework.checker.interning.qual.EqualsMethod;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedIntersectionType;
@@ -33,7 +34,17 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
   protected final StructuralEqualityVisitHistory visitHistory;
 
   // See org.checkerframework.framework.type.DefaultTypeHierarchy.currentTop
-  private AnnotationMirror currentTop = null;
+  private @Nullable AnnotationMirror currentTop = null;
+
+  /**
+   * Returns {@link #currentTop}, which is set while a comparison is in progress.
+   *
+   * @return {@link #currentTop}
+   */
+  private AnnotationMirror getCurrentTop() {
+    assert currentTop != null : "@AssumeAssertion(nullness): a comparison is in progress";
+    return currentTop;
+  }
 
   /**
    * Create a StructuralEqualityComparer.
@@ -108,9 +119,12 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
    * @return true if type1 and type2 have the same set of annotations
    */
   protected boolean arePrimaryAnnosEqual(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
-    if (currentTop != null) {
-      AnnotationMirror anno1 = type1.getPrimaryAnnotationInHierarchy(currentTop);
-      AnnotationMirror anno2 = type2.getPrimaryAnnotationInHierarchy(currentTop);
+    AnnotationMirror top = currentTop;
+    if (top != null) {
+      AnnotationMirror anno1 = type1.getPrimaryAnnotationInHierarchy(top);
+      AnnotationMirror anno2 = type2.getPrimaryAnnotationInHierarchy(top);
+      assert anno1 != null && anno2 != null
+          : "@AssumeAssertion(nullness): the types have primary annotations";
       TypeMirror typeMirror1 = type1.underlyingType;
       TypeMirror typeMirror2 = type2.underlyingType;
       QualifierHierarchy qh = type1.atypeFactory.getQualifierHierarchy();
@@ -158,13 +172,13 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
    * @return true if the two types are equal
    */
   protected boolean checkOrAreEqual(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
-    Boolean pastResult = visitHistory.get(type1, type2, currentTop);
+    Boolean pastResult = visitHistory.get(type1, type2, getCurrentTop());
     if (pastResult != null) {
       return pastResult;
     }
 
     Boolean result = areEqual(type1, type2);
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 
@@ -197,7 +211,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
   @Override
   public Boolean visitDeclared_Declared(
       AnnotatedDeclaredType type1, AnnotatedDeclaredType type2, Void p) {
-    Boolean pastResult = visitHistory.get(type1, type2, currentTop);
+    Boolean pastResult = visitHistory.get(type1, type2, getCurrentTop());
     if (pastResult != null) {
       return pastResult;
     }
@@ -208,7 +222,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
       return false;
     }
     // Prevent infinite recursion e.g. in Issue1587b
-    visitHistory.put(type1, type2, currentTop, true);
+    visitHistory.put(type1, type2, getCurrentTop(), true);
 
     List<AnnotatedTypeMirror> type1Args = type1.getTypeArguments();
     List<AnnotatedTypeMirror> type2Args = type2.getTypeArguments();
@@ -221,7 +235,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
         (AnnotatedDeclaredType) atypeFactory.applyCaptureConversion(type1);
     AnnotatedDeclaredType capturedType2 =
         (AnnotatedDeclaredType) atypeFactory.applyCaptureConversion(type2);
-    visitHistory.put(capturedType1, capturedType2, currentTop, true);
+    visitHistory.put(capturedType1, capturedType2, getCurrentTop(), true);
 
     List<AnnotatedTypeMirror> capturedType1Args = capturedType1.getTypeArguments();
     List<AnnotatedTypeMirror> capturedType2Args = capturedType2.getTypeArguments();
@@ -229,7 +243,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     for (int i = 0; i < type1.getTypeArguments().size(); i++) {
       AnnotatedTypeMirror type1Arg = type1Args.get(i);
       AnnotatedTypeMirror type2Arg = type2Args.get(i);
-      Boolean pastResultTA = visitHistory.get(type1Arg, type2Arg, currentTop);
+      Boolean pastResultTA = visitHistory.get(type1Arg, type2Arg, getCurrentTop());
       if (pastResultTA != null) {
         result = pastResultTA;
       } else {
@@ -253,8 +267,8 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
       }
     }
 
-    visitHistory.put(capturedType1, capturedType2, currentTop, result);
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(capturedType1, capturedType2, getCurrentTop(), result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 
@@ -274,7 +288,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     }
 
     boolean result = areAllEqual(type1.getBounds(), type2.getBounds());
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 
@@ -308,7 +322,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
   @Override
   public Boolean visitTypevar_Typevar(
       AnnotatedTypeVariable type1, AnnotatedTypeVariable type2, Void p) {
-    Boolean pastResult = visitHistory.get(type1, type2, currentTop);
+    Boolean pastResult = visitHistory.get(type1, type2, getCurrentTop());
     if (pastResult != null) {
       return pastResult;
     }
@@ -316,7 +330,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     Boolean result =
         areEqual(type1.getUpperBound(), type2.getUpperBound())
             && areEqual(type1.getLowerBound(), type2.getLowerBound());
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 
@@ -327,7 +341,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     }
 
     boolean result = areAllEqual(type1.getAlternatives(), type2.getAlternatives());
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 
@@ -343,7 +357,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
   @Override
   public Boolean visitWildcard_Wildcard(
       AnnotatedWildcardType type1, AnnotatedWildcardType type2, Void p) {
-    Boolean pastResult = visitHistory.get(type1, type2, currentTop);
+    Boolean pastResult = visitHistory.get(type1, type2, getCurrentTop());
     if (pastResult != null) {
       return pastResult;
     }
@@ -356,7 +370,7 @@ public class StructuralEqualityComparer extends AbstractAtmComboVisitor<Boolean,
     Boolean result =
         areEqual(type1.getExtendsBound(), type2.getExtendsBound())
             && areEqual(type1.getSuperBound(), type2.getSuperBound());
-    visitHistory.put(type1, type2, currentTop, result);
+    visitHistory.put(type1, type2, getCurrentTop(), result);
     return result;
   }
 

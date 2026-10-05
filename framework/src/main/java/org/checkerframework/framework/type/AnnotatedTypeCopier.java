@@ -184,9 +184,9 @@ public class AnnotatedTypeCopier
 
     copy.setElement(original.getElement());
 
-    if (original.getReceiverType() != null) {
-      copy.setReceiverType(
-          (AnnotatedDeclaredType) visit(original.getReceiverType(), originalToCopy));
+    AnnotatedDeclaredType originalReceiverType = original.getReceiverType();
+    if (originalReceiverType != null) {
+      copy.setReceiverType((AnnotatedDeclaredType) visit(originalReceiverType, originalToCopy));
     }
 
     List<? extends AnnotatedTypeMirror> originalParameterTypes = original.getParameterTypes();

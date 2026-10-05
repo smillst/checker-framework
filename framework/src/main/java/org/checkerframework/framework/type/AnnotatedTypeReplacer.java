@@ -71,12 +71,13 @@ public class AnnotatedTypeReplacer extends DoubleAnnotatedTypeScanner<Void> {
    * @param to the destination of the annotations, modified by this method
    */
   protected void replaceAnnotations(AnnotatedTypeMirror from, AnnotatedTypeMirror to) {
-    if (top == null) {
+    AnnotationMirror hierarchyTop = top;
+    if (hierarchyTop == null) {
       to.replaceAnnotations(from.getPrimaryAnnotations());
     } else {
-      AnnotationMirror replacement = from.getPrimaryAnnotationInHierarchy(top);
+      AnnotationMirror replacement = from.getPrimaryAnnotationInHierarchy(hierarchyTop);
       if (replacement != null) {
-        to.replaceAnnotation(from.getPrimaryAnnotationInHierarchy(top));
+        to.replaceAnnotation(replacement);
       }
     }
   }
@@ -103,9 +104,10 @@ public class AnnotatedTypeReplacer extends DoubleAnnotatedTypeScanner<Void> {
    */
   public void resolvePrimaries(AnnotatedTypeMirror from, AnnotatedTypeMirror to) {
     if (from.getKind() == TypeKind.WILDCARD || from.getKind() == TypeKind.TYPEVAR) {
-      if (top != null) {
-        if (from.getPrimaryAnnotationInHierarchy(top) == null) {
-          to.removePrimaryAnnotationInHierarchy(top);
+      AnnotationMirror hierarchyTop = top;
+      if (hierarchyTop != null) {
+        if (from.getPrimaryAnnotationInHierarchy(hierarchyTop) == null) {
+          to.removePrimaryAnnotationInHierarchy(hierarchyTop);
         }
       } else {
         List<AnnotationMirror> toRemove = new ArrayList<>(1);

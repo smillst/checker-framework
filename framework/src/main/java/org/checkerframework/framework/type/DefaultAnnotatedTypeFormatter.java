@@ -10,6 +10,7 @@ import java.util.StringJoiner;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeVariable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.qual.SideEffectFree;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
@@ -193,7 +194,7 @@ public class DefaultAnnotatedTypeFormatter implements AnnotatedTypeFormatter {
     @SideEffectFree
     protected void printBound(
         String keyWord,
-        AnnotatedTypeMirror field,
+        @Nullable AnnotatedTypeMirror field,
         Set<AnnotatedTypeMirror> visiting,
         StringBuilder sb) {
       if (!currentPrintVerboseGenerics && (field == null || field.getKind() == TypeKind.NULL)) {
