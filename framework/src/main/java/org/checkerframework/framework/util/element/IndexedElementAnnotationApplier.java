@@ -37,8 +37,8 @@ abstract class IndexedElementAnnotationApplier extends TargetedElementAnnotation
       Iterable<Attribute.TypeCompound> typeCompounds) {
     Map<TargetClass, List<Attribute.TypeCompound>> targetClassToAnnos = super.sift(typeCompounds);
 
-    List<Attribute.TypeCompound> targeted = targetClassToAnnos.get(TargetClass.TARGETED);
-    List<Attribute.TypeCompound> valid = targetClassToAnnos.get(TargetClass.VALID);
+    List<Attribute.TypeCompound> targeted = getSifted(targetClassToAnnos, TargetClass.TARGETED);
+    List<Attribute.TypeCompound> valid = getSifted(targetClassToAnnos, TargetClass.VALID);
 
     int paramIndex = getElementIndex();
 

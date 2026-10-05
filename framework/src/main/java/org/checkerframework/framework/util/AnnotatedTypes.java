@@ -499,6 +499,7 @@ public final class AnnotatedTypes {
     //      supertype of passed type)
     // 3. Substitute for type variables if any exist
     TypeElement enclosingClassOfMember = ElementUtils.enclosingTypeElement(member);
+    assert enclosingClassOfMember != null : "@AssumeAssertion(nullness): member is in a type";
     if (!TypesUtils.isGenericOrEnclosedByGeneric(enclosingClassOfMember)) {
       // No type variable is in scope in member's declaration, so there is nothing to substitute.
       // Testing this first avoids searching the supertypes of `receiverType` for a member of a
@@ -780,8 +781,9 @@ public final class AnnotatedTypes {
       throw new BugInCF("AnnotatedTypes.findTypeArguments: unexpected tree: " + expr);
     }
 
-    if (preType.getReceiverType() != null) {
-      DeclaredType receiverTypeMirror = preType.getReceiverType().getUnderlyingType();
+    AnnotatedDeclaredType preReceiverType = preType.getReceiverType();
+    if (preReceiverType != null) {
+      DeclaredType receiverTypeMirror = preReceiverType.getUnderlyingType();
       if (TypesUtils.isRaw(receiverTypeMirror)
           && elt.getEnclosingElement().equals(receiverTypeMirror.asElement())) {
         return emptyFalsePair;
@@ -1001,8 +1003,10 @@ public final class AnnotatedTypes {
       AnnotationMirror subAnno = subtype.getPrimaryAnnotationInHierarchy(top);
       AnnotationMirror superAnno = supertype.getPrimaryAnnotationInHierarchy(top);
       if (subAnno != null && superAnno != null) {
-        glb.addAnnotation(
-            qualHierarchy.greatestLowerBoundShallow(subAnno, subTM, superAnno, superTM));
+        AnnotationMirror glbAnno =
+            qualHierarchy.greatestLowerBoundShallow(subAnno, subTM, superAnno, superTM);
+        assert glbAnno != null : "@AssumeAssertion(nullness): the qualifiers are in one hierarchy";
+        glb.addAnnotation(glbAnno);
       } else if (subAnno == null && superAnno == null) {
         if (subtype.getKind() != TypeKind.TYPEVAR || supertype.getKind() != TypeKind.TYPEVAR) {
           throw new BugInCF(
@@ -1012,6 +1016,7 @@ public final class AnnotatedTypes {
         if (subtype.getKind() != TypeKind.TYPEVAR) {
           throw new BugInCF("Missing primary annotations: subtype: %s", subtype);
         }
+        assert superAnno != null : "@AssumeAssertion(nullness): not both are null";
         AnnotationMirrorSet lb = findEffectiveLowerBoundAnnotations(qualHierarchy, subtype);
         AnnotationMirror lbAnno = qualHierarchy.findAnnotationInHierarchy(lb, top);
         if (lbAnno != null && !qualHierarchy.isSubtypeShallow(lbAnno, subTM, superAnno, superTM)) {
@@ -1033,8 +1038,11 @@ public final class AnnotatedTypes {
         if (superUBAnno == null) {
           glb.addAnnotation(subAnno);
         } else {
-          glb.addAnnotation(
-              qualHierarchy.greatestLowerBoundShallow(subAnno, subTM, superUBAnno, superTM));
+          AnnotationMirror glbAnno =
+              qualHierarchy.greatestLowerBoundShallow(subAnno, subTM, superUBAnno, superTM);
+          assert glbAnno != null
+              : "@AssumeAssertion(nullness): the qualifiers are in one hierarchy";
+          glb.addAnnotation(glbAnno);
         }
       }
     }
@@ -1074,6 +1082,7 @@ public final class AnnotatedTypes {
       DeclaredType t =
           TypesUtils.getSuperClassOrInterface(
               methodElement.getEnclosingElement().asType(), atypeFactory.types);
+      assert t != null : "@AssumeAssertion(nullness): an anonymous class has a supertype";
       TypeMirror enclosingType = t.getEnclosingType();
       if (enclosingType != null) {
         if (!parameters.isEmpty()) {
@@ -1410,7 +1419,10 @@ public final class AnnotatedTypes {
    */
   public static AnnotationMirror findEffectiveAnnotationInHierarchy(
       QualifierHierarchy qualHierarchy, AnnotatedTypeMirror toSearch, AnnotationMirror top) {
-    return findEffectiveAnnotationInHierarchy(qualHierarchy, toSearch, top, false);
+    AnnotationMirror result =
+        findEffectiveAnnotationInHierarchy(qualHierarchy, toSearch, top, false);
+    assert result != null : "@AssumeAssertion(nullness): with canBeEmpty false, it throws instead";
+    return result;
   }
 
   /**
@@ -1543,7 +1555,7 @@ public final class AnnotatedTypes {
     return source.getPrimaryAnnotations();
   }
 
-  private static AnnotationMirror glbOfBoundsInHierarchy(
+  private static @Nullable AnnotationMirror glbOfBoundsInHierarchy(
       AnnotatedIntersectionType isect, AnnotationMirror top, QualifierHierarchy qualHierarchy) {
     AnnotationMirror anno = isect.getPrimaryAnnotationInHierarchy(top);
     for (AnnotatedTypeMirror bound : isect.getBounds()) {
@@ -1705,11 +1717,12 @@ public final class AnnotatedTypes {
   public static void applyAnnotationsFromDeclaredType(
       AnnotatedDeclaredType annotatedDeclaredType, DeclaredType declaredType) {
     TypeMirror underlyingTypeMirror = declaredType;
-    while (annotatedDeclaredType != null) {
+    AnnotatedDeclaredType adt = annotatedDeclaredType;
+    while (adt != null) {
       List<? extends AnnotationMirror> annosOnTypeMirror =
           underlyingTypeMirror.getAnnotationMirrors();
-      annotatedDeclaredType.addAnnotations(annosOnTypeMirror);
-      annotatedDeclaredType = annotatedDeclaredType.getEnclosingType();
+      adt.addAnnotations(annosOnTypeMirror);
+      adt = adt.getEnclosingType();
       underlyingTypeMirror = ((DeclaredType) underlyingTypeMirror).getEnclosingType();
     }
   }

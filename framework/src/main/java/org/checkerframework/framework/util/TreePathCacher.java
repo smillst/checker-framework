@@ -115,6 +115,7 @@ public class TreePathCacher extends TreeScanner<TreePath, Tree> {
     }
 
     if (tree == target) {
+      assert path != null : "@AssumeAssertion(nullness): path was set because tree is non-null";
       throw new Result(path);
     }
     try {

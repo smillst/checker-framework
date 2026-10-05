@@ -13,6 +13,7 @@ import java.util.Map;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.VariableElement;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.ElementAnnotationApplier;
@@ -45,8 +46,8 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
 
   private final Symbol.MethodSymbol enclosingMethod;
   private final boolean isLambdaParam;
-  private final Integer lambdaParamIndex;
-  private final LambdaExpressionTree lambdaTree;
+  private final @Nullable Integer lambdaParamIndex;
+  private final @Nullable LambdaExpressionTree lambdaTree;
 
   ParamApplier(
       AnnotatedTypeMirror type, VariableElement element, AnnotatedTypeFactory typeFactory) {
@@ -87,7 +88,7 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
    */
   @Override
   public int getElementIndex() {
-    if (isLambdaParam) {
+    if (lambdaParamIndex != null) {
       return lambdaParamIndex;
     }
 
@@ -191,8 +192,8 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
     // this will sift out the annotations that do not have the right position index
     Map<TargetClass, List<Attribute.TypeCompound>> targetClassToAnnos = super.sift(typeCompounds);
 
-    List<Attribute.TypeCompound> targeted = targetClassToAnnos.get(TargetClass.TARGETED);
-    List<Attribute.TypeCompound> valid = targetClassToAnnos.get(TargetClass.VALID);
+    List<Attribute.TypeCompound> targeted = getSifted(targetClassToAnnos, TargetClass.TARGETED);
+    List<Attribute.TypeCompound> valid = getSifted(targetClassToAnnos, TargetClass.VALID);
 
     // if this is a lambdaParam, filter out from targeted those annos that apply to method
     // formal parameters if this is a method formal param, filter out from targeted those annos
@@ -233,8 +234,10 @@ public class ParamApplier extends IndexedElementAnnotationApplier {
             targeted, formalParams, TargetType.METHOD_RECEIVER);
 
     if (isReceiver(element)) {
-      ElementAnnotationUtil.annotateViaTypeAnnoPosition(
-          type, targetToAnnos.get(TargetType.METHOD_RECEIVER));
+      List<TypeCompound> receiverAnnos = targetToAnnos.get(TargetType.METHOD_RECEIVER);
+      assert receiverAnnos != null
+          : "@AssumeAssertion(nullness): partitionByTargetType maps every given TargetType";
+      ElementAnnotationUtil.annotateViaTypeAnnoPosition(type, receiverAnnos);
 
     } else {
       ElementAnnotationUtil.annotateViaTypeAnnoPosition(type, formalParams);

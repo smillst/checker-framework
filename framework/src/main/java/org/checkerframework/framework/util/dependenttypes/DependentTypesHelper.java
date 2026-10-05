@@ -155,7 +155,9 @@ public class DependentTypesHelper {
       List<ExecutableElement> elementList =
           getExpressionElements(expressionAnno, factory.getProcessingEnv());
       if (!elementList.isEmpty()) {
-        annoToElements.put(expressionAnno.getCanonicalName(), elementList);
+        String annoName = expressionAnno.getCanonicalName();
+        assert annoName != null : "@AssumeAssertion(nullness): a qualifier has a canonical name";
+        annoToElements.put(annoName, elementList);
       }
     }
 
@@ -615,7 +617,11 @@ public class DependentTypesHelper {
     }
 
     TreePath pathToMethodDecl = factory.getPath(methodDeclTree);
+    assert pathToMethodDecl != null
+        : "@AssumeAssertion(nullness): the tree is in the current compilation unit";
     ExecutableElement methodElement = TreeUtils.elementFromDeclaration(methodDeclTree);
+    assert methodElement != null
+        : "@AssumeAssertion(nullness): the declaration is being type-checked";
     List<FormalParameter> parameters = JavaExpression.getFormalParameters(methodElement);
     List<JavaExpression> paramsAsLocals =
         JavaExpression.getParametersAsLocalVariables(methodElement);
@@ -687,6 +693,7 @@ public class DependentTypesHelper {
     List<JavaExpression> argsAsExprs = CollectionsP.mapList(LocalVariable::fromNode, arguments);
     JavaExpression receiverAsExpr = receiver == null ? null : LocalVariable.fromNode(receiver);
     TreePath path = factory.getPath(invocationTree);
+    assert path != null : "@AssumeAssertion(nullness): the tree is in the current compilation unit";
 
     StringToJavaExpression stringToJavaExpr =
         stringExpr -> {
@@ -703,7 +710,10 @@ public class DependentTypesHelper {
                     return FormalParameter.getFormalParameters(methodElt).get(index);
                   }
                   if (javaExpr.equals(receiverAsExpr)) {
-                    return new ThisReference(ElementUtils.enclosingTypeElement(methodElt).asType());
+                    TypeElement methodClass = ElementUtils.enclosingTypeElement(methodElt);
+                    assert methodClass != null
+                        : "@AssumeAssertion(nullness): a method is in a type";
+                    return new ThisReference(methodClass.asType());
                   }
                   return super.convert(javaExpr);
                 }
@@ -823,9 +833,9 @@ public class DependentTypesHelper {
    * <p>The default implementation returns the argument, but subclasses may override it.
    *
    * @param javaExpr a JavaExpression
-   * @return a transformed JavaExpression or {@code null} if no transformation exists
+   * @return a transformed JavaExpression
    */
-  protected @Nullable JavaExpression transform(JavaExpression javaExpr) {
+  protected JavaExpression transform(JavaExpression javaExpr) {
     return javaExpr;
   }
 
@@ -923,7 +933,7 @@ public class DependentTypesHelper {
    * result. If the function returns null, the original annotation is retained.
    */
   private static final class AnnotatedTypeReplacer
-      extends AnnotatedTypeScanner<Void, Function<AnnotationMirror, AnnotationMirror>> {
+      extends AnnotatedTypeScanner<Void, Function<AnnotationMirror, @Nullable AnnotationMirror>> {
 
     /** Creates a new AnnotatedTypeReplacer. */
     AnnotatedTypeReplacer() {}
@@ -931,7 +941,7 @@ public class DependentTypesHelper {
     @Override
     public Void visitTypeVariable(
         AnnotatedTypeMirror.AnnotatedTypeVariable type,
-        Function<AnnotationMirror, AnnotationMirror> func) {
+        Function<AnnotationMirror, @Nullable AnnotationMirror> func) {
       if (visitedNodes.containsKey(type)) {
         return visitedNodes.get(type);
       }
@@ -957,7 +967,7 @@ public class DependentTypesHelper {
 
     @Override
     protected Void scan(
-        AnnotatedTypeMirror type, Function<AnnotationMirror, AnnotationMirror> func) {
+        AnnotatedTypeMirror type, Function<AnnotationMirror, @Nullable AnnotationMirror> func) {
       if (visitedNodes.containsKey(type)) {
         return null;
       }
@@ -1326,7 +1336,10 @@ public class DependentTypesHelper {
   }
 
   /** Returns true if the passed AnnotatedTypeMirror has any dependent type annotations. */
-  @SuppressWarnings("this-escape")
+  @SuppressWarnings({
+    "this-escape",
+    "nullness:method.invocation" // the lambda is not called during construction
+  })
   private final AnnotatedTypeScanner<Boolean, Void> hasDependentTypeScanner =
       new SimpleAnnotatedTypeScanner<>(
           (type, __) -> {

@@ -31,6 +31,7 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
   @Override
   public Void visitClass(ClassTree tree, AnnotatedTypeMirror annotatedTypeMirror) {
     TypeElement ele = TreeUtils.elementFromDeclaration(tree);
+    assert ele != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     helper.atTypeDecl(annotatedTypeMirror, ele);
     return super.visitClass(tree, annotatedTypeMirror);
   }
@@ -52,6 +53,7 @@ public class DependentTypesTreeAnnotator extends TreeAnnotator {
   @Override
   public Void visitVariable(VariableTree tree, AnnotatedTypeMirror annotatedTypeMirror) {
     VariableElement ele = TreeUtils.elementFromDeclaration(tree);
+    assert ele != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     helper.atVariableDeclaration(annotatedTypeMirror, tree, ele);
     return super.visitVariable(tree, annotatedTypeMirror);
   }

@@ -181,7 +181,7 @@ public class TypeArgumentMapper {
         TypeMirror typeArg = nextTypeArgs.get(i);
         Element typeArgEle = types.asElement(typeArg);
 
-        if (currentTypeParams.contains(typeArgEle)) {
+        if (typeArgEle != null && currentTypeParams.contains(typeArgEle)) {
           addToSetMap(intermediate, (TypeParameterElement) typeArgEle, correspondingParameter);
         }
       }
@@ -205,7 +205,7 @@ public class TypeArgumentMapper {
   }
 
   private static Set<TypeParameterElement> flattenPath(
-      Set<TypeParameterElement> elements,
+      @Nullable Set<TypeParameterElement> elements,
       Map<TypeParameterElement, Set<TypeParameterElement>> map) {
     Set<TypeParameterElement> result = new HashSet<>();
     if (elements == null) {
@@ -265,9 +265,9 @@ public class TypeArgumentMapper {
    * @param target the end of the resulting sequence
    * @param types utility methods for operating on types
    * @return a list of type records that represents the sequence of directSupertypes between subtype
-   *     and target
+   *     and target, or null if target is not a supertype of subtype
    */
-  private static List<TypeRecord> depthFirstSearchForSupertype(
+  private static @Nullable List<TypeRecord> depthFirstSearchForSupertype(
       TypeElement subtype, TypeElement target, Types types) {
     ArrayDeque<TypeRecord> pathFromRoot = new ArrayDeque<>();
     TypeRecord pathStart = new TypeRecord(subtype, null);
@@ -308,7 +308,7 @@ public class TypeArgumentMapper {
       if (intface.getKind() != TypeKind.NONE) {
         DeclaredType interfaceDeclared = (DeclaredType) intface;
         pathFromRoot.addLast(
-            new TypeRecord((TypeElement) types.asElement(interfaceDeclared), interfaceDeclared));
+            new TypeRecord((TypeElement) interfaceDeclared.asElement(), interfaceDeclared));
         path = recursiveDepthFirstSearch(pathFromRoot, target, types);
         pathFromRoot.removeLast();
       }
@@ -317,7 +317,7 @@ public class TypeArgumentMapper {
     if (path == null && superclassType.getKind() != TypeKind.NONE) {
       DeclaredType superclass = (DeclaredType) superclassType;
 
-      pathFromRoot.addLast(new TypeRecord((TypeElement) types.asElement(superclass), superclass));
+      pathFromRoot.addLast(new TypeRecord((TypeElement) superclass.asElement(), superclass));
       path = recursiveDepthFirstSearch(pathFromRoot, target, types);
       pathFromRoot.removeLast();
     }
@@ -346,9 +346,9 @@ public class TypeArgumentMapper {
    */
   private static class TypeRecord {
     public final TypeElement element;
-    public final DeclaredType type;
+    public final @Nullable DeclaredType type;
 
-    TypeRecord(TypeElement element, DeclaredType type) {
+    TypeRecord(TypeElement element, @Nullable DeclaredType type) {
       this.element = element;
       this.type = type;
     }

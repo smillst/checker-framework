@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.lang.model.element.Element;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.util.element.ElementAnnotationUtil.UnexpectedAnnotationLocationException;
@@ -165,11 +166,17 @@ public class MethodApplier extends TargetedElementAnnotationApplier {
             TargetType.METHOD_RETURN,
             TargetType.THROWS);
 
-    ElementAnnotationUtil.annotateViaTypeAnnoPosition(
-        methodType.getReceiverType(), targetTypeToAnno.get(TargetType.METHOD_RECEIVER));
-    ElementAnnotationUtil.annotateViaTypeAnnoPosition(
-        methodType.getReturnType(), targetTypeToAnno.get(TargetType.METHOD_RETURN));
-    applyThrowsAnnotations(targetTypeToAnno.get(TargetType.THROWS));
+    List<TypeCompound> receiverAnnos = targetTypeToAnno.get(TargetType.METHOD_RECEIVER);
+    List<TypeCompound> returnAnnos = targetTypeToAnno.get(TargetType.METHOD_RETURN);
+    List<TypeCompound> throwsAnnos = targetTypeToAnno.get(TargetType.THROWS);
+    assert receiverAnnos != null && returnAnnos != null && throwsAnnos != null
+        : "@AssumeAssertion(nullness): partitionByTargetType maps every given TargetType";
+    AnnotatedDeclaredType receiverType = methodType.getReceiverType();
+    if (receiverType != null) {
+      ElementAnnotationUtil.annotateViaTypeAnnoPosition(receiverType, receiverAnnos);
+    }
+    ElementAnnotationUtil.annotateViaTypeAnnoPosition(methodType.getReturnType(), returnAnnos);
+    applyThrowsAnnotations(throwsAnnos);
 
     if (!unmatched.isEmpty()) {
       throw new BugInCF(
@@ -201,7 +208,10 @@ public class MethodApplier extends TargetedElementAnnotationApplier {
       TypeAnnotationPosition annoPos = anno.position;
       if (annoPos.type_index >= 0 && annoPos.type_index < thrown.size()) {
         AnnotatedTypeMirror thrownType = thrown.get(annoPos.type_index);
-        typeToAnnos.get(thrownType).add(anno);
+        List<TypeCompound> thrownTypeAnnos = typeToAnnos.get(thrownType);
+        assert thrownTypeAnnos != null
+            : "@AssumeAssertion(nullness): typeToAnnos maps every thrown type";
+        thrownTypeAnnos.add(anno);
 
       } else {
         throw new BugInCF(

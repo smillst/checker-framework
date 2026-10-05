@@ -3201,10 +3201,9 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param kind the kind of {@code contractAnnotation}
    * @param contractAnnotation a {@link RequiresQualifier}, {@link EnsuresQualifier}, or {@link
    *     EnsuresQualifierIf}
-   * @return the {@code expression} or {@code value} element of {@code contractAnnotation}, or null
-   *     if it doesn't have one
+   * @return the {@code expression} or {@code value} element of {@code contractAnnotation}
    */
-  public @Nullable List<String> getContractExpressions(
+  public List<String> getContractExpressions(
       Contract.Kind kind, AnnotationMirror contractAnnotation) {
     // First, handle framework annotations.
     if (contractAnnotation instanceof RequiresQualifier) {

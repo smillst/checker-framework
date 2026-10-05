@@ -1024,10 +1024,7 @@ subprojects {
         "framework/type/QualifierHierarchy\\.java",
         "framework/type/SubtypeIsSubsetQualifierHierarchy\\.java",
         "framework/type/SubtypeIsSupersetQualifierHierarchy\\.java",
-        "framework/util/DefaultQualifierKindHierarchy\\.java",
-        "framework/util/QualifierKind\\.java",
-        "framework/util/QualifierKindHierarchy\\.java",
-        "framework/util/typeinference8/.*\\.java",
+        "framework/util/.*\\.java",
       ]
       rootProject.createCheckTypeTask(project.name, "Nullness",
           "org.checkerframework.checker.nullness.NullnessChecker",

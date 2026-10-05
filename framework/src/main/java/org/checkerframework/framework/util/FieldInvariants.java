@@ -139,7 +139,8 @@ public class FieldInvariants {
       for (AnnotationMirror superA : superQualifiers) {
         AnnotationMirror sub = qualHierarchy.findAnnotationInSameHierarchy(subQualifiers, superA);
         if (sub == null || !qualHierarchy.isSubtypeQualifiersOnly(sub, superA)) {
-          return DiagMessage.error("field.invariant.not.subtype.superclass", field, sub, superA);
+          return DiagMessage.error(
+              "field.invariant.not.subtype.superclass", field, sub == null ? "null" : sub, superA);
         }
       }
     }

@@ -2,6 +2,7 @@ package org.checkerframework.framework.util;
 
 // This class uses SourceChecker, so it must be in the framework project.
 
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
@@ -98,7 +99,9 @@ public interface StringToJavaExpression {
   static JavaExpression atFieldDecl(
       String expression, VariableElement fieldElement, SourceChecker checker)
       throws JavaExpressionParseException {
-    TypeMirror enclosingType = ElementUtils.enclosingTypeElement(fieldElement).asType();
+    TypeElement enclosingClass = ElementUtils.enclosingTypeElement(fieldElement);
+    assert enclosingClass != null : "@AssumeAssertion(nullness): a field is in a type";
+    TypeMirror enclosingType = enclosingClass.asType();
     ThisReference thisReference;
     if (ElementUtils.isStatic(fieldElement)) {
       // Can't use "this" on a static fieldElement
@@ -134,7 +137,9 @@ public interface StringToJavaExpression {
   static JavaExpression atMethodDecl(
       String expression, ExecutableElement method, SourceChecker checker)
       throws JavaExpressionParseException {
-    TypeMirror enclosingType = ElementUtils.enclosingTypeElement(method).asType();
+    TypeElement enclosingClass = ElementUtils.enclosingTypeElement(method);
+    assert enclosingClass != null : "@AssumeAssertion(nullness): a method is in a type";
+    TypeMirror enclosingType = enclosingClass.asType();
     ThisReference thisReference;
     if (ElementUtils.isStatic(method)) {
       // Can't use "this" on a static method
@@ -171,6 +176,7 @@ public interface StringToJavaExpression {
       String expression, MethodTree methodTree, SourceChecker checker)
       throws JavaExpressionParseException {
     ExecutableElement ee = TreeUtils.elementFromDeclaration(methodTree);
+    assert ee != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     JavaExpression javaExpr = atMethodDecl(expression, ee, checker);
     return javaExpr.atMethodBody(methodTree);
   }
@@ -210,7 +216,10 @@ public interface StringToJavaExpression {
   static JavaExpression atMethodInvocation(
       String expression, MethodInvocationNode methodInvocationNode, SourceChecker checker)
       throws JavaExpressionParseException {
-    ExecutableElement ee = TreeUtils.elementFromUse(methodInvocationNode.getTree());
+    MethodInvocationTree invocationTree = methodInvocationNode.getTree();
+    assert invocationTree != null
+        : "@AssumeAssertion(nullness): a node for a method invocation in source has a tree";
+    ExecutableElement ee = TreeUtils.elementFromUse(invocationTree);
     JavaExpression javaExpr = atMethodDecl(expression, ee, checker);
     return javaExpr.atMethodInvocation(methodInvocationNode);
   }
@@ -278,7 +287,9 @@ public interface StringToJavaExpression {
       SourceChecker checker)
       throws JavaExpressionParseException {
 
-    TypeMirror enclosingType = TreeUtils.typeOf(TreePathUtil.enclosingClass(parentPath));
+    ClassTree enclosingClass = TreePathUtil.enclosingClass(parentPath);
+    assert enclosingClass != null : "@AssumeAssertion(nullness): the path is within a class";
+    TypeMirror enclosingType = TreeUtils.typeOf(enclosingClass);
     JavaExpression receiver = JavaExpression.getPseudoReceiver(parentPath, enclosingType);
     // If receiver isn't a ThisReference, then the lambda is in a static context and "this"
     // cannot be referenced in the expression.
@@ -319,7 +330,9 @@ public interface StringToJavaExpression {
   static JavaExpression atPath(String expression, TreePath localVarPath, SourceChecker checker)
       throws JavaExpressionParseException {
 
-    TypeMirror enclosingType = TreeUtils.typeOf(TreePathUtil.enclosingClass(localVarPath));
+    ClassTree enclosingClass = TreePathUtil.enclosingClass(localVarPath);
+    assert enclosingClass != null : "@AssumeAssertion(nullness): the path is within a class";
+    TypeMirror enclosingType = TreeUtils.typeOf(enclosingClass);
     ThisReference thisReference =
         TreePathUtil.isTreeInStaticScope(localVarPath) ? null : new ThisReference(enclosingType);
 
@@ -336,6 +349,7 @@ public interface StringToJavaExpression {
     }
 
     ExecutableElement methodEle = TreeUtils.elementFromDeclaration(methodTree);
+    assert methodEle != null : "@AssumeAssertion(nullness): the declaration is being type-checked";
     List<FormalParameter> parameters = JavaExpression.getFormalParameters(methodEle);
     JavaExpression javaExpr =
         JavaExpressionParseUtil.parse(

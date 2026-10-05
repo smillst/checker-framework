@@ -439,7 +439,7 @@ public class ElementAnnotationUtil {
   private static AnnotatedTypeMirror getLocationTypeADT(
       AnnotatedDeclaredType type,
       List<TypeAnnotationPosition.TypePathEntry> location,
-      TypeCompound anno,
+      @Nullable TypeCompound anno,
       boolean isComponentTypeOfArray)
       throws UnexpectedAnnotationLocationException {
     // List order by outermost type to innermost type.
@@ -546,7 +546,7 @@ public class ElementAnnotationUtil {
   private static AnnotatedTypeMirror getLocationTypeAAT(
       AnnotatedArrayType type,
       List<TypeAnnotationPosition.TypePathEntry> location,
-      TypeCompound anno)
+      @Nullable TypeCompound anno)
       throws UnexpectedAnnotationLocationException {
     if (!location.isEmpty()
         && location.get(0).tag == TypeAnnotationPosition.TypePathEntryKind.ARRAY) {

@@ -26,6 +26,8 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 import org.checkerframework.checker.interning.qual.FindDistinct;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.AnnotatedFor;
 import org.checkerframework.framework.qual.DefaultQualifier;
@@ -455,6 +457,7 @@ public class QualifierDefaults {
           boolean sameAsPrev = (vtreeInit != null && prev == vtreeInit);
           if (sameAsPrev) {
             Element elt = TreeUtils.elementFromDeclaration((VariableTree) t);
+            assert elt != null : "@AssumeAssertion(nullness): the variable is being type-checked";
             AnnotationMirror d = atypeFactory.getDeclAnnotation(elt, DefaultQualifier.class);
             AnnotationMirror ds = atypeFactory.getDeclAnnotation(elt, DefaultQualifier.List.class);
 
@@ -622,7 +625,7 @@ public class QualifierDefaults {
    * @param elt the element
    * @return the defaults
    */
-  private DefaultSet defaultsAt(Element elt) {
+  private DefaultSet defaultsAt(@Nullable Element elt) {
     if (elt == null) {
       return DefaultSet.EMPTY;
     }
@@ -695,7 +698,7 @@ public class QualifierDefaults {
    * @param annotationScope the element that the conservative default might apply to
    * @return true if the conservative default applies to the given element
    */
-  public boolean applyConservativeDefaults(Element annotationScope) {
+  public boolean applyConservativeDefaults(@Nullable Element annotationScope) {
     if (annotationScope == null) {
       return false;
     }
@@ -744,7 +747,7 @@ public class QualifierDefaults {
    *     inference)
    * @checker_framework.manual #annotating-libraries Annotating libraries
    */
-  private void applyDefaultsElement(Element annotationScope, AnnotatedTypeMirror type) {
+  private void applyDefaultsElement(@Nullable Element annotationScope, AnnotatedTypeMirror type) {
     DefaultSet defaults = defaultsAt(annotationScope);
     DefaultApplierElement applier =
         createDefaultApplierElement(atypeFactory, annotationScope, type, applyToTypeVar);
@@ -777,7 +780,7 @@ public class QualifierDefaults {
    */
   protected DefaultApplierElement createDefaultApplierElement(
       AnnotatedTypeFactory atypeFactory,
-      Element annotationScope,
+      @Nullable Element annotationScope,
       AnnotatedTypeMirror type,
       boolean applyToTypeVar) {
     return new DefaultApplierElement(atypeFactory, annotationScope, type, applyToTypeVar);
@@ -790,13 +793,13 @@ public class QualifierDefaults {
     protected final AnnotatedTypeFactory atypeFactory;
 
     /** The scope of the default. */
-    protected final Element scope;
+    protected final @Nullable Element scope;
 
     /** The type to which to apply the default. */
     protected final AnnotatedTypeMirror type;
 
     /** Location to which to apply the default. (Should only be set by the applyDefault method.) */
-    protected TypeUseLocation location;
+    protected @MonotonicNonNull TypeUseLocation location;
 
     /** The default element applier implementation. */
     protected final DefaultApplierElementImpl impl;
@@ -812,11 +815,11 @@ public class QualifierDefaults {
       we use referential equality with the top level type var to determine which ones are definite
       type uses, i.e. uses which can be defaulted
     */
-    private final AnnotatedTypeVariable defaultableTypeVar;
+    private final @Nullable AnnotatedTypeVariable defaultableTypeVar;
 
     public DefaultApplierElement(
         AnnotatedTypeFactory atypeFactory,
-        Element scope,
+        @Nullable Element scope,
         AnnotatedTypeMirror type,
         boolean applyToTypeVar) {
       this.atypeFactory = atypeFactory;
@@ -843,7 +846,9 @@ public class QualifierDefaults {
      * @param type type to which qual would be applied
      * @return true if this application should proceed
      */
-    protected boolean shouldBeAnnotated(AnnotatedTypeMirror type, boolean applyToTypeVar) {
+    @EnsuresNonNullIf(expression = "#1", result = true)
+    protected boolean shouldBeAnnotated(
+        @Nullable AnnotatedTypeMirror type, boolean applyToTypeVar) {
 
       return !(type == null
           // TODO: executables themselves should not be annotated
@@ -886,6 +891,7 @@ public class QualifierDefaults {
 
         // Some defaults only apply to the top level type.
         boolean isTopLevelType = t == type;
+        assert location != null : "@AssumeAssertion(nullness): applyDefault() sets location";
         switch (location) {
           case FIELD -> {
             if (scope != null && scope.getKind() == ElementKind.FIELD && isTopLevelType) {

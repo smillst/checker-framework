@@ -310,7 +310,7 @@ public class AnnotationBuilder {
    * @param ignorableElements the elements that can be safely dropped
    */
   public void copyElementValuesFromAnnotation(
-      AnnotationMirror valueHolder, Collection<ExecutableElement> ignorableElements) {
+      AnnotationMirror valueHolder, Collection<? extends ExecutableElement> ignorableElements) {
     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
         valueHolder.getElementValues().entrySet()) {
       if (ignorableElements.contains(entry.getKey())) {

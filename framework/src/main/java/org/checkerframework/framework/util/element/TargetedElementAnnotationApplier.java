@@ -41,6 +41,20 @@ abstract class TargetedElementAnnotationApplier {
     INVALID
   }
 
+  /**
+   * Returns the annotations of the given target class, from a result of {@link #sift}.
+   *
+   * @param sifted a result of {@link #sift}
+   * @param targetClass a target class
+   * @return the annotations of {@code targetClass} in {@code sifted}
+   */
+  protected static List<Attribute.TypeCompound> getSifted(
+      Map<TargetClass, List<Attribute.TypeCompound>> sifted, TargetClass targetClass) {
+    List<Attribute.TypeCompound> result = sifted.get(targetClass);
+    assert result != null : "@AssumeAssertion(nullness): sift() maps every TargetClass";
+    return result;
+  }
+
   /** The type to which we wish to apply annotations. */
   protected final AnnotatedTypeMirror type;
 
@@ -169,13 +183,13 @@ abstract class TargetedElementAnnotationApplier {
       List<Attribute.TypeCompound> destList;
 
       if (ElementAnnotationUtil.contains(typeCompoundTarget, annotatedTargets())) {
-        destList = targetClassToCompound.get(TargetClass.TARGETED);
+        destList = getSifted(targetClassToCompound, TargetClass.TARGETED);
 
       } else if (ElementAnnotationUtil.contains(typeCompoundTarget, validTargets())) {
-        destList = targetClassToCompound.get(TargetClass.VALID);
+        destList = getSifted(targetClassToCompound, TargetClass.VALID);
 
       } else {
-        destList = targetClassToCompound.get(TargetClass.INVALID);
+        destList = getSifted(targetClassToCompound, TargetClass.INVALID);
       }
 
       destList.add(typeCompound);
@@ -205,8 +219,8 @@ abstract class TargetedElementAnnotationApplier {
 
     Map<TargetClass, List<Attribute.TypeCompound>> targetClassToAnno = sift(getRawTypeAttributes());
 
-    handleInvalid(targetClassToAnno.get(TargetClass.INVALID));
-    handleValid(targetClassToAnno.get(TargetClass.VALID));
-    handleTargeted(targetClassToAnno.get(TargetClass.TARGETED));
+    handleInvalid(getSifted(targetClassToAnno, TargetClass.INVALID));
+    handleValid(getSifted(targetClassToAnno, TargetClass.VALID));
+    handleTargeted(getSifted(targetClassToAnno, TargetClass.TARGETED));
   }
 }

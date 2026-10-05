@@ -184,7 +184,7 @@ public class ContractsFromMethod {
    *     null
    */
   private <T extends Contract> Set<T> getContract(
-      Contract.Kind kind, AnnotationMirror contractAnnotation, Class<T> clazz) {
+      Contract.Kind kind, @Nullable AnnotationMirror contractAnnotation, Class<T> clazz) {
     if (contractAnnotation == null) {
       return Collections.emptySet();
     }
@@ -267,7 +267,7 @@ public class ContractsFromMethod {
     Name c = AnnotationUtils.getElementValueClassName(contractAnno, "qualifier", false);
 
     AnnotationMirror anno;
-    if (argumentAnno == null || argumentRenaming.isEmpty()) {
+    if (argumentAnno == null || argumentRenaming == null || argumentRenaming.isEmpty()) {
       // If there are no arguments, use factory method that allows caching
       anno = AnnotationBuilder.fromName(factory.getElementUtils(), c);
     } else {

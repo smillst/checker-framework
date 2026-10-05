@@ -49,6 +49,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -1215,7 +1216,7 @@ public final class JavaParserUtil {
    * Initialized by {@link #getCurrentSourceVersion(ProcessingEnvironment)}. Use that method to
    * access.
    */
-  private static LanguageLevel currentSourceVersion = null;
+  private static @MonotonicNonNull LanguageLevel currentSourceVersion = null;
 
   /**
    * Returns the {@link com.github.javaparser.ParserConfiguration.LanguageLevel} corresponding to

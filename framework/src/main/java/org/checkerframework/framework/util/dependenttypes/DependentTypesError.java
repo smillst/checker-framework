@@ -83,7 +83,11 @@ public class DependentTypesError {
     Matcher matcher = ERROR_PATTERN.matcher(formattedError);
     if (matcher.matches()) {
       assert matcher.groupCount() == 2;
-      return new DependentTypesError(matcher.group(1), matcher.group(2));
+      String expression = matcher.group(1);
+      String error = matcher.group(2);
+      assert expression != null && error != null
+          : "@AssumeAssertion(nullness): the groups are not optional";
+      return new DependentTypesError(expression, error);
     } else {
       throw new BugInCF("Cannot unparse: " + formattedError);
     }

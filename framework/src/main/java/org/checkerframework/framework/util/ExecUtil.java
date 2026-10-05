@@ -6,6 +6,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 
 /** Utilities for executing external processes. */
 public class ExecUtil {
@@ -60,14 +64,15 @@ public class ExecUtil {
     private final char[] buffer;
     private final OutputStreamWriter out;
 
-    private Thread thread;
-    private IOException exception;
+    private @MonotonicNonNull Thread thread;
+    private @Nullable IOException exception;
 
     public Redirection(OutputStream out, int bufferSize) {
       this.buffer = new char[bufferSize];
       this.out = new OutputStreamWriter(out, StandardCharsets.UTF_8);
     }
 
+    @EnsuresNonNull("thread")
     public void redirect(InputStream inStream) {
 
       exception = null;
@@ -92,7 +97,8 @@ public class ExecUtil {
       thread.start();
     }
 
-    public IOException join() throws InterruptedException {
+    @RequiresNonNull("thread")
+    public @Nullable IOException join() throws InterruptedException {
       thread.join();
       return exception;
     }

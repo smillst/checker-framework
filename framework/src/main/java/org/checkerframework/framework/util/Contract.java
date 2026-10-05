@@ -149,7 +149,7 @@ public abstract class Contract {
       String expressionString,
       AnnotationMirror annotation,
       AnnotationMirror contractAnnotation,
-      Boolean ensuresQualifierIf) {
+      @Nullable Boolean ensuresQualifierIf) {
     if ((ensuresQualifierIf != null) != (kind == Kind.CONDITIONALPOSTCONDITION)) {
       throw new BugInCF(
           "Mismatch: Contract.create(%s, %s, %s, %s, %s)",
@@ -158,9 +158,12 @@ public abstract class Contract {
     return switch (kind) {
       case PRECONDITION -> new Precondition(expressionString, annotation, contractAnnotation);
       case POSTCONDITION -> new Postcondition(expressionString, annotation, contractAnnotation);
-      case CONDITIONALPOSTCONDITION ->
-          new ConditionalPostcondition(
-              expressionString, annotation, contractAnnotation, ensuresQualifierIf);
+      case CONDITIONALPOSTCONDITION -> {
+        assert ensuresQualifierIf != null
+            : "@AssumeAssertion(nullness): checked above for a conditional postcondition";
+        yield new ConditionalPostcondition(
+            expressionString, annotation, contractAnnotation, ensuresQualifierIf);
+      }
       default -> throw new BugInCF("Unrecognized kind: " + kind);
     };
   }
