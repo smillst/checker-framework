@@ -299,7 +299,7 @@ public final class AnnotatedTypes {
   public static AnnotatedExecutableType asMemberOf(
       Types types,
       AnnotatedTypeFactory atypeFactory,
-      AnnotatedTypeMirror t,
+      @Nullable AnnotatedTypeMirror t,
       ExecutableElement elem,
       AnnotatedExecutableType type) {
     return (AnnotatedExecutableType) asMemberOf(types, atypeFactory, t, (Element) elem, type);

@@ -245,7 +245,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
    */
   @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // Intentional abuse
   public static <T> @Nullable T invokeConstructorFor(
-      @ClassGetName String className, Class<?>[] paramTypes, Object[] args) {
+      @ClassGetName String className, Class<?> @Nullable [] paramTypes, Object @Nullable [] args) {
 
     // Load the class.
     Class<T> cls;

@@ -381,7 +381,7 @@ public class QualifierDefaults {
    * @param elt the element from which the type was obtained
    * @param type the type to annotate
    */
-  public void annotate(Element elt, AnnotatedTypeMirror type) {
+  public void annotate(@Nullable Element elt, AnnotatedTypeMirror type) {
     if (elt != null) {
       switch (elt.getKind()) {
         case FIELD,

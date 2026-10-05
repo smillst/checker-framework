@@ -13,6 +13,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -86,7 +87,7 @@ public abstract class CFAbstractAnalysis<
    * @param initializer the value of the initializer of the field, or null if no initializer exists
    */
   public record FieldInitialValue<V extends CFAbstractValue<V>>(
-      FieldAccess fieldDecl, V declared, @Nullable V initializer) {}
+      FieldAccess fieldDecl, @Nullable V declared, @Nullable V initializer) {}
 
   /** Initial abstract types for fields. */
   protected final List<FieldInitialValue<V>> fieldValues;
@@ -183,6 +184,7 @@ public abstract class CFAbstractAnalysis<
    * @param cfg control flow graph to analyze
    * @param fieldValues initial values of the fields
    */
+  @EnsuresNonNull("this.cfg")
   public void performAnalysis(ControlFlowGraph cfg, List<FieldInitialValue<V>> fieldValues) {
     this.fieldValues.clear();
     this.fieldValues.addAll(fieldValues);

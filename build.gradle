@@ -1015,8 +1015,10 @@ subprojects {
       // defaulted, so a file can be added here as soon as it has no nullness errors.
       def frameworkNullnessCheckedFiles = [
         "framework/source/DiagMessage\\.java",
+        "framework/type/AnnotatedTypeFactory\\.java",
         "framework/type/AnnotatedTypeMirror\\.java",
         "framework/type/ElementQualifierHierarchy\\.java",
+        "framework/type/GenericAnnotatedTypeFactory\\.java",
         "framework/type/MostlyNoElementQualifierHierarchy\\.java",
         "framework/type/NoElementQualifierHierarchy\\.java",
         "framework/type/QualifierHierarchy\\.java",

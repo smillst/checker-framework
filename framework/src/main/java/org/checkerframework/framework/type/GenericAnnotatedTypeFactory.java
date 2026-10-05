@@ -281,10 +281,10 @@ public abstract class GenericAnnotatedTypeFactory<
   protected TransferFunction transfer;
 
   // Maintain for every class the store that is used when we analyze initialization code
-  protected Store initializationStore;
+  protected @Nullable Store initializationStore;
 
   // Maintain for every class the store that is used when we analyze static initialization code
-  protected Store initializationStaticStore;
+  protected @Nullable Store initializationStaticStore;
 
   /**
    * Caches for {@link AnalysisResult#runAnalysisFor(Node, Analysis.BeforeOrAfter, TransferInput,
@@ -331,7 +331,11 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param checker the checker to which this type factory belongs
    * @param useFlow true if flow analysis should be performed
    */
-  @SuppressWarnings("this-escape")
+  @SuppressWarnings({
+    "this-escape",
+    "nullness:method.invocation", // overridable methods are called during construction
+    "nullness:initialization.fields.uninitialized" // postInit() initializes the other fields
+  })
   protected GenericAnnotatedTypeFactory(BaseTypeChecker checker, boolean useFlow) {
     super(checker);
 
@@ -351,14 +355,10 @@ public abstract class GenericAnnotatedTypeFactory<
     this.cfgVisualizer = createCFGVisualizer();
     this.handleCFGViz = checker.hasOption("flowdotdir") || checker.hasOption("cfgviz");
 
-    if (shouldCache) {
-      int cacheSize = getCacheSize();
-      flowResultAnalysisCaches = MapsP.createLruCache(cacheSize);
-      initializerCache = MapsP.createLruCache(cacheSize);
-    } else {
-      flowResultAnalysisCaches = null;
-      initializerCache = null;
-    }
+    // The caches are created even if !shouldCache, so that the fields are non-null.
+    int cacheSize = getCacheSize();
+    flowResultAnalysisCaches = MapsP.createLruCache(cacheSize);
+    initializerCache = MapsP.createLruCache(cacheSize);
 
     RelevantJavaTypes relevantJavaTypesAnno =
         checker.getClass().getAnnotation(RelevantJavaTypes.class);
@@ -399,8 +399,12 @@ public abstract class GenericAnnotatedTypeFactory<
   }
 
   @Override
+  @SuppressWarnings({
+    "nullness:method.invocation", // overridable methods are called during initialization
+    "nullness:argument" // `this` is passed to methods during initialization
+  })
   protected void postInit(
-      @UnderInitialization(GenericAnnotatedTypeFactory.class) GenericAnnotatedTypeFactory<Value, Store, TransferFunction, FlowAnalysis> this) {
+      @UnderInitialization(AnnotatedTypeFactory.class) GenericAnnotatedTypeFactory<Value, Store, TransferFunction, FlowAnalysis> this) {
     super.postInit();
 
     this.dependentTypesHelper = createDependentTypesHelper();
@@ -412,9 +416,13 @@ public abstract class GenericAnnotatedTypeFactory<
 
     this.poly = createQualifierPolymorphism();
 
-    this.analysis = createFlowAnalysis();
-    this.transfer = analysis.getTransferFunction();
-    this.emptyStore = analysis.createEmptyStore(transfer.usesSequentialSemantics());
+    FlowAnalysis flowAnalysis = createFlowAnalysis();
+    this.analysis = flowAnalysis;
+    TransferFunction transferFunction = flowAnalysis.getTransferFunction();
+    assert transferFunction != null
+        : "@AssumeAssertion(nullness): the CFAbstractAnalysis constructor sets it";
+    this.transfer = transferFunction;
+    this.emptyStore = flowAnalysis.createEmptyStore(transferFunction.usesSequentialSemantics());
 
     this.parseAnnotationFiles();
   }
@@ -645,6 +653,8 @@ public abstract class GenericAnnotatedTypeFactory<
         return result;
       }
       checkerClass = checkerClass.getSuperclass();
+      assert checkerClass != null
+          : "@AssumeAssertion(nullness): the checker is a subclass of BaseTypeChecker";
     }
 
     // If an analysis couldn't be loaded reflectively, return the default.
@@ -684,6 +694,8 @@ public abstract class GenericAnnotatedTypeFactory<
         return result;
       }
       checkerClass = checkerClass.getSuperclass();
+      assert checkerClass != null
+          : "@AssumeAssertion(nullness): the checker is a subclass of BaseTypeChecker";
     }
 
     // If a transfer function couldn't be loaded reflectively, return the default.
@@ -798,7 +810,7 @@ public abstract class GenericAnnotatedTypeFactory<
 
     // Create a list of the supported qualifiers and sort the list alphabetically
     List<Class<? extends Annotation>> sortedSupportedQuals = new ArrayList<>(stq);
-    sortedSupportedQuals.sort(Comparator.comparing(Class::getCanonicalName));
+    sortedSupportedQuals.sort(Comparator.comparing(AnnotatedTypeFactory::annotationClassName));
 
     // display the number of qualifiers as well as the names of each qualifier.
     StringJoiner sj =
@@ -1122,7 +1134,17 @@ public abstract class GenericAnnotatedTypeFactory<
    * Note that flowResult contains analysis results for Trees from multiple classes which are
    * produced by multiple calls to performFlowAnalysisForClass.
    */
-  protected @MonotonicNonNull AnalysisResult<Value, Store> flowResult;
+  protected @Nullable AnalysisResult<Value, Store> flowResult;
+
+  /**
+   * Returns {@link #flowResult}. Must not be called before flow analysis has started.
+   *
+   * @return {@link #flowResult}
+   */
+  private AnalysisResult<Value, Store> getFlowResult() {
+    assert flowResult != null : "@AssumeAssertion(nullness): flow analysis has started";
+    return flowResult;
+  }
 
   /**
    * A mapping from methods (or other code blocks) to their regular exit store (used to check
@@ -1197,7 +1219,7 @@ public abstract class GenericAnnotatedTypeFactory<
     if (analysis.isRunning()) {
       return analysis.getStoreBefore(tree, flowResultAnalysisCaches);
     }
-    return flowResult.getStoreBefore(tree);
+    return getFlowResult().getStoreBefore(tree);
   }
 
   /**
@@ -1210,7 +1232,7 @@ public abstract class GenericAnnotatedTypeFactory<
     if (analysis.isRunning()) {
       return analysis.getStoreBefore(node, flowResultAnalysisCaches);
     }
-    return flowResult.getStoreBefore(node);
+    return getFlowResult().getStoreBefore(node);
   }
 
   /**
@@ -1225,7 +1247,7 @@ public abstract class GenericAnnotatedTypeFactory<
     if (analysis.isRunning()) {
       return analysis.getStoreAfter(tree, flowResultAnalysisCaches);
     }
-    return flowResult.getStoreAfter(tree);
+    return getFlowResult().getStoreAfter(tree);
   }
 
   /**
@@ -1234,11 +1256,11 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param node node after which the store is returned
    * @return the store immediately after a given {@link Node}
    */
-  public Store getStoreAfter(Node node) {
+  public @Nullable Store getStoreAfter(Node node) {
     if (analysis.isRunning()) {
       return analysis.getStoreAfter(node, flowResultAnalysisCaches);
     }
-    return flowResult.getStoreAfter(node);
+    return getFlowResult().getStoreAfter(node);
   }
 
   /**
@@ -1249,7 +1271,7 @@ public abstract class GenericAnnotatedTypeFactory<
    * @see org.checkerframework.dataflow.analysis.AnalysisResult#getNodesForTree(Tree)
    */
   public @Nullable Set<Node> getNodesForTree(Tree tree) {
-    return flowResult.getNodesForTree(tree);
+    return getFlowResult().getNodesForTree(tree);
   }
 
   /**
@@ -1271,6 +1293,9 @@ public abstract class GenericAnnotatedTypeFactory<
    */
   public <T extends Node> @Nullable T getFirstNodeOfKindForTree(Tree tree, Class<T> kind) {
     Set<Node> nodes = getNodesForTree(tree);
+    if (nodes == null) {
+      return null;
+    }
     for (Node node : nodes) {
       if (node.getClass() == kind) {
         return kind.cast(node);
@@ -1285,7 +1310,7 @@ public abstract class GenericAnnotatedTypeFactory<
    * @return the value of effectively final local variables
    */
   public Map<VariableElement, Value> getFinalLocalValues() {
-    return flowResult.getFinalLocalValues();
+    return getFlowResult().getFinalLocalValues();
   }
 
   /**
@@ -1413,7 +1438,7 @@ public abstract class GenericAnnotatedTypeFactory<
                         isStatic,
                         capturedStore);
                 postAnalyze(cfg);
-                initializerValue = flowResult.getValue(initializer);
+                initializerValue = getFlowResult().getValue(initializer);
               }
               fieldValues.add(new FieldInitialValue<>(fieldExpr, declaredValue, initializerValue));
             }
@@ -1555,12 +1580,9 @@ public abstract class GenericAnnotatedTypeFactory<
         classQueue.addAll(classQueueInMethod);
         break; // Done with this method.
       } else {
-        if (fromExpressionTreeCache != null) {
-          // If one cache is not null, then neither are the others.
-          fromExpressionTreeCache.clear();
-          fromMemberTreeCache.clear();
-          fromTypeTreeCache.clear();
-        }
+        fromExpressionTreeCache.clear();
+        fromMemberTreeCache.clear();
+        fromTypeTreeCache.clear();
         firstIteration = false;
       }
     }
@@ -1574,7 +1596,7 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param lambdas lambdas that are all contained within the same method
    * @return true if no lambda has a non-void return type
    */
-  private boolean containsAllVoidLambdas(Set<LambdaExpressionTree> lambdas) {
+  private boolean containsAllVoidLambdas(Set<? extends LambdaExpressionTree> lambdas) {
     for (LambdaExpressionTree lambda : lambdas) {
       if (TypesUtils.findFunctionType(TreeUtils.typeOf(lambda), processingEnv)
               .getReturnType()
@@ -1628,6 +1650,7 @@ public abstract class GenericAnnotatedTypeFactory<
       boolean isStatic,
       @Nullable Store capturedStore) {
     if (cfg == null) {
+      assert root != null : "@AssumeAssertion(nullness): root is set during flow analysis";
       cfg = CFCFGBuilder.build(root, ast, checker, this, processingEnv);
       cfg.getAllNodes(this::isIgnoredExceptionType)
           .forEach(
@@ -1654,7 +1677,7 @@ public abstract class GenericAnnotatedTypeFactory<
     AnalysisResult<Value, Store> result = analysis.getResult();
 
     // store result
-    flowResult.combine(result);
+    getFlowResult().combine(result);
     if (ast.getKind() == UnderlyingAST.Kind.METHOD) {
       // store exit store (for checking postconditions)
       CFGMethod mast = (CFGMethod) ast;
@@ -1750,7 +1773,9 @@ public abstract class GenericAnnotatedTypeFactory<
    */
   protected void handleCFGViz(ControlFlowGraph cfg) {
     if (handleCFGViz) {
-      getCFGVisualizer().visualizeWithAction(cfg, cfg.getEntryBlock(), analysis);
+      assert cfgVisualizer != null
+          : "@AssumeAssertion(nullness): the options that set handleCFGViz create a visualizer";
+      cfgVisualizer.visualizeWithAction(cfg, cfg.getEntryBlock(), analysis);
     }
   }
 
@@ -1845,16 +1870,25 @@ public abstract class GenericAnnotatedTypeFactory<
     // argument node of the MethodInvocationNode stores the synthetic NewArray tree.
     List<Node> args =
         switch (tree.getKind()) {
-          case METHOD_INVOCATION ->
-              getFirstNodeOfKindForTree(tree, MethodInvocationNode.class).getArguments();
-          case NEW_CLASS ->
-              getFirstNodeOfKindForTree(tree, ObjectCreationNode.class).getArguments();
+          case METHOD_INVOCATION -> {
+            MethodInvocationNode node = getFirstNodeOfKindForTree(tree, MethodInvocationNode.class);
+            assert node != null : "@AssumeAssertion(nullness): dataflow has a node for tree";
+            yield node.getArguments();
+          }
+          case NEW_CLASS -> {
+            ObjectCreationNode node = getFirstNodeOfKindForTree(tree, ObjectCreationNode.class);
+            assert node != null : "@AssumeAssertion(nullness): dataflow has a node for tree";
+            yield node.getArguments();
+          }
           default -> throw new BugInCF("Unexpected kind of tree: " + tree);
         };
 
     assert !args.isEmpty() : "Arguments are empty";
     Node varargsArray = args.get(args.size() - 1);
-    AnnotatedTypeMirror varargtype = getAnnotatedType(varargsArray.getTree());
+    Tree varargsArrayTree = varargsArray.getTree();
+    assert varargsArrayTree != null
+        : "@AssumeAssertion(nullness): dataflow creates a tree for the varargs array";
+    AnnotatedTypeMirror varargtype = getAnnotatedType(varargsArrayTree);
     return varargtype;
   }
 
@@ -1869,7 +1903,7 @@ public abstract class GenericAnnotatedTypeFactory<
     if (!useFlow) {
       return getAnnotatedType(tree);
     }
-    BinaryTree binaryTree = flowResult.getPostfixBinaryTree(tree);
+    BinaryTree binaryTree = getFlowResult().getPostfixBinaryTree(tree);
     return getAnnotatedType(binaryTree);
   }
 
@@ -2077,7 +2111,7 @@ public abstract class GenericAnnotatedTypeFactory<
       as = analysis.getValue(tree);
     }
     if (as == null) {
-      as = flowResult.getValue(tree);
+      as = getFlowResult().getValue(tree);
     }
     return as;
   }
@@ -2351,7 +2385,7 @@ public abstract class GenericAnnotatedTypeFactory<
   }
 
   /** The CFGVisualizer to be used by all CFAbstractAnalysis instances. */
-  protected final CFGVisualizer<Value, Store, TransferFunction> cfgVisualizer;
+  protected final @Nullable CFGVisualizer<Value, Store, TransferFunction> cfgVisualizer;
 
   /**
    * Create a new CFGVisualizer.
@@ -2438,7 +2472,7 @@ public abstract class GenericAnnotatedTypeFactory<
   }
 
   /** The CFGVisualizer to be used by all CFAbstractAnalysis instances. */
-  public CFGVisualizer<Value, Store, TransferFunction> getCFGVisualizer() {
+  public @Nullable CFGVisualizer<Value, Store, TransferFunction> getCFGVisualizer() {
     return cfgVisualizer;
   }
 
@@ -2469,9 +2503,10 @@ public abstract class GenericAnnotatedTypeFactory<
         // If this is a type for a local variable, don't apply the default to the primary
         // location.
         AnnotatedDeclaredType declaredType = (AnnotatedDeclaredType) type;
-        if (declaredType.getEnclosingType() != null) {
-          defaultQualifierForUseTypeAnnotator.visit(declaredType.getEnclosingType());
-          defaultForTypeAnnotator.visit(declaredType.getEnclosingType());
+        AnnotatedDeclaredType enclosingType = declaredType.getEnclosingType();
+        if (enclosingType != null) {
+          defaultQualifierForUseTypeAnnotator.visit(enclosingType);
+          defaultForTypeAnnotator.visit(enclosingType);
         }
         for (AnnotatedTypeMirror typeArg : declaredType.getTypeArguments()) {
           defaultQualifierForUseTypeAnnotator.visit(typeArg);
@@ -2498,7 +2533,7 @@ public abstract class GenericAnnotatedTypeFactory<
    * @param args arguments to the format string
    */
   @FormatMethod
-  private static void log(String format, Object... args) {
+  private static void log(String format, @Nullable Object... args) {
     if (debug) {
       System.out.flush();
       SystemP.sleep(1); // logging can interleave with typechecker output
@@ -2739,6 +2774,8 @@ public abstract class GenericAnnotatedTypeFactory<
 
     WholeProgramInferenceImplementation<?> wholeProgramInference =
         (WholeProgramInferenceImplementation<?>) getWholeProgramInference();
+    assert wholeProgramInference != null
+        : "@AssumeAssertion(nullness): this method is called only by WPI";
     WholeProgramInferenceScenesStorage storage =
         (WholeProgramInferenceScenesStorage) wholeProgramInference.getStorage();
 
@@ -2779,6 +2816,8 @@ public abstract class GenericAnnotatedTypeFactory<
 
     WholeProgramInferenceImplementation<?> wholeProgramInference =
         (WholeProgramInferenceImplementation<?>) getWholeProgramInference();
+    assert wholeProgramInference != null
+        : "@AssumeAssertion(nullness): this method is called only by WPI";
     WholeProgramInferenceScenesStorage storage =
         (WholeProgramInferenceScenesStorage) wholeProgramInference.getStorage();
 
@@ -3112,9 +3151,7 @@ public abstract class GenericAnnotatedTypeFactory<
     boolean parentIsThisChecker = parentChecker == this.checker;
     if (parentIsThisChecker) {
       // This is the ultimate parent;
-      return this.subcheckerSharedCFG == null
-          ? null
-          : this.subcheckerSharedCFG.getOrDefault(tree, null);
+      return this.subcheckerSharedCFG == null ? null : this.subcheckerSharedCFG.get(tree);
     }
 
     // This is a subchecker.

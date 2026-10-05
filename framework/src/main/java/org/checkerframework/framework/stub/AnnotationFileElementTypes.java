@@ -443,11 +443,10 @@ public class AnnotationFileElementTypes {
    * file.
    *
    * @param elt element for which annotations are returned
-   * @return an AnnotatedTypeMirror for {@code e} containing only annotations explicitly written in
-   *     the annotation file and in the element. {@code null} is returned if {@code element} does
-   *     not appear in an annotation file.
+   * @return the declaration annotations for {@code elt} that are explicitly written in an
+   *     annotation file, or the empty set if {@code elt} does not appear in an annotation file
    */
-  public @Nullable AnnotationMirrorSet getDeclAnnotations(Element elt) {
+  public AnnotationMirrorSet getDeclAnnotations(Element elt) {
     if (stubDebug) {
       if (isParsing()) {
         System.out.printf(
