@@ -72,14 +72,8 @@ public final class PurityChecker {
    * @param statement the statement to check
    * @param annoProvider the annotation provider
    * @param enclosingMethod the method declaration that lexically encloses {@code statement}, or
-   *     null if none does. A call to the functional method of one of that method's
-   *     functional-interface parameters has the purity that the method's callers required of the
-   *     argument; see {@link #functionalParameterCallPurity(AnnotationProvider, ExpressionTree,
-   *     ExecutableElement, MethodTree, ProcessingEnvironment)}. Pass the enclosing method for a
-   *     lambda body too: the body is checked against the functional method that the lambda
-   *     implements, but the enclosing method's parameters still hold values that its caller was
-   *     required to check, whenever the lambda runs. Pass null for an arbitrary expression, which
-   *     no method's contract governs.
+   *     null if none does. Calls to its functional-interface parameters are assumed to have the
+   *     purity that it promises; see {@link #functionalParameterCallPurity}.
    * @param env the processing environment; used only if {@code enclosingMethod} is non-null
    * @param assumeSideEffectFree true if all methods should be assumed to be @SideEffectFree
    * @param assumeDeterministic true if all methods should be assumed to be @Deterministic
