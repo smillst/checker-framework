@@ -1644,18 +1644,6 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
    * passed to a functional-interface parameter: the code that the argument denotes must have the
    * purity that the callee requires of it, because the callee may run it.
    *
-   * <p>How the argument is checked depends on its form. The body of a lambda is checked directly. A
-   * method reference is checked against the declaration of the method it refers to. A lambda or
-   * method reference whose functional method does not override the parameter's, because its type is
-   * a functional subinterface that declares an unrelated functional method, is checked like any
-   * other argument, since the subinterface's implementation of the parameter's functional method is
-   * what runs. Each result expression of a conditional or switch expression is checked on its own,
-   * because the type of such an expression is the parameter's type and says nothing about the code
-   * that any result expression denotes. An effectively final functional-interface parameter of the
-   * enclosing method needs no check, since the caller of that method already performed one. Any
-   * other argument is checked against the functional method of its declared type. A cast of an
-   * argument that denotes code is ignored; see {@link #withoutCastsOfCode}.
-   *
    * <p>This check is skipped for a requirement that the parameter's own functional method already
    * makes, because {@link #checkLambdaPurity} and {@link
    * BaseTypeVisitor.OverrideChecker#checkMethodReferencePurity} check that.

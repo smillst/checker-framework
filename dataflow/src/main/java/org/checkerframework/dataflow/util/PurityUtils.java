@@ -2,6 +2,7 @@ package org.checkerframework.dataflow.util;
 
 import com.sun.source.tree.MethodTree;
 import java.util.EnumSet;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeKind;
@@ -19,6 +20,7 @@ import org.checkerframework.dataflow.expression.ValueLiteral;
 import org.checkerframework.dataflow.qual.Deterministic;
 import org.checkerframework.dataflow.qual.Pure;
 import org.checkerframework.dataflow.qual.SideEffectFree;
+import org.checkerframework.dataflow.qual.SideEffectsOnly;
 import org.checkerframework.javacutil.AnnotationProvider;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
@@ -166,6 +168,32 @@ public final class PurityUtils {
       result.add(PurityKind.DETERMINISTIC);
     }
     return result;
+  }
+
+  /**
+   * Returns true if {@code method} or a method that it overrides is annotated with {@link
+   * SideEffectsOnly}.
+   *
+   * @param annoProvider the annotation provider
+   * @param method a method or constructor
+   * @param env the processing environment
+   * @return true if a {@code @SideEffectsOnly} annotation applies to {@code method}
+   */
+  public static boolean hasOrInheritsSideEffectsOnly(
+      AnnotationProvider annoProvider, ExecutableElement method, ProcessingEnvironment env) {
+    // `AnnotatedTypeFactory.getSideEffectsOnlyExpressionMap` also handles inheritance, but this
+    // class is in the dataflow subproject and cannot depend on the framework.  `getDeclAnnotation`
+    // alone does not suffice, because `@SideEffectsOnly` is not inherited as an annotation.
+    if (annoProvider.getDeclAnnotation(method, SideEffectsOnly.class) != null) {
+      return true;
+    }
+    for (ExecutableElement overridden :
+        ElementUtils.getOverriddenMethods(method, env.getTypeUtils())) {
+      if (annoProvider.getDeclAnnotation(overridden, SideEffectsOnly.class) != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
