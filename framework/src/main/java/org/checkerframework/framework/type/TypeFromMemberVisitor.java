@@ -49,21 +49,8 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
         || variableTree.getType() == null) {
       // VariableTree#getType returns null for binding variables from a
       // DeconstructionPatternTree.
-      AnnotatedTypeMirror componentType =
-          elt.getKind() == ElementKind.BINDING_VARIABLE
-              ? f.getRecordComponentTypeOfVarPattern(variableTree)
-              : null;
-      // The type of a `var` pattern is the upward projection of the component type (JLS 14.30.1).
-      AnnotatedTypeMirror projectedType =
-          componentType == null ? null : AnnotatedTypeProjection.upward(f, componentType);
-      // javac does not always project the type of a `var` pattern, so compare only erasures.
-      if (projectedType != null
-          && f.types.isSameType(
-              f.types.erasure(projectedType.getUnderlyingType()),
-              f.types.erasure(TreeUtils.typeOf(variableTree)))) {
-        result = projectedType;
-        // Let normal defaulting happen for the primary annotation.
-        result.clearPrimaryAnnotations();
+      if (elt != null && elt.getKind() == ElementKind.BINDING_VARIABLE) {
+        result = varPatternType(variableTree, f);
       } else {
         result = f.type(variableTree);
       }
@@ -140,6 +127,31 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
       return lambdaParamType;
     }
     return result;
+  }
+
+  /**
+   * Returns the type of the binding variable declared by a {@code var} pattern: the upward
+   * projection of the type of the record component that the pattern is matched against (JLS
+   * 14.30.1), without a primary annotation.
+   *
+   * @param bindingVariable a binding variable declared by a {@code var} pattern
+   * @param f the annotated type factory
+   * @return the type of {@code bindingVariable}
+   */
+  private static AnnotatedTypeMirror varPatternType(
+      VariableTree bindingVariable, AnnotatedTypeFactory f) {
+    AnnotatedTypeMirror recordComponentType = f.getRecordComponentTypeOfVarPattern(bindingVariable);
+    if (recordComponentType != null) {
+      AnnotatedTypeMirror projectedType = AnnotatedTypeProjection.upward(f, recordComponentType);
+      // javac does not always project the type of a `var` pattern, so compare only erasures.
+      if (TypesUtils.isErasedSameType(
+          projectedType.getUnderlyingType(), TreeUtils.typeOf(bindingVariable), f.types)) {
+        // Let normal defaulting happen for the primary annotation.
+        projectedType.clearPrimaryAnnotations();
+        return projectedType;
+      }
+    }
+    return f.type(bindingVariable);
   }
 
   // This method has no effect on the result of ((MethodSymbol) elt).getRawTypeAttributes().  That

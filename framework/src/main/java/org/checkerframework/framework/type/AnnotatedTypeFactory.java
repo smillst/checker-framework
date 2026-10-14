@@ -5337,11 +5337,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   public AnnotatedDeclaredType getRecordPatternType(Tree recordPattern) {
     TreePath path = getPath(recordPattern);
-    AnnotatedTypeMirror matchedType = path == null ? null : getTypeMatchedByPattern(path);
     AnnotatedDeclaredType patternType =
-        path == null || matchedType == null
+        path == null
             ? null
-            : new RecordPatternTypeInference(this, path).infer(matchedType);
+            : new RecordPatternTypeInference(this, path).infer(getTypeMatchedByPattern(path));
+    // Inference fails if the qualifiers of the bounds on a type argument are contradictory.
     return patternType == null ? getDefaultRecordPatternType(recordPattern) : patternType;
   }
 
@@ -5355,12 +5355,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   public @Nullable String getRecordPatternInferenceError(Tree recordPattern) {
     TreePath path = getPath(recordPattern);
-    AnnotatedTypeMirror matchedType = path == null ? null : getTypeMatchedByPattern(path);
-    if (path == null || matchedType == null) {
+    if (path == null) {
       return null;
     }
     RecordPatternTypeInference inference = new RecordPatternTypeInference(this, path);
-    inference.infer(matchedType);
+    inference.infer(getTypeMatchedByPattern(path));
     return inference.getErrorMessage();
   }
 
@@ -5403,29 +5402,22 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Returns the annotated type of the record component that the {@code var} pattern variable {@code
-   * bindingVariable} is matched against, or null if {@code bindingVariable} is not declared by a
-   * {@code var} pattern nested in a record pattern.
+   * bindingVariable} is matched against, or null if {@code bindingVariable} is not in the current
+   * compilation unit.
    *
-   * @param bindingVariable a binding variable
+   * @param bindingVariable a binding variable declared by a {@code var} pattern
    * @return the annotated type of the record component that {@code bindingVariable} is matched
    *     against, or null
    */
   public @Nullable AnnotatedTypeMirror getRecordComponentTypeOfVarPattern(
       VariableTree bindingVariable) {
-    // The type of a `var` pattern is null, or erroneous if javac has reported an error.
-    if (bindingVariable.getType() != null
-        && !TreeUtils.isVariableTreeDeclaredUsingVar(bindingVariable)) {
-      return null;
-    }
     TreePath path = getPath(bindingVariable);
     if (path == null) {
       return null;
     }
+    // A `var` pattern can only be nested in a record pattern (JLS 14.30.1).
     TreePath bindingPatternPath = path.getParentPath();
     Tree recordPattern = bindingPatternPath.getParentPath().getLeaf();
-    if (!TreeUtils.isDeconstructionPatternTree(recordPattern)) {
-      return null;
-    }
     int index =
         DeconstructionPatternUtils.getNestedPatterns(recordPattern)
             .indexOf(bindingPatternPath.getLeaf());
@@ -5434,13 +5426,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Returns the annotated type of the values that the pattern at {@code patternPath} is matched
-   * against, or null if the pattern is not in an {@code instanceof} expression, a {@code case}
-   * label, or a record pattern.
+   * against.
    *
    * @param patternPath the path to a pattern
-   * @return the annotated type of the values that the pattern is matched against, or null
+   * @return the annotated type of the values that the pattern is matched against
    */
-  private @Nullable AnnotatedTypeMirror getTypeMatchedByPattern(TreePath patternPath) {
+  private AnnotatedTypeMirror getTypeMatchedByPattern(TreePath patternPath) {
     Tree pattern = patternPath.getLeaf();
     TreePath parentPath = patternPath.getParentPath();
     Tree parent = parentPath.getLeaf();
@@ -5458,7 +5449,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
               : ((SwitchExpressionTree) switchTree).getExpression();
       return getAnnotatedType(selector);
     }
-    return null;
+    throw new BugInCF("Unexpected parent of pattern %s: %s", pattern, parent);
   }
 
   /**
