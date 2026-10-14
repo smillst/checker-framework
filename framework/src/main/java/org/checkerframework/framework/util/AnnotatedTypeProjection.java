@@ -98,7 +98,11 @@ public final class AnnotatedTypeProjection {
         for (int i = 0; i < declaredType.getTypeArguments().size(); i++) {
           typeArgs.add(upwardTypeArgument(declaredType, i));
         }
-        return withTypeArguments(declaredType, typeArgs);
+        AnnotatedDeclaredType enclosingType = declaredType.getEnclosingType();
+        return withTypeArguments(
+            declaredType,
+            enclosingType == null ? null : (AnnotatedDeclaredType) upward(enclosingType),
+            typeArgs);
       }
       case ARRAY -> {
         AnnotatedArrayType arrayType = (AnnotatedArrayType) type;
@@ -173,6 +177,14 @@ public final class AnnotatedTypeProjection {
       }
       case DECLARED -> {
         AnnotatedDeclaredType declaredType = (AnnotatedDeclaredType) type;
+        AnnotatedDeclaredType enclosingType = declaredType.getEnclosingType();
+        AnnotatedDeclaredType projectedEnclosingType = null;
+        if (enclosingType != null) {
+          projectedEnclosingType = (AnnotatedDeclaredType) downward(enclosingType);
+          if (projectedEnclosingType == null) {
+            return null;
+          }
+        }
         List<AnnotatedTypeMirror> typeArgs = new ArrayList<>();
         for (AnnotatedTypeMirror typeArg : declaredType.getTypeArguments()) {
           if (!mentionsRestricted(typeArg.getUnderlyingType())) {
@@ -194,7 +206,7 @@ public final class AnnotatedTypeProjection {
             }
           }
         }
-        return withTypeArguments(declaredType, typeArgs);
+        return withTypeArguments(declaredType, projectedEnclosingType, typeArgs);
       }
       case ARRAY -> {
         AnnotatedArrayType arrayType = (AnnotatedArrayType) type;
@@ -210,8 +222,8 @@ public final class AnnotatedTypeProjection {
   /**
    * Creates a wildcard whose annotated upper bound is {@code upper}. Its Java type is {@code ?
    * super lower} if {@code lower} is non-null, {@code ? extends upper} if {@code extendsUpper} is
-   * true, and {@code ?} otherwise. The annotated upper bound of a wildcard whose Java type is not
-   * {@code ? extends upper} is still {@code upper}, so that its qualifiers are not lost.
+   * true, and {@code ?} otherwise. The annotated upper bound of the wildcard is {@code upper} even
+   * when its Java type is not {@code ? extends upper}.
    *
    * @param upper the annotated upper bound of the wildcard
    * @param lower the lower bound of the wildcard, or null if it has none
@@ -221,6 +233,7 @@ public final class AnnotatedTypeProjection {
    */
   private AnnotatedWildcardType createWildcard(
       AnnotatedTypeMirror upper, @Nullable AnnotatedTypeMirror lower, boolean extendsUpper) {
+    // The annotated upper bound is always `upper`, so that its qualifiers are not lost.
     TypeMirror javaType =
         TypesUtils.createWildcard(
             lower == null ? null : lower.getUnderlyingType(),
@@ -238,32 +251,41 @@ public final class AnnotatedTypeProjection {
   }
 
   /**
-   * Returns a copy of {@code type} whose type arguments are {@code typeArgs}.
+   * Returns a copy of {@code type} whose enclosing type is {@code enclosingType} and whose type
+   * arguments are {@code typeArgs}.
    *
    * @param type a declared type
+   * @param enclosingType the new enclosing type, or null if {@code type} has none
    * @param typeArgs the new type arguments
-   * @return a copy of {@code type} whose type arguments are {@code typeArgs}
+   * @return a copy of {@code type} whose enclosing type is {@code enclosingType} and whose type
+   *     arguments are {@code typeArgs}
    */
   private AnnotatedDeclaredType withTypeArguments(
-      AnnotatedDeclaredType type, List<AnnotatedTypeMirror> typeArgs) {
+      AnnotatedDeclaredType type,
+      @Nullable AnnotatedDeclaredType enclosingType,
+      List<AnnotatedTypeMirror> typeArgs) {
     DeclaredType javaType = type.getUnderlyingType();
     TypeMirror[] javaTypeArgs = new TypeMirror[typeArgs.size()];
     for (int i = 0; i < typeArgs.size(); i++) {
       javaTypeArgs[i] = typeArgs.get(i).getUnderlyingType();
     }
     TypeElement element = (TypeElement) javaType.asElement();
-    DeclaredType newJavaType =
-        javaType.getEnclosingType().getKind() == TypeKind.DECLARED
-            ? types.getDeclaredType(
-                (DeclaredType) javaType.getEnclosingType(), element, javaTypeArgs)
-            : types.getDeclaredType(element, javaTypeArgs);
+    DeclaredType newJavaType;
+    if (javaType.getEnclosingType().getKind() == TypeKind.DECLARED) {
+      DeclaredType javaEnclosingType =
+          enclosingType == null
+              ? (DeclaredType) javaType.getEnclosingType()
+              : enclosingType.getUnderlyingType();
+      newJavaType = types.getDeclaredType(javaEnclosingType, element, javaTypeArgs);
+    } else {
+      newJavaType = types.getDeclaredType(element, javaTypeArgs);
+    }
     AnnotatedDeclaredType result =
         (AnnotatedDeclaredType) AnnotatedTypeMirror.createType(newJavaType, atypeFactory, false);
     result.addAnnotations(type.getPrimaryAnnotations());
     result.setTypeArguments(typeArgs);
-    AnnotatedDeclaredType enclosingType = type.getEnclosingType();
     if (enclosingType != null) {
-      result.setEnclosingType(enclosingType.deepCopy());
+      result.setEnclosingType(enclosingType);
     }
     return result;
   }

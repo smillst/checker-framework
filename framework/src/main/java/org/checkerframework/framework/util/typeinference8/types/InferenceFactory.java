@@ -741,20 +741,7 @@ public class InferenceFactory {
     }
     TypeElement typeEle =
         (TypeElement) ((DeclaredType) functionalInterface.getJavaType()).asElement();
-    AnnotatedDeclaredType classType = typeFactory.getAnnotatedType(typeEle);
-
-    Iterator<AnnotatedTypeMirror> iter = classType.getTypeArguments().iterator();
-    Theta map = new Theta();
-    for (TypeParameterElement param : typeEle.getTypeParameters()) {
-      TypeVariable typeVar = (TypeVariable) param.asType();
-      AnnotatedTypeVariable atv = (AnnotatedTypeVariable) iter.next();
-      @SuppressWarnings("interning:interned.object.creation") // no equal variable is created
-      Variable ai = new @Interned Variable(atv, typeVar, lambda, context, map);
-      map.put(typeVar, ai);
-    }
-    for (Variable v : map.values()) {
-      v.initialBounds(map);
-    }
+    Theta map = createThetaForTypeParameters(lambda, typeEle);
     context.maps.put(lambda, map);
     return map;
   }
@@ -769,15 +756,27 @@ public class InferenceFactory {
    * @return a mapping of the type parameters of {@code record} to inference variables
    */
   public Theta createThetaForRecordPattern(ExpressionTree deconstructor, TypeElement record) {
-    AnnotatedDeclaredType recordType = typeFactory.getAnnotatedType(record);
-    Iterator<AnnotatedTypeMirror> iter = recordType.getTypeArguments().iterator();
+    return createThetaForTypeParameters(deconstructor, record);
+  }
+
+  /**
+   * Creates inference variables for the type parameters of {@code typeEle}, whose bounds are the
+   * declared bounds of the type parameters.
+   *
+   * @param tree the tree for which the inference variables are created
+   * @param typeEle a generic class or interface
+   * @return a mapping of the type parameters of {@code typeEle} to inference variables
+   */
+  private Theta createThetaForTypeParameters(ExpressionTree tree, TypeElement typeEle) {
+    AnnotatedDeclaredType classType = typeFactory.getAnnotatedType(typeEle);
+    Iterator<AnnotatedTypeMirror> iter = classType.getTypeArguments().iterator();
     Theta map = new Theta();
-    for (TypeParameterElement pEle : record.getTypeParameters()) {
-      TypeVariable pl = (TypeVariable) pEle.asType();
+    for (TypeParameterElement param : typeEle.getTypeParameters()) {
+      TypeVariable typeVar = (TypeVariable) param.asType();
       AnnotatedTypeVariable atv = (AnnotatedTypeVariable) iter.next();
       @SuppressWarnings("interning:interned.object.creation") // no equal variable is created
-      Variable al = new @Interned Variable(atv, pl, deconstructor, context, map);
-      map.put(pl, al);
+      Variable ai = new @Interned Variable(atv, typeVar, tree, context, map);
+      map.put(typeVar, ai);
     }
     for (Variable v : map.values()) {
       v.initialBounds(map);

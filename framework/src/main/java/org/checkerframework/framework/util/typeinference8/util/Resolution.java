@@ -61,8 +61,7 @@ public final class Resolution {
   /**
    * Instantiates a set of variables, {@code as}, by fresh type variables. Unlike {@link
    * #resolve(Collection, BoundSet, Java8InferenceContext)}, this never instantiates a variable from
-   * its proper lower or upper bounds. This is the resolution that record pattern type inference
-   * uses (JLS 18.5.5).
+   * its proper lower or upper bounds, as specified by JLS 18.5.5.
    *
    * <p>This method removes from {@code as} every variable that already has an instantiation.
    *
