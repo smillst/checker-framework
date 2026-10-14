@@ -15,6 +15,7 @@
 
 package recordpatinfer;
 
+import java.util.List;
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
@@ -97,6 +98,19 @@ public class DeclaredBounds {
   static void recursiveBound(@Tainted Object o) {
     if (o instanceof Sorted(var v)) {
       @Untainted Object vv = v;
+    }
+  }
+
+  /**
+   * The declared bounds of T and U mention each other, so alpha and beta are resolved together and
+   * each fresh type variable's upper bound mentions the other.
+   */
+  record Mut<T extends @Untainted List<U>, U extends @Untainted List<T>>(T t, U u) {}
+
+  static void mutuallyDependentBounds(Mut<?, ?> o) {
+    if (o instanceof Mut(var t, var u)) {
+      @Untainted Object tt = t;
+      @Untainted Object uu = u;
     }
   }
 }

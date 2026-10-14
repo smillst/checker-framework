@@ -147,4 +147,25 @@ public class SupertypeInference {
       @Untainted String aa = a;
     }
   }
+
+  interface Two<X, Y> {}
+
+  /**
+   * The supertype mentions the record's type parameter twice, so alpha and both of the wildcards'
+   * inference variables are equal to one another and must be resolved to the same type.
+   */
+  record Diag<T>(T a) implements Two<T, T> {}
+
+  static void equalInferenceVariables(Two<? extends @Untainted Object, ?> o) {
+    if (o instanceof Diag(var a)) {
+      @Untainted Object aa = a;
+    }
+  }
+
+  static void equalInferenceVariablesTainted(Two<?, ?> o) {
+    if (o instanceof Diag(var a)) {
+      // :: error: (assignment)
+      @Untainted Object aa = a;
+    }
+  }
 }

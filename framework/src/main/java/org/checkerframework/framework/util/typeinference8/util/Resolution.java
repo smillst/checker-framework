@@ -254,15 +254,7 @@ public final class Resolution {
     checkNoFalse(boundSet, "on entry to resolveSmallestSet for", as);
 
     if (freshTypeVariablesOnly) {
-      // Resolve one variable at a time, so that a variable that is equal to one resolved earlier
-      // gets that variable's instantiation rather than a different fresh type variable.
-      for (Variable v : as) {
-        v.getBounds().applyInstantiationsToBounds();
-        if (!v.getBounds().hasInstantiation()) {
-          boundSet = resolveWithCapture(Collections.singleton(v), boundSet, context);
-        }
-      }
-      return boundSet;
+      return resolveWithCapture(as, boundSet, context);
     }
 
     if (boundSet.containsCapture(as)) {
