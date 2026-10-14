@@ -1138,7 +1138,7 @@ public abstract class CFAbstractTransfer<
     for (int i = 0; i < nestedPatterns.size(); i++) {
       if (nestedPatterns.get(i) instanceof LocalVariableNode bindingVar) {
         JavaExpression expr = JavaExpression.fromNode(bindingVar);
-        for (AnnotationMirror anno : componentTypes.get(i).getPrimaryAnnotations()) {
+        for (AnnotationMirror anno : componentTypes.get(i).getAnnotations()) {
           in.getRegularStore().insertOrRefine(expr, anno);
         }
       }

@@ -134,4 +134,29 @@ public class ComponentTypes {
       @Untainted String ss = s;
     }
   }
+
+  /**
+   * The component type is a type variable, whose qualifier is on its upper bound, so a nested type
+   * pattern is refined by the qualifier of the bound.
+   */
+  static <T extends @Untainted String> void typeVariableComponent(Box<T> b) {
+    if (b instanceof Box(String s)) {
+      @Untainted String fromPattern = s;
+      @Untainted String fromAccessor = b.t();
+    }
+    switch (b) {
+      case Box(String s) -> {
+        @Untainted String fromPattern = s;
+      }
+    }
+  }
+
+  static <T extends @Tainted String> void typeVariableComponentTainted(Box<T> b) {
+    if (b instanceof Box(String s)) {
+      // :: error: (assignment)
+      @Untainted String fromPattern = s;
+      // :: error: (assignment)
+      @Untainted String fromAccessor = b.t();
+    }
+  }
 }
