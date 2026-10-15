@@ -2436,18 +2436,14 @@ public final class TreeUtils {
     if (variableDecl.declaredUsingVar()) {
       return true;
     }
+    if (variableDecl.sym != null && variableDecl.sym.getKind() == ElementKind.BINDING_VARIABLE) {
+      // declaredUsingVar() is false for a pattern variable, and after attribution its type tree
+      // may be null (javac 21) or have a source position (javac 25).  The parser sets the start
+      // position of a pattern variable only if its type is not written.
+      return variableDecl.startPos != Position.NOPOS;
+    }
     JCExpression type = variableDecl.vartype;
-    if (type == null) {
-      return false;
-    }
-    if (type.pos == Position.NOPOS) {
-      return true;
-    }
-    // javac 25 gives a `var` pattern variable a type tree with a source position.  The parser sets
-    // the start position of a pattern variable only if its type is not written.
-    return variableDecl.sym != null
-        && variableDecl.sym.getKind() == ElementKind.BINDING_VARIABLE
-        && variableDecl.startPos != Position.NOPOS;
+    return type != null && type.pos == Position.NOPOS;
   }
 
   /**
