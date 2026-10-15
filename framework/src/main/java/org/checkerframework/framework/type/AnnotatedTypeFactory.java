@@ -559,6 +559,27 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   protected final Map<Tree, AnnotatedTypeMirror> fromMemberTreeCache;
 
   /**
+   * The result of inferring the type of a record pattern.
+   *
+   * @param matchedType the type of the values that are matched against the record pattern
+   * @param patternType the type of the record pattern
+   * @param failure why inference failed, or null if it did not fail
+   * @param componentTypes the types of the record components of the record pattern
+   */
+  private record RecordPatternInference(
+      AnnotatedTypeMirror matchedType,
+      AnnotatedDeclaredType patternType,
+      RecordPatternTypeInference.@Nullable Failure failure,
+      List<AnnotatedTypeMirror> componentTypes) {}
+
+  /**
+   * Mapping from a record pattern to the most recent result of inferring its type. The result is
+   * valid only for the matched type that it records, which can differ at different points in the
+   * dataflow analysis.
+   */
+  private final Map<Tree, RecordPatternInference> recordPatternInferenceCache;
+
+  /**
    * Mapping from a type tree to its annotated type; before defaults are applied, just what the
    * programmer wrote.
    */
@@ -665,6 +686,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       this.classAndMethodTreeCache = MapsP.createLruCache(cacheSize);
       this.fromExpressionTreeCache = MapsP.createLruCache(cacheSize);
       this.fromMemberTreeCache = MapsP.createLruCache(cacheSize);
+      this.recordPatternInferenceCache = MapsP.createLruCache(cacheSize);
       this.fromTypeTreeCache = MapsP.createLruCache(cacheSize);
       this.elementCache = MapsP.createLruCache(cacheSize);
       this.elementToTreeCache = MapsP.createLruCache(cacheSize);
@@ -674,6 +696,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       this.classAndMethodTreeCache = null;
       this.fromExpressionTreeCache = null;
       this.fromMemberTreeCache = null;
+      this.recordPatternInferenceCache = null;
       this.fromTypeTreeCache = null;
       this.elementCache = null;
       this.elementToTreeCache = null;
@@ -1007,6 +1030,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       fromMemberTreeCache.clear();
       fromTypeTreeCache.clear();
       classAndMethodTreeCache.clear();
+      recordPatternInferenceCache.clear();
 
       // There is no need to clear the following cache, it is limited by cache size and it
       // contents won't change between compilation units.
@@ -5327,27 +5351,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   public AnnotatedDeclaredType getRecordPatternType(Tree recordPattern) {
     TreePath path = getPath(recordPattern);
-    AnnotatedDeclaredType patternType =
-        path == null
-            ? null
-            : new RecordPatternTypeInference(this, path).infer(getTypeMatchedByPattern(path));
-    if (patternType != null) {
-      return patternType;
+    if (path == null) {
+      return getTopRecordPatternType(recordPattern);
     }
-    // Top type arguments give the record components their least precise types, which are sound
-    // whatever the matched values are.
-    AnnotatedDeclaredType defaultType = getDefaultRecordPatternType(recordPattern);
-    AnnotationMirrorSet tops = qualHierarchy.getTopAnnotations();
-    SimpleAnnotatedTypeScanner<Void, Void> topReplacer =
-        new SimpleAnnotatedTypeScanner<>(
-            (type, p) -> {
-              type.replaceAnnotations(tops);
-              return null;
-            });
-    for (AnnotatedTypeMirror typeArg : defaultType.getTypeArguments()) {
-      topReplacer.visit(typeArg);
-    }
-    return defaultType;
+    return inferRecordPatternType(path).patternType().deepCopy();
   }
 
   /**
@@ -5360,12 +5367,80 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   public RecordPatternTypeInference.@Nullable Failure getRecordPatternInferenceFailure(
       Tree recordPattern) {
     TreePath path = getPath(recordPattern);
-    if (path == null) {
-      return null;
+    return path == null ? null : inferRecordPatternType(path).failure();
+  }
+
+  /**
+   * Returns the annotated types of the record components of the record pattern {@code
+   * recordPattern}, in declaration order. These are the types that the nested patterns of {@code
+   * recordPattern} are matched against.
+   *
+   * @param recordPattern a {@code DeconstructionPatternTree}
+   * @return the annotated types of the record components of {@code recordPattern}
+   */
+  public List<AnnotatedTypeMirror> getRecordPatternComponentTypes(Tree recordPattern) {
+    TreePath path = getPath(recordPattern);
+    List<AnnotatedTypeMirror> componentTypes =
+        path == null
+            ? getRecordComponentTypes(getTopRecordPatternType(recordPattern))
+            : inferRecordPatternType(path).componentTypes();
+    return CollectionsP.mapList(AnnotatedTypeMirror::deepCopy, componentTypes);
+  }
+
+  /**
+   * Infers the type of the record pattern at {@code path}.
+   *
+   * @param path the path to a {@code DeconstructionPatternTree}
+   * @return the result of inferring the type of the record pattern
+   */
+  private RecordPatternInference inferRecordPatternType(TreePath path) {
+    Tree recordPattern = path.getLeaf();
+    AnnotatedTypeMirror matchedType = getTypeMatchedByPattern(path);
+    if (shouldCache) {
+      RecordPatternInference cached = recordPatternInferenceCache.get(recordPattern);
+      if (cached != null && cached.matchedType().equals(matchedType)) {
+        return cached;
+      }
     }
     RecordPatternTypeInference inference = new RecordPatternTypeInference(this, path);
-    inference.infer(getTypeMatchedByPattern(path));
-    return inference.getFailure();
+    AnnotatedDeclaredType patternType = inference.infer(matchedType);
+    if (patternType == null) {
+      patternType = getTopRecordPatternType(recordPattern);
+    }
+    RecordPatternInference result =
+        new RecordPatternInference(
+            matchedType.deepCopy(),
+            patternType,
+            inference.getFailure(),
+            getRecordComponentTypes(patternType));
+    if (shouldCache) {
+      recordPatternInferenceCache.put(recordPattern, result);
+    }
+    return result;
+  }
+
+  /**
+   * Returns the Java type of the record pattern {@code recordPattern}, with default annotations as
+   * its primary annotations and top annotations everywhere in its type arguments.
+   *
+   * @param recordPattern a {@code DeconstructionPatternTree}
+   * @return the Java type of {@code recordPattern}, with top type arguments
+   */
+  private AnnotatedDeclaredType getTopRecordPatternType(Tree recordPattern) {
+    // Top type arguments give the record components their least precise types, which are sound
+    // whatever the matched values are.
+    AnnotatedDeclaredType type = getDefaultRecordPatternType(recordPattern);
+    AnnotationMirrorSet tops = qualHierarchy.getTopAnnotations();
+    SimpleAnnotatedTypeScanner<Void, Void> topReplacer =
+        new SimpleAnnotatedTypeScanner<>(
+            (t, p) -> {
+              t.replaceAnnotations(tops);
+              return null;
+            });
+    for (AnnotatedTypeMirror typeArg : type.getTypeArguments()) {
+      topReplacer.visit(typeArg);
+    }
+    return type;
   }
 
   /**
@@ -5382,15 +5457,13 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Returns the annotated types of the record components of the record pattern {@code
-   * recordPattern}, in declaration order. These are the types that the nested patterns of {@code
-   * recordPattern} are matched against.
+   * Returns the annotated types of the record components of a record pattern whose type is {@code
+   * patternType}, in declaration order.
    *
-   * @param recordPattern a {@code DeconstructionPatternTree}
-   * @return the annotated types of the record components of {@code recordPattern}
+   * @param patternType the type of a record pattern
+   * @return the annotated types of the record components
    */
-  public List<AnnotatedTypeMirror> getRecordPatternComponentTypes(Tree recordPattern) {
-    AnnotatedDeclaredType patternType = getRecordPatternType(recordPattern);
+  private List<AnnotatedTypeMirror> getRecordComponentTypes(AnnotatedDeclaredType patternType) {
     // Use the accessors' return types, so that a pattern variable has the same type as an
     // invocation of the corresponding accessor.
     AnnotatedTypeMirror receiverType = applyCaptureConversion(patternType);
