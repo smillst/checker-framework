@@ -24,9 +24,13 @@ public class RecordPatternInferenceError {
   }
 
   // The two elements of the intersection give alpha = @Nullable String and alpha = @NonNull String.
+  // When inference fails, the type arguments of the pattern are top.
   <X extends I<@Nullable String> & J<String>> void conflictingBounds(X x) {
     // :: error: (type.arguments.not.inferred)
-    if (x instanceof Both(var s)) {}
+    if (x instanceof Both(var s)) {
+      // :: error: (dereference.of.nullable)
+      s.length();
+    }
   }
 
   <X extends I<@Nullable String> & J<String>> void conflictingBoundsSwitch(X x) {
@@ -40,7 +44,10 @@ public class RecordPatternInferenceError {
   // The scrutinee gives alpha = @Nullable String, which violates alpha's declared bound.
   void scrutineeViolatesBound(Supplier<@Nullable String> s) {
     // :: error: (type.arguments.not.inferred)
-    if (s instanceof NonNullSupplier(var t)) {}
+    if (s instanceof NonNullSupplier(var t)) {
+      // :: error: (dereference.of.nullable)
+      t.length();
+    }
   }
 
   void scrutineeViolatesBoundSwitch(Supplier<@Nullable String> s) {

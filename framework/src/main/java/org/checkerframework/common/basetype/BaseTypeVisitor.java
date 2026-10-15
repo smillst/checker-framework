@@ -143,6 +143,7 @@ import org.checkerframework.framework.util.JavaParserUtil;
 import org.checkerframework.framework.util.StaticJavaParserUtil;
 import org.checkerframework.framework.util.StringToJavaExpression;
 import org.checkerframework.framework.util.typeinference8.InferenceResult;
+import org.checkerframework.framework.util.typeinference8.RecordPatternTypeInference;
 import org.checkerframework.javacutil.AnnotationBuilder;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
@@ -512,19 +513,20 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
   }
 
   /**
-   * Reports a "type.arguments.not.inferred" error if the type arguments of the record pattern
-   * {@code recordPattern} cannot be inferred.
+   * Reports a "type.arguments.not.inferred" or "type.argument.inference.crashed" error if the type
+   * arguments of the record pattern {@code recordPattern} cannot be inferred.
    *
    * @param recordPattern a {@code DeconstructionPatternTree}
    */
   protected void checkRecordPatternTypeInference(Tree recordPattern) {
-    String errorMessage = atypeFactory.getRecordPatternInferenceError(recordPattern);
-    if (errorMessage != null) {
+    RecordPatternTypeInference.Failure failure =
+        atypeFactory.getRecordPatternInferenceFailure(recordPattern);
+    if (failure != null) {
       checker.reportError(
           recordPattern,
-          "type.arguments.not.inferred",
+          failure.crashed() ? "type.argument.inference.crashed" : "type.arguments.not.inferred",
           DeconstructionPatternUtils.getDeconstructor(recordPattern),
-          errorMessage);
+          failure.message());
     }
   }
 

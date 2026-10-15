@@ -5319,7 +5319,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
 
   /**
    * Returns the annotated type of the record pattern {@code recordPattern}, whose type arguments
-   * are inferred from the type of the values that are matched against it (JLS 18.5.5).
+   * are inferred from the type of the values that are matched against it (JLS 18.5.5). If they
+   * cannot be inferred, every qualifier in the type arguments is top.
    *
    * @param recordPattern a {@code DeconstructionPatternTree}
    * @return the annotated type of {@code recordPattern}
@@ -5330,26 +5331,41 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         path == null
             ? null
             : new RecordPatternTypeInference(this, path).infer(getTypeMatchedByPattern(path));
-    // Inference fails if the qualifiers of the bounds on a type argument are contradictory.
-    return patternType == null ? getDefaultRecordPatternType(recordPattern) : patternType;
+    if (patternType != null) {
+      return patternType;
+    }
+    // Top type arguments give the record components their least precise types, which are sound
+    // whatever the matched values are.
+    AnnotatedDeclaredType defaultType = getDefaultRecordPatternType(recordPattern);
+    AnnotationMirrorSet tops = qualHierarchy.getTopAnnotations();
+    SimpleAnnotatedTypeScanner<Void, Void> topReplacer =
+        new SimpleAnnotatedTypeScanner<>(
+            (type, p) -> {
+              type.replaceAnnotations(tops);
+              return null;
+            });
+    for (AnnotatedTypeMirror typeArg : defaultType.getTypeArguments()) {
+      topReplacer.visit(typeArg);
+    }
+    return defaultType;
   }
 
   /**
-   * Returns a description of why the type arguments of the record pattern {@code recordPattern}
-   * cannot be inferred, or null if they can be. When they cannot be, {@link #getRecordPatternType}
-   * returns the Java type of {@code recordPattern} with default annotations.
+   * Returns why the type arguments of the record pattern {@code recordPattern} cannot be inferred,
+   * or null if they can be.
    *
    * @param recordPattern a {@code DeconstructionPatternTree}
-   * @return a description of why inference fails for {@code recordPattern}, or null
+   * @return why inference fails for {@code recordPattern}, or null
    */
-  public @Nullable String getRecordPatternInferenceError(Tree recordPattern) {
+  public RecordPatternTypeInference.@Nullable Failure getRecordPatternInferenceFailure(
+      Tree recordPattern) {
     TreePath path = getPath(recordPattern);
     if (path == null) {
       return null;
     }
     RecordPatternTypeInference inference = new RecordPatternTypeInference(this, path);
     inference.infer(getTypeMatchedByPattern(path));
-    return inference.getErrorMessage();
+    return inference.getFailure();
   }
 
   /**

@@ -24,10 +24,10 @@ import org.checkerframework.framework.util.typeinference8.types.InferenceType;
 import org.checkerframework.framework.util.typeinference8.types.ProperType;
 import org.checkerframework.framework.util.typeinference8.types.Variable;
 import org.checkerframework.framework.util.typeinference8.types.VariableBounds.BoundKind;
-import org.checkerframework.framework.util.typeinference8.util.FalseBoundException;
 import org.checkerframework.framework.util.typeinference8.util.Java8InferenceContext;
 import org.checkerframework.framework.util.typeinference8.util.Resolution;
 import org.checkerframework.framework.util.typeinference8.util.Theta;
+import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TreeUtilsAfterJava17.DeconstructionPatternUtils;
 import org.checkerframework.javacutil.TypesUtils;
@@ -57,10 +57,16 @@ public class RecordPatternTypeInference {
   private final Java8InferenceContext context;
 
   /**
-   * A description of why inference failed, or null if it has not failed or failed without a
-   * description.
+   * Why the most recent call to {@link #infer} failed.
+   *
+   * @param message a description of the failure
+   * @param crashed true if inference failed because of a bug in the Checker Framework, rather than
+   *     because of a qualifier
    */
-  private @Nullable String errorMessage = null;
+  public record Failure(String message, boolean crashed) {}
+
+  /** Why the most recent call to {@link #infer} failed, or null if it did not fail. */
+  private @Nullable Failure failure = null;
 
   /**
    * Creates a {@code RecordPatternTypeInference}.
@@ -77,8 +83,8 @@ public class RecordPatternTypeInference {
 
   /**
    * Returns the annotated type of the record pattern when values of {@code matchedType} are matched
-   * against it, or null if inference fails. If inference fails because of a qualifier, {@link
-   * #getErrorMessage} then describes the failure.
+   * against it, or null if inference fails. If inference fails, {@link #getFailure} then describes
+   * the failure.
    *
    * @param matchedType the type of the values that are matched against the record pattern
    * @return the annotated type of the record pattern, or null if inference fails
@@ -91,19 +97,25 @@ public class RecordPatternTypeInference {
     }
     try {
       return inferGeneric(record, matchedType);
-    } catch (FalseBoundException e) {
+    } catch (Exception ex) {
+      // javac inferred the type arguments of the pattern, so the Checker Framework should too.
+      if (!typeFactory
+          .getChecker()
+          .getBooleanOption("convertTypeArgInferenceCrashToWarning", true)) {
+        throw BugInCF.addLocation(pattern, ex);
+      }
+      failure = new Failure("An exception occurred: " + ex.getLocalizedMessage(), true);
       return null;
     }
   }
 
   /**
-   * Returns a description of why the most recent call to {@link #infer} failed, or null if it did
-   * not fail because of a qualifier.
+   * Returns why the most recent call to {@link #infer} failed, or null if it did not fail.
    *
-   * @return a description of why inference failed, or null
+   * @return why inference failed, or null
    */
-  public @Nullable String getErrorMessage() {
-    return errorMessage;
+  public @Nullable Failure getFailure() {
+    return failure;
   }
 
   /**
@@ -145,23 +157,25 @@ public class RecordPatternTypeInference {
       boundSet.incorporateToFixedPoint(constraints.reduce(context));
     }
     if (boundSet.containsFalse()) {
-      return null;
+      throw new BugInCF("Record pattern inference produced the false bound for %s", pattern);
     }
     if (boundSet.annoInferenceFailed) {
-      errorMessage = boundSet.errorMsg;
+      failure = new Failure(boundSet.errorMsg, false);
       return null;
     }
-    // Two proper bounds alpha = S and alpha = T reduce to <S = T>, which ignores qualifiers, so
-    // check that the qualifiers of all of them agree.
-    for (Variable alpha : alphas) {
-      ProperType instantiation = alpha.getInstantiation();
+    // Two proper bounds v = S and v = T reduce to <S = T>, which ignores qualifiers, so check that
+    // the qualifiers of all of them agree.
+    for (Variable v : map.values()) {
+      ProperType instantiation = v.getInstantiation();
       if (instantiation == null) {
         continue;
       }
-      for (AbstractType bound : alpha.getBounds().getBoundsOfKind(BoundKind.EQUAL)) {
+      for (AbstractType bound : v.getBounds().getBoundsOfKind(BoundKind.EQUAL)) {
         if (bound.isProper()
             && ((ProperType) bound).checkAnnotationEquality(instantiation) != ConstraintSet.TRUE) {
-          errorMessage = bound.getAnnotatedType() + " = " + instantiation.getAnnotatedType();
+          failure =
+              new Failure(
+                  bound.getAnnotatedType() + " = " + instantiation.getAnnotatedType(), false);
           return null;
         }
       }
@@ -176,7 +190,7 @@ public class RecordPatternTypeInference {
     for (int i = 0; i < alphas.size(); i++) {
       ProperType instantiation = alphas.get(i).getInstantiation();
       if (instantiation == null) {
-        return null;
+        throw new BugInCF("Record pattern inference did not instantiate %s", alphas.get(i));
       }
       typeArgs.add(instantiation.getAnnotatedType());
       javaTypeArgs[i] = instantiation.getJavaType();
