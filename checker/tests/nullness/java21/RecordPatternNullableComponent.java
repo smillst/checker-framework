@@ -1,4 +1,5 @@
 import java.util.function.Supplier;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 // @below-java21-jdk-skip-test
@@ -105,6 +106,28 @@ public class RecordPatternNullableComponent {
     if (box instanceof Box(Object o)) {
       // :: error: (dereference.of.nullable)
       o.toString();
+    }
+  }
+
+  // The pattern matches null, so an explicit @NonNull is not justified.
+  void explicitNonNullUnconditional(Box<@Nullable String> box) {
+    // :: error: (assignment)
+    if (box instanceof Box(@NonNull String s)) {
+      s.length();
+    }
+  }
+
+  // The pattern does not match null, so an explicit @NonNull is justified.
+  void explicitNonNullConditional(ObjectBox box) {
+    if (box instanceof ObjectBox(@NonNull String s)) {
+      s.length();
+    }
+  }
+
+  // `s` is refined by the type of the record component.
+  void explicitNullable(Box<String> box) {
+    if (box instanceof Box(@Nullable String s)) {
+      s.length();
     }
   }
 }

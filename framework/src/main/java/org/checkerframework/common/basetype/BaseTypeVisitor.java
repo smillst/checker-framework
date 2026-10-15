@@ -448,8 +448,67 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     }
     if (TreeUtils.isDeconstructionPatternTree(tree)) {
       checkRecordPatternTypeInference(tree);
+      checkNestedBindingPatterns(tree);
     }
     return super.scan(tree, p);
+  }
+
+  /**
+   * Checks that the type of each binding variable that is declared by a type pattern nested in the
+   * record pattern {@code recordPattern} is compatible with the type of the record component that
+   * the type pattern is matched against.
+   *
+   * <p>If the type pattern is unconditional for the record component (JLS 14.30.3), the pattern
+   * always matches, so the check is an assignment check. Otherwise, the check is the same as for a
+   * type pattern in an {@code instanceof}.
+   *
+   * @param recordPattern a {@code DeconstructionPatternTree}
+   */
+  protected void checkNestedBindingPatterns(Tree recordPattern) {
+    List<? extends Tree> nestedPatterns =
+        DeconstructionPatternUtils.getNestedPatterns(recordPattern);
+    List<AnnotatedTypeMirror> componentTypes = null;
+    for (int i = 0; i < nestedPatterns.size(); i++) {
+      if (!(nestedPatterns.get(i) instanceof BindingPatternTree bindingPattern)) {
+        continue;
+      }
+      VariableTree variableTree = bindingPattern.getVariable();
+      if (TreeUtils.isVariableTreeDeclaredUsingVar(variableTree)) {
+        continue;
+      }
+      if (componentTypes == null) {
+        componentTypes = atypeFactory.getRecordPatternComponentTypes(recordPattern);
+      }
+      AnnotatedTypeMirror componentType = componentTypes.get(i);
+      AnnotatedTypeMirror variableType = atypeFactory.getAnnotatedType(variableTree);
+      if (types.isSubtype(
+          types.erasure(componentType.getUnderlyingType()),
+          types.erasure(variableType.getUnderlyingType()))) {
+        commonAssignmentCheck(variableType, componentType, bindingPattern, "assignment");
+      } else {
+        checkConditionalNestedBindingPattern(bindingPattern, variableType, componentType);
+      }
+    }
+  }
+
+  /**
+   * Reports a warning if the type of the binding variable declared by {@code bindingPattern} is not
+   * a safe downcast from {@code componentType}. {@code bindingPattern} is nested in a record
+   * pattern and is not unconditional for the record component that it is matched against.
+   *
+   * @param bindingPattern a type pattern nested in a record pattern
+   * @param variableType the type of the binding variable declared by {@code bindingPattern}
+   * @param componentType the type of the record component that {@code bindingPattern} is matched
+   *     against
+   */
+  protected void checkConditionalNestedBindingPattern(
+      BindingPatternTree bindingPattern,
+      AnnotatedTypeMirror variableType,
+      AnnotatedTypeMirror componentType) {
+    if (!isTypeCastSafe(variableType, componentType)) {
+      checker.reportWarning(
+          bindingPattern, "instanceof.pattern.unsafe", componentType, bindingPattern.getVariable());
+    }
   }
 
   /**

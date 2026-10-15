@@ -6,6 +6,7 @@ import com.sun.source.tree.ArrayAccessTree;
 import com.sun.source.tree.ArrayTypeTree;
 import com.sun.source.tree.AssertTree;
 import com.sun.source.tree.BinaryTree;
+import com.sun.source.tree.BindingPatternTree;
 import com.sun.source.tree.CatchTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompoundAssignmentTree;
@@ -436,6 +437,15 @@ public class NullnessVisitor
     super.scan(tree.getExpression(), p);
     super.scan(tree.getPattern(), p);
     return null;
+  }
+
+  @Override
+  protected void checkConditionalNestedBindingPattern(
+      BindingPatternTree bindingPattern,
+      AnnotatedTypeMirror variableType,
+      AnnotatedTypeMirror componentType) {
+    // A pattern that is not unconditional does not match null, so any nullness qualifier on the
+    // binding variable is safe.
   }
 
   /**
