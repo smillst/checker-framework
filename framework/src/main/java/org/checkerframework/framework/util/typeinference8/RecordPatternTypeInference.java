@@ -147,6 +147,10 @@ public class RecordPatternTypeInference {
     if (boundSet.containsFalse()) {
       return null;
     }
+    if (boundSet.annoInferenceFailed) {
+      errorMessage = boundSet.errorMsg;
+      return null;
+    }
     // Two proper bounds alpha = S and alpha = T reduce to <S = T>, which ignores qualifiers, so
     // check that the qualifiers of all of them agree.
     for (Variable alpha : alphas) {

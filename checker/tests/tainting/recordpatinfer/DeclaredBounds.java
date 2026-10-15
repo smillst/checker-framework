@@ -16,6 +16,7 @@
 package recordpatinfer;
 
 import java.util.List;
+import java.util.function.Supplier;
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
@@ -111,6 +112,23 @@ public class DeclaredBounds {
     if (o instanceof Mut(var t, var u)) {
       @Untainted Object tt = t;
       @Untainted Object uu = u;
+    }
+  }
+
+  record UntaintedSupplier<T extends @Untainted Object>(T t) implements Supplier<T> {
+    public T get() {
+      return t;
+    }
+  }
+
+  /**
+   * The scrutinee gives alpha = @Tainted String, which violates alpha's declared bound
+   * {@code @Untainted Object}.
+   */
+  static void scrutineeViolatesBound(Supplier<@Tainted String> s) {
+    // :: error: (type.arguments.not.inferred)
+    if (s instanceof UntaintedSupplier(var t)) {
+      @Tainted Object tt = t;
     }
   }
 }

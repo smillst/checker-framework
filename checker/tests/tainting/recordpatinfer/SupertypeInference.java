@@ -135,8 +135,14 @@ public class SupertypeInference {
     }
   }
 
+  /**
+   * String's supertype is {@code Comparable<@Tainted String>}, so {@code @Untainted String} does
+   * not satisfy the f-bound, just as {@code SelfBounded<@Untainted String>} is not a valid type.
+   */
   static void fBoundedTypeParameter(Supplier<@Untainted String> s) {
+    // :: error: (type.arguments.not.inferred)
     if (s instanceof SelfBounded(var a)) {
+      // :: error: (assignment)
       @Untainted String aa = a;
     }
   }
