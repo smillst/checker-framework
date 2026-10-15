@@ -2381,6 +2381,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     while (!TypesUtils.isErasedSameType(
         thisType.getUnderlyingType(), typeElement.asType(), types)) {
       thisType = thisType.getEnclosingType();
+      if (thisType == null) {
+        throw new BugInCF("No enclosing type of %s is %s", tree, typeElement);
+      }
     }
     return thisType;
   }
