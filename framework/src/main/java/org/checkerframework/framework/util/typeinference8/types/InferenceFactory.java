@@ -741,22 +741,86 @@ public class InferenceFactory {
     }
     TypeElement typeEle =
         (TypeElement) ((DeclaredType) functionalInterface.getJavaType()).asElement();
-    AnnotatedDeclaredType classType = typeFactory.getAnnotatedType(typeEle);
+    Theta map = createThetaForTypeParameters(lambda, typeEle);
+    context.maps.put(lambda, map);
+    return map;
+  }
 
+  /**
+   * Creates inference variables for the type parameters of the record class {@code record}, for
+   * inferring the type of a record pattern (JLS 18.5.5). Initializes their bounds from the declared
+   * bounds of the type parameters.
+   *
+   * @param deconstructor the deconstructor of the record pattern
+   * @param record the record class of the record pattern
+   * @return a mapping of the type parameters of {@code record} to inference variables
+   */
+  public Theta createThetaForRecordPattern(ExpressionTree deconstructor, TypeElement record) {
+    return createThetaForTypeParameters(deconstructor, record);
+  }
+
+  /**
+   * Creates inference variables for the type parameters of {@code typeEle}, whose bounds are the
+   * declared bounds of the type parameters.
+   *
+   * @param tree the tree for which the inference variables are created
+   * @param typeEle a generic class or interface
+   * @return a mapping of the type parameters of {@code typeEle} to inference variables
+   */
+  private Theta createThetaForTypeParameters(ExpressionTree tree, TypeElement typeEle) {
+    AnnotatedDeclaredType classType = typeFactory.getAnnotatedType(typeEle);
     Iterator<AnnotatedTypeMirror> iter = classType.getTypeArguments().iterator();
     Theta map = new Theta();
     for (TypeParameterElement param : typeEle.getTypeParameters()) {
       TypeVariable typeVar = (TypeVariable) param.asType();
       AnnotatedTypeVariable atv = (AnnotatedTypeVariable) iter.next();
       @SuppressWarnings("interning:interned.object.creation") // no equal variable is created
-      Variable ai = new @Interned Variable(atv, typeVar, lambda, context, map);
+      Variable ai = new @Interned Variable(atv, typeVar, tree, context, map);
       map.put(typeVar, ai);
     }
     for (Variable v : map.values()) {
       v.initialBounds(map);
     }
-    context.maps.put(lambda, map);
     return map;
+  }
+
+  /**
+   * Adds to {@code map} an inference variable for each captured type variable that is a type
+   * argument of {@code capturedType} and that is not already in {@code map}. The bounds of each new
+   * variable are the bounds of the captured type variable that it replaces (JLS 18.5.5, step 3).
+   *
+   * @param deconstructor the deconstructor of the record pattern
+   * @param capturedType the captured type that values matched against the record pattern have
+   * @param map the mapping to add to
+   */
+  public void addVariablesForCapturedTypeArguments(
+      ExpressionTree deconstructor, AnnotatedDeclaredType capturedType, Theta map) {
+    List<Variable> newVariables = new ArrayList<>();
+    for (AnnotatedTypeMirror typeArg : capturedType.getTypeArguments()) {
+      if (typeArg.getKind() != TypeKind.TYPEVAR
+          || !TypesUtils.isCapturedTypeVariable(typeArg.getUnderlyingType())
+          || map.get(typeArg.getUnderlyingType()) != null) {
+        continue;
+      }
+      AnnotatedTypeVariable zi = (AnnotatedTypeVariable) typeArg;
+      @SuppressWarnings("interning:interned.object.creation") // no equal variable is created
+      Variable betai =
+          new @Interned Variable(zi, zi.getUnderlyingType(), deconstructor, context, map);
+      map.put(zi.getUnderlyingType(), betai);
+      newVariables.add(betai);
+    }
+    for (Variable betai : newVariables) {
+      betai.initialBounds(map);
+      AnnotatedTypeMirror lowerBound = betai.typeVariable.getLowerBound();
+      if (lowerBound.getKind() != TypeKind.NULL) {
+        betai
+            .getBounds()
+            .addBound(
+                null,
+                VariableBounds.BoundKind.LOWER,
+                InferenceType.create(lowerBound, map, context));
+      }
+    }
   }
 
   /**

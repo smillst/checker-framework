@@ -17,6 +17,7 @@ import javax.lang.model.type.TypeKind;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedExecutableType;
+import org.checkerframework.framework.util.AnnotatedTypeProjection;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
@@ -48,7 +49,11 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
         || variableTree.getType() == null) {
       // VariableTree#getType returns null for binding variables from a
       // DeconstructionPatternTree.
-      result = f.type(variableTree);
+      if (elt != null && elt.getKind() == ElementKind.BINDING_VARIABLE) {
+        result = varPatternType(variableTree, f);
+      } else {
+        result = f.type(variableTree);
+      }
     } else {
       // (variableTree.getType() does not include the annotation before the type, so those
       // are added to the type below).
@@ -117,11 +122,73 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
       }
     }
 
+    if (elt != null
+        && elt.getKind() == ElementKind.BINDING_VARIABLE
+        && !TreeUtils.isVariableTreeDeclaredUsingVar(variableTree)) {
+      addRecordComponentQualifiers(variableTree, result, f);
+    }
+
     AnnotatedTypeMirror lambdaParamType = inferLambdaParamAnnotations(f, result, elt);
     if (lambdaParamType != null) {
       return lambdaParamType;
     }
     return result;
+  }
+
+  /**
+   * Returns the type of the binding variable declared by a {@code var} pattern: the upward
+   * projection of the type of the record component that the pattern is matched against (JLS
+   * 14.30.1).
+   *
+   * @param bindingVariable a binding variable declared by a {@code var} pattern
+   * @param f the annotated type factory
+   * @return the type of {@code bindingVariable}
+   */
+  private static AnnotatedTypeMirror varPatternType(
+      VariableTree bindingVariable, AnnotatedTypeFactory f) {
+    AnnotatedTypeMirror recordComponentType =
+        f.getRecordComponentTypeOfBindingVariable(bindingVariable);
+    if (recordComponentType != null) {
+      AnnotatedTypeMirror projectedType = AnnotatedTypeProjection.upward(f, recordComponentType);
+      // javac does not always project the type of a `var` pattern, so compare only erasures.
+      if (TypesUtils.isErasedSameType(
+          projectedType.getUnderlyingType(), TreeUtils.typeOf(bindingVariable), f.types)) {
+        return projectedType;
+      }
+      // The inferred type of the record pattern can be more specific than the type written in the
+      // source code, such as Box<String> for Box<? extends CharSequence>(var x).  A `var` pattern
+      // matches every value of the record component, so it takes the component's qualifiers.
+      AnnotatedTypeMirror type = f.type(bindingVariable);
+      type.addMissingAnnotations(recordComponentType.getAnnotations());
+      return type;
+    }
+    return f.type(bindingVariable);
+  }
+
+  /**
+   * If {@code bindingVariable} is declared by a type pattern that is nested in a record pattern and
+   * is unconditional for the type of the record component that it is matched against (JLS 14.30.3),
+   * adds to {@code type} the qualifiers of that record component in each hierarchy in which {@code
+   * type} has no primary annotation.
+   *
+   * @param bindingVariable a binding variable
+   * @param type the type of {@code bindingVariable}; side-effected by this method
+   * @param f the annotated type factory
+   */
+  private static void addRecordComponentQualifiers(
+      VariableTree bindingVariable, AnnotatedTypeMirror type, AnnotatedTypeFactory f) {
+    AnnotatedTypeMirror recordComponentType =
+        f.getRecordComponentTypeOfBindingVariable(bindingVariable);
+    if (recordComponentType == null) {
+      return;
+    }
+    // An unconditional pattern matches null (JLS 14.30.2), so the binding variable can hold any
+    // value of the record component, including null.
+    if (f.types.isSubtype(
+        f.types.erasure(recordComponentType.getUnderlyingType()),
+        f.types.erasure(type.getUnderlyingType()))) {
+      type.addMissingAnnotations(recordComponentType.getAnnotations());
+    }
   }
 
   // This method has no effect on the result of ((MethodSymbol) elt).getRawTypeAttributes().  That
