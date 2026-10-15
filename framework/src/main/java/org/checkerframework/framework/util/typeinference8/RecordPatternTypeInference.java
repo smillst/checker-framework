@@ -37,7 +37,9 @@ import org.checkerframework.javacutil.TypesUtils;
  * href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-18.html#jls-18.5.5">JLS 18.5.5</a>.
  *
  * <p>The type arguments of a record pattern are inferred even when they are written explicitly,
- * because the type of a record pattern cannot be annotated (JLS 14.30.1).
+ * because the type of a record pattern cannot be annotated (JLS 14.30.1). The inferred type can
+ * then be more specific than the written type: for example, it is {@code Box<String>} when {@code
+ * Box<? extends CharSequence>(var x)} is matched against a {@code Supplier<String>}.
  */
 public class RecordPatternTypeInference {
 

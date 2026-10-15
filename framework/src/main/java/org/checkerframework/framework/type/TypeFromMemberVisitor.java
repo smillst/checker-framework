@@ -155,6 +155,12 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
           projectedType.getUnderlyingType(), TreeUtils.typeOf(bindingVariable), f.types)) {
         return projectedType;
       }
+      // The inferred type of the record pattern can be more specific than the type written in the
+      // source code, such as Box<String> for Box<? extends CharSequence>(var x).  A `var` pattern
+      // matches every value of the record component, so it takes the component's qualifiers.
+      AnnotatedTypeMirror type = f.type(bindingVariable);
+      type.addMissingAnnotations(recordComponentType.getAnnotations());
+      return type;
     }
     return f.type(bindingVariable);
   }
