@@ -1,6 +1,8 @@
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
+// @below-java21-jdk-skip-test
+
 // A binding variable declared by a type pattern in a case label is refined by the qualifiers of
 // the selector expression, as one declared by an instanceof pattern is.
 public class CaseTypePatternRefinement {
