@@ -5390,23 +5390,25 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Returns the annotated type of the record component that the {@code var} pattern variable {@code
-   * bindingVariable} is matched against, or null if {@code bindingVariable} is not in the current
-   * compilation unit.
+   * Returns the annotated type of the record component that the pattern declaring {@code
+   * bindingVariable} is matched against, or null if that pattern is not nested in a record pattern
+   * or {@code bindingVariable} is not in the current compilation unit.
    *
-   * @param bindingVariable a binding variable declared by a {@code var} pattern
+   * @param bindingVariable a binding variable
    * @return the annotated type of the record component that {@code bindingVariable} is matched
    *     against, or null
    */
-  public @Nullable AnnotatedTypeMirror getRecordComponentTypeOfVarPattern(
+  public @Nullable AnnotatedTypeMirror getRecordComponentTypeOfBindingVariable(
       VariableTree bindingVariable) {
     TreePath path = getPath(bindingVariable);
     if (path == null) {
       return null;
     }
-    // A `var` pattern can only be nested in a record pattern (JLS 14.30.1).
     TreePath bindingPatternPath = path.getParentPath();
     Tree recordPattern = bindingPatternPath.getParentPath().getLeaf();
+    if (!TreeUtils.isDeconstructionPatternTree(recordPattern)) {
+      return null;
+    }
     int index =
         DeconstructionPatternUtils.getNestedPatterns(recordPattern)
             .indexOf(bindingPatternPath.getLeaf());
