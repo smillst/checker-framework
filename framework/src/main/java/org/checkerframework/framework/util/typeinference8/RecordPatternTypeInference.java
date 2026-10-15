@@ -6,8 +6,12 @@ import com.sun.source.util.TreePath;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
@@ -203,10 +207,51 @@ public class RecordPatternTypeInference {
     patternType.addAnnotations(
         typeFactory.getDefaultRecordPatternType(pattern).getPrimaryAnnotations());
     patternType.setTypeArguments(typeArgs);
-    // The JLS projects only the fresh type variables that resolution introduced, but this projects
-    // all captured type variables.  The component types of the pattern are the same either way,
-    // because a pattern variable's type is projected with respect to all of them (JLS 14.30.1).
-    return (AnnotatedDeclaredType) AnnotatedTypeProjection.upward(typeFactory, patternType);
+    // Project only the fresh type variables that resolution introduced, not the captured type
+    // variables that the matched type already mentions.
+    List<TypeVariable> matchedTypeVariables = new ArrayList<>();
+    addCapturedTypeVariables(matchedType.getUnderlyingType(), matchedTypeVariables);
+    return (AnnotatedDeclaredType)
+        AnnotatedTypeProjection.upward(typeFactory, patternType, matchedTypeVariables);
+  }
+
+  /**
+   * Adds to {@code typeVariables} each captured type variable that {@code type} mentions.
+   *
+   * @param type a type
+   * @param typeVariables the list to add to
+   */
+  private static void addCapturedTypeVariables(TypeMirror type, List<TypeVariable> typeVariables) {
+    switch (type.getKind()) {
+      case TYPEVAR -> {
+        if (TypesUtils.isCapturedTypeVariable(type)) {
+          typeVariables.add((TypeVariable) type);
+        }
+      }
+      case DECLARED -> {
+        DeclaredType declaredType = (DeclaredType) type;
+        for (TypeMirror typeArg : declaredType.getTypeArguments()) {
+          addCapturedTypeVariables(typeArg, typeVariables);
+        }
+        addCapturedTypeVariables(declaredType.getEnclosingType(), typeVariables);
+      }
+      case ARRAY -> addCapturedTypeVariables(((ArrayType) type).getComponentType(), typeVariables);
+      case WILDCARD -> {
+        WildcardType wildcard = (WildcardType) type;
+        if (wildcard.getExtendsBound() != null) {
+          addCapturedTypeVariables(wildcard.getExtendsBound(), typeVariables);
+        }
+        if (wildcard.getSuperBound() != null) {
+          addCapturedTypeVariables(wildcard.getSuperBound(), typeVariables);
+        }
+      }
+      case INTERSECTION -> {
+        for (TypeMirror bound : ((IntersectionType) type).getBounds()) {
+          addCapturedTypeVariables(bound, typeVariables);
+        }
+      }
+      default -> {}
+    }
   }
 
   /**

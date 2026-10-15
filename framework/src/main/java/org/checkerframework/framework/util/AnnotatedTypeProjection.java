@@ -1,6 +1,10 @@
 package org.checkerframework.framework.util;
 
+import com.sun.tools.javac.code.Type;
+import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
@@ -17,16 +21,16 @@ import org.checkerframework.framework.type.AnnotatedTypeFactory;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedArrayType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedDeclaredType;
+import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedIntersectionType;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedTypeVariable;
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
- * Computes the upward and downward projections of annotated types with respect to all captured type
- * variables, as defined in <a
+ * Computes the upward and downward projections of annotated types, as defined in <a
  * href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.10.5">JLS 4.10.5</a>.
  * The restricted type variables are the captured type variables, including the fresh type variables
- * that type inference creates.
+ * that type inference creates, except for any that are explicitly left unrestricted.
  */
 public final class AnnotatedTypeProjection {
 
@@ -35,6 +39,12 @@ public final class AnnotatedTypeProjection {
 
   /** The type utilities. */
   private final Types types;
+
+  /** The javac type utilities. */
+  private final com.sun.tools.javac.code.Types javacTypes;
+
+  /** The captured type variables that are not restricted. */
+  private final Collection<TypeVariable> unrestricted;
 
   /**
    * The restricted type variables whose upward projection is being computed. Projecting one of
@@ -46,10 +56,16 @@ public final class AnnotatedTypeProjection {
    * Creates an {@code AnnotatedTypeProjection}.
    *
    * @param atypeFactory the type factory
+   * @param unrestricted the captured type variables that are not restricted
    */
-  private AnnotatedTypeProjection(AnnotatedTypeFactory atypeFactory) {
+  private AnnotatedTypeProjection(
+      AnnotatedTypeFactory atypeFactory, Collection<TypeVariable> unrestricted) {
     this.atypeFactory = atypeFactory;
     this.types = atypeFactory.types;
+    this.javacTypes =
+        com.sun.tools.javac.code.Types.instance(
+            ((JavacProcessingEnvironment) atypeFactory.getProcessingEnv()).getContext());
+    this.unrestricted = unrestricted;
   }
 
   /**
@@ -62,7 +78,24 @@ public final class AnnotatedTypeProjection {
    */
   public static AnnotatedTypeMirror upward(
       AnnotatedTypeFactory atypeFactory, AnnotatedTypeMirror type) {
-    return new AnnotatedTypeProjection(atypeFactory).upward(type);
+    return upward(atypeFactory, type, Collections.emptyList());
+  }
+
+  /**
+   * Returns the upward projection of {@code type} with respect to all captured type variables
+   * except {@code unrestricted}: a supertype of {@code type} that does not mention any captured
+   * type variable other than those in {@code unrestricted}.
+   *
+   * @param atypeFactory the type factory
+   * @param type a type
+   * @param unrestricted the captured type variables that are not restricted
+   * @return the upward projection of {@code type}
+   */
+  public static AnnotatedTypeMirror upward(
+      AnnotatedTypeFactory atypeFactory,
+      AnnotatedTypeMirror type,
+      Collection<TypeVariable> unrestricted) {
+    return new AnnotatedTypeProjection(atypeFactory, unrestricted).upward(type);
   }
 
   /**
@@ -109,8 +142,11 @@ public final class AnnotatedTypeProjection {
         return withComponentType(arrayType, upward(arrayType.getComponentType()));
       }
       case INTERSECTION -> {
-        // Approximate the projection of an intersection type by its erasure.
-        return type.getErased();
+        List<AnnotatedTypeMirror> bounds = new ArrayList<>();
+        for (AnnotatedTypeMirror bound : ((AnnotatedIntersectionType) type).getBounds()) {
+          bounds.add(upward(bound));
+        }
+        return withBounds((AnnotatedIntersectionType) type, bounds);
       }
       default -> {
         return type.deepCopy();
@@ -213,6 +249,17 @@ public final class AnnotatedTypeProjection {
         AnnotatedTypeMirror componentType = downward(arrayType.getComponentType());
         return componentType == null ? null : withComponentType(arrayType, componentType);
       }
+      case INTERSECTION -> {
+        List<AnnotatedTypeMirror> bounds = new ArrayList<>();
+        for (AnnotatedTypeMirror bound : ((AnnotatedIntersectionType) type).getBounds()) {
+          AnnotatedTypeMirror projectedBound = downward(bound);
+          if (projectedBound == null) {
+            return null;
+          }
+          bounds.add(projectedBound);
+        }
+        return withBounds((AnnotatedIntersectionType) type, bounds);
+      }
       default -> {
         return null;
       }
@@ -220,12 +267,12 @@ public final class AnnotatedTypeProjection {
   }
 
   /**
-   * Creates a wildcard whose annotated upper bound is {@code upper}. Its Java type is {@code ?
-   * super lower} if {@code lower} is non-null, {@code ? extends upper} if {@code extendsUpper} is
-   * true, and {@code ?} otherwise. The annotated upper bound of the wildcard is {@code upper} even
-   * when its Java type is not {@code ? extends upper}.
+   * Creates a wildcard. Its Java type is {@code ? super lower} if {@code lower} is non-null, {@code
+   * ? extends upper} if {@code extendsUpper} is true, and {@code ?} otherwise. Its annotated upper
+   * bound is {@code upper} if its Java type is {@code ? extends upper}, and otherwise {@code
+   * Object} with the qualifiers of {@code upper}.
    *
-   * @param upper the annotated upper bound of the wildcard
+   * @param upper the upper bound of the wildcard
    * @param lower the lower bound of the wildcard, or null if it has none
    * @param extendsUpper true if the Java type of the wildcard is {@code ? extends upper}; ignored
    *     if {@code lower} is non-null
@@ -233,11 +280,11 @@ public final class AnnotatedTypeProjection {
    */
   private AnnotatedWildcardType createWildcard(
       AnnotatedTypeMirror upper, @Nullable AnnotatedTypeMirror lower, boolean extendsUpper) {
-    // The annotated upper bound is always `upper`, so that its qualifiers are not lost.
+    boolean isExtendsUpper = lower == null && extendsUpper;
     TypeMirror javaType =
         TypesUtils.createWildcard(
             lower == null ? null : lower.getUnderlyingType(),
-            lower == null && extendsUpper ? upper.getUnderlyingType() : null,
+            isExtendsUpper ? upper.getUnderlyingType() : null,
             types);
     AnnotatedWildcardType wildcard =
         (AnnotatedWildcardType) AnnotatedTypeMirror.createType(javaType, atypeFactory, false);
@@ -245,7 +292,16 @@ public final class AnnotatedTypeProjection {
       lower = AnnotatedTypeMirror.createType(types.getNullType(), atypeFactory, false);
       lower.addAnnotations(atypeFactory.getQualifierHierarchy().getBottomAnnotations());
     }
-    wildcard.setExtendsBound(upper);
+    if (isExtendsUpper) {
+      wildcard.setExtendsBound(upper);
+    } else {
+      // Keep the qualifiers of `upper`, which are more precise than the declared bound's.
+      AnnotatedTypeMirror object =
+          AnnotatedTypeMirror.createType(
+              TypesUtils.getObjectTypeMirror(atypeFactory.getProcessingEnv()), atypeFactory, false);
+      object.addAnnotations(upper.getAnnotations());
+      wildcard.setExtendsBound(object);
+    }
     wildcard.setSuperBound(lower);
     return wildcard;
   }
@@ -291,6 +347,37 @@ public final class AnnotatedTypeProjection {
   }
 
   /**
+   * Returns a copy of {@code type} whose bounds are {@code bounds}. A bound that is itself an
+   * intersection type contributes its own bounds.
+   *
+   * @param type an intersection type
+   * @param bounds the new bounds
+   * @return a copy of {@code type} whose bounds are {@code bounds}
+   */
+  private AnnotatedIntersectionType withBounds(
+      AnnotatedIntersectionType type, List<AnnotatedTypeMirror> bounds) {
+    List<AnnotatedTypeMirror> flatBounds = new ArrayList<>();
+    for (AnnotatedTypeMirror bound : bounds) {
+      if (bound.getKind() == TypeKind.INTERSECTION) {
+        flatBounds.addAll(((AnnotatedIntersectionType) bound).getBounds());
+      } else {
+        flatBounds.add(bound);
+      }
+    }
+    com.sun.tools.javac.util.List<Type> javaBounds = com.sun.tools.javac.util.List.nil();
+    for (int i = flatBounds.size() - 1; i >= 0; i--) {
+      javaBounds = javaBounds.prepend((Type) flatBounds.get(i).getUnderlyingType());
+    }
+    AnnotatedIntersectionType result =
+        (AnnotatedIntersectionType)
+            AnnotatedTypeMirror.createType(
+                javacTypes.makeIntersectionType(javaBounds), atypeFactory, false);
+    result.addAnnotations(type.getPrimaryAnnotations());
+    result.setBounds(flatBounds);
+    return result;
+  }
+
+  /**
    * Returns a copy of {@code type} whose component type is {@code componentType}.
    *
    * @param type an array type
@@ -323,15 +410,23 @@ public final class AnnotatedTypeProjection {
   }
 
   /**
-   * Returns true if {@code type} mentions a captured type variable.
+   * Returns true if {@code type} mentions a restricted type variable.
    *
    * @param type a type
-   * @return true if {@code type} mentions a captured type variable
+   * @return true if {@code type} mentions a restricted type variable
    */
-  private static boolean mentionsRestricted(TypeMirror type) {
+  private boolean mentionsRestricted(TypeMirror type) {
     switch (type.getKind()) {
       case TYPEVAR -> {
-        return TypesUtils.isCapturedTypeVariable(type);
+        if (!TypesUtils.isCapturedTypeVariable(type)) {
+          return false;
+        }
+        for (TypeVariable t : unrestricted) {
+          if (TypesUtils.areSame(t, (TypeVariable) type)) {
+            return false;
+          }
+        }
+        return true;
       }
       case DECLARED -> {
         DeclaredType declaredType = (DeclaredType) type;
