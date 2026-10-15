@@ -97,10 +97,9 @@ public class JlsExample {
   }
 
   /**
-   * The component patterns are type patterns rather than `var` patterns. DESIGN QUESTION: does the
-   * pattern variable get the qualifier of the inferred component type (@Untainted, as asserted
-   * here), or the default for the written type `CharSequence` (@Tainted, which would make these
-   * assignments errors)? Compare AnnotatedJEP440.testPoint, which assumes the former.
+   * The component patterns are type patterns rather than `var` patterns. They are unconditional for
+   * the component types, so each pattern variable gets the qualifier of the inferred component type
+   * rather than the default for the written type `CharSequence`.
    */
   void typePatternComponents(UnaryOperator<? extends @Untainted CharSequence> op) {
     if (op instanceof Mapper(CharSequence in, CharSequence out)) {

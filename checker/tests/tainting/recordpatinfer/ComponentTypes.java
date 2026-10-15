@@ -124,10 +124,9 @@ public class ComponentTypes {
   }
 
   /**
-   * DESIGN QUESTION: a nested *type* pattern narrows the component type. Does `s` get the qualifier
-   * of the component type of the inferred pattern type (@Untainted here), or the default for the
-   * written type `String` (@Tainted, which would make the assignment an error)? This is the same
-   * question as JlsExample.typePatternComponents, but with narrowing involved.
+   * A nested type pattern that narrows the component type is not unconditional, so the declared
+   * type of `s` has the default qualifier for the written type `String`, but dataflow refines `s`
+   * by the qualifier of the component type.
    */
   static void narrowingNestedTypePattern(Box<@Untainted Object> b) {
     if (b instanceof Box(String s)) {

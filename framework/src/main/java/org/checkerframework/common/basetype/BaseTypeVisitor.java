@@ -3370,7 +3370,8 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
           }
         }
       } else {
-        // TODO: implement deconstructed patterns.
+        // A record pattern is checked by checkRecordPatternTypeInference and
+        // checkNestedBindingPatterns.
       }
     } else {
       Tree refTypeTree = tree.getType();
