@@ -473,12 +473,13 @@ public final class AnnotatedTypeProjection {
         return ((TypeVariable) type).asElement().getEnclosingElement().equals(element);
       }
       case DECLARED -> {
-        for (TypeMirror typeArg : ((DeclaredType) type).getTypeArguments()) {
+        DeclaredType declaredType = (DeclaredType) type;
+        for (TypeMirror typeArg : declaredType.getTypeArguments()) {
           if (mentionsTypeParameter(typeArg, element)) {
             return true;
           }
         }
-        return false;
+        return mentionsTypeParameter(declaredType.getEnclosingType(), element);
       }
       case ARRAY -> {
         return mentionsTypeParameter(((ArrayType) type).getComponentType(), element);
