@@ -184,9 +184,8 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
     }
     // An unconditional pattern matches null (JLS 14.30.2), so the binding variable can hold any
     // value of the record component, including null.
-    if (f.types.isSubtype(
-        f.types.erasure(recordComponentType.getUnderlyingType()),
-        f.types.erasure(type.getUnderlyingType()))) {
+    if (TypesUtils.isErasedSubtype(
+        recordComponentType.getUnderlyingType(), type.getUnderlyingType(), f.types)) {
       type.addMissingAnnotations(recordComponentType.getAnnotations());
     }
   }
