@@ -157,8 +157,13 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
       }
       // The inferred type of the record pattern can be more specific than the type written in the
       // source code, such as Box<String> for Box<? extends CharSequence>(var x).  A `var` pattern
-      // matches every value of the record component, so it takes the component's qualifiers.
+      // matches every value of the record component, so it takes the component's qualifiers,
+      // including those of its type arguments.
       AnnotatedTypeMirror type = f.type(bindingVariable);
+      if (TypesUtils.isErasedSubtype(
+          projectedType.getUnderlyingType(), type.getUnderlyingType(), f.types)) {
+        return AnnotatedTypes.asSuper(f, projectedType, type);
+      }
       type.addMissingAnnotations(recordComponentType.getAnnotations());
       return type;
     }

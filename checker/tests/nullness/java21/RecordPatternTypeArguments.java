@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -67,6 +68,15 @@ public class RecordPatternTypeArguments {
       list.size();
       // :: error: (dereference.of.nullable)
       list.get(0).length();
+    }
+  }
+
+  // The inferred component type, ArrayList<@Nullable String>, is a subtype of the written type,
+  // List<? extends String>, so the binding variable keeps the type argument's qualifier.
+  void explicitBoundedTypeArgument(Supplier<ArrayList<@Nullable String>> s) {
+    if (s instanceof Box<? extends List<? extends String>>(var x)) {
+      // :: error: (dereference.of.nullable)
+      x.get(0).length();
     }
   }
 }
