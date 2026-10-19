@@ -432,6 +432,14 @@ public class NullnessVisitor
         }
       }
     }
+    if (tree.getPattern() instanceof BindingPatternTree bindingPattern) {
+      VariableTree variableTree = bindingPattern.getVariable();
+      AnnotatedTypeMirror variableType = atypeFactory.getAnnotatedType(variableTree);
+      AnnotatedTypeMirror exprType = atypeFactory.getAnnotatedType(tree.getExpression());
+      if (!isTypeCastSafe(variableType, withNonNull(exprType))) {
+        checker.reportWarning(tree, "instanceof.pattern.unsafe", exprType, variableTree);
+      }
+    }
     // Don't call super because it will issue an incorrect instanceof.unsafe warning.
     // Instead, just scan the expression and the pattern.
     super.scan(tree.getExpression(), p);
@@ -444,8 +452,24 @@ public class NullnessVisitor
       BindingPatternTree bindingPattern,
       AnnotatedTypeMirror variableType,
       AnnotatedTypeMirror componentType) {
-    // A pattern that is not unconditional does not match null, so any nullness qualifier on the
-    // binding variable is safe.
+    if (!isTypeCastSafe(variableType, withNonNull(componentType))) {
+      checker.reportWarning(
+          bindingPattern, "instanceof.pattern.unsafe", componentType, bindingPattern.getVariable());
+    }
+  }
+
+  /**
+   * Returns a copy of {@code type} whose primary nullness qualifier is {@code @NonNull}.
+   *
+   * @param type the type of a value that a type pattern is matched against
+   * @return a copy of {@code type} whose primary nullness qualifier is {@code @NonNull}
+   */
+  private AnnotatedTypeMirror withNonNull(AnnotatedTypeMirror type) {
+    // A type pattern that is not unconditional does not match null, so the nullness qualifier of
+    // the matched value does not restrict the binding variable.
+    AnnotatedTypeMirror copy = type.deepCopy();
+    copy.replaceAnnotation(NONNULL);
+    return copy;
   }
 
   /**

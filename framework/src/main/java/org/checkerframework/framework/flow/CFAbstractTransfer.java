@@ -1452,7 +1452,7 @@ public abstract class CFAbstractTransfer<
    * @return the selector expression of the switch whose case label declares {@code varTree}, or
    *     null
    */
-  private @Nullable ExpressionTree getSelectorOfCaseLabelBindingVariable(VariableTree varTree) {
+  protected @Nullable ExpressionTree getSelectorOfCaseLabelBindingVariable(VariableTree varTree) {
     VariableElement elt = TreeUtils.elementFromDeclaration(varTree);
     if (elt == null || elt.getKind() != ElementKind.BINDING_VARIABLE) {
       return null;

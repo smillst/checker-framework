@@ -3,6 +3,7 @@ package org.checkerframework.checker.nullness;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -20,14 +21,17 @@ import org.checkerframework.dataflow.analysis.ConditionalTransferResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
 import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.node.ArrayAccessNode;
+import org.checkerframework.dataflow.cfg.node.DeconstructorPatternNode;
 import org.checkerframework.dataflow.cfg.node.FieldAccessNode;
 import org.checkerframework.dataflow.cfg.node.InstanceOfNode;
+import org.checkerframework.dataflow.cfg.node.LocalVariableNode;
 import org.checkerframework.dataflow.cfg.node.MethodAccessNode;
 import org.checkerframework.dataflow.cfg.node.MethodInvocationNode;
 import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.ThrowNode;
+import org.checkerframework.dataflow.cfg.node.VariableDeclarationNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.util.PurityUtils;
@@ -359,7 +363,45 @@ public class NullnessTransfer
     NullnessStore thenStore = result.getThenStore();
     NullnessStore elseStore = result.getElseStore();
     makeNonNull(thenStore, n.getOperand());
+    // instanceof is false for null, so a binding variable is non-null.
+    if (n.getPatternNode() instanceof LocalVariableNode bindingVar) {
+      makeNonNull(thenStore, bindingVar);
+    }
     return new ConditionalTransferResult<>(result.getResultValue(), thenStore, elseStore);
+  }
+
+  @Override
+  public TransferResult<NullnessValue, NullnessStore> visitVariableDeclaration(
+      VariableDeclarationNode n, TransferInput<NullnessValue, NullnessStore> p) {
+    TransferResult<NullnessValue, NullnessStore> result = super.visitVariableDeclaration(n, p);
+    // A type pattern that is a case label does not match null (JLS 14.11.1).
+    if (getSelectorOfCaseLabelBindingVariable(n.getTree()) != null) {
+      result.getRegularStore().insertValue(JavaExpression.fromVariableTree(n.getTree()), NONNULL);
+    }
+    return result;
+  }
+
+  @Override
+  public TransferResult<NullnessValue, NullnessStore> visitDeconstructorPattern(
+      DeconstructorPatternNode n, TransferInput<NullnessValue, NullnessStore> p) {
+    TransferResult<NullnessValue, NullnessStore> result = super.visitDeconstructorPattern(n, p);
+    Tree recordPattern = n.getTree();
+    assert recordPattern != null : "@AssumeAssertion(nullness): a pattern node has a tree";
+    List<AnnotatedTypeMirror> componentTypes =
+        nullnessTypeFactory.getRecordPatternComponentTypes(recordPattern);
+    List<Node> nestedPatterns = n.getNestedPatterns();
+    for (int i = 0; i < nestedPatterns.size(); i++) {
+      // A type pattern that is not unconditional for its record component does not match null
+      // (JLS 14.30.2).
+      if (nestedPatterns.get(i) instanceof LocalVariableNode bindingVar
+          && !TypesUtils.isErasedSubtype(
+              componentTypes.get(i).getUnderlyingType(),
+              bindingVar.getType(),
+              analysis.getTypes())) {
+        makeNonNull(result, bindingVar);
+      }
+    }
+    return result;
   }
 
   @Override
