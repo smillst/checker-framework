@@ -7,8 +7,6 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
-import com.sun.source.tree.SwitchExpressionTree;
-import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
@@ -1469,9 +1467,7 @@ public abstract class CFAbstractTransfer<
     }
     // The parent of the case label is a case, whose parent is a switch.
     Tree switchTree = labelPath.getParentPath().getParentPath().getLeaf();
-    return switchTree instanceof SwitchTree switchStatement
-        ? switchStatement.getExpression()
-        : ((SwitchExpressionTree) switchTree).getExpression();
+    return TreeUtils.switchSelector(switchTree);
   }
 
   @Override

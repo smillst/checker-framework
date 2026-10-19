@@ -21,8 +21,6 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewArrayTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.ReturnTree;
-import com.sun.source.tree.SwitchExpressionTree;
-import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.tree.TypeCastTree;
@@ -5523,11 +5521,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     } else if (PatternCaseLabelUtils.isPatternCaseLabelTree(parent)) {
       // The parent of the case label is a case, whose parent is a switch.
       Tree switchTree = parentPath.getParentPath().getParentPath().getLeaf();
-      ExpressionTree selector =
-          switchTree instanceof SwitchTree switchStatement
-              ? switchStatement.getExpression()
-              : ((SwitchExpressionTree) switchTree).getExpression();
-      return getAnnotatedType(selector);
+      return getAnnotatedType(TreeUtils.switchSelector(switchTree));
     }
     throw new BugInCF("Unexpected parent of pattern %s: %s", pattern, parent);
   }
