@@ -580,6 +580,18 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   private final Map<Tree, RecordPatternInference> recordPatternInferenceCache;
 
   /**
+   * Compares two types by their primary annotations and those of their component types, but not by
+   * their underlying types.
+   */
+  private static final EqualityAtmComparer ANNOTATION_EQUALITY_COMPARER =
+      new EqualityAtmComparer() {
+        @Override
+        protected boolean compare(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
+          return arePrimaryAnnosEqual(type1, type2);
+        }
+      };
+
+  /**
    * Mapping from a type tree to its annotated type; before defaults are applied, just what the
    * programmer wrote.
    */
@@ -5398,7 +5410,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     AnnotatedTypeMirror matchedType = getTypeMatchedByPattern(path);
     if (shouldCache) {
       RecordPatternInference cached = recordPatternInferenceCache.get(recordPattern);
-      if (cached != null && cached.matchedType().equals(matchedType)) {
+      if (cached != null && isSameMatchedType(cached.matchedType(), matchedType)) {
         return cached;
       }
     }
@@ -5507,6 +5519,22 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if {@code type1} and {@code type2} have the same underlying type and the same
+   * annotations.
+   *
+   * @param type1 a type
+   * @param type2 a type
+   * @return true if {@code type1} and {@code type2} have the same underlying type and the same
+   *     annotations
+   */
+  private boolean isSameMatchedType(AnnotatedTypeMirror type1, AnnotatedTypeMirror type2) {
+    // AnnotatedTypeMirror#equals compares underlying types by reference, but the type of an
+    // expression, such as a method invocation, can be a new javac type each time it is computed.
+    return types.isSameType(type1.getUnderlyingType(), type2.getUnderlyingType())
+        && ANNOTATION_EQUALITY_COMPARER.visit(type1, type2, null);
+  }
+
+  /**
    * Returns the annotated type of the record component that the pattern declaring {@code
    * bindingVariable} is matched against, or null if that pattern is not nested in a record pattern
    * or {@code bindingVariable} is not in the current compilation unit.
@@ -5522,14 +5550,15 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return null;
     }
     TreePath bindingPatternPath = path.getParentPath();
-    Tree recordPattern = bindingPatternPath.getParentPath().getLeaf();
+    TreePath recordPatternPath = bindingPatternPath.getParentPath();
+    Tree recordPattern = recordPatternPath.getLeaf();
     if (!TreeUtils.isDeconstructionPatternTree(recordPattern)) {
       return null;
     }
     int index =
         DeconstructionPatternUtils.getNestedPatterns(recordPattern)
             .indexOf(bindingPatternPath.getLeaf());
-    return getRecordPatternComponentTypes(recordPattern).get(index);
+    return inferRecordPatternType(recordPatternPath).componentTypes().get(index).deepCopy();
   }
 
   /**
@@ -5547,7 +5576,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       return getAnnotatedType(instanceOfTree.getExpression());
     } else if (TreeUtils.isDeconstructionPatternTree(parent)) {
       int index = DeconstructionPatternUtils.getNestedPatterns(parent).indexOf(pattern);
-      return getRecordPatternComponentTypes(parent).get(index);
+      return inferRecordPatternType(parentPath).componentTypes().get(index).deepCopy();
     } else if (PatternCaseLabelUtils.isPatternCaseLabelTree(parent)) {
       // The parent of the case label is a case, whose parent is a switch.
       Tree switchTree = parentPath.getParentPath().getParentPath().getLeaf();
