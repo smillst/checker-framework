@@ -782,6 +782,11 @@ public class InferenceFactory {
    */
   public void addVariablesForCapturedTypeArguments(
       ExpressionTree deconstructor, AnnotatedDeclaredType capturedType, Theta map) {
+    // Unlike JLS 18.5.5, this also replaces captured type variables that the matched type already
+    // mentions, such as CAP#1 in Box<CAP#1>, the type of a record component.  Resolution replaces
+    // the variable by a fresh type variable with the same bounds, which upward projection removes,
+    // so the pattern type is Box<? extends B> rather than Box<CAP#1>.  The types of binding
+    // variables are the same either way.
     List<Variable> newVariables = new ArrayList<>();
     for (AnnotatedTypeMirror typeArg : capturedType.getTypeArguments()) {
       if (typeArg.getKind() != TypeKind.TYPEVAR
