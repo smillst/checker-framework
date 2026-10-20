@@ -387,17 +387,12 @@ public class NullnessTransfer
     TransferResult<NullnessValue, NullnessStore> result = super.visitDeconstructorPattern(n, p);
     Tree recordPattern = n.getTree();
     assert recordPattern != null : "@AssumeAssertion(nullness): a pattern node has a tree";
-    List<AnnotatedTypeMirror> componentTypes =
-        nullnessTypeFactory.getRecordPatternComponentTypes(recordPattern);
     List<Node> nestedPatterns = n.getNestedPatterns();
     for (int i = 0; i < nestedPatterns.size(); i++) {
       // A type pattern that is not unconditional for its record component does not match null
       // (JLS 14.30.2).
       if (nestedPatterns.get(i) instanceof LocalVariableNode bindingVar
-          && !TypesUtils.isErasedSubtype(
-              componentTypes.get(i).getUnderlyingType(),
-              bindingVar.getType(),
-              analysis.getTypes())) {
+          && !nullnessTypeFactory.isUnconditionalNestedTypePattern(recordPattern, i)) {
         makeNonNull(result, bindingVar);
       }
     }

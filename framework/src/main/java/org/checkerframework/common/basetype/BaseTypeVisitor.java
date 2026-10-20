@@ -482,8 +482,7 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
       }
       AnnotatedTypeMirror componentType = componentTypes.get(i);
       AnnotatedTypeMirror variableType = atypeFactory.getAnnotatedType(variableTree);
-      if (TypesUtils.isErasedSubtype(
-          componentType.getUnderlyingType(), variableType.getUnderlyingType(), types)) {
+      if (atypeFactory.isUnconditionalNestedTypePattern(recordPattern, i)) {
         commonAssignmentCheck(variableType, componentType, bindingPattern, "assignment");
       } else {
         checkConditionalNestedBindingPattern(bindingPattern, variableType, componentType);

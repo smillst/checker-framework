@@ -62,6 +62,15 @@ public class RecordPatternNullableComponent {
     }
   }
 
+  // The written type argument makes the component type a capture of `? extends CharSequence`, so
+  // `String s` is not unconditional and does not match null, even though the inferred component
+  // type is `@Nullable String`.
+  void conditionalWithExplicitTypeArgument(Supplier<@Nullable String> supplier) {
+    if (supplier instanceof Box<? extends CharSequence>(String s)) {
+      s.length();
+    }
+  }
+
   void switchVarPattern(Box<@Nullable String> box) {
     switch (box) {
       // :: error: (dereference.of.nullable)

@@ -5,6 +5,7 @@ import com.sun.source.tree.LambdaExpressionTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.AnnotationMirror;
@@ -21,6 +22,7 @@ import org.checkerframework.framework.util.AnnotatedTypeProjection;
 import org.checkerframework.framework.util.AnnotatedTypes;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.TreeUtils;
+import org.checkerframework.javacutil.TreeUtilsAfterJava17.DeconstructionPatternUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
 /**
@@ -187,10 +189,16 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
     if (recordComponentType == null) {
       return;
     }
+    TreePath path = f.getPath(bindingVariable);
+    assert path != null : "@AssumeAssertion(nullness): the binding variable has a record component";
+    TreePath bindingPatternPath = path.getParentPath();
+    Tree recordPattern = bindingPatternPath.getParentPath().getLeaf();
+    int index =
+        DeconstructionPatternUtils.getNestedPatterns(recordPattern)
+            .indexOf(bindingPatternPath.getLeaf());
     // An unconditional pattern matches null (JLS 14.30.2), so the binding variable can hold any
     // value of the record component, including null.
-    if (TypesUtils.isErasedSubtype(
-        recordComponentType.getUnderlyingType(), type.getUnderlyingType(), f.types)) {
+    if (f.isUnconditionalNestedTypePattern(recordPattern, index)) {
       type.addMissingAnnotations(recordComponentType.getAnnotations());
     }
   }

@@ -6,6 +6,7 @@ package org.checkerframework.framework.type;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BinaryTree;
+import com.sun.source.tree.BindingPatternTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.CompoundAssignmentTree;
@@ -70,6 +71,7 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
@@ -5474,6 +5476,34 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
           AnnotatedTypes.asMemberOf(types, this, receiverType, accessor).getReturnType());
     }
     return componentTypes;
+  }
+
+  /**
+   * Returns true if the pattern at index {@code index} of the record pattern {@code recordPattern}
+   * is a type pattern that is unconditional (JLS 14.30.3) for the Java type of the record component
+   * that it is matched against.
+   *
+   * @param recordPattern a {@code DeconstructionPatternTree}
+   * @param index the index of a pattern nested in {@code recordPattern}
+   * @return true if the pattern at {@code index} is a type pattern that is unconditional for its
+   *     record component
+   */
+  public boolean isUnconditionalNestedTypePattern(Tree recordPattern, int index) {
+    Tree nestedPattern = DeconstructionPatternUtils.getNestedPatterns(recordPattern).get(index);
+    if (!(nestedPattern instanceof BindingPatternTree bindingPattern)) {
+      return false;
+    }
+    // Use javac's type of the record pattern, not the inferred type, whose type arguments can be
+    // more specific than the type arguments written in the record pattern.  The type of a record
+    // component is its type in the capture of the record pattern's type (JLS 14.30.1).
+    DeclaredType patternType = (DeclaredType) types.capture(TreeUtils.typeOf(recordPattern));
+    TypeElement record = TypesUtils.getTypeElement(patternType);
+    assert record != null : "@AssumeAssertion(nullness): a record pattern's type is a record";
+    ExecutableElement accessor = record.getRecordComponents().get(index).getAccessor();
+    TypeMirror componentType =
+        ((ExecutableType) types.asMemberOf(patternType, accessor)).getReturnType();
+    return TypesUtils.isErasedSubtype(
+        componentType, TreeUtils.typeOf(bindingPattern.getVariable()), types);
   }
 
   /**
