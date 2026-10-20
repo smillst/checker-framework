@@ -135,7 +135,7 @@ public class RecordPatternTypeInference {
   private @Nullable AnnotatedDeclaredType inferGeneric(
       TypeElement record, AnnotatedTypeMirror matchedType) {
     // Step 2: the inference variables alpha1, ..., alphan, with bounds from the declared bounds.
-    Theta map = context.inferenceTypeFactory.createThetaForRecordPattern(deconstructor, record);
+    Theta map = context.inferenceTypeFactory.createThetaForTypeParameters(deconstructor, record);
     List<Variable> alphas = new ArrayList<>(map.values());
 
     // Step 3: capture each parameterized type T (or each one that bounds T), and replace the

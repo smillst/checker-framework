@@ -747,19 +747,6 @@ public class InferenceFactory {
   }
 
   /**
-   * Creates inference variables for the type parameters of the record class {@code record}, for
-   * inferring the type of a record pattern (JLS 18.5.5). Initializes their bounds from the declared
-   * bounds of the type parameters.
-   *
-   * @param deconstructor the deconstructor of the record pattern
-   * @param record the record class of the record pattern
-   * @return a mapping of the type parameters of {@code record} to inference variables
-   */
-  public Theta createThetaForRecordPattern(ExpressionTree deconstructor, TypeElement record) {
-    return createThetaForTypeParameters(deconstructor, record);
-  }
-
-  /**
    * Creates inference variables for the type parameters of {@code typeEle}, whose bounds are the
    * declared bounds of the type parameters.
    *
@@ -767,7 +754,7 @@ public class InferenceFactory {
    * @param typeEle a generic class or interface
    * @return a mapping of the type parameters of {@code typeEle} to inference variables
    */
-  private Theta createThetaForTypeParameters(ExpressionTree tree, TypeElement typeEle) {
+  public Theta createThetaForTypeParameters(ExpressionTree tree, TypeElement typeEle) {
     AnnotatedDeclaredType classType = typeFactory.getAnnotatedType(typeEle);
     Iterator<AnnotatedTypeMirror> iter = classType.getTypeArguments().iterator();
     Theta map = new Theta();
