@@ -4,6 +4,7 @@ import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -31,7 +32,6 @@ import org.checkerframework.dataflow.cfg.node.Node;
 import org.checkerframework.dataflow.cfg.node.NullLiteralNode;
 import org.checkerframework.dataflow.cfg.node.ReturnNode;
 import org.checkerframework.dataflow.cfg.node.ThrowNode;
-import org.checkerframework.dataflow.cfg.node.VariableDeclarationNode;
 import org.checkerframework.dataflow.expression.JavaExpression;
 import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.dataflow.util.PurityUtils;
@@ -371,14 +371,11 @@ public class NullnessTransfer
   }
 
   @Override
-  public TransferResult<NullnessValue, NullnessStore> visitVariableDeclaration(
-      VariableDeclarationNode n, TransferInput<NullnessValue, NullnessStore> p) {
-    TransferResult<NullnessValue, NullnessStore> result = super.visitVariableDeclaration(n, p);
+  protected void refineCaseLabelBindingVariable(
+      NullnessStore store, VariableTree varTree, ExpressionTree selector) {
+    super.refineCaseLabelBindingVariable(store, varTree, selector);
     // A type pattern that is a case label does not match null (JLS 14.11.1).
-    if (getSelectorOfCaseLabelBindingVariable(n.getTree()) != null) {
-      result.getRegularStore().insertValue(JavaExpression.fromVariableTree(n.getTree()), NONNULL);
-    }
-    return result;
+    store.insertValue(JavaExpression.fromVariableTree(varTree), NONNULL);
   }
 
   @Override

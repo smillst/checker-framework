@@ -1435,13 +1435,26 @@ public abstract class CFAbstractTransfer<
     // The last case of an exhaustive switch has no CaseNode, so refine here instead.
     ExpressionTree selector = getSelectorOfCaseLabelBindingVariable(n.getTree());
     if (selector != null) {
-      JavaExpression bindingExpr = JavaExpression.fromVariableTree(n.getTree());
-      AnnotatedTypeMirror selectorType = analysis.atypeFactory.getAnnotatedType(selector);
-      for (AnnotationMirror anno : selectorType.getAnnotations()) {
-        store.insertOrRefine(bindingExpr, anno);
-      }
+      refineCaseLabelBindingVariable(store, n.getTree(), selector);
     }
     return new RegularTransferResult<>(finishValue(null, store), store);
+  }
+
+  /**
+   * Refines, in {@code store}, the binding variable {@code varTree} of a type pattern that is a
+   * case label by the qualifiers of {@code selector}, the selector expression of the switch.
+   *
+   * @param store the store to refine; side-effected by this method
+   * @param varTree the binding variable of a type pattern that is a case label
+   * @param selector the selector expression of the switch whose case label declares {@code varTree}
+   */
+  protected void refineCaseLabelBindingVariable(
+      S store, VariableTree varTree, ExpressionTree selector) {
+    JavaExpression bindingExpr = JavaExpression.fromVariableTree(varTree);
+    AnnotatedTypeMirror selectorType = analysis.atypeFactory.getAnnotatedType(selector);
+    for (AnnotationMirror anno : selectorType.getAnnotations()) {
+      store.insertOrRefine(bindingExpr, anno);
+    }
   }
 
   /**
@@ -1452,7 +1465,7 @@ public abstract class CFAbstractTransfer<
    * @return the selector expression of the switch whose case label declares {@code varTree}, or
    *     null
    */
-  protected @Nullable ExpressionTree getSelectorOfCaseLabelBindingVariable(VariableTree varTree) {
+  private @Nullable ExpressionTree getSelectorOfCaseLabelBindingVariable(VariableTree varTree) {
     VariableElement elt = TreeUtils.elementFromDeclaration(varTree);
     if (elt == null || elt.getKind() != ElementKind.BINDING_VARIABLE) {
       return null;
