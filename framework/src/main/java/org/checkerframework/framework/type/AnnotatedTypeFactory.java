@@ -562,13 +562,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * The result of inferring the type of a record pattern.
    *
    * @param matchedType the type of the values that are matched against the record pattern
-   * @param patternType the type of the record pattern
    * @param failure why inference failed, or null if it did not fail
    * @param componentTypes the types of the record components of the record pattern
    */
   private record RecordPatternInference(
       AnnotatedTypeMirror matchedType,
-      AnnotatedDeclaredType patternType,
       RecordPatternTypeInference.@Nullable Failure failure,
       List<AnnotatedTypeMirror> componentTypes) {}
 
@@ -5354,22 +5352,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
-   * Returns the annotated type of the record pattern {@code recordPattern}, whose type arguments
-   * are inferred from the type of the values that are matched against it (JLS 18.5.5). If they
-   * cannot be inferred, every qualifier in the type arguments is top.
-   *
-   * @param recordPattern a {@code DeconstructionPatternTree}
-   * @return the annotated type of {@code recordPattern}
-   */
-  public AnnotatedDeclaredType getRecordPatternType(Tree recordPattern) {
-    TreePath path = getPath(recordPattern);
-    if (path == null) {
-      return getTopRecordPatternType(recordPattern);
-    }
-    return inferRecordPatternType(path).patternType().deepCopy();
-  }
-
-  /**
    * Returns why the type arguments of the record pattern {@code recordPattern} cannot be inferred,
    * or null if they can be.
    *
@@ -5421,10 +5403,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
     RecordPatternInference result =
         new RecordPatternInference(
-            matchedType.deepCopy(),
-            patternType,
-            inference.getFailure(),
-            getRecordComponentTypes(patternType));
+            matchedType.deepCopy(), inference.getFailure(), getRecordComponentTypes(patternType));
     if (shouldCache) {
       recordPatternInferenceCache.put(recordPattern, result);
     }
