@@ -2534,7 +2534,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       MethodInvocationTree tree, boolean inferTypeArgs) {
     ExecutableElement methodElt = TreeUtils.elementFromUse(tree);
     AnnotatedTypeMirror receiverType = getReceiverType(tree);
-    if (TreeUtils.isSuperConstructorCall(tree)) {
+    boolean isSuperConstructorCall = TreeUtils.isSuperConstructorCall(tree);
+    if (isSuperConstructorCall) {
       // A super() call has no receiver, and it should be view-point adapted as if "this" is the
       // receiver.  In `outer.super(...)`, `outer` is the enclosing instance rather than the
       // receiver; using it here would lose the instantiation of the superclass's own type
@@ -2551,8 +2552,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       // of the arguments and the result.  A fresh capture would make, for example, the Java type
       // of `sink.add(b ? x : y)`'s argument a different captured type variable than the
       // parameter type.
-      TypeMirror javacCapture =
-          TreeUtils.isSuperConstructorCall(tree) ? null : javacReceiverCapture(tree, receiverType);
+      DeclaredType javacCapture =
+          isSuperConstructorCall ? null : javacReceiverCapture(tree, receiverType);
       receiverType =
           javacCapture == null
               ? applyCaptureConversion(receiverType)
@@ -2611,17 +2612,26 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
     List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
     if (!receiverDT.asElement().equals(underlying.asElement())
-        || typeArgs.size() != underlying.getTypeArguments().size()) {
+        || typeArgs.size() != underlying.getTypeArguments().size()
+        || !hasWildcardTypeArgument(receiverDT)) {
       return null;
+    }
+    // javac also captures the wildcards of the enclosing types, which this method does not
+    // rebuild.
+    for (TypeMirror enclosing = receiverDT.getEnclosingType();
+        enclosing.getKind() == TypeKind.DECLARED;
+        enclosing = ((DeclaredType) enclosing).getEnclosingType()) {
+      if (hasWildcardTypeArgument((DeclaredType) enclosing)) {
+        return null;
+      }
     }
 
     // javac does not store the captured receiver, but its captured type variables appear in the
     // type of the method select, and each records the wildcard of the receiver that it captures.
-    IdentityHashMap<WildcardType, TypeVariable> captures = new IdentityHashMap<>();
+    IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
     collectCapturedTypeVariables(
         TreeUtils.typeOf(tree.getMethodSelect()), captures, new IdentityHashMap<>());
     TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
-    boolean hasWildcard = false;
     for (int i = 0; i < typeArgs.size(); i++) {
       TypeMirror typeArg = typeArgs.get(i);
       if (typeArg.getKind() == TypeKind.WILDCARD) {
@@ -2630,13 +2640,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
           return null;
         }
         capturedTypeArgs[i] = capture;
-        hasWildcard = true;
       } else {
         capturedTypeArgs[i] = typeArg;
       }
-    }
-    if (!hasWildcard) {
-      return null;
     }
     TypeElement receiverElt = (TypeElement) receiverDT.asElement();
     TypeMirror enclosing = receiverDT.getEnclosingType();
@@ -2646,8 +2652,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   }
 
   /**
+   * Returns true if any type argument of {@code type} is a wildcard.
+   *
+   * @param type a declared type
+   * @return true if any type argument of {@code type} is a wildcard
+   */
+  private static boolean hasWildcardTypeArgument(DeclaredType type) {
+    for (TypeMirror typeArg : type.getTypeArguments()) {
+      if (typeArg.getKind() == TypeKind.WILDCARD) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Adds to {@code captures} each captured type variable that appears in {@code type}, keyed by the
-   * wildcard that it captures.
+   * wildcard that it captures. A wildcard with more than one capture maps to null.
    *
    * @param type a type
    * @param captures a map from a wildcard to its capture, which this method adds to
@@ -2655,7 +2676,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    */
   private static void collectCapturedTypeVariables(
       TypeMirror type,
-      IdentityHashMap<WildcardType, TypeVariable> captures,
+      IdentityHashMap<WildcardType, @Nullable TypeVariable> captures,
       IdentityHashMap<TypeVariable, Boolean> visited) {
     switch (type.getKind()) {
       case EXECUTABLE -> {
@@ -2693,7 +2714,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         }
         WildcardType wildcard = TypesUtils.getCapturedWildcard(typeVar);
         if (wildcard != null) {
-          captures.put(wildcard, typeVar);
+          // Another capture of the same wildcard is, for example, a capture of an argument that
+          // is the same variable as the receiver, as in `b.pair(b)`.
+          captures.put(wildcard, captures.containsKey(wildcard) ? null : typeVar);
         }
         collectCapturedTypeVariables(typeVar.getUpperBound(), captures, visited);
         collectCapturedTypeVariables(typeVar.getLowerBound(), captures, visited);

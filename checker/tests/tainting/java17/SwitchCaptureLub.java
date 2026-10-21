@@ -68,4 +68,18 @@ public class SwitchCaptureLub {
     sink.add(b ? good : (bad));
     sink.add(b ? good : good);
   }
+
+  static <U> U id(U u) {
+    return u;
+  }
+
+  // javac infers U to be sink's captured type variable.
+  void nestedInferredArgument(
+      @Untainted Comparator<List<@Tainted String>> bad,
+      @Untainted Comparator<List<@Untainted String>> good,
+      List<? super @Untainted Comparator<? super List<@Untainted String>>> sink) {
+    // :: error: (argument) :: error: (type.arguments.not.inferred)
+    sink.add(id(bad));
+    sink.add(id(good));
+  }
 }
