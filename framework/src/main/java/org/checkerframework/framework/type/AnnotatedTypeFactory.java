@@ -2613,7 +2613,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
     if (!receiverDT.asElement().equals(underlying.asElement())
         || typeArgs.size() != underlying.getTypeArguments().size()
-        || !hasWildcardTypeArgument(receiverDT)) {
+        || !TypesUtils.isWildcardParameterized(receiverDT)) {
       return null;
     }
     // javac also captures the wildcards of the enclosing types, which this method does not
@@ -2621,7 +2621,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     for (TypeMirror enclosing = receiverDT.getEnclosingType();
         enclosing.getKind() == TypeKind.DECLARED;
         enclosing = ((DeclaredType) enclosing).getEnclosingType()) {
-      if (hasWildcardTypeArgument((DeclaredType) enclosing)) {
+      if (TypesUtils.isWildcardParameterized(enclosing)) {
         return null;
       }
     }
@@ -2649,21 +2649,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     return enclosing.getKind() == TypeKind.DECLARED
         ? types.getDeclaredType((DeclaredType) enclosing, receiverElt, capturedTypeArgs)
         : types.getDeclaredType(receiverElt, capturedTypeArgs);
-  }
-
-  /**
-   * Returns true if any type argument of {@code type} is a wildcard.
-   *
-   * @param type a declared type
-   * @return true if any type argument of {@code type} is a wildcard
-   */
-  private static boolean hasWildcardTypeArgument(DeclaredType type) {
-    for (TypeMirror typeArg : type.getTypeArguments()) {
-      if (typeArg.getKind() == TypeKind.WILDCARD) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /**
@@ -2709,7 +2694,10 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       }
       case TYPEVAR -> {
         TypeVariable typeVar = (TypeVariable) type;
-        if (visited.put(typeVar, Boolean.TRUE) != null) {
+        // The bounds of a type variable declared in source code cannot contain a captured type
+        // variable.
+        if (!TypesUtils.isCapturedOrSyntheticTypeVariable(typeVar)
+            || visited.put(typeVar, Boolean.TRUE) != null) {
           return;
         }
         WildcardType wildcard = TypesUtils.getCapturedWildcard(typeVar);

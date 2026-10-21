@@ -30,8 +30,12 @@ public class SwitchCaptureLub {
       Comparator<List<T>> c1,
       Comparator<Object> c2,
       List<? super Comparator<? super List<T>>> sink) {
-    // :: error: (argument)
-    sink.add(b ? c1 : c2);
+    sink.add(
+        b
+            // :: error: (argument)
+            ? c1
+            // :: error: (argument)
+            : c2);
   }
 
   // The arms differ from the lower bound of sink's capture only in a nested type argument.
@@ -62,10 +66,16 @@ public class SwitchCaptureLub {
       @Untainted Comparator<List<@Tainted String>> bad,
       @Untainted Comparator<List<@Untainted String>> good,
       List<? super @Untainted Comparator<? super List<@Untainted String>>> sink) {
-    // :: error: (argument)
-    sink.add(b ? bad : good);
-    // :: error: (argument)
-    sink.add(b ? good : (bad));
+    sink.add(
+        b
+            // :: error: (argument)
+            ? bad
+            : good);
+    sink.add(
+        b
+            ? good
+            // :: error: (argument)
+            : (bad));
     sink.add(b ? good : good);
   }
 
