@@ -2988,7 +2988,9 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     Tree startSlowTypeCheckingTree = slowTypecheckingTree;
 
     boolean valid = validateTypeOf(switchExpressionTree);
-    if (valid) {
+    // Each result expression of such a switch is checked against the target type in
+    // #commonAssignmentCheck.
+    if (valid && !isPolyExpressionOfCapturedType(switchExpressionTree)) {
       AnnotatedTypeMirror switchType = atypeFactory.getAnnotatedType(switchExpressionTree);
       SwitchExpressionScanner<Void, Void> scanner =
           new FunctionalSwitchExpressionScanner<>(
@@ -3679,6 +3681,30 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     if (shouldSkipUses(valueExpTree)) {
       return true;
     }
+    // JLS 15.25.3 and 15.28.1: a poly conditional or switch expression is compatible with a
+    // target type if each of its result expressions is.  When the target type is a captured type
+    // variable, the type of the whole expression is that type variable, and comparing two uses of
+    // one type variable ignores the type arguments of the result expressions, so each result
+    // expression is checked instead.
+    ExpressionTree withoutParens = TreeUtils.withoutParens(valueExpTree);
+    if (withoutParens instanceof ConditionalExpressionTree condExprTree
+        && isPolyExpressionOfCapturedType(condExprTree)) {
+      boolean trueResult =
+          commonAssignmentCheck(varType, condExprTree.getTrueExpression(), errorKey, extraArgs);
+      boolean falseResult =
+          commonAssignmentCheck(varType, condExprTree.getFalseExpression(), errorKey, extraArgs);
+      return trueResult && falseResult;
+    }
+    if (withoutParens instanceof SwitchExpressionTree switchExprTree
+        && isPolyExpressionOfCapturedType(switchExprTree)) {
+      SwitchExpressionScanner<Boolean, Void> scanner =
+          new FunctionalSwitchExpressionScanner<>(
+              (ExpressionTree resultTree, Void unused) ->
+                  commonAssignmentCheck(varType, resultTree, errorKey, extraArgs),
+              (r1, r2) -> (r1 == null || r1) && (r2 == null || r2));
+      Boolean result = scanner.scanSwitchExpression(switchExprTree, null);
+      return result == null || result;
+    }
     if (valueExpTree instanceof MemberReferenceTree
         || valueExpTree instanceof LambdaExpressionTree) {
       // Member references and lambda expressions are type checked separately
@@ -3730,6 +3756,17 @@ public class BaseTypeVisitor<Factory extends GenericAnnotatedTypeFactory<?, ?, ?
     assert valueType != null : "null type for expression: " + valueExpTree;
     result = commonAssignmentCheck(varType, valueType, valueExpTree, errorKey, extraArgs) && result;
     return result;
+  }
+
+  /**
+   * Returns true if {@code tree} is a poly expression whose Java type is a captured type variable.
+   *
+   * @param tree an expression
+   * @return true if {@code tree} is a poly expression whose Java type is a captured type variable
+   */
+  private static boolean isPolyExpressionOfCapturedType(ExpressionTree tree) {
+    return TreeUtils.isPolyExpression(tree)
+        && TypesUtils.isCapturedTypeVariable(TreeUtils.typeOf(tree));
   }
 
   /**

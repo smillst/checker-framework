@@ -24,4 +24,31 @@ public class SwitchCaptureLub {
       List<? super Comparator<? super List<T>>> sink) {
     sink.add(b ? c1 : c2);
   }
+
+  static class Holder<U> {
+    List<? super Comparator<? super List<U>>> sink;
+
+    Holder(List<? super Comparator<? super List<U>>> sink) {
+      this.sink = sink;
+    }
+  }
+
+  <T> void fieldReceiver(
+      int i, boolean b, Holder<T> h, Comparator<List<T>> c1, Comparator<Object> c2) {
+    h.sink.add(
+        switch (i) {
+          case 2 -> c1;
+          default -> c2;
+        });
+    h.sink.add(b ? c1 : c2);
+  }
+
+  static <U> U id(U u) {
+    return u;
+  }
+
+  <T> void inferredArgument(
+      Comparator<List<T>> c1, List<? super Comparator<? super List<T>>> sink) {
+    sink.add(id(c1));
+  }
 }
