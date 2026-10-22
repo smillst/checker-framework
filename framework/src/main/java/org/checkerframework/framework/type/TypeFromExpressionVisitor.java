@@ -43,6 +43,8 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.SwitchExpressionScanner;
 import org.checkerframework.javacutil.SwitchExpressionScanner.FunctionalSwitchExpressionScanner;
+import org.checkerframework.javacutil.TreePathUtil;
+import org.checkerframework.javacutil.TreePathUtil.EnclosingNonParen;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -290,8 +292,24 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     AnnotatedTypeMirror type = f.getAnnotatedType(tree.getExpression());
     if (type.getKind() == TypeKind.ARRAY) {
       AnnotatedTypeMirror t = ((AnnotatedArrayType) type).getComponentType();
-      t = f.applyCaptureConversion(t, tree);
-      return t;
+      TreePath path = f.getPath(tree);
+      if (path != null) {
+        // Do not capture the receiver of a member select, nor the left-hand side of an assignment.
+        // javac does not capture the type of an array access, so the capture of a method
+        // invocation's receiver can be recovered from the method's type.
+        EnclosingNonParen enclosing = TreePathUtil.enclosingNonParen(path);
+        Tree child = enclosing.enclosingChild();
+        @SuppressWarnings("interning:not.interned") // Looking for exact object.
+        boolean uncaptured =
+            (enclosing.enclosing() instanceof MemberSelectTree memberSelect
+                    && memberSelect.getExpression() == child)
+                || (enclosing.enclosing() instanceof AssignmentTree assignment
+                    && assignment.getVariable() == child);
+        if (uncaptured) {
+          return t;
+        }
+      }
+      return f.applyCaptureConversion(t);
     }
     throw new BugInCF("Unexpected type: " + type);
   }

@@ -40,6 +40,10 @@ public class ConditionalNullCapture {
     var x = b ? null : a[0].get(0);
   }
 
+  <T> void parenthesizedArrayReceiver(boolean b, List<? super List<T>>[] a) {
+    var x = b ? null : (a[0]).get(0);
+  }
+
   @SuppressWarnings("unchecked")
   <T> void castReceiver(boolean b, Object o) {
     var x = b ? null : ((List<? super List<T>>) o).get(0);
