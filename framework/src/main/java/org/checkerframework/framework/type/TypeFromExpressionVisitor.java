@@ -224,12 +224,12 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     AnnotatedTypeMirror selfType = f.getImplicitReceiverType(tree);
     if (selfType != null) {
       AnnotatedTypeMirror type = AnnotatedTypes.asMemberOf(f.types, f, selfType, elt).asUse();
-      return f.applyCaptureConversion(type, TreeUtils.typeOf(tree));
+      return f.applyCaptureConversion(type, tree);
     }
 
     AnnotatedTypeMirror type = f.getAnnotatedType(elt);
 
-    return f.applyCaptureConversion(type, TreeUtils.typeOf(tree));
+    return f.applyCaptureConversion(type, tree);
   }
 
   @Override
@@ -273,16 +273,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
       typeOfReceiver = f.applyCaptureConversion(typeOfReceiver);
       AnnotatedTypeMirror typeOfFieldAccess =
           AnnotatedTypes.asMemberOf(f.types, f, typeOfReceiver, elt);
-      TreePath path = f.getPath(tree);
-
-      // Only capture the type if this is not the left-hand side of an assignment.
-      if (path != null && path.getParentPath().getLeaf() instanceof AssignmentTree assignmentTree) {
-        @SuppressWarnings("interning:not.interned") // Looking for exact object.
-        boolean leftHandSide = assignmentTree.getExpression() != tree;
-        if (leftHandSide) {
-          return typeOfFieldAccess;
-        }
-      }
+      // javac does not capture the type of the left-hand side of an assignment.
       return f.applyCaptureConversion(typeOfFieldAccess, tree);
     }
   }

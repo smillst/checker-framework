@@ -2611,8 +2611,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     DeclaredType receiverDT = (DeclaredType) receiverTM;
     DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
     List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
-    if (!receiverDT.asElement().equals(underlying.asElement())
-        || typeArgs.size() != underlying.getTypeArguments().size()
+    if (!isSameClassAndArity(receiverDT, underlying)
         || !TypesUtils.isWildcardParameterized(receiverDT)) {
       return null;
     }
@@ -2631,17 +2630,18 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
     collectCapturedTypeVariables(
         TreeUtils.typeOf(tree.getMethodSelect()), captures, new IdentityHashMap<>());
+    if (typeArgs.stream().noneMatch(typeArg -> captures.get(typeArg) != null)) {
+      return null;
+    }
     TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
     // A fresh capture of the receiver, for the wildcards whose capture by javac is not known.
     DeclaredType freshCapture = null;
-    boolean recovered = false;
     for (int i = 0; i < typeArgs.size(); i++) {
       TypeMirror typeArg = typeArgs.get(i);
       if (typeArg.getKind() == TypeKind.WILDCARD) {
         TypeVariable capture = captures.get(typeArg);
         if (capture != null) {
           capturedTypeArgs[i] = capture;
-          recovered = true;
         } else {
           // javac's capture of this wildcard does not appear in the method's type, or cannot be
           // told apart from another capture of the same wildcard.
@@ -2653,9 +2653,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       } else {
         capturedTypeArgs[i] = typeArg;
       }
-    }
-    if (!recovered) {
-      return null;
     }
     TypeElement receiverElt = (TypeElement) receiverDT.asElement();
     TypeMirror enclosing = receiverDT.getEnclosingType();
@@ -5514,24 +5511,39 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * <p>If the Java type of {@code tree} is a parameterization of the same class as {@code type},
    * then the result has the same captured type variables as the Java type of {@code tree}, and is
    * not captured if the Java type of {@code tree} is not. Otherwise, the result is a fresh capture
-   * of {@code type}.
+   * of {@code type}. If {@code type} is not a declared type, this method returns {@code type}.
    *
    * @param type the type of {@code tree}, which is not captured
    * @param tree an expression
    * @return the result of applying capture conversion to {@code type}
    */
   public AnnotatedTypeMirror applyCaptureConversion(AnnotatedTypeMirror type, ExpressionTree tree) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return type;
+    }
     TypeMirror treeType = TreeUtils.typeOf(tree);
-    if (type.getKind() == TypeKind.DECLARED && treeType.getKind() == TypeKind.DECLARED) {
+    if (treeType.getKind() == TypeKind.DECLARED) {
       DeclaredType underlying = (DeclaredType) type.getUnderlyingType();
       DeclaredType treeDT = (DeclaredType) treeType;
-      if (underlying.asElement().equals(treeDT.asElement())
-          && underlying.getTypeArguments().size() == treeDT.getTypeArguments().size()
-          && isCaptureOrSame(underlying, treeDT)) {
+      if (isSameClassAndArity(underlying, treeDT) && isCaptureOrSame(underlying, treeDT)) {
         return applyCaptureConversion(type, treeType);
       }
     }
     return applyCaptureConversion(type);
+  }
+
+  /**
+   * Returns true if {@code type1} and {@code type2} are types of the same class with the same
+   * number of type arguments.
+   *
+   * @param type1 a declared type
+   * @param type2 a declared type
+   * @return true if {@code type1} and {@code type2} are types of the same class with the same
+   *     number of type arguments
+   */
+  private static boolean isSameClassAndArity(DeclaredType type1, DeclaredType type2) {
+    return type1.asElement().equals(type2.asElement())
+        && type1.getTypeArguments().size() == type2.getTypeArguments().size();
   }
 
   /**
