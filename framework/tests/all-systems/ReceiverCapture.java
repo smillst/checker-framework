@@ -21,6 +21,7 @@ public class ReceiverCapture {
     Pair<?, ?> p = b.pair(b);
   }
 
+  @SuppressWarnings("interning:argument") // Interning defaults lower bounds to @InternedDistinct.
   void argumentCaptureSuper(Box<? super String> b, boolean c) {
     b.put(c ? "a" : "b");
     Pair<?, ?> p = b.pair(b);
