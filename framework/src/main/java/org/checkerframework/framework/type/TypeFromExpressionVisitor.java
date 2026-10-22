@@ -281,7 +281,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
           return typeOfFieldAccess;
         }
       }
-      return f.applyCaptureConversion(typeOfFieldAccess);
+      return f.applyCaptureConversion(typeOfFieldAccess, tree);
     }
   }
 
@@ -290,7 +290,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     AnnotatedTypeMirror type = f.getAnnotatedType(tree.getExpression());
     if (type.getKind() == TypeKind.ARRAY) {
       AnnotatedTypeMirror t = ((AnnotatedArrayType) type).getComponentType();
-      t = f.applyCaptureConversion(t);
+      t = f.applyCaptureConversion(t, tree);
       return t;
     }
     throw new BugInCF("Unexpected type: " + type);
@@ -401,7 +401,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     if (TypesUtils.isRaw(TreeUtils.typeOf(tree))) {
       return returnT.getErased();
     }
-    return f.applyCaptureConversion(returnT);
+    return f.applyCaptureConversion(returnT, tree);
   }
 
   @Override
