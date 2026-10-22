@@ -1512,8 +1512,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       logGat("getAnnotatedType(%s): before addComputedTypeAnnotations, type=%s%n", tree, type);
     }
     addComputedTypeAnnotations(tree, type);
-    if (tree instanceof TypeCastTree) {
-      type = applyCaptureConversion(type);
+    if (tree instanceof TypeCastTree typeCastTree) {
+      type = applyCaptureConversion(type, typeCastTree);
     }
     if (debugGat) {
       logGat("getAnnotatedType(%s): after addComputedTypeAnnotations, type=%s%n", tree, type);
@@ -2611,8 +2611,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     DeclaredType receiverDT = (DeclaredType) receiverTM;
     DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
     List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
-    if (!receiverDT.asElement().equals(underlying.asElement())
-        || typeArgs.size() != underlying.getTypeArguments().size()
+    if (!isSameClassAndArity(receiverDT, underlying)
         || !TypesUtils.isWildcardParameterized(receiverDT)) {
       return null;
     }
@@ -2631,15 +2630,26 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
     collectCapturedTypeVariables(
         TreeUtils.typeOf(tree.getMethodSelect()), captures, new IdentityHashMap<>());
+    if (typeArgs.stream().noneMatch(typeArg -> captures.get(typeArg) != null)) {
+      return null;
+    }
     TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
+    // A fresh capture of the receiver, for the wildcards whose capture by javac is not known.
+    DeclaredType freshCapture = null;
     for (int i = 0; i < typeArgs.size(); i++) {
       TypeMirror typeArg = typeArgs.get(i);
       if (typeArg.getKind() == TypeKind.WILDCARD) {
         TypeVariable capture = captures.get(typeArg);
-        if (capture == null) {
-          return null;
+        if (capture != null) {
+          capturedTypeArgs[i] = capture;
+        } else {
+          // javac's capture of this wildcard does not appear in the method's type, or cannot be
+          // told apart from another capture of the same wildcard.
+          if (freshCapture == null) {
+            freshCapture = (DeclaredType) types.capture(receiverDT);
+          }
+          capturedTypeArgs[i] = freshCapture.getTypeArguments().get(i);
         }
-        capturedTypeArgs[i] = capture;
       } else {
         capturedTypeArgs[i] = typeArg;
       }
@@ -5492,6 +5502,73 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
   public AnnotatedTypeMirror applyCaptureConversion(AnnotatedTypeMirror typeToCapture) {
     TypeMirror capturedTypeMirror = types.capture(typeToCapture.getUnderlyingType());
     return applyCaptureConversion(typeToCapture, capturedTypeMirror);
+  }
+
+  /**
+   * Apply capture conversion to {@code type}, the type of {@code tree}, as javac did to compute the
+   * Java type of {@code tree}.
+   *
+   * <p>If the Java type of {@code tree} is a parameterization of the same class as {@code type},
+   * then the result has the same captured type variables as the Java type of {@code tree}, and is
+   * not captured if the Java type of {@code tree} is not. Otherwise, the result is a fresh capture
+   * of {@code type}. If {@code type} is not a declared type, this method returns {@code type}.
+   *
+   * @param type the type of {@code tree}, which is not captured
+   * @param tree an expression
+   * @return the result of applying capture conversion to {@code type}
+   */
+  public AnnotatedTypeMirror applyCaptureConversion(AnnotatedTypeMirror type, ExpressionTree tree) {
+    if (type.getKind() != TypeKind.DECLARED) {
+      return type;
+    }
+    TypeMirror treeType = TreeUtils.typeOf(tree);
+    if (treeType.getKind() == TypeKind.DECLARED) {
+      DeclaredType underlying = (DeclaredType) type.getUnderlyingType();
+      DeclaredType treeDT = (DeclaredType) treeType;
+      if (isSameClassAndArity(underlying, treeDT) && isCaptureOrSame(underlying, treeDT)) {
+        return applyCaptureConversion(type, treeType);
+      }
+    }
+    return applyCaptureConversion(type);
+  }
+
+  /**
+   * Returns true if {@code type1} and {@code type2} are types of the same class with the same
+   * number of type arguments.
+   *
+   * @param type1 a declared type
+   * @param type2 a declared type
+   * @return true if {@code type1} and {@code type2} are types of the same class with the same
+   *     number of type arguments
+   */
+  private static boolean isSameClassAndArity(DeclaredType type1, DeclaredType type2) {
+    return type1.asElement().equals(type2.asElement())
+        && type1.getTypeArguments().size() == type2.getTypeArguments().size();
+  }
+
+  /**
+   * Returns true if each wildcard type argument of {@code type} corresponds to a captured type
+   * variable or a wildcard in {@code typeOfTree}.
+   *
+   * @param type a declared type
+   * @param typeOfTree a declared type with the same number of type arguments as {@code type}
+   * @return true if each wildcard type argument of {@code type} corresponds to a captured type
+   *     variable or a wildcard in {@code typeOfTree}
+   */
+  private static boolean isCaptureOrSame(DeclaredType type, DeclaredType typeOfTree) {
+    List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+    List<? extends TypeMirror> treeTypeArgs = typeOfTree.getTypeArguments();
+    for (int i = 0; i < typeArgs.size(); i++) {
+      TypeMirror treeTypeArg = treeTypeArgs.get(i);
+      // javac's inference can replace a captured type variable with an ordinary type variable
+      // that has the same name, which is not annotated as a captured type variable.
+      if (typeArgs.get(i).getKind() == TypeKind.WILDCARD
+          && treeTypeArg.getKind() != TypeKind.WILDCARD
+          && !TypesUtils.isCapturedTypeVariable(treeTypeArg)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
