@@ -5466,8 +5466,11 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     List<AnnotatedTypeMirror> componentTypes = new ArrayList<>();
     for (RecordComponentElement component : record.getRecordComponents()) {
       ExecutableElement accessor = component.getAccessor();
+      AnnotatedExecutableType accessorType =
+          applyRecordTypesToAccessors(accessor, getAnnotatedType(accessor));
       componentTypes.add(
-          AnnotatedTypes.asMemberOf(types, this, receiverType, accessor).getReturnType());
+          AnnotatedTypes.asMemberOf(types, this, receiverType, accessor, accessorType)
+              .getReturnType());
     }
     return componentTypes;
   }
