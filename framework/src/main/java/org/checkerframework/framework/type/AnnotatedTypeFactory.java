@@ -67,16 +67,12 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.UnionType;
-import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
@@ -2599,117 +2595,13 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
     DeclaredType receiverDT = (DeclaredType) receiverTM;
     DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
-    List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
     if (!receiverDT.asElement().equals(underlying.asElement())
-        || typeArgs.size() != underlying.getTypeArguments().size()
-        || !TypesUtils.isWildcardParameterized(receiverDT)) {
+        || receiverDT.getTypeArguments().size() != underlying.getTypeArguments().size()) {
       return null;
     }
-    // javac also captures the wildcards of the enclosing types, which this method does not
-    // rebuild.
-    for (TypeMirror enclosing = receiverDT.getEnclosingType();
-        enclosing.getKind() == TypeKind.DECLARED;
-        enclosing = ((DeclaredType) enclosing).getEnclosingType()) {
-      if (TypesUtils.isWildcardParameterized(enclosing)) {
-        return null;
-      }
-    }
-
     // javac does not store the captured receiver, but its captured type variables appear in the
-    // type of the method select, and each records the wildcard of the receiver that it captures.
-    IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
-    collectCapturedTypeVariables(
-        TreeUtils.typeOf(tree.getMethodSelect()), captures, new IdentityHashMap<>());
-    TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
-    for (int i = 0; i < typeArgs.size(); i++) {
-      TypeMirror typeArg = typeArgs.get(i);
-      if (typeArg.getKind() == TypeKind.WILDCARD) {
-        TypeVariable capture = captures.get(typeArg);
-        if (capture == null) {
-          return null;
-        }
-        capturedTypeArgs[i] = capture;
-      } else {
-        capturedTypeArgs[i] = typeArg;
-      }
-    }
-    TypeElement receiverElt = (TypeElement) receiverDT.asElement();
-    TypeMirror enclosing = receiverDT.getEnclosingType();
-    return enclosing.getKind() == TypeKind.DECLARED
-        ? types.getDeclaredType((DeclaredType) enclosing, receiverElt, capturedTypeArgs)
-        : types.getDeclaredType(receiverElt, capturedTypeArgs);
-  }
-
-  /**
-   * Adds to {@code captures} each captured type variable that appears in {@code type}, keyed by the
-   * wildcard that it captures. A wildcard with more than one capture maps to null.
-   *
-   * @param type a type
-   * @param captures a map from a wildcard to its capture, which this method adds to
-   * @param visited the type variables whose bounds have been scanned, which this method adds to
-   */
-  private static void collectCapturedTypeVariables(
-      TypeMirror type,
-      IdentityHashMap<WildcardType, @Nullable TypeVariable> captures,
-      IdentityHashMap<TypeVariable, Boolean> visited) {
-    switch (type.getKind()) {
-      case EXECUTABLE -> {
-        ExecutableType executableType = (ExecutableType) type;
-        for (TypeMirror paramType : executableType.getParameterTypes()) {
-          collectCapturedTypeVariables(paramType, captures, visited);
-        }
-        collectCapturedTypeVariables(executableType.getReturnType(), captures, visited);
-        for (TypeMirror thrownType : executableType.getThrownTypes()) {
-          collectCapturedTypeVariables(thrownType, captures, visited);
-        }
-      }
-      case DECLARED -> {
-        DeclaredType declaredType = (DeclaredType) type;
-        for (TypeMirror typeArg : declaredType.getTypeArguments()) {
-          collectCapturedTypeVariables(typeArg, captures, visited);
-        }
-        collectCapturedTypeVariables(declaredType.getEnclosingType(), captures, visited);
-      }
-      case ARRAY ->
-          collectCapturedTypeVariables(((ArrayType) type).getComponentType(), captures, visited);
-      case WILDCARD -> {
-        WildcardType wildcardType = (WildcardType) type;
-        if (wildcardType.getExtendsBound() != null) {
-          collectCapturedTypeVariables(wildcardType.getExtendsBound(), captures, visited);
-        }
-        if (wildcardType.getSuperBound() != null) {
-          collectCapturedTypeVariables(wildcardType.getSuperBound(), captures, visited);
-        }
-      }
-      case TYPEVAR -> {
-        TypeVariable typeVar = (TypeVariable) type;
-        // The bounds of a type variable declared in source code cannot contain a captured type
-        // variable.
-        if (!TypesUtils.isCapturedOrSyntheticTypeVariable(typeVar)
-            || visited.put(typeVar, Boolean.TRUE) != null) {
-          return;
-        }
-        WildcardType wildcard = TypesUtils.getCapturedWildcard(typeVar);
-        if (wildcard != null) {
-          // Another capture of the same wildcard is, for example, a capture of an argument that
-          // is the same variable as the receiver, as in `b.pair(b)`.
-          captures.put(wildcard, captures.containsKey(wildcard) ? null : typeVar);
-        }
-        collectCapturedTypeVariables(typeVar.getUpperBound(), captures, visited);
-        collectCapturedTypeVariables(typeVar.getLowerBound(), captures, visited);
-      }
-      case INTERSECTION -> {
-        for (TypeMirror bound : ((IntersectionType) type).getBounds()) {
-          collectCapturedTypeVariables(bound, captures, visited);
-        }
-      }
-      case UNION -> {
-        for (TypeMirror alternative : ((UnionType) type).getAlternatives()) {
-          collectCapturedTypeVariables(alternative, captures, visited);
-        }
-      }
-      default -> {}
-    }
+    // type of the method select.
+    return TypesUtils.getCaptureIn(receiverDT, TreeUtils.typeOf(tree.getMethodSelect()), types);
   }
 
   /**
