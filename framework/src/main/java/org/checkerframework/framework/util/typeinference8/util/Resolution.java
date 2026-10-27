@@ -256,6 +256,11 @@ public final class Resolution {
     checkNoFalse(boundSet, "on entry to resolveSmallestSet for", as);
 
     if (freshTypeVariablesOnly) {
+      // TODO: Two variables in `as` with an equal bound to each other, such as a record pattern's
+      // alpha and the beta for a captured wildcard, each get their own fresh type variable, and
+      // each ends up with the other's as an additional equal bound.  The upward projection of the
+      // record pattern's type removes both fresh type variables, so this has no known effect.
+      // Creating one fresh type variable per set of equal variables would avoid it.
       return resolveWithCapture(as, boundSet, context);
     }
 
