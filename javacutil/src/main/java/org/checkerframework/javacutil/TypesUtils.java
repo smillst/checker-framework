@@ -2,6 +2,7 @@ package org.checkerframework.javacutil;
 
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Flags;
+import com.sun.tools.javac.code.Lint.LintCategory;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symtab;
 import com.sun.tools.javac.code.Type;
@@ -14,6 +15,7 @@ import com.sun.tools.javac.model.JavacTypes;
 import com.sun.tools.javac.processing.JavacProcessingEnvironment;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
+import com.sun.tools.javac.util.Warner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -965,6 +967,40 @@ public final class TypesUtils {
   }
 
   /**
+   * Returns true if unchecked conversion is necessary for {@code source} to be compatible with
+   * {@code target} in a loose invocation context (JLS 5.3). Ignores annotations.
+   *
+   * @param source the source type
+   * @param target the target type
+   * @param processingEnv the processing environment
+   * @return true if unchecked conversion is necessary for {@code source} to be compatible with
+   *     {@code target}
+   */
+  public static boolean needsUncheckedConversion(
+      TypeMirror source, TypeMirror target, ProcessingEnvironment processingEnv) {
+    com.sun.tools.javac.code.Types javacTypes =
+        com.sun.tools.javac.code.Types.instance(InternalUtils.getJavacContext(processingEnv));
+    // isConvertible records, in the javac Warner, any lint warnings that the conversion would need.
+    Warner lintRecorder = new Warner();
+    javacTypes.isConvertible((Type) source, (Type) target, lintRecorder);
+    return lintRecorder.hasNonSilentLint(LintCategory.UNCHECKED);
+  }
+
+  /**
+   * Returns true if the erased type of {@code type1} is the same type as the erased type of {@code
+   * type2}.
+   *
+   * @param type1 a type
+   * @param type2 a type
+   * @param types a Types object
+   * @return true if the erased type of {@code type1} is the same type as the erased type of {@code
+   *     type2}
+   */
+  public static boolean isErasedSameType(TypeMirror type1, TypeMirror type2, Types types) {
+    return types.isSameType(types.erasure(type1), types.erasure(type2));
+  }
+
+  /**
    * Returns true if {@code type} is a type variable created during capture conversion.
    *
    * @param type a type mirror
@@ -1008,6 +1044,142 @@ public final class TypesUtils {
       return ((CapturedType) TypeAnnotationUtils.unannotatedType(typeVar)).wildcard;
     }
     return null;
+  }
+
+  /**
+   * Returns a capture of {@code type} that uses the captured type variables that appear in {@code
+   * typeWithCaptures}. A wildcard type argument of {@code type} that does not have exactly one
+   * capture in {@code typeWithCaptures} is replaced by a fresh captured type variable. Returns null
+   * if {@code type} has no wildcard type arguments, if an enclosing type of {@code type} has a
+   * wildcard type argument, or if {@code typeWithCaptures} does not contain exactly one capture of
+   * any wildcard type argument of {@code type}.
+   *
+   * @param type a declared type
+   * @param typeWithCaptures a type that might contain captures of the wildcards of {@code type}
+   * @param types the type utilities
+   * @return a capture of {@code type} that uses the captured type variables in {@code
+   *     typeWithCaptures}, or null
+   */
+  public static @Nullable DeclaredType getCaptureIn(
+      DeclaredType type, TypeMirror typeWithCaptures, Types types) {
+    if (!isWildcardParameterized(type)) {
+      return null;
+    }
+    // javac also captures the wildcards of the enclosing types, which this method does not
+    // rebuild.
+    for (TypeMirror enclosing = type.getEnclosingType();
+        enclosing.getKind() == TypeKind.DECLARED;
+        enclosing = ((DeclaredType) enclosing).getEnclosingType()) {
+      if (isWildcardParameterized(enclosing)) {
+        return null;
+      }
+    }
+
+    // Each captured type variable records the wildcard that it captures.
+    List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+    IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
+    collectCapturedTypeVariables(typeWithCaptures, captures, new IdentityHashMap<>());
+    if (typeArgs.stream().noneMatch(typeArg -> captures.get(typeArg) != null)) {
+      return null;
+    }
+    TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
+    // A fresh capture of the type, for the wildcards whose capture is not known.
+    DeclaredType freshCapture = null;
+    for (int i = 0; i < typeArgs.size(); i++) {
+      TypeMirror typeArg = typeArgs.get(i);
+      if (typeArg.getKind() == TypeKind.WILDCARD) {
+        TypeVariable capture = captures.get(typeArg);
+        if (capture != null) {
+          capturedTypeArgs[i] = capture;
+        } else {
+          // The capture of this wildcard does not appear in typeWithCaptures, or cannot be told
+          // apart from another capture of the same wildcard.
+          if (freshCapture == null) {
+            freshCapture = (DeclaredType) types.capture(type);
+          }
+          capturedTypeArgs[i] = freshCapture.getTypeArguments().get(i);
+        }
+      } else {
+        capturedTypeArgs[i] = typeArg;
+      }
+    }
+    TypeElement elt = (TypeElement) type.asElement();
+    TypeMirror enclosing = type.getEnclosingType();
+    return enclosing.getKind() == TypeKind.DECLARED
+        ? types.getDeclaredType((DeclaredType) enclosing, elt, capturedTypeArgs)
+        : types.getDeclaredType(elt, capturedTypeArgs);
+  }
+
+  /**
+   * Adds to {@code captures} each captured type variable that appears in {@code type}, keyed by the
+   * wildcard that it captures. A wildcard with more than one capture maps to null.
+   *
+   * @param type a type
+   * @param captures a map from a wildcard to its capture, which this method adds to
+   * @param visited the type variables whose bounds have been scanned, which this method adds to
+   */
+  private static void collectCapturedTypeVariables(
+      TypeMirror type,
+      IdentityHashMap<WildcardType, @Nullable TypeVariable> captures,
+      IdentityHashMap<TypeVariable, Boolean> visited) {
+    switch (type.getKind()) {
+      case EXECUTABLE -> {
+        ExecutableType executableType = (ExecutableType) type;
+        for (TypeMirror paramType : executableType.getParameterTypes()) {
+          collectCapturedTypeVariables(paramType, captures, visited);
+        }
+        collectCapturedTypeVariables(executableType.getReturnType(), captures, visited);
+        for (TypeMirror thrownType : executableType.getThrownTypes()) {
+          collectCapturedTypeVariables(thrownType, captures, visited);
+        }
+      }
+      case DECLARED -> {
+        DeclaredType declaredType = (DeclaredType) type;
+        for (TypeMirror typeArg : declaredType.getTypeArguments()) {
+          collectCapturedTypeVariables(typeArg, captures, visited);
+        }
+        collectCapturedTypeVariables(declaredType.getEnclosingType(), captures, visited);
+      }
+      case ARRAY ->
+          collectCapturedTypeVariables(((ArrayType) type).getComponentType(), captures, visited);
+      case WILDCARD -> {
+        WildcardType wildcardType = (WildcardType) type;
+        if (wildcardType.getExtendsBound() != null) {
+          collectCapturedTypeVariables(wildcardType.getExtendsBound(), captures, visited);
+        }
+        if (wildcardType.getSuperBound() != null) {
+          collectCapturedTypeVariables(wildcardType.getSuperBound(), captures, visited);
+        }
+      }
+      case TYPEVAR -> {
+        TypeVariable typeVar = (TypeVariable) type;
+        // The bounds of a type variable declared in source code cannot contain a captured type
+        // variable.
+        if (!isCapturedOrSyntheticTypeVariable(typeVar)
+            || visited.put(typeVar, Boolean.TRUE) != null) {
+          return;
+        }
+        WildcardType wildcard = getCapturedWildcard(typeVar);
+        if (wildcard != null) {
+          // Another capture of the same wildcard is, for example, a capture of an argument that
+          // is the same variable as the receiver, as in `b.pair(b)`.
+          captures.put(wildcard, captures.containsKey(wildcard) ? null : typeVar);
+        }
+        collectCapturedTypeVariables(typeVar.getUpperBound(), captures, visited);
+        collectCapturedTypeVariables(typeVar.getLowerBound(), captures, visited);
+      }
+      case INTERSECTION -> {
+        for (TypeMirror bound : ((IntersectionType) type).getBounds()) {
+          collectCapturedTypeVariables(bound, captures, visited);
+        }
+      }
+      case UNION -> {
+        for (TypeMirror alternative : ((UnionType) type).getAlternatives()) {
+          collectCapturedTypeVariables(alternative, captures, visited);
+        }
+      }
+      default -> {}
+    }
   }
 
   // Least upper bound and greatest lower bound

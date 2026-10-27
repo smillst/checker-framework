@@ -67,16 +67,12 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.UnionType;
-import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
@@ -2273,7 +2269,9 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
     // An implicit receiver is the first enclosing type that is a subtype of the type where the
     // element is declared.
-    while (thisType != null && !isSubtype(thisType.getUnderlyingType(), typeOfImplicitReceiver)) {
+    while (thisType != null
+        && !TypesUtils.isErasedSubtype(
+            thisType.getUnderlyingType(), typeOfImplicitReceiver, types)) {
       thisType = thisType.getEnclosingType();
     }
     return thisType;
@@ -2372,11 +2370,17 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree location to use
    * @return the enclosing type at the location of {@code tree} that is the same type as {@code
    *     typeElement}
+   * @throws BugInCF if no type that encloses {@code tree} is the same type as {@code typeElement}
    */
   public AnnotatedDeclaredType getEnclosingType(TypeElement typeElement, Tree tree) {
     AnnotatedDeclaredType thisType = getSelfType(tree);
-    while (!isSameType(thisType.getUnderlyingType(), typeElement.asType())) {
+    while (thisType != null
+        && !TypesUtils.isErasedSameType(
+            thisType.getUnderlyingType(), typeElement.asType(), types)) {
       thisType = thisType.getEnclosingType();
+    }
+    if (thisType == null) {
+      throw new BugInCF("No type that encloses %s is %s", tree, typeElement);
     }
     return thisType;
   }
@@ -2389,37 +2393,18 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
    * @param tree location to use
    * @return the enclosing type at the location of {@code tree} that is a subtype of {@code
    *     typeElement}
+   * @throws BugInCF if no type that encloses {@code tree} is a subtype of {@code typeElement}
    */
   public AnnotatedDeclaredType getEnclosingSubType(TypeElement typeElement, Tree tree) {
     AnnotatedDeclaredType thisType = getSelfType(tree);
-    while (!isSubtype(thisType.getUnderlyingType(), typeElement.asType())) {
+    while (thisType != null
+        && !TypesUtils.isErasedSubtype(thisType.getUnderlyingType(), typeElement.asType(), types)) {
       thisType = thisType.getEnclosingType();
     }
+    if (thisType == null) {
+      throw new BugInCF("No type that encloses %s is a subtype of %s", tree, typeElement);
+    }
     return thisType;
-  }
-
-  /**
-   * Returns true if the erasure of {@code type1} is a Java subtype of the erasure of {@code type2}.
-   *
-   * @param type1 a type
-   * @param type2 a type
-   * @return true if the erasure of {@code type1} is a Java subtype of the erasure of {@code type2}
-   */
-  private boolean isSubtype(TypeMirror type1, TypeMirror type2) {
-    return types.isSubtype(types.erasure(type1), types.erasure(type2));
-  }
-
-  /**
-   * Returns true if the erasure of {@code type1} is the same Java type as the erasure of {@code
-   * type2}.
-   *
-   * @param type1 a type
-   * @param type2 a type
-   * @return true if the erasure of {@code type1} is the same Java type as the erasure of {@code
-   *     type2}
-   */
-  private boolean isSameType(TypeMirror type1, TypeMirror type2) {
-    return types.isSameType(types.erasure(type1), types.erasure(type2));
   }
 
   /**
@@ -2610,127 +2595,12 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
     DeclaredType receiverDT = (DeclaredType) receiverTM;
     DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
-    List<? extends TypeMirror> typeArgs = receiverDT.getTypeArguments();
-    if (!isSameClassAndArity(receiverDT, underlying)
-        || !TypesUtils.isWildcardParameterized(receiverDT)) {
+    if (!isSameClassAndArity(receiverDT, underlying)) {
       return null;
     }
-    // javac also captures the wildcards of the enclosing types, which this method does not
-    // rebuild.
-    for (TypeMirror enclosing = receiverDT.getEnclosingType();
-        enclosing.getKind() == TypeKind.DECLARED;
-        enclosing = ((DeclaredType) enclosing).getEnclosingType()) {
-      if (TypesUtils.isWildcardParameterized(enclosing)) {
-        return null;
-      }
-    }
-
     // javac does not store the captured receiver, but its captured type variables appear in the
-    // type of the method select, and each records the wildcard of the receiver that it captures.
-    IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
-    collectCapturedTypeVariables(
-        TreeUtils.typeOf(tree.getMethodSelect()), captures, new IdentityHashMap<>());
-    if (typeArgs.stream().noneMatch(typeArg -> captures.get(typeArg) != null)) {
-      return null;
-    }
-    TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
-    // A fresh capture of the receiver, for the wildcards whose capture by javac is not known.
-    DeclaredType freshCapture = null;
-    for (int i = 0; i < typeArgs.size(); i++) {
-      TypeMirror typeArg = typeArgs.get(i);
-      if (typeArg.getKind() == TypeKind.WILDCARD) {
-        TypeVariable capture = captures.get(typeArg);
-        if (capture != null) {
-          capturedTypeArgs[i] = capture;
-        } else {
-          // javac's capture of this wildcard does not appear in the method's type, or cannot be
-          // told apart from another capture of the same wildcard.
-          if (freshCapture == null) {
-            freshCapture = (DeclaredType) types.capture(receiverDT);
-          }
-          capturedTypeArgs[i] = freshCapture.getTypeArguments().get(i);
-        }
-      } else {
-        capturedTypeArgs[i] = typeArg;
-      }
-    }
-    TypeElement receiverElt = (TypeElement) receiverDT.asElement();
-    TypeMirror enclosing = receiverDT.getEnclosingType();
-    return enclosing.getKind() == TypeKind.DECLARED
-        ? types.getDeclaredType((DeclaredType) enclosing, receiverElt, capturedTypeArgs)
-        : types.getDeclaredType(receiverElt, capturedTypeArgs);
-  }
-
-  /**
-   * Adds to {@code captures} each captured type variable that appears in {@code type}, keyed by the
-   * wildcard that it captures. A wildcard with more than one capture maps to null.
-   *
-   * @param type a type
-   * @param captures a map from a wildcard to its capture, which this method adds to
-   * @param visited the type variables whose bounds have been scanned, which this method adds to
-   */
-  private static void collectCapturedTypeVariables(
-      TypeMirror type,
-      IdentityHashMap<WildcardType, @Nullable TypeVariable> captures,
-      IdentityHashMap<TypeVariable, Boolean> visited) {
-    switch (type.getKind()) {
-      case EXECUTABLE -> {
-        ExecutableType executableType = (ExecutableType) type;
-        for (TypeMirror paramType : executableType.getParameterTypes()) {
-          collectCapturedTypeVariables(paramType, captures, visited);
-        }
-        collectCapturedTypeVariables(executableType.getReturnType(), captures, visited);
-        for (TypeMirror thrownType : executableType.getThrownTypes()) {
-          collectCapturedTypeVariables(thrownType, captures, visited);
-        }
-      }
-      case DECLARED -> {
-        DeclaredType declaredType = (DeclaredType) type;
-        for (TypeMirror typeArg : declaredType.getTypeArguments()) {
-          collectCapturedTypeVariables(typeArg, captures, visited);
-        }
-        collectCapturedTypeVariables(declaredType.getEnclosingType(), captures, visited);
-      }
-      case ARRAY ->
-          collectCapturedTypeVariables(((ArrayType) type).getComponentType(), captures, visited);
-      case WILDCARD -> {
-        WildcardType wildcardType = (WildcardType) type;
-        if (wildcardType.getExtendsBound() != null) {
-          collectCapturedTypeVariables(wildcardType.getExtendsBound(), captures, visited);
-        }
-        if (wildcardType.getSuperBound() != null) {
-          collectCapturedTypeVariables(wildcardType.getSuperBound(), captures, visited);
-        }
-      }
-      case TYPEVAR -> {
-        TypeVariable typeVar = (TypeVariable) type;
-        // The bounds of a type variable declared in source code cannot contain a captured type
-        // variable.
-        if (!TypesUtils.isCapturedOrSyntheticTypeVariable(typeVar)
-            || visited.put(typeVar, Boolean.TRUE) != null) {
-          return;
-        }
-        WildcardType wildcard = TypesUtils.getCapturedWildcard(typeVar);
-        if (wildcard != null) {
-          // Another capture of the same wildcard is, for example, a capture of an argument that
-          // is the same variable as the receiver, as in `b.pair(b)`.
-          captures.put(wildcard, captures.containsKey(wildcard) ? null : typeVar);
-        }
-        collectCapturedTypeVariables(typeVar.getUpperBound(), captures, visited);
-        collectCapturedTypeVariables(typeVar.getLowerBound(), captures, visited);
-      }
-      case INTERSECTION -> {
-        for (TypeMirror bound : ((IntersectionType) type).getBounds()) {
-          collectCapturedTypeVariables(bound, captures, visited);
-        }
-      }
-      case UNION -> {
-        for (TypeMirror alternative : ((UnionType) type).getAlternatives()) {
-          collectCapturedTypeVariables(alternative, captures, visited);
-        }
-      }
-      default -> {}
-    }
+    // type of the method select.
+    return TypesUtils.getCaptureIn(receiverDT, TreeUtils.typeOf(tree.getMethodSelect()), types);
   }
 
   /**
@@ -3144,33 +3014,33 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       constructorFromUsePreSubstitution(tree, superCon, inferTypeArgs);
       // no viewpoint adaptation needed for super invocation
       superCon = AnnotatedTypes.asMemberOf(types, this, type, superCon.getElement(), superCon);
-      if (superCon.getParameterTypes().size() == con.getParameterTypes().size()) {
-        con.setParameterTypes(superCon.getParameterTypes());
-      } else {
-        // If the super class of the anonymous class has an enclosing type, then it is the
-        // first parameter of the anonymous constructor. For example,
+      if (TreeUtils.isAnonymousConstructorWithExplicitEnclosingExpression(con.getElement(), tree)) {
+        // If the anonymous class creation has an explicit enclosing expression, then the
+        // enclosing instance is the first parameter of the anonymous constructor. For example,
         // class Outer { class Inner {} }
-        //  new Inner() {};
+        //  outer.new Inner() {};
         // Then javac creates the following constructor:
         //  (.Outer x0) {
         //   x0.super();
         //   }
         // So the code below deals with this.
+        // The enclosing instance is the receiver of the super constructor.
+        AnnotatedDeclaredType superReceiver = superCon.getReceiverType();
+        if (superReceiver == null) {
+          throw new BugInCF("super constructor %s of %s has no receiver", superCon, tree);
+        }
         List<AnnotatedTypeMirror> p = new ArrayList<>(superCon.getParameterTypes().size() + 1);
-        if (TreeUtils.hasSyntheticArgument(tree)) {
-          p.add(con.getParameterTypes().get(0));
-          con.setReceiverType(superCon.getReceiverType());
-        } else if (con.getReceiverType() != null) {
+        if (con.getReceiverType() != null) {
           // Because the anonymous constructor doesn't have annotated receiver type,
           // we copy the receiver type from the super constructor invoked in the anonymous
-          // constructor and add it to the parameterTypes as the first element.
-          con.setReceiverType(superCon.getReceiverType());
-          p.add(con.getReceiverType());
-        } else {
-          p.add(con.getParameterTypes().get(0));
+          // constructor.
+          con.setReceiverType(superReceiver);
         }
+        p.add(superReceiver);
         p.addAll(1, superCon.getParameterTypes());
         con.setParameterTypes(p);
+      } else {
+        con.setParameterTypes(superCon.getParameterTypes());
       }
       Set<? extends AnnotationMirror> lub =
           qualHierarchy.leastUpperBoundsShallow(
@@ -5214,7 +5084,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         int indexOfLambda = newClass.getArguments().indexOf(tree);
         ParameterizedExecutableType con = this.constructorFromUse(newClass);
         AnnotatedTypeMirror constructorParam =
-            AnnotatedTypes.getAnnotatedTypeMirrorOfParameter(con.executableType, indexOfLambda);
+            AnnotatedTypes.getAnnotatedTypeMirrorOfParameter(
+                con.executableType, newClass, indexOfLambda);
         assertIsFunctionalInterface(constructorParam.getUnderlyingType(), parentTree, tree);
         return constructorParam;
       }
@@ -5230,7 +5101,7 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
         int index = method.getArguments().indexOf(tree);
         ParameterizedExecutableType exe = this.methodFromUse(method);
         AnnotatedTypeMirror param =
-            AnnotatedTypes.getAnnotatedTypeMirrorOfParameter(exe.executableType, index);
+            AnnotatedTypes.getAnnotatedTypeMirrorOfParameter(exe.executableType, method, index);
         assertIsFunctionalInterface(param.getUnderlyingType(), parentTree, tree);
         return param;
       }
