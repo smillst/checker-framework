@@ -63,7 +63,7 @@ public class RecordPatternTypeInference {
   private final Java8InferenceContext context;
 
   /**
-   * Why the most recent call to {@link #infer} failed.
+   * Why inference failed.
    *
    * @param message a description of the failure
    * @param crashed true if inference failed because of a bug in the Checker Framework, rather than
@@ -71,8 +71,19 @@ public class RecordPatternTypeInference {
    */
   public record Failure(String message, boolean crashed) {}
 
-  /** Why the most recent call to {@link #infer} failed, or null if it did not fail. */
-  private @Nullable Failure failure = null;
+  /**
+   * The result of inferring the type of a record pattern.
+   *
+   * @param matchedType the type of the values that are matched against the record pattern
+   * @param failure why inference failed, or null if it did not fail
+   * @param componentTypes the types of the record components of the record pattern, in declaration
+   *     order; if inference failed, these are the types for the record pattern's Java type with
+   *     default annotations
+   */
+  public record Result(
+      AnnotatedTypeMirror matchedType,
+      @Nullable Failure failure,
+      List<AnnotatedTypeMirror> componentTypes) {}
 
   /**
    * Creates a {@code RecordPatternTypeInference}.
@@ -88,18 +99,17 @@ public class RecordPatternTypeInference {
   }
 
   /**
-   * Returns the annotated type of the record pattern when values of {@code matchedType} are matched
-   * against it, or null if inference fails. If inference fails, {@link #getFailure} then describes
-   * the failure.
+   * Infers the annotated type of the record pattern when values of {@code matchedType} are matched
+   * against it.
    *
    * @param matchedType the type of the values that are matched against the record pattern
-   * @return the annotated type of the record pattern, or null if inference fails
+   * @return the result of inference
    */
-  public @Nullable AnnotatedDeclaredType infer(AnnotatedTypeMirror matchedType) {
+  public Result infer(AnnotatedTypeMirror matchedType) {
     TypeElement record = TypesUtils.getTypeElement(TreeUtils.typeOf(pattern));
     assert record != null : "@AssumeAssertion(nullness): a record pattern's type is a record";
     if (record.getTypeParameters().isEmpty()) {
-      return typeFactory.getDefaultRecordPatternType(pattern);
+      return createResult(matchedType, null, typeFactory.getDefaultRecordPatternType(pattern));
     }
     try {
       return inferGeneric(record, matchedType);
@@ -110,30 +120,47 @@ public class RecordPatternTypeInference {
           .getBooleanOption("convertTypeArgInferenceCrashToWarning", true)) {
         throw BugInCF.addLocation(pattern, ex);
       }
-      failure = new Failure("An exception occurred: " + ex.getLocalizedMessage(), true);
-      return null;
+      return createFailedResult(
+          matchedType, new Failure("An exception occurred: " + ex.getLocalizedMessage(), true));
     }
   }
 
   /**
-   * Returns why the most recent call to {@link #infer} failed, or null if it did not fail.
+   * Returns the result of inference when the record pattern has type {@code patternType}.
    *
-   * @return why inference failed, or null
+   * @param matchedType the type of the values that are matched against the record pattern
+   * @param failure why inference failed, or null if it did not fail
+   * @param patternType the annotated type of the record pattern
+   * @return the result of inference
    */
-  public @Nullable Failure getFailure() {
-    return failure;
+  private Result createResult(
+      AnnotatedTypeMirror matchedType,
+      @Nullable Failure failure,
+      AnnotatedDeclaredType patternType) {
+    return new Result(
+        matchedType.deepCopy(), failure, typeFactory.getRecordComponentTypes(patternType));
   }
 
   /**
-   * Returns the annotated type of the record pattern for the generic record class {@code record},
-   * or null if inference fails.
+   * Returns the result of inference when it fails. The record pattern then has its Java type with
+   * default annotations.
+   *
+   * @param matchedType the type of the values that are matched against the record pattern
+   * @param failure why inference failed
+   * @return the result of inference
+   */
+  private Result createFailedResult(AnnotatedTypeMirror matchedType, Failure failure) {
+    return createResult(matchedType, failure, typeFactory.getDefaultRecordPatternType(pattern));
+  }
+
+  /**
+   * Infers the annotated type of the record pattern for the generic record class {@code record}.
    *
    * @param record the record class of the record pattern; it is generic
    * @param matchedType the type of the values that are matched against the record pattern
-   * @return the annotated type of the record pattern, or null if inference fails
+   * @return the result of inference
    */
-  private @Nullable AnnotatedDeclaredType inferGeneric(
-      TypeElement record, AnnotatedTypeMirror matchedType) {
+  private Result inferGeneric(TypeElement record, AnnotatedTypeMirror matchedType) {
     // Step 2: the inference variables alpha1, ..., alphan, with bounds from the declared bounds.
     Theta map = context.inferenceTypeFactory.createThetaForTypeParameters(deconstructor, record);
     List<Variable> alphas = new ArrayList<>(map.values());
@@ -166,8 +193,7 @@ public class RecordPatternTypeInference {
       throw new BugInCF("Record pattern inference produced the false bound for %s", pattern);
     }
     if (boundSet.annoInferenceFailed) {
-      failure = new Failure(boundSet.errorMsg, false);
-      return null;
+      return createFailedResult(matchedType, new Failure(boundSet.errorMsg, false));
     }
     // Two proper bounds v = S and v = T reduce to <S = T>, which ignores qualifiers, so check that
     // the qualifiers of all of them agree.
@@ -179,10 +205,10 @@ public class RecordPatternTypeInference {
       for (AbstractType bound : v.getBounds().getBoundsOfKind(BoundKind.EQUAL)) {
         if (bound.isProper()
             && ((ProperType) bound).checkAnnotationEquality(instantiation) != ConstraintSet.TRUE) {
-          failure =
+          return createFailedResult(
+              matchedType,
               new Failure(
-                  bound.getAnnotatedType() + " = " + instantiation.getAnnotatedType(), false);
-          return null;
+                  bound.getAnnotatedType() + " = " + instantiation.getAnnotatedType(), false));
         }
       }
     }
@@ -211,8 +237,11 @@ public class RecordPatternTypeInference {
     // variables that the matched type already mentions.
     List<TypeVariable> matchedTypeVariables = new ArrayList<>();
     addCapturedTypeVariables(matchedType.getUnderlyingType(), matchedTypeVariables);
-    return (AnnotatedDeclaredType)
-        AnnotatedTypeProjection.upward(typeFactory, patternType, matchedTypeVariables);
+    return createResult(
+        matchedType,
+        null,
+        (AnnotatedDeclaredType)
+            AnnotatedTypeProjection.upward(typeFactory, patternType, matchedTypeVariables));
   }
 
   /**
