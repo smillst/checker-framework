@@ -43,6 +43,8 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.SwitchExpressionScanner;
 import org.checkerframework.javacutil.SwitchExpressionScanner.FunctionalSwitchExpressionScanner;
+import org.checkerframework.javacutil.TreePathUtil;
+import org.checkerframework.javacutil.TreePathUtil.EnclosingNonParen;
 import org.checkerframework.javacutil.TreeUtils;
 import org.checkerframework.javacutil.TypesUtils;
 
@@ -222,12 +224,12 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     AnnotatedTypeMirror selfType = f.getImplicitReceiverType(tree);
     if (selfType != null) {
       AnnotatedTypeMirror type = AnnotatedTypes.asMemberOf(f.types, f, selfType, elt).asUse();
-      return f.applyCaptureConversion(type, TreeUtils.typeOf(tree));
+      return f.applyCaptureConversion(type, tree);
     }
 
     AnnotatedTypeMirror type = f.getAnnotatedType(elt);
 
-    return f.applyCaptureConversion(type, TreeUtils.typeOf(tree));
+    return f.applyCaptureConversion(type, tree);
   }
 
   @Override
@@ -271,17 +273,8 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
       typeOfReceiver = f.applyCaptureConversion(typeOfReceiver);
       AnnotatedTypeMirror typeOfFieldAccess =
           AnnotatedTypes.asMemberOf(f.types, f, typeOfReceiver, elt);
-      TreePath path = f.getPath(tree);
-
-      // Only capture the type if this is not the left-hand side of an assignment.
-      if (path != null && path.getParentPath().getLeaf() instanceof AssignmentTree assignmentTree) {
-        @SuppressWarnings("interning:not.interned") // Looking for exact object.
-        boolean leftHandSide = assignmentTree.getExpression() != tree;
-        if (leftHandSide) {
-          return typeOfFieldAccess;
-        }
-      }
-      return f.applyCaptureConversion(typeOfFieldAccess);
+      // javac does not capture the type of the left-hand side of an assignment.
+      return f.applyCaptureConversion(typeOfFieldAccess, tree);
     }
   }
 
@@ -290,8 +283,24 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     AnnotatedTypeMirror type = f.getAnnotatedType(tree.getExpression());
     if (type.getKind() == TypeKind.ARRAY) {
       AnnotatedTypeMirror t = ((AnnotatedArrayType) type).getComponentType();
-      t = f.applyCaptureConversion(t);
-      return t;
+      TreePath path = f.getPath(tree);
+      if (path != null) {
+        // Do not capture the receiver of a member select, nor the left-hand side of an assignment.
+        // javac does not capture the type of an array access, so the capture of a method
+        // invocation's receiver can be recovered from the method's type.
+        EnclosingNonParen enclosing = TreePathUtil.enclosingNonParen(path);
+        Tree child = enclosing.enclosingChild();
+        @SuppressWarnings("interning:not.interned") // Looking for exact object.
+        boolean uncaptured =
+            (enclosing.enclosing() instanceof MemberSelectTree memberSelect
+                    && memberSelect.getExpression() == child)
+                || (enclosing.enclosing() instanceof AssignmentTree assignment
+                    && assignment.getVariable() == child);
+        if (uncaptured) {
+          return t;
+        }
+      }
+      return f.applyCaptureConversion(t);
     }
     throw new BugInCF("Unexpected type: " + type);
   }
@@ -401,7 +410,7 @@ class TypeFromExpressionVisitor extends TypeFromTreeVisitor {
     if (TypesUtils.isRaw(TreeUtils.typeOf(tree))) {
       return returnT.getErased();
     }
-    return f.applyCaptureConversion(returnT);
+    return f.applyCaptureConversion(returnT, tree);
   }
 
   @Override

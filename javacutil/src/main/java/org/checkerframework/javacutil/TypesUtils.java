@@ -1047,15 +1047,17 @@ public final class TypesUtils {
   }
 
   /**
-   * Returns the capture of {@code type} whose captured type variables appear in {@code
-   * typeWithCaptures}. Returns null if {@code type} has no wildcard type arguments, if an enclosing
-   * type of {@code type} has a wildcard type argument, or if {@code typeWithCaptures} does not
-   * contain exactly one capture of each wildcard type argument of {@code type}.
+   * Returns a capture of {@code type} that uses the captured type variables that appear in {@code
+   * typeWithCaptures}. A wildcard type argument of {@code type} that does not have exactly one
+   * capture in {@code typeWithCaptures} is replaced by a fresh captured type variable. Returns null
+   * if {@code type} has no wildcard type arguments, if an enclosing type of {@code type} has a
+   * wildcard type argument, or if {@code typeWithCaptures} does not contain exactly one capture of
+   * any wildcard type argument of {@code type}.
    *
    * @param type a declared type
    * @param typeWithCaptures a type that might contain captures of the wildcards of {@code type}
    * @param types the type utilities
-   * @return the capture of {@code type} whose captured type variables appear in {@code
+   * @return a capture of {@code type} that uses the captured type variables in {@code
    *     typeWithCaptures}, or null
    */
   public static @Nullable DeclaredType getCaptureIn(
@@ -1077,15 +1079,26 @@ public final class TypesUtils {
     List<? extends TypeMirror> typeArgs = type.getTypeArguments();
     IdentityHashMap<WildcardType, @Nullable TypeVariable> captures = new IdentityHashMap<>();
     collectCapturedTypeVariables(typeWithCaptures, captures, new IdentityHashMap<>());
+    if (typeArgs.stream().noneMatch(typeArg -> captures.get(typeArg) != null)) {
+      return null;
+    }
     TypeMirror[] capturedTypeArgs = new TypeMirror[typeArgs.size()];
+    // A fresh capture of the type, for the wildcards whose capture is not known.
+    DeclaredType freshCapture = null;
     for (int i = 0; i < typeArgs.size(); i++) {
       TypeMirror typeArg = typeArgs.get(i);
       if (typeArg.getKind() == TypeKind.WILDCARD) {
         TypeVariable capture = captures.get(typeArg);
-        if (capture == null) {
-          return null;
+        if (capture != null) {
+          capturedTypeArgs[i] = capture;
+        } else {
+          // The capture of this wildcard does not appear in typeWithCaptures, or cannot be told
+          // apart from another capture of the same wildcard.
+          if (freshCapture == null) {
+            freshCapture = (DeclaredType) types.capture(type);
+          }
+          capturedTypeArgs[i] = freshCapture.getTypeArguments().get(i);
         }
-        capturedTypeArgs[i] = capture;
       } else {
         capturedTypeArgs[i] = typeArg;
       }
