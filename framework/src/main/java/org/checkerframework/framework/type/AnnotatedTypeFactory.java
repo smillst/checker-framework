@@ -2538,7 +2538,13 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       // of `sink.add(b ? x : y)`'s argument a different captured type variable than the
       // parameter type.
       DeclaredType javacCapture =
-          isSuperConstructorCall ? null : javacReceiverCapture(tree, receiverType);
+          isSuperConstructorCall ? null : TreeUtils.getReceiverCapture(tree, types);
+      DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
+      if (javacCapture != null
+          && (!javacCapture.asElement().equals(underlying.asElement())
+              || javacCapture.getTypeArguments().size() != underlying.getTypeArguments().size())) {
+        javacCapture = null;
+      }
       receiverType =
           javacCapture == null
               ? applyCaptureConversion(receiverType)
@@ -2572,36 +2578,6 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
     }
 
     return result;
-  }
-
-  /**
-   * Returns the capture of the receiver of {@code tree} that javac used to compute the type of the
-   * invoked method, or null if it cannot be recovered or does not correspond to {@code
-   * receiverType}.
-   *
-   * @param tree a method invocation
-   * @param receiverType the type of the receiver of {@code tree}
-   * @return javac's capture of the receiver of {@code tree}, or null
-   */
-  private @Nullable DeclaredType javacReceiverCapture(
-      MethodInvocationTree tree, AnnotatedTypeMirror receiverType) {
-    ExpressionTree receiverTree = TreeUtils.getReceiverTree(tree);
-    if (receiverTree == null) {
-      return null;
-    }
-    TypeMirror receiverTM = TreeUtils.typeOf(receiverTree);
-    if (receiverTM.getKind() != TypeKind.DECLARED) {
-      return null;
-    }
-    DeclaredType receiverDT = (DeclaredType) receiverTM;
-    DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
-    if (!receiverDT.asElement().equals(underlying.asElement())
-        || receiverDT.getTypeArguments().size() != underlying.getTypeArguments().size()) {
-      return null;
-    }
-    // javac does not store the captured receiver, but its captured type variables appear in the
-    // type of the method select.
-    return TypesUtils.getCaptureIn(receiverDT, TreeUtils.typeOf(tree.getMethodSelect()), types);
   }
 
   /**
