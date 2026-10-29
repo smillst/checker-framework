@@ -47,6 +47,17 @@ public class CaseTypePatternRefinement {
     }
   }
 
+  static boolean isUntainted(@Untainted String s) {
+    return true;
+  }
+
+  void guard(@Untainted Object o) {
+    switch (o) {
+      case String s when isUntainted(s) -> {}
+      default -> {}
+    }
+  }
+
   @Untainted String switchExpression(@Untainted Object o) {
     return switch (o) {
       case String s -> s;
