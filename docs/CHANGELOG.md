@@ -7,6 +7,11 @@
 
 ### User-visible changes
 
+Pattern variables, such as `s` in `o instanceof String s`, are defaulted to the
+top qualifier, like other local variables (the CLIMB-to-top rule).  An
+unannotated pattern variable is refined to the type of the value that the
+pattern matches, rather than having the type system's default qualifier.
+
 A method with a purity annotation may call the functional method of one of its
 functional-interface parameters, such as `f.apply(x)` for a parameter
 `Function f`; the call is treated as having the method's purity.  In exchange,
