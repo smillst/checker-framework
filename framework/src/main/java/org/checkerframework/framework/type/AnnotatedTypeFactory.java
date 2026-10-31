@@ -2519,7 +2519,8 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       MethodInvocationTree tree, boolean inferTypeArgs) {
     ExecutableElement methodElt = TreeUtils.elementFromUse(tree);
     AnnotatedTypeMirror receiverType = getReceiverType(tree);
-    if (TreeUtils.isSuperConstructorCall(tree)) {
+    boolean isSuperConstructorCall = TreeUtils.isSuperConstructorCall(tree);
+    if (isSuperConstructorCall) {
       // A super() call has no receiver, and it should be view-point adapted as if "this" is the
       // receiver.  In `outer.super(...)`, `outer` is the enclosing instance rather than the
       // receiver; using it here would lose the instantiation of the superclass's own type
@@ -2531,7 +2532,23 @@ public class AnnotatedTypeFactory implements AnnotationProvider {
       }
     }
     if (receiverType != null && receiverType.getKind() == TypeKind.DECLARED) {
-      receiverType = applyCaptureConversion(receiverType);
+      // Capturing the receiver with the captured type variables that javac used makes the
+      // captured type variables in the method's type the same ones that appear in the Java types
+      // of the arguments and the result.  A fresh capture would make, for example, the Java type
+      // of `sink.add(b ? x : y)`'s argument a different captured type variable than the
+      // parameter type.
+      DeclaredType javacCapture =
+          isSuperConstructorCall ? null : TreeUtils.getReceiverCapture(tree, types);
+      DeclaredType underlying = (DeclaredType) receiverType.getUnderlyingType();
+      if (javacCapture != null
+          && (!javacCapture.asElement().equals(underlying.asElement())
+              || javacCapture.getTypeArguments().size() != underlying.getTypeArguments().size())) {
+        javacCapture = null;
+      }
+      receiverType =
+          javacCapture == null
+              ? applyCaptureConversion(receiverType)
+              : applyCaptureConversion(receiverType, javacCapture);
     }
 
     ParameterizedExecutableType result =
