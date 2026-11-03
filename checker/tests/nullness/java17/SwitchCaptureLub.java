@@ -11,12 +11,44 @@ public class SwitchCaptureLub {
       Comparator<Object> c2,
       List<? super Comparator<? super List<T>>> sink) {
     sink.add(
-        // TODO: This is a false positive.  The lub of the switch arms is a fresh capture of
-        // ? super Comparator<? super List<T>>, rather than the capture that is the parameter type.
-        // :: error: (argument)
         switch (i) {
           case 2 -> c1;
           default -> c2;
         });
+  }
+
+  <T> void conditionalArms(
+      boolean b,
+      Comparator<List<T>> c1,
+      Comparator<Object> c2,
+      List<? super Comparator<? super List<T>>> sink) {
+    sink.add(b ? c1 : c2);
+  }
+
+  static class Holder<U> {
+    List<? super Comparator<? super List<U>>> sink;
+
+    Holder(List<? super Comparator<? super List<U>>> sink) {
+      this.sink = sink;
+    }
+  }
+
+  <T> void fieldReceiver(
+      int i, boolean b, Holder<T> h, Comparator<List<T>> c1, Comparator<Object> c2) {
+    h.sink.add(
+        switch (i) {
+          case 2 -> c1;
+          default -> c2;
+        });
+    h.sink.add(b ? c1 : c2);
+  }
+
+  static <U> U id(U u) {
+    return u;
+  }
+
+  <T> void inferredArgument(
+      Comparator<List<T>> c1, List<? super Comparator<? super List<T>>> sink) {
+    sink.add(id(c1));
   }
 }

@@ -192,6 +192,11 @@ class TypeFromMemberVisitor extends TypeFromTreeVisitor {
       // the underlying types are not the same type, then assume the lambda parameter is the
       // same as the function type. (Use the erased types because the type arguments are not
       // substituted when the annotated type arguments are.)
+      if (f.types.isSameType(funcTypeParam.underlyingType, lambdaParam.underlyingType)) {
+        // javac builds the bounds of a captured type variable differently than the annotated
+        // capture does, so viewing funcTypeParam as lambdaParam would give a different type.
+        return funcTypeParam;
+      }
       if (TypesUtils.isErasedSubtype(
           funcTypeParam.underlyingType, lambdaParam.underlyingType, f.types)) {
         return AnnotatedTypes.asSuper(f, funcTypeParam, lambdaParam);

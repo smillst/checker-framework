@@ -1035,6 +1035,31 @@ public final class TreeUtils {
     return withoutParens(receiver);
   }
 
+  /**
+   * Returns the capture of the type of the receiver of {@code tree} that javac used to compute the
+   * type of the invoked method, or null if {@code tree} has no explicit receiver, the receiver's
+   * type is not a wildcard-parameterized declared type, or the capture cannot be recovered.
+   *
+   * @param tree a method invocation
+   * @param types the type utilities
+   * @return javac's capture of the type of the receiver of {@code tree}, or null
+   */
+  public static @Nullable DeclaredType getReceiverCapture(
+      MethodInvocationTree tree, javax.lang.model.util.Types types) {
+    ExpressionTree receiverTree = getReceiverTree(tree);
+    if (receiverTree == null) {
+      return null;
+    }
+    TypeMirror receiverType = typeOf(receiverTree);
+    if (receiverType.getKind() != TypeKind.DECLARED) {
+      return null;
+    }
+    // javac does not store the captured receiver, but its captured type variables appear in the
+    // type of the method select.
+    return TypesUtils.getCaptureIn(
+        (DeclaredType) receiverType, typeOf(tree.getMethodSelect()), types);
+  }
+
   // TODO: What about anonymous classes?
   // Adding Tree.Kind.NEW_CLASS here doesn't work, because then a
   // tree gets cast to ClassTree when it is actually a NewClassTree,
