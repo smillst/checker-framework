@@ -33,7 +33,7 @@ public class CaseLabelPatternInitialization {
     }
   }
 
-  // A binding variable nested in a record pattern is not defaulted to top.
+  // A binding variable nested in a record pattern is not yet defaulted to top.  See #7032.
   void nested(Box b) {
     if (b instanceof Box(String s)) {
       s.length();

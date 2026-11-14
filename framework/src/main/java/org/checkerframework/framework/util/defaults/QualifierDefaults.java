@@ -500,6 +500,7 @@ public class QualifierDefaults {
   private boolean isNestedBindingVariable(Element elt) {
     // TODO: Once dataflow refines a nested binding variable by its record component (follow-up
     // pull request), default nested binding variables to top as well and remove this method.
+    // See #7032.
     Tree decl = atypeFactory.declarationFromElement(elt);
     TreePath path = decl == null ? null : atypeFactory.getPath(decl);
     // The parent of the variable is a binding pattern, whose parent might be a record pattern.
